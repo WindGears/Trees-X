@@ -1,0 +1,48 @@
+import { describe, expect, it, vi } from 'vitest'
+import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
+import { createHologramOverlay } from './hologram'
+
+describe('hologram overlay', () => {
+  it('shares source geometry and one material, then releases only owned resources', () => {
+    const root = new Group()
+    const firstGeometry = new BoxGeometry()
+    const secondGeometry = new BoxGeometry()
+    const first = new Mesh(firstGeometry, new MeshStandardMaterial())
+    const second = new Mesh(secondGeometry, new MeshStandardMaterial())
+    root.add(first, second)
+    const firstGeometryDispose = vi.spyOn(firstGeometry, 'dispose')
+    const secondGeometryDispose = vi.spyOn(secondGeometry, 'dispose')
+    const overlay = createHologramOverlay(root)
+    expect(overlay.meshes).toHaveLength(2)
+    expect(overlay.meshes[0]!.geometry).toBe(firstGeometry)
+    expect(overlay.meshes[1]!.geometry).toBe(secondGeometry)
+    expect(new Set(overlay.meshes.map((mesh) => mesh.material)).size).toBe(1)
+    expect(createHologramOverlay(root)).toBe(overlay)
+    const materialDispose = vi.spyOn(overlay.material, 'dispose')
+    overlay.dispose()
+    overlay.dispose()
+    expect(materialDispose).toHaveBeenCalledOnce()
+    expect(firstGeometryDispose).not.toHaveBeenCalled()
+    expect(secondGeometryDispose).not.toHaveBeenCalled()
+    expect(first.children).toHaveLength(0)
+    expect(second.children).toHaveLength(0)
+    firstGeometry.dispose()
+    secondGeometry.dispose()
+    ;(first.material as MeshStandardMaterial).dispose()
+    ;(second.material as MeshStandardMaterial).dispose()
+  })
+
+  it('can initialize again after destruction without stacking meshes', () => {
+    const root = new Group()
+    const source = new Mesh(new BoxGeometry(), new MeshStandardMaterial())
+    root.add(source)
+    const first = createHologramOverlay(root)
+    first.dispose()
+    const second = createHologramOverlay(root)
+    expect(second).not.toBe(first)
+    expect(source.children).toHaveLength(1)
+    second.dispose()
+    source.geometry.dispose()
+    ;(source.material as MeshStandardMaterial).dispose()
+  })
+})

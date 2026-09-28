@@ -1,0 +1,92 @@
+[
+  {
+    "id": "gamepad",
+    "author": "Josh Dean",
+    "source": "https://polyhaven.com/a/gamepad",
+    "license": "CC0-1.0",
+    "licenseEvidence": "heritage-museum/docs/assets/ASSET_MANIFEST.md",
+    "file": "public/models/collection/gamepad.glb",
+    "bytes": 943292,
+    "triangles": 7866,
+    "sha256": "5e87be3c115ae408291ebd1abf0e2d5a46b3c72c014ca0d25ba15557532a4893",
+    "nodes": ["gamepad__part__gamepad"]
+  },
+  {
+    "id": "gaming-console",
+    "author": "Sean Buckley",
+    "source": "https://polyhaven.com/a/gaming_console",
+    "license": "CC0-1.0",
+    "licenseEvidence": "heritage-museum/docs/assets/ASSET_MANIFEST.md",
+    "file": "public/models/collection/gaming-console.glb",
+    "bytes": 1746476,
+    "triangles": 28452,
+    "sha256": "7826943f0ebf328a5ed6ef108b30a260392393d7acb8d15fa9a975940587110e",
+    "nodes": ["gaming-console__part__gaming-console", "gaming-console__part__gaming-console-lid"]
+  },
+  {
+    "id": "oak-side-table",
+    "author": "James Ray Cock",
+    "source": "https://polyhaven.com/a/side_table_01",
+    "license": "CC0-1.0",
+    "licenseEvidence": "heritage-museum/docs/assets/ASSET_MANIFEST.md",
+    "file": "public/models/collection/oak-side-table.glb",
+    "bytes": 1416556,
+    "triangles": 2542,
+    "sha256": "005687fdb30b691450a1a05a3c75f6fd625dc3d62be81a70880af14f469e71bf",
+    "nodes": ["oak-side-table__part__side-table-01"]
+  },
+  {
+    "id": "potted-plant",
+    "author": "Rico Cilliers",
+    "source": "https://polyhaven.com/a/potted_plant_01",
+    "license": "CC0-1.0",
+    "licenseEvidence": "heritage-museum/docs/assets/ASSET_MANIFEST.md",
+    "file": "public/models/collection/potted-plant.glb",
+    "bytes": 4075076,
+    "triangles": 71016,
+    "sha256": "5a075fafe7475f3366cc56ca0cc52cf70302d5acfbc3dab4921ba04334efe675",
+    "nodes": [
+      "potted-plant__part__potted-plant-01-stem",
+      "potted-plant__part__potted-plant-01-pebbles",
+      "potted-plant__part__potted-plant-01-pot",
+      "potted-plant__part__potted-plant-01-leaves"
+    ]
+  },
+  {
+    "id": "home-furniture-set",
+    "author": "Kenney",
+    "source": "https://kenney.nl/assets/furniture-kit",
+    "license": "CC0-1.0",
+    "licenseEvidence": "heritage-museum/docs/assets/ASSET_MANIFEST.md",
+    "file": "public/models/collection/home-furniture-set.glb",
+    "bytes": 9128,
+    "triangles": 458,
+    "sha256": "f6ebdf8bbf9ac7ea5bbb86e4fba095e62afb7b255730dd6b156d8d65621a2d32",
+    "nodes": [
+      "home-furniture-set__part__tablecoffee",
+      "home-furniture-set__part__chair",
+      "home-furniture-set__part__lamproundfloor",
+      "home-furniture-set__part__rugrectangle",
+      "home-furniture-set__part__pottedplant",
+      "plant"
+    ]
+  },
+  {
+    "id": "toy-racer",
+    "author": "Kenney",
+    "source": "https://kenney.nl/assets/car-kit",
+    "license": "CC0-1.0",
+    "licenseEvidence": "heritage-museum/docs/assets/ASSET_MANIFEST.md",
+    "file": "public/models/collection/toy-racer.glb",
+    "bytes": 27744,
+    "triangles": 1952,
+    "sha256": "b494297ac856bc24b7be671a1cb9860762cb2c64308262fff2a4b71ea8348796",
+    "nodes": [
+      "toy-racer__part__body",
+      "toy-racer__part__wheel-front-left",
+      "toy-racer__part__wheel-front-right",
+      "toy-racer__part__wheel-back-left",
+      "toy-racer__part__wheel-back-right"
+    ]
+  }
+]

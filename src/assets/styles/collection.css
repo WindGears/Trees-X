@@ -1,0 +1,337 @@
+.header-catalog {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: none;
+  color: #e6edfa;
+  font: inherit;
+}
+.header-catalog span {
+  padding: 3px 6px;
+  border: 1px solid #46546c;
+  color: #a7bddf;
+  font-size: 12px;
+}
+.product-switcher {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  margin-top: 36px;
+  border-block: 1px solid #364253;
+  pointer-events: auto;
+}
+.product-switcher button {
+  min-height: 44px;
+  padding: 10px;
+  border: 0;
+  background: none;
+  color: #b1bdce;
+}
+.product-switcher button:hover {
+  color: #fff;
+  background: #1b2532;
+}
+.product-switcher__browse {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.product-switcher__browse span {
+  color: #8493a9;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.collection-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgb(3 5 8 / 80%);
+  backdrop-filter: blur(20px);
+}
+.collection-dialog {
+  position: fixed;
+  inset: 30px;
+  z-index: 71;
+  display: flex;
+  flex-direction: column;
+  max-width: 1600px;
+  margin: auto;
+  border: 1px solid #354152;
+  background: #10151d;
+  color: #eff3f9;
+  box-shadow: 0 30px 110px #0009;
+}
+.collection-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 36px 42px 28px;
+}
+.collection-eyebrow {
+  display: flex;
+  gap: 22px;
+  margin: 0 0 20px;
+  color: #c4d1e5;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+}
+.collection-eyebrow span {
+  color: #77869b;
+}
+.collection-title {
+  margin: 0;
+  font-size: clamp(32px, 3.1vw, 52px);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1.2;
+}
+.collection-title span {
+  color: #8999ae;
+}
+.collection-description {
+  margin: 16px 0 0;
+  color: #a0aec0;
+  font-size: 12px;
+  line-height: 1.8;
+}
+.collection-close {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 1px solid #344256;
+  background: transparent;
+  color: #d1dbea;
+}
+.collection-close:hover {
+  background: #263244;
+}
+.collection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 0 42px;
+  border-block: 1px solid #303b4b;
+}
+.collection-filters {
+  display: flex;
+  gap: 28px;
+}
+.collection-filters button {
+  position: relative;
+  min-height: 58px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #8e9bae;
+  font-size: 13px;
+}
+.collection-filters button[aria-pressed='true'] {
+  color: #e6efff;
+  box-shadow: inset 0 -2px #aacaff;
+}
+.collection-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  color: #8091a9;
+}
+.collection-search input {
+  width: 190px;
+  min-height: 42px;
+  border: 0;
+  border-bottom: 1px solid #354357;
+  background: transparent;
+  color: #dfe8f6;
+  font-size: 12px;
+}
+.collection-count {
+  color: #93a2b7;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.collection-results {
+  overflow-y: auto;
+  padding: 30px 42px 40px;
+  flex: 1;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #536279 transparent;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px 24px;
+}
+.collection-item {
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: inherit;
+}
+.collection-item__image {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1.8;
+  background: #1a2025;
+  outline: 1px solid transparent;
+  outline-offset: 4px;
+}
+.collection-item__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.collection-item:hover .collection-item__image,
+.collection-item.is-current .collection-item__image {
+  outline-color: #8eb0e5;
+}
+.collection-item__current {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  background: #172436;
+  color: #e0edff;
+  font-size: 12px;
+}
+.collection-item__open {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: #172436;
+  color: #eef4ff;
+}
+.collection-item__identity {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 17px;
+  color: #8d9cb0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+.collection-item__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 7px;
+}
+.collection-item__title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+.collection-item__title > span {
+  color: #8493a8;
+  font-size: 12px;
+}
+.collection-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 42px;
+  border-top: 1px solid #303b4b;
+  color: #7e90a9;
+  font-size: 12px;
+}
+.collection-footer > span {
+  letter-spacing: 0.12em;
+}
+.collection-footer p {
+  margin: 0;
+}
+.collection-empty {
+  display: grid;
+  place-content: center;
+  min-height: 250px;
+  text-align: center;
+  color: #a9b8cc;
+}
+.collection-empty button {
+  min-height: 44px;
+  background: transparent;
+  border: 1px solid #556981;
+  color: #d5e3f6;
+}
+.console-source {
+  color: #94a9c9;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 760px) {
+  .collection-dialog {
+    inset: 10px;
+  }
+  .collection-header {
+    position: relative;
+    padding: 24px 20px;
+    gap: 16px;
+  }
+  .collection-heading {
+    width: 100%;
+  }
+  .collection-eyebrow {
+    padding-right: 40px;
+    font-size: 12px;
+  }
+  .collection-title {
+    margin-top: 28px;
+    font-size: 30px;
+  }
+  .collection-title span {
+    white-space: nowrap;
+  }
+  .collection-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+  }
+  .collection-toolbar {
+    padding: 0 20px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .collection-filters {
+    gap: 24px;
+  }
+  .collection-search {
+    order: 2;
+    width: 100%;
+    margin: 0 0 14px;
+  }
+  .collection-search input {
+    flex: 1;
+    width: 0;
+  }
+  .collection-count {
+    margin-left: auto;
+  }
+  .collection-results {
+    padding: 22px 20px;
+  }
+  .collection-grid {
+    grid-template-columns: 1fr;
+  }
+  .collection-footer {
+    padding: 12px 20px;
+  }
+  .collection-footer > span {
+    display: none;
+  }
+}

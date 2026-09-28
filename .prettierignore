@@ -1,0 +1,8 @@
+dist
+node_modules
+package-lock.json
+.impeccable
+artifacts
+public/gesture/vision_bundle.js
+public/gesture/wasm
+public/draco

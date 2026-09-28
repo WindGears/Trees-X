@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-23T08:43:46+08:00",
+  "title": "Design System: Trees X 沉浸式展厅",
+  "extensions": {
+    "shadows": [
+      {
+        "name": "panel",
+        "value": "0 24px 70px #0004",
+        "purpose": "操作层与舞台区分"
+      }
+    ],
+    "motion": [
+      {
+        "name": "panel",
+        "value": "240ms power2.out",
+        "purpose": "面板进入和退出"
+      },
+      {
+        "name": "focus",
+        "value": "800ms power3.out",
+        "purpose": "主动视角与部件聚焦"
+      },
+      {
+        "name": "intro",
+        "value": "2400ms GSAP timeline",
+        "purpose": "除音箱外保留的视觉演出，不自动移动镜头"
+      },
+      {
+        "name": "speaker-light-reveal",
+        "value": "2100ms power2.out",
+        "purpose": "音箱默认入场只揭示条形面光，不移动相机"
+      },
+      {
+        "name": "speaker-film",
+        "value": "7800ms GSAP timeline; power2.inOut / sine.inOut",
+        "purpose": "用户主动触发旋钮特写、完整轮廓、外观分层与合拢；中断保留当前镜头与分层，减弱动态直接到完整外观"
+      },
+      {
+        "name": "speaker-film-control",
+        "value": "180ms ease",
+        "purpose": "音箱演绎按钮的背景与边框过渡；静态热点名称的透明度过渡"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop",
+        "value": "1024px"
+      },
+      {
+        "name": "wide",
+        "value": "1700px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "外观选项",
+      "kind": "button",
+      "description": "配色选中同时使用文字、勾选与边框。",
+      "html": "<button class=\"finish\" aria-pressed=\"true\"><span></span>雾银</button>",
+      "css": ".finish {display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 14px;background:#ffffff0c;border:1px solid #b7d5ed;border-radius:4px;color:#f4f7fb;font:13px sans-serif}.finish span{width:20px;height:20px;border-radius:50%;background:#b7bdc9;border:1px solid #ffffff40}"
+    },
+    {
+      "name": "音箱演绎入口",
+      "kind": "button",
+      "description": "音箱专属的浅银主动播放入口；播放后原位切换为接手探索，未就绪时禁用，减弱动态显示静态欣赏。",
+      "html": "<button class=\"ds-speaker-film\" type=\"button\" aria-pressed=\"false\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 3 12 9-12 9V3Z\"/></svg>观看演绎<span>8 秒</span></button>",
+      "css": ".ds-speaker-film{display:inline-flex;align-items:center;gap:12px;min-height:46px;padding:0 18px;border:1px solid #c7cdd3;border-radius:0;background:#dce2e7;color:#13181d;font-family:Manrope,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background 180ms ease,border-color 180ms ease}.ds-speaker-film:hover{background:#fff;border-color:#fff}.ds-speaker-film:focus-visible{outline:2px solid var(--ring,#9fc1ff);outline-offset:4px}.ds-speaker-film:disabled{opacity:.45;cursor:not-allowed}.ds-speaker-film span{margin-left:10px;color:#4e5862;font-size:12px;font-weight:400}"
+    }
+  ],
+  "narrative": {
+    "northStar": "先欣赏商品，再自然探索细节",
+    "overview": "真实产品居中，侧栏按需展开，三种商品舞台保持各自材质性格。",
+    "keyCharacteristics": [
+      "中文身份优先",
+      "真实三维封面",
+      "单一操作面板",
+      "桌面固定画质"
+    ],
+    "rules": [
+      {
+        "name": "单面板",
+        "body": "外观、细节、结构、手势一次展开一个。",
+        "section": "layout"
+      },
+      {
+        "name": "音箱摄影棚",
+        "body": "音箱以条形光、表面细纹和外观轮廓构成层次，不恢复该商品的发光环、粒子或全息扫描；其他商品保持各自舞台。",
+        "section": "elevation"
+      },
+      {
+        "name": "主动演绎",
+        "body": "只有用户触发才播放音箱镜头；正常结束合拢外观并保留配色，途中接手保留当前镜头与分层进度，减弱动态直接到完整外观。",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "保留关闭面板前的观察状态",
+      "返回全景合拢结构但保留配色"
+    ],
+    "donts": [
+      "恢复首屏常驻完整控制台",
+      "把工程术语当成访客说明"
+    ]
+  }
+}

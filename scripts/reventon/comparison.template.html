@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reventón · 静帧还原检查</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #161817;
+        color: #eceee9;
+        font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      }
+      main {
+        max-width: 1800px;
+        margin: auto;
+        padding: 44px 40px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 30px;
+      }
+      .eyebrow {
+        color: #a4ada5;
+        letter-spacing: 0.13em;
+        font-size: 12px;
+      }
+      h1 {
+        font-size: clamp(28px, 3vw, 44px);
+        font-weight: 500;
+        margin: 12px 0;
+      }
+      p {
+        line-height: 1.8;
+        color: #b9c1b9;
+        max-width: 88ch;
+      }
+      .status {
+        border-left: 2px solid #d5bc80;
+        padding: 12px 18px;
+        color: #d5bc80;
+        white-space: nowrap;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin: 30px 0 16px;
+      }
+      button,
+      a {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        background: transparent;
+        border: 1px solid #576058;
+        border-radius: 4px;
+        padding: 10px 20px;
+        cursor: pointer;
+      }
+      button[aria-pressed='true'] {
+        background: #e4e9df;
+        color: #18201b;
+        border-color: #e4e9df;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible {
+        outline: 3px solid #d5bc80;
+        outline-offset: 4px;
+      }
+      a {
+        text-underline-offset: 4px;
+      }
+      .mode {
+        margin-left: auto;
+      }
+      .labels,
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .labels {
+        margin: 12px 0;
+        color: #b9c1b9;
+        font-size: 13px;
+      }
+      .pair img {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3968 / 1758;
+        object-fit: contain;
+      }
+      .wipe {
+        position: relative;
+        aspect-ratio: 3968 / 1758;
+        overflow: hidden;
+      }
+      .wipe img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+      }
+      .wipe .reference {
+        clip-path: inset(0 calc(100% - var(--split, 50%)) 0 0);
+      }
+      .divider {
+        position: absolute;
+        inset: 0 auto 0 var(--split, 50%);
+        width: 2px;
+        background: #e6c985;
+      }
+      .slider {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        padding: 16px 0;
+      }
+      input {
+        flex: 1;
+        accent-color: #d5bc80;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .notes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+        margin-top: 28px;
+        border-top: 1px solid #3c443d;
+        padding-top: 22px;
+      }
+      h2 {
+        font-size: 18px;
+        font-weight: 500;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 110px 1fr;
+        gap: 14px;
+        font-size: 14px;
+        line-height: 1.7;
+      }
+      dt {
+        color: #96a296;
+      }
+      dd {
+        margin: 0;
+        overflow-wrap: anywhere;
+      }
+      footer {
+        margin-top: 36px;
+        font-size: 12px;
+        color: #9ca69c;
+        line-height: 1.8;
+      }
+      @media (max-width: 760px) {
+        main {
+          padding: 24px 16px;
+        }
+        header {
+          align-items: start;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .notes {
+          grid-template-columns: 1fr;
+        }
+        .mode {
+          margin-left: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow">TREES X / BLENDER LOOK DEVELOPMENT</div>
+          <h1>Reventón · 静帧还原检查</h1>
+          <p>
+            左侧为用户提供的原始成片，右侧为本地 Cycles 实际渲染。此页用于核对构图、材质与光影。
+          </p>
+        </div>
+        <div class="status">检查稿 · 最终视觉验收未通过</div>
+      </header>
+      <div class="toolbar">
+        <button id="hero" aria-pressed="true">整车</button
+        ><button id="wheel" aria-pressed="false">轮圈近景</button>
+        <button class="mode" id="mode" aria-pressed="false">切换为叠合对照</button>
+        <a id="original" target="_blank" rel="noopener">打开原图</a
+        ><a id="render" target="_blank" rel="noopener">打开 4K 渲染</a>
+      </div>
+      <div class="labels">
+        <span>原始成片 / VRED · Photoshop 保存</span><span>本地重建 / Blender · Cycles · AgX</span>
+      </div>
+      <div class="pair" id="pair">
+        <img id="pair-original" alt="用户提供的原始成片" /><img
+          id="pair-render"
+          alt="当前 Blender 实际渲染"
+        />
+      </div>
+      <div class="wipe" id="wipe" hidden>
+        <img id="wipe-render" alt="当前 Blender 渲染" /><img
+          class="reference"
+          id="wipe-original"
+          alt="原始成片，裁切随滑块变化"
+        />
+        <div class="divider"></div>
+      </div>
+      <label class="slider" id="slider-wrap" hidden
+        >原图覆盖范围 <input id="split" type="range" min="0" max="100" value="50" /><output
+          id="split-value"
+          >50%</output
+        ></label
+      >
+      <section class="notes">
+        <div>
+          <h2>本镜头检查重点</h2>
+          <p id="note"></p>
+          <p>
+            整车机位有原始 JPG 元数据佐证；轮圈机位以 VPB
+            保存视角为基础做了人工调整。叠合只辅助观察，不代表两张图已经像素对齐。
+          </p>
+        </div>
+        <div>
+          <h2>可复现证据</h2>
+          <dl>
+            <dt>当前输出</dt>
+            <dd id="size"></dd>
+            <dt>场景完整性</dt>
+            <dd>618 个原始网格 / 1,027,841 个三角形；未减面</dd>
+            <dt>渲染设备</dt>
+            <dd id="device"></dd>
+            <dt>工程文件</dt>
+            <dd><a href="reventon-restored.blend">reventon-restored.blend</a></dd>
+            <dt>校验记录</dt>
+            <dd>
+              <a href="scene-verification.json">场景验证</a> ·
+              <a href="renders/validation-report.json">渲染报告</a> ·
+              <a href="recovery-verification.json">资源恢复验证</a>
+            </dd>
+          </dl>
+        </div>
+      </section>
+      <footer>
+        来源：本地用户提供的 CR1.3dm、2 TEMP.vpb 及 beauty JPG。原始贴图已恢复，Cycles
+        材质和灯光仍为重建；不是完整 VRED
+        场景迁移。原图与新渲染均保持原文件，本页没有后期修图。未制作动画或接入正式前台。品牌与模型不构成项目原创或授权声明。
+      </footer>
+    </main>
+    <script>
+      const report = __REPORT__
+      const shots = {
+        hero: {
+          reference: '6-beauty.jpg',
+          note: '核对前风挡与车灯的通透度、车漆反射的层次、车身下方接触阴影。目前车灯仍偏白，环境梯度和车漆层次还未达到原图。',
+        },
+        wheel: {
+          reference: '7-beauty.jpg',
+          note: '核对轮胎旧化、胎侧文字、轮圈漆面、碳纤维尺度和刹车盘拉丝。旧化与反射已修订；法线方向、局部高光及编织纹理仍需进一步校准。',
+        },
+      }
+      let current = 'hero',
+        overlay = false
+      const el = (id) => document.getElementById(id)
+      function select(shot) {
+        current = shot
+        const source = '../../lamborghini-reventon-re-made-1.snapshot.2/' + shots[shot].reference
+        const rendered = 'renders/' + shot + '-validation.png'
+        for (const mode of ['pair', 'wipe']) {
+          el(mode + '-original').src = source
+          el(mode + '-render').src = rendered
+        }
+        el('original').href = source
+        el('render').href = rendered
+        for (const name of Object.keys(shots))
+          el(name).setAttribute('aria-pressed', String(name === shot))
+        el('note').textContent = shots[shot].note
+        const entry = report.shots.find((item) => item.shot.toLowerCase() === shot)
+        el('size').textContent =
+          '3968 × 1758 / 16-bit PNG + 线性 EXR / ' +
+          report.samples +
+          ' samples 上限 / 本次 ' +
+          entry.seconds +
+          ' 秒'
+      }
+      for (const shot of Object.keys(shots)) el(shot).addEventListener('click', () => select(shot))
+      el('device').textContent = report.device.join(', ')
+      el('mode').addEventListener('click', () => {
+        overlay = !overlay
+        el('pair').hidden = overlay
+        el('wipe').hidden = !overlay
+        el('slider-wrap').hidden = !overlay
+        el('mode').setAttribute('aria-pressed', String(overlay))
+        el('mode').textContent = overlay ? '切换为并排对照' : '切换为叠合对照'
+      })
+      el('split').addEventListener('input', (event) => {
+        const value = event.target.value + '%'
+        el('wipe').style.setProperty('--split', value)
+        el('split-value').value = value
+      })
+      select(current)
+    </script>
+  </body>
+</html>

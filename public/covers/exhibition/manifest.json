@@ -1,0 +1,51 @@
+[
+  {
+    "id": "toy-racer",
+    "meshes": "toy-racer__part__body|toy-racer__part__wheel-front-left|toy-racer__part__wheel-front-right|toy-racer__part__wheel-back-left|toy-racer__part__wheel-back-right",
+    "cover": "toy-racer.png",
+    "bytes": 224452,
+    "sha256": "eeb3a1d5cb1f1021f0a318b4d3c3d9d5ec15a5a210ca50e76debeba600562cd3"
+  },
+  {
+    "id": "potted-plant",
+    "meshes": "potted-plant__part__potted-plant-01-stem|potted-plant__part__potted-plant-01-pebbles|potted-plant__part__potted-plant-01-pot|potted-plant__part__potted-plant-01-leaves",
+    "cover": "potted-plant.png",
+    "bytes": 258092,
+    "sha256": "f83286b2a67fcd18c7f18464c119d570fc21b094f369f840129ea753b99c8c60"
+  },
+  {
+    "id": "gamepad",
+    "meshes": "gamepad__part__gamepad",
+    "cover": "gamepad.png",
+    "bytes": 276869,
+    "sha256": "4b300e5edfe79524e440c8adcb22a9a7e94905488ff1d462d279c267e8e9c798"
+  },
+  {
+    "id": "gaming-console",
+    "meshes": "gaming-console__part__gaming-console|gaming-console__part__gaming-console-lid",
+    "cover": "gaming-console.png",
+    "bytes": 282138,
+    "sha256": "297c7edbd83b49da847d5046d1d12201dd7c914250c5a3cce89fd6dfd1ae69ef"
+  },
+  {
+    "id": "oak-side-table",
+    "meshes": "oak-side-table__part__side-table-01",
+    "cover": "oak-side-table.png",
+    "bytes": 368707,
+    "sha256": "0f5a28fff19d9f72edad22402e342551b21033bd4d08ce660244f0522ef5050c"
+  },
+  {
+    "id": "home-furniture-set",
+    "meshes": "home-furniture-set__part__tablecoffee|home-furniture-set__part__chair|Mesh_lampRoundFloor|Mesh_lampRoundFloor_1|Mesh_rugRectangle|Mesh_rugRectangle_1|Mesh_pottedPlant|Mesh_pottedPlant_1|plant",
+    "cover": "home-furniture-set.png",
+    "bytes": 223631,
+    "sha256": "ea741c5f718e691b2c1f733be32da645d76aaa048f9b10be4dc4fd09fd82b03e"
+  },
+  {
+    "id": "form-01",
+    "meshes": "Chassis|Front_Baffle|Rear_Panel|Base|Woofer_Frame|Woofer_Bed|Woofer_Surround|Woofer_Cone|Woofer_Dustcap|Tweeter_Frame|Tweeter_Surround|Tweeter_Dome|Volume_Base|Volume_Dial|Dial_Knurl_0|Dial_Knurl_1|Dial_Knurl_2|Dial_Knurl_3|Dial_Knurl_4|Dial_Knurl_5|Dial_Knurl_6|Dial_Knurl_7|Dial_Knurl_8|Dial_Knurl_9|Dial_Knurl_10|Dial_Knurl_11|Dial_Knurl_12|Dial_Knurl_13|Dial_Knurl_14|Dial_Knurl_15|Dial_Knurl_16|Dial_Knurl_17|Dial_Knurl_18|Dial_Knurl_19|Dial_Knurl_20|Dial_Knurl_21|Dial_Knurl_22|Dial_Knurl_23|Dial_Knurl_24|Dial_Knurl_25|Dial_Knurl_26|Dial_Knurl_27|Dial_Knurl_28|Dial_Knurl_29|Dial_Knurl_30|Dial_Knurl_31|Dial_Knurl_32|Dial_Knurl_33|Dial_Knurl_34|Dial_Knurl_35|Dial_Knurl_36|Dial_Knurl_37|Dial_Knurl_38|Dial_Knurl_39|Dial_Knurl_40|Dial_Knurl_41|Dial_Knurl_42|Dial_Knurl_43|Dial_Knurl_44|Dial_Knurl_45|Dial_Knurl_46|Dial_Knurl_47|Dial_Knurl_48|Dial_Knurl_49|Dial_Knurl_50|Dial_Knurl_51|Dial_Knurl_52|Dial_Knurl_53|Dial_Knurl_54|Dial_Knurl_55|Dial_Knurl_56|Dial_Knurl_57|Dial_Knurl_58|Dial_Knurl_59|Dial_Knurl_60|Dial_Knurl_61|Dial_Knurl_62|Dial_Knurl_63|Dial_Knurl_64|Dial_Knurl_65|Dial_Knurl_66|Dial_Knurl_67|Dial_Knurl_68|Dial_Knurl_69|Dial_Knurl_70|Dial_Knurl_71|Dial_Top|Dial_Index|Dial_Groove_0|Dial_Groove_1|Dial_Groove_2|Dial_Groove_3|Indicator|Front_Fastener_0|Fastener_Slot_0|Front_Fastener_1|Fastener_Slot_1|Front_Fastener_2|Fastener_Slot_2|Front_Fastener_3|Fastener_Slot_3|Rear_Port_Rim|Rear_Port|Rear_Connector",
+    "cover": "form-01.png",
+    "bytes": 240877,
+    "sha256": "aaa1e16f6adbe1b02e271b7fe7c09bf147682302d180b981fb5f5982de875b56"
+  }
+]

@@ -1,0 +1,115 @@
+.product-film {
+  margin-top: 24px;
+}
+.film-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid #c7cdd3;
+  background: #dce2e7;
+  color: #13181d;
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+.film-action:hover {
+  background: #fff;
+  border-color: #fff;
+}
+.film-action:disabled {
+  opacity: 0.45;
+}
+.film-action span {
+  margin-left: 10px;
+  color: #4e5862;
+  font-size: 12px;
+  font-weight: 400;
+}
+.film-help {
+  max-width: 26em;
+  margin: 12px 0 0;
+  color: #9ca9b6;
+  font-size: 12px;
+  line-height: 1.8;
+}
+[data-stage='metal'] .studio-intro__action {
+  margin-top: 16px;
+}
+[data-stage='metal'] .studio-intro__description {
+  text-wrap: pretty;
+}
+[data-stage='metal'] .product-viewer {
+  background: radial-gradient(ellipse at 64% 42%, #252c34, #0c1015 62%, #080b0e);
+}
+[data-film-playing='true'] .studio-intro h1 {
+  font-size: clamp(32px, 2.8vw, 44px);
+  text-wrap: balance;
+}
+[data-film-playing='true'] .studio-intro__description {
+  min-height: 58px;
+}
+.model-hotspot.is-quiet {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+.model-hotspot.is-quiet::before {
+  content: '';
+  position: absolute;
+  inset: 15px;
+  border: 1px solid #d6e3ed;
+  border-radius: 50%;
+  background: #10182080;
+}
+.model-hotspot.is-quiet > svg {
+  width: 10px;
+  height: 10px;
+  position: relative;
+}
+.model-hotspot.is-quiet .hotspot-label {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.model-hotspot.is-quiet:hover .hotspot-label,
+.model-hotspot.is-quiet:focus-visible .hotspot-label {
+  opacity: 1;
+}
+@media (max-width: 1023px) {
+  .product-film {
+    margin-top: 14px;
+  }
+  .film-help {
+    display: none;
+  }
+  [data-stage='metal'] .studio-intro .product-switcher {
+    margin-top: 12px;
+  }
+  [data-stage='metal'] .studio-stage {
+    min-height: 920px;
+  }
+  [data-stage='metal'] .scene-topline {
+    top: 365px;
+  }
+  [data-stage='metal'] .canvas-host,
+  [data-stage='metal'] .scene-message {
+    top: 406px;
+  }
+}
+@media (max-height: 780px) and (min-width: 1024px) {
+  [data-stage='metal'] .studio-intro {
+    top: 25%;
+  }
+  [data-stage='metal'] .studio-intro__description {
+    margin-top: 16px;
+  }
+  [data-stage='metal'] .product-film {
+    margin-top: 16px;
+  }
+  [data-stage='metal'] .product-switcher {
+    margin-top: 20px;
+  }
+}
