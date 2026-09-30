@@ -31,6 +31,9 @@
     "test:identity": "node scripts/product-identity-check.mjs",
     "test:exhibition": "node scripts/exhibition-check.mjs",
     "test:speaker-film": "node scripts/speaker-film-check.mjs",
+    "test:reventon": "node scripts/reventon-runtime-check.mjs",
+    "test:reventon-lifecycle": "node scripts/reventon-lifecycle-check.mjs",
+    "test:reventon-playback": "node scripts/reventon-playback-check.mjs",
     "covers:generate": "node scripts/create-exhibition-covers.mjs"
   },
   "dependencies": {

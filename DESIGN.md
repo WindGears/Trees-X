@@ -10,6 +10,19 @@ colors:
   play: '#e7ae7d'
   botanical: '#b5c9a4'
   focus: '#9fc1ff'
+  reventon-studio: '#dededb'
+  reventon-studio-edge: '#939691'
+  reventon-ink: '#222824'
+  reventon-muted: '#434b45'
+  reventon-header-muted: '#555c55'
+  reventon-hover: '#c9cdc8'
+  reventon-focus: '#384e40'
+  reventon-progress: '#394b3e'
+  reventon-cabin-ink: '#f5f6f3'
+  reventon-cabin-muted: '#d5d9d3'
+  reventon-cabin-hover: '#38433c'
+  reventon-cabin-focus: '#d5e4d4'
+  reventon-cabin-progress: '#b7cbb9'
 typography:
   display:
     fontFamily: 'Noto Sans SC Display, Microsoft YaHei, sans-serif'
@@ -23,6 +36,24 @@ typography:
     lineHeight: 1.9
   label:
     fontSize: '12px'
+  reventon-display:
+    fontFamily: 'Manrope, sans-serif'
+    fontSize: 'clamp(40px, 4vw, 68px)'
+    fontWeight: 500
+    lineHeight: 1.05
+    letterSpacing: '-0.035em'
+  reventon-display-mobile:
+    fontFamily: 'Manrope, sans-serif'
+    fontSize: '42px'
+    fontWeight: 500
+    lineHeight: 1.05
+    letterSpacing: '-0.035em'
+  reventon-display-cabin:
+    fontFamily: 'Manrope, sans-serif'
+    fontSize: '32px'
+    fontWeight: 500
+    lineHeight: 1.05
+    letterSpacing: '-0.035em'
 rounded:
   panel: '8px'
   dock: '6px'
@@ -31,9 +62,26 @@ spacing:
   compact: '8px'
   section: '24px'
   desktop-edge: '48px'
+  reventon-chapters: '36px'
+  reventon-chapters-mobile: '16px'
+components:
+  reventon-control:
+    backgroundColor: 'transparent'
+    textColor: '{colors.reventon-ink}'
+    padding: '0 10px'
+  reventon-control-hover:
+    backgroundColor: '{colors.reventon-hover}'
+    textColor: '#000'
+  reventon-control-cabin:
+    backgroundColor: 'transparent'
+    textColor: '{colors.reventon-cabin-ink}'
 ---
 
 # Trees X 沉浸式展厅
+
+## Reventón 方向纠正（2026-09-28，覆盖下方历史方案）
+
+交付必须是 Blender 烘焙材质/静态阴影后的真实三维实机 Demo。模型、剪刀门、部件和镜头均在 Tres/Three 内实时运行，使用固定演示流程，取消自由轨道操作。影片、帧序列与图片转场不能替代该体验。该方向已于 2026-09-30 在 `/?product=reventon` 实现；原 beauty JPG 仍是浏览器实际材质/光影的对照依据，仅作为目录封面，不是实机截图。最新复核只确认接触阴影、玻璃、轮内金属和手机目录出口四项修正通过；整体参考画质、连续动作质量与帧率未验收，不以离线渲染或局部 `ship` 结论宣称整体达标。此前影片入口已撤下，相关制作预览只保存在 artifacts 中。具体边界见 [.ai/reventon-realtime.md](.ai/reventon-realtime.md) 与[四项修正复核](.impeccable/review/reventon/fix-verdict-2.md)。
 
 ## Reventón 离线检查稿（2026-09-25）
 
@@ -45,6 +93,8 @@ spacing:
 
 ## Overview
 
+Reventón 为 Experience 模式的局部浅灰摄影棚例外。采用用户原 beauty 图的中性棚景与已有 Trees X 字体，让真实恢复的完整汽车主导第一屏；控件围绕固定观察流程保持克制。下列 `reventon-*` token 仅属于此展品，来自 `src/assets/styles/reventon.css` 与 `ReventonStudio.vue`，不替换其他展品规范。表面方向与验收范围见 [Reventón surface](.impeccable/surfaces/src-components-reventon-reventonexperience-vue.md)。
+
 2026-09-23 音箱视觉样板延伸现有近黑摄影棚：条形柔光、方向性金属反射与干净背景替代该商品的发光环、粒子及全息扫描；其他商品保留各自舞台。音箱左侧「观看演绎」入口主动触发 7.8 秒短片，依次呈现旋钮特写、完整轮廓、外观分层与合拢。章节标题与镜头同步，完成后提示自由探索。默认入场只揭示灯光，不自动运镜；减弱动态的「静态欣赏」直接到达完整外观。
 
 本轮按已确认的「先欣赏，再探索」方向重构。首屏默认只呈现商品身份、真实三维模型、底部探索入口与紧凑视角工具。完整控制台由顶部主动打开，替换旧版「完整控制台必须首屏常驻」要求。
@@ -55,11 +105,15 @@ spacing:
 
 石墨中性色承托真实材质，空间色随商品变化。金属舞台以冷白与银灰反射为主，赛车使用暖色轮廓和深色展台，绿植使用深灰绿背景与柔和侧光、无发光圆环。每个舞台的强调色用于当前选择和返回操作。键盘焦点统一使用 focus 色。
 
+Reventón 外景使用浅灰棚景底色与灰绿边缘衰减，深墨色文字、低调的灰绿辅助文字和控件状态。进入座舱后改为近白文字、浅灰绿辅助信息和更亮的焦点/进度色；这一状态随章节切换，顶部目录仍可辨认。色值以 frontmatter 中 `reventon-*` 为准。
+
 ## Typography
 
 中文名称是唯一主标题：36–48px、500 字重、1.3 行高。英文编号为 12px 辅助信息；介绍 15px，面板正文 14px、1.9 行高；面板标题 20px，功能标题 15–17px，按钮 13–14px，辅助文字至少 12px。中文长句自然换行，不使用全大写工程标签代替说明。
 
 音箱演绎期间，主标题切换为当前章节，字号采用 `clamp(32px, 2.8vw, 44px)` 并平衡换行；说明区保留至少 58px 高度，减少章节切换时的布局跳动。演绎按钮为 14px、600 字重，时长与辅助提示为 12px。
+
+Reventón 标题使用现有 Manrope；桌面、手机与座舱标题分别对应 frontmatter 的三个 display token，座舱的紧凑标题优先于手机字号。说明与章节描述为 15px，控件为 14px，部件分离说明为 12px；手机章节描述为 14px。当前章节用下划线及 600 字重共同标记。
 
 ## Layout
 
@@ -71,6 +125,8 @@ spacing:
 
 音箱演绎入口在桌面介绍下方留 24px 间距；高度不超过 780px 的桌面将身份区上移至 25%，缩减该区间距。窄屏入口间距为 14px，隐藏补充提示，场景和工具沿纵向排布。这些调整仅服务音箱新增入口，不推广为其他商品的排版规则。
 
+Reventón 独立展区为 `100svh`、最低 640px 高，全幅唯一 Canvas 置于底层。标题距顶 108px，左边距 `clamp(28px, 5vw, 96px)`；底部控制区距底 24px、宽 `min(640px, calc(100% - 48px))`，四章节横向排列。640px 及以下标题距顶 112px、距左 24px，章节间距使用手机 token，控制区距底 20px。390px 与 320px 基础兼容均保留商品目录、四章节和进度/复位入口；不将桌面完整侧栏布局套入此独立展品。
+
 ## Elevation & Depth
 
 主要深度来自真实 HDR 反射、方向光、阴影和模型自身材质。背景为低对比舞台光晕，旧工程网格和 CSS 椭圆装饰已移除。面板以近乎不透明的深色表面保证可读性，24px/70px 的柔和阴影仅区分操作层与场景。热点用名称、选中底色和描边反馈。
@@ -81,9 +137,17 @@ spacing:
 
 **The 音箱摄影棚 Rule.** 音箱以条形光、表面细纹和外观轮廓构成层次，不恢复该商品的发光环、粒子或全息扫描；其他商品保持各自舞台。
 
+Reventón 通过两盏真实面光、HDR 反射、浅灰棚景 Shader 与随姿态更新的连续接触投影形成空间深度。车漆、玻璃和轮内金属保留真实几何与材质反应；玻璃需让座舱轮廓可读，同时保留局部反射。座舱顶部与底部的暗色渐变仅保护叠层文字可读性，不代替三维场景光照。该展品控件无卡片阴影，不继承普通展品的 Bloom、粒子或发光环规则。
+
+**The Reventón 摄影棚 Rule.** Reventón 保持浅灰棚景、连续接触阴影、可读玻璃内景与有层次的轮内金属；原 beauty 图只作视觉依据，不能代替真实浏览器帧。
+
+2026-09-30 用户将本轮收口为技术验证：保留当前摄影棚效果，停止照片级材质和光影对齐。原参考图等效不是本轮交付门槛，不据此追加精调或重烘焙。
+
 ## Shapes
 
 面板 8px、工具栏 6px、内部按钮 4px 圆角。分组主要靠间距与细分隔线，避免层层套卡。圆形仅用于色样、热点和真实舞台的环形元素。
+
+Reventón 以透明无边框按钮、当前章节细下划线与原生进度条构成控制区，按钮最小触达高度 44px。无需新增面板容器或另设圆角体系。
 
 ## Components
 
@@ -101,8 +165,18 @@ spacing:
 
 拖动、滚轮、Esc、面板、目录、手势入口或商品切换均可中断短片。镜头、灯位与分层由同一 GSAP 时间线协调；资源所有权及相机接手约束见 [音箱主动演绎架构](.ai/architecture.md#音箱主动演绎)。
 
+### Reventón 独立体验
+
+`ReventonExperience` 在真实首帧完成后启用四章节、播放/暂停、进度条与回到开始。约 16 秒的 GSAP 时间线从闭合外观进入剪刀门开启、座舱、部件分离，最后复原；点击章节直接到代表姿态。目录、页面隐藏或离开展区暂停流程，返回后保留姿态，未自动恢复播放。减弱动态时隐藏连续播放入口，保留直接定位章节与进度。
+
+外景控件使用透明底与局部 hover 色，键盘焦点为 2px 实线、4px 外偏移；座舱改用对应浅色焦点。加载过程以棚景底色和状态文字覆盖，失败提供「重新加载」「返回目录」。顶部「商品目录」在桌面、390px 和 320px 均持续可用。
+
+**The Reventón 导演流程 Rule.** 只由主动播放或章节/进度输入驱动真实汽车与镜头，保留固定流程，不提供自由轨道；减弱动态保留静态章节观察。
+
 ## Do's and Don'ts
 
 保留主体的最大可读面积。操作面板只开一个，滚轮在展示区缩放、在侧栏滚动内容。返回全景恢复完整外观并保留配色。作品来源集中到作品信息。
 
 不要恢复首屏常驻控制台；不要在访客导览中讲节点、贴图或世界坐标；不要用降低桌面画质代替体验修复；不要用重新创建整个 Canvas 掩盖商品切换问题。减弱动态与设备能力不足仍走已有静态兼容路径。
+
+Reventón 的浅灰棚景、全幅取景与固定导演流程仅约束该展品。保留真实车辆的可读面积与手机目录出口；不得把参考 JPG 记作实机截图，也不得把四项局部修正通过写成整体画质、动作流畅度或性能验收通过。

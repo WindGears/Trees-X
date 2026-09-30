@@ -202,7 +202,8 @@ onBeforeRender(({ delta }) => {
   // 平滑进度
   const target = store.progress
   const cur = studyBridge.displayedProgress
-  const smoothed = Math.abs(target - cur) < 0.0004 ? target : cur + (target - cur) * Math.min(1, delta * 7.5)
+  const smoothed =
+    Math.abs(target - cur) < 0.0004 ? target : cur + (target - cur) * Math.min(1, delta * 7.5)
   studyBridge.displayedProgress = smoothed
 
   const now = performance.now()

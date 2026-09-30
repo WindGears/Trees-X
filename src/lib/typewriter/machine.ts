@@ -89,9 +89,10 @@ export function typewriterSpec(): TypewriterSpec {
     })
   }
 
-  const counts = Object.fromEntries(
-    GROUPS.map((g) => [g.id, byGroup.get(g.id)!.length]),
-  ) as Record<GroupId, number>
+  const counts = Object.fromEntries(GROUPS.map((g) => [g.id, byGroup.get(g.id)!.length])) as Record<
+    GroupId,
+    number
+  >
 
   const spaceKey = keys.keyIds.find((k) => k.fn === 'space')!
   const returnArm = carriage.parts.find((p) => p.name === '回车臂')!

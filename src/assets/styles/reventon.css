@@ -1,0 +1,213 @@
+.reventon-experience {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  min-height: 640px;
+  overflow: hidden;
+  color: #222824;
+  background: #dededb;
+  --reventon-muted: #434b45;
+}
+.reventon-canvas {
+  position: absolute;
+  inset: 0;
+}
+.reventon-title {
+  position: absolute;
+  top: 108px;
+  left: clamp(28px, 5vw, 96px);
+  pointer-events: none;
+}
+.reventon-title h1 {
+  font-family: Manrope, sans-serif;
+  font-size: clamp(40px, 4vw, 68px);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+}
+.reventon-title p {
+  margin-top: 12px;
+  font-size: 15px;
+  color: var(--reventon-muted);
+}
+.reventon-console {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  width: min(640px, calc(100% - 48px));
+  transform: translateX(-50%);
+}
+.reventon-caption {
+  margin-bottom: 18px;
+  text-align: center;
+  font-size: 15px;
+}
+.reventon-chapters {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+}
+.reventon-experience button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+  font-size: 14px;
+}
+.reventon-chapters button {
+  border-bottom: 1px solid transparent;
+  color: var(--reventon-muted);
+}
+.reventon-chapters button[aria-current='step'] {
+  border-color: currentColor;
+  color: #222824;
+  font-weight: 600;
+}
+.reventon-experience button:hover:not(:disabled) {
+  color: #000;
+  background: #c9cdc8;
+}
+.reventon-experience button:focus-visible,
+.reventon-progress input:focus-visible {
+  outline: 2px solid #384e40;
+  outline-offset: 4px;
+}
+.reventon-experience button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+.reventon-playback {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 14px;
+}
+.reventon-progress {
+  flex: 1;
+  display: flex;
+}
+.reventon-progress input {
+  width: 100%;
+  accent-color: #394b3e;
+  cursor: pointer;
+}
+.reventon-note {
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--reventon-muted);
+}
+.reventon-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #dededb;
+  padding: 28px;
+  text-align: center;
+}
+.reventon-recovery {
+  display: flex;
+  gap: 16px;
+}
+.reventon-recovery button {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.reventon-experience ::selection {
+  background: #b4c2b5;
+  color: #16271b;
+}
+body:has(.reventon-experience) .site-header {
+  color: #222824;
+  border-color: #22282424;
+}
+body:has(.reventon-experience) .site-header nav,
+body:has(.reventon-experience) .header-object,
+body:has(.reventon-experience) .wordmark-slash {
+  color: #555c55;
+}
+body:has(.reventon-experience) .wordmark svg {
+  stroke: #222824;
+}
+body:has(.reventon-experience) .site-header nav button:hover {
+  color: #111810;
+}
+body:has(.reventon-experience) .site-header nav button.header-catalog {
+  display: flex;
+  color: #222824;
+}
+body:has(.reventon-experience) .header-catalog span {
+  color: #555c55;
+  border-color: #555c55;
+}
+.reventon-experience[data-chapter='座舱'] {
+  color: #f5f6f3;
+  --reventon-muted: #d5d9d3;
+}
+.reventon-experience[data-chapter='座舱']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(#0d120fdd, #0d120f00 230px), linear-gradient(0deg, #0d120ff2, #0d120f00 280px);
+}
+.reventon-title,
+.reventon-console {
+  z-index: 1;
+}
+.reventon-experience[data-chapter='座舱'] .reventon-title h1 {
+  font-size: 32px;
+}
+.reventon-experience[data-chapter='座舱'] .reventon-chapters button[aria-current='step'] {
+  color: #fff;
+}
+.reventon-experience[data-chapter='座舱'] button:hover:not(:disabled) {
+  color: #fff;
+  background: #38433c;
+}
+.reventon-experience[data-chapter='座舱'] :focus-visible {
+  outline-color: #d5e4d4;
+}
+.reventon-experience[data-chapter='座舱'] input {
+  accent-color: #b7cbb9;
+}
+body:has(.reventon-experience[data-chapter='座舱']) .site-header,
+body:has(.reventon-experience[data-chapter='座舱']) .site-header .header-catalog,
+body:has(.reventon-experience[data-chapter='座舱']) .header-catalog span,
+body:has(.reventon-experience[data-chapter='座舱']) .header-object,
+body:has(.reventon-experience[data-chapter='座舱']) .wordmark-slash {
+  color: #f5f6f3;
+  border-color: #f5f6f355;
+}
+body:has(.reventon-experience[data-chapter='座舱']) .wordmark svg {
+  stroke: #f5f6f3;
+}
+@media (max-width: 640px) {
+  .reventon-title {
+    top: 112px;
+    left: 24px;
+  }
+  .reventon-title h1 {
+    font-size: 42px;
+  }
+  .reventon-chapters {
+    gap: 16px;
+  }
+  .reventon-console {
+    bottom: 20px;
+  }
+  .reventon-caption {
+    font-size: 14px;
+  }
+}

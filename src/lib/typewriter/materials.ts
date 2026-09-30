@@ -46,7 +46,8 @@ export function ribbonTexture(): CanvasTexture {
   const rnd = mulberry32(77)
   for (let i = 0; i < 2600; i++) {
     const y = rnd() * 64
-    ctx.fillStyle = y < 32 ? `rgba(210,200,190,${rnd() * 0.05})` : `rgba(255,170,160,${rnd() * 0.05})`
+    ctx.fillStyle =
+      y < 32 ? `rgba(210,200,190,${rnd() * 0.05})` : `rgba(255,170,160,${rnd() * 0.05})`
     ctx.fillRect(rnd() * 512, y, 1 + rnd() * 2, 1)
   }
   ctx.fillStyle = 'rgba(0,0,0,0.25)'
@@ -296,7 +297,11 @@ export function createTypewriterMaterials(): TypewriterMaterials {
     h.emissiveIntensity = 0.42
     highlight[key] = h
   }
-  const all: (Material | Texture)[] = [...textures, ...Object.values(materials), ...Object.values(highlight)]
+  const all: (Material | Texture)[] = [
+    ...textures,
+    ...Object.values(materials),
+    ...Object.values(highlight),
+  ]
   return {
     materials,
     highlight,

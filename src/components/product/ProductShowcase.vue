@@ -12,6 +12,9 @@ const ProductViewer = defineAsyncComponent(() => import('@/components/three/Prod
 const TypewriterStudy = defineAsyncComponent(
   () => import('@/components/typewriter/TypewriterStudy.vue'),
 )
+const ReventonExperience = defineAsyncComponent(
+  () => import('@/components/reventon/ReventonExperience.vue'),
+)
 const store = useProductStore()
 const bridge = createGestureBridge()
 const available = ref(false)
@@ -61,6 +64,10 @@ onScopeDispose(() => bridge.disposeVisual())
     aria-labelledby="showcase-heading"
   >
     <TypewriterStudy v-if="store.product.experience === 'study'" :active="!store.catalogOpen" />
+    <ReventonExperience
+      v-else-if="store.product.experience === 'reventon'"
+      :active="!store.catalogOpen"
+    />
     <template v-else>
       <div class="studio-stage">
         <ProductViewer @availability-change="available = $event" />

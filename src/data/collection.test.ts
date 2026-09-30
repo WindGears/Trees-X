@@ -17,7 +17,7 @@ it('matches every imported GLB node, checksum and rendered triangle budget', asy
       'utf8',
     ),
   )
-  expect(new Set(collection.map((p) => p.id)).size).toBe(8)
+  expect(new Set(collection.map((p) => p.id)).size).toBe(9)
   for (const entry of manifest) {
     const product = collection.find((p) => p.id === entry.id)!
     const bytes = await readFile(
@@ -52,6 +52,12 @@ it('matches every imported GLB node, checksum and rendered triangle budget', asy
     ])
       expect(names, `${entry.id}: ${name}`).toContain(name)
   }
+})
+
+it('does not expose the rejected video replacement as the realtime Reventon demo', () => {
+  const store = useProductStore()
+  expect(store.selectProduct('reventon-film')).toBe(false)
+  expect(collection.some((item) => item.id === 'reventon-film')).toBe(false)
 })
 
 it('resets product-specific state and exposes only supported guide steps', () => {

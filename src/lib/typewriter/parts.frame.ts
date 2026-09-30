@@ -83,7 +83,11 @@ export function buildFrame(): { parts: PartSpec[] } {
         for (let i = 0; i < 22; i++) {
           const a = (i / 22) * Math.PI * 2
           teeth.push(
-            placed(box(0.012, 0.026, 0.01), [Math.cos(a) * 0.118, 0, Math.sin(a) * 0.118], [0, -a, 0]),
+            placed(
+              box(0.012, 0.026, 0.01),
+              [Math.cos(a) * 0.118, 0, Math.sin(a) * 0.118],
+              [0, -a, 0],
+            ),
           )
         }
         return merge([wheel, ...teeth])
@@ -182,7 +186,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     name: '万向杆左支座',
     description: '万向杆左端的铰接支座（演绎件）。',
     material: 'cast',
-    make: () => merge([placed(box(0.05, 0.12, 0.05), [0, 0.06, 0]), placed(box(0.09, 0.03, 0.07), [0, 0.015, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.05, 0.12, 0.05), [0, 0.06, 0]),
+        placed(box(0.09, 0.03, 0.07), [0, 0.015, 0]),
+      ]),
     assembled: at([-1.0, 0.32, 0.3]),
     exploded: at([-1.35, 0.08, 0.55]),
     flatSize: [0.1, 0.08],
@@ -192,7 +200,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     name: '万向杆右支座',
     description: '万向杆右端的铰接支座（演绎件）。',
     material: 'cast',
-    make: () => merge([placed(box(0.05, 0.12, 0.05), [0, 0.06, 0]), placed(box(0.09, 0.03, 0.07), [0, 0.015, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.05, 0.12, 0.05), [0, 0.06, 0]),
+        placed(box(0.09, 0.03, 0.07), [0, 0.015, 0]),
+      ]),
     assembled: at([1.0, 0.32, 0.3]),
     exploded: at([1.35, 0.08, 0.55]),
     flatSize: [0.1, 0.08],
@@ -203,7 +215,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     description: '左带盘下方的驱动机构支座（推测重建）。',
     certainty: 'uncertain',
     material: 'cast',
-    make: () => merge([placed(box(0.1, 0.14, 0.1), [0, 0.07, 0]), placed(box(0.14, 0.03, 0.14), [0, 0.015, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.1, 0.14, 0.1), [0, 0.07, 0]),
+        placed(box(0.14, 0.03, 0.14), [0, 0.015, 0]),
+      ]),
     assembled: at([-0.62, 0.85, -0.1]),
     exploded: at([-1.05, 0.5, 0.25]),
     flatSize: [0.15, 0.15],
@@ -214,7 +230,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     description: '右带盘下方的驱动机构支座（推测重建）。',
     certainty: 'uncertain',
     material: 'cast',
-    make: () => merge([placed(box(0.1, 0.14, 0.1), [0, 0.07, 0]), placed(box(0.14, 0.03, 0.14), [0, 0.015, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.1, 0.14, 0.1), [0, 0.07, 0]),
+        placed(box(0.14, 0.03, 0.14), [0, 0.015, 0]),
+      ]),
     assembled: at([0.62, 0.85, -0.1]),
     exploded: at([1.05, 0.5, 0.25]),
     flatSize: [0.15, 0.15],
@@ -228,7 +248,8 @@ export function buildFrame(): { parts: PartSpec[] } {
       cached('rearComb', () => {
         const plate = placed(box(1.9, 0.02, 0.07), [0, 0, 0])
         const fins = []
-        for (let i = 0; i < 24; i++) fins.push(placed(box(0.006, 0.05, 0.05), [-0.9 + i * 0.078, 0.03, 0]))
+        for (let i = 0; i < 24; i++)
+          fins.push(placed(box(0.006, 0.05, 0.05), [-0.9 + i * 0.078, 0.03, 0]))
         return merge([plate, ...fins])
       }),
     assembled: at([0, 0.46, 0.24]),
@@ -272,7 +293,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     description: '棘轮旁的定位掣子安装板（推测重建）。',
     certainty: 'uncertain',
     material: 'steelSatin',
-    make: () => merge([placed(box(0.12, 0.02, 0.08), [0, 0, 0]), placed(box(0.02, 0.07, 0.02), [0.05, 0.04, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.12, 0.02, 0.08), [0, 0, 0]),
+        placed(box(0.02, 0.07, 0.02), [0.05, 0.04, 0]),
+      ]),
     assembled: at([0.34, 0.62, -0.26]),
     exploded: at([0.62, 0.3, -0.75]),
     flatSize: [0.13, 0.09],
@@ -283,7 +308,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     description: '换行拨爪的安装座（推测重建）。',
     certainty: 'uncertain',
     material: 'cast',
-    make: () => merge([placed(box(0.08, 0.1, 0.08), [0, 0.05, 0]), placed(box(0.12, 0.02, 0.12), [0, 0.01, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.08, 0.1, 0.08), [0, 0.05, 0]),
+        placed(box(0.12, 0.02, 0.12), [0, 0.01, 0]),
+      ]),
     assembled: at([-0.5, 0.56, -0.28]),
     exploded: at([-0.8, 0.24, -0.72]),
     flatSize: [0.13, 0.13],
@@ -293,7 +322,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     name: '左滑架支柱',
     description: '支撑字车架滑轨的左立柱（演绎件）。',
     material: 'cast',
-    make: () => merge([placed(box(0.09, 0.5, 0.09), [0, 0.25, 0]), placed(box(0.16, 0.04, 0.16), [0, 0.02, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.09, 0.5, 0.09), [0, 0.25, 0]),
+        placed(box(0.16, 0.04, 0.16), [0, 0.02, 0]),
+      ]),
     assembled: at([-1.18, 0.62, -0.6]),
     exploded: at([-1.7, 0.4, -1.0]),
     flatSize: [0.17, 0.17],
@@ -303,7 +336,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     name: '右滑架支柱',
     description: '支撑字车架滑轨的右立柱（演绎件）。',
     material: 'cast',
-    make: () => merge([placed(box(0.09, 0.5, 0.09), [0, 0.25, 0]), placed(box(0.16, 0.04, 0.16), [0, 0.02, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.09, 0.5, 0.09), [0, 0.25, 0]),
+        placed(box(0.16, 0.04, 0.16), [0, 0.02, 0]),
+      ]),
     assembled: at([1.18, 0.62, -0.6]),
     exploded: at([1.7, 0.4, -1.0]),
     flatSize: [0.17, 0.17],
@@ -335,7 +372,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     description: '字杆篮左支撑（推测重建）。',
     certainty: 'uncertain',
     material: 'cast',
-    make: () => merge([placed(box(0.07, 0.3, 0.07), [0, 0.15, 0]), placed(box(0.12, 0.03, 0.12), [0, 0.015, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.07, 0.3, 0.07), [0, 0.15, 0]),
+        placed(box(0.12, 0.03, 0.12), [0, 0.015, 0]),
+      ]),
     assembled: at([-0.48, 0.28, 0.12]),
     exploded: at([-0.85, 0.05, 0.3]),
     flatSize: [0.13, 0.13],
@@ -346,7 +387,11 @@ export function buildFrame(): { parts: PartSpec[] } {
     description: '字杆篮右支撑（推测重建）。',
     certainty: 'uncertain',
     material: 'cast',
-    make: () => merge([placed(box(0.07, 0.3, 0.07), [0, 0.15, 0]), placed(box(0.12, 0.03, 0.12), [0, 0.015, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.07, 0.3, 0.07), [0, 0.15, 0]),
+        placed(box(0.12, 0.03, 0.12), [0, 0.015, 0]),
+      ]),
     assembled: at([0.48, 0.28, 0.12]),
     exploded: at([0.85, 0.05, 0.3]),
     flatSize: [0.13, 0.13],

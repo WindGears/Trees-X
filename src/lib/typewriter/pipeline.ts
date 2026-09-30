@@ -90,6 +90,10 @@ export function cameraPoseAt(
       mix(a.position[1], b.position[1]),
       mix(a.position[2], b.position[2]),
     ],
-    target: [mix(a.target[0], b.target[0]), mix(a.target[1], b.target[1]), mix(a.target[2], b.target[2])],
+    target: [
+      mix(a.target[0], b.target[0]),
+      mix(a.target[1], b.target[1]),
+      mix(a.target[2], b.target[2]),
+    ],
   }
 }

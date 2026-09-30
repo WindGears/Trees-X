@@ -4,7 +4,7 @@ import { collection } from '@/data/collection'
 import { useProductStore } from '@/stores/product'
 const store = useProductStore()
 const count = computed(() => String(collection.length).padStart(2, '0'))
-const isStudy = computed(() => store.product.experience === 'study')
+const isStandalone = computed(() => Boolean(store.product.experience))
 </script>
 <template>
   <header class="site-header page-width">
@@ -18,7 +18,7 @@ const isStudy = computed(() => store.product.experience === 'study')
         商品目录 <span>{{ count }}</span>
       </button>
       <button
-        v-if="!isStudy"
+        v-if="!isStandalone"
         type="button"
         :aria-pressed="store.panel === 'console'"
         @click="store.openPanel(store.panel === 'console' ? null : 'console')"
@@ -34,7 +34,9 @@ const isStudy = computed(() => store.product.experience === 'study')
         <span aria-hidden="true"></span
         >{{ store.cameraStatus === 'starting' ? '取消开启摄像头' : '摄像头已开启 · 关闭' }}
       </button>
-      <button v-else-if="!isStudy" type="button" @click="store.openPanel('info')">作品信息</button>
+      <button v-else-if="!isStandalone" type="button" @click="store.openPanel('info')">
+        作品信息
+      </button>
     </nav>
   </header>
 </template>

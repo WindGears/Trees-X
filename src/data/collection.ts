@@ -1,5 +1,6 @@
 import { demoProduct, type Product, type ProductPart } from './products'
 import { curate } from './exhibition'
+import { reventon } from './reventon'
 
 const original = {
   id: 'original',
@@ -290,7 +291,7 @@ const typewriter: Product = {
   experience: 'study',
 }
 
-export const collection = [...assets.map(curate), curate(typewriter)]
+export const collection = [...assets.map(curate), curate(typewriter), reventon]
 
 export function findProduct(id: string) {
   return collection.find((item) => item.id === id)

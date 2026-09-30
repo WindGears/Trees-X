@@ -6,14 +6,7 @@ import type { BufferGeometry } from 'three'
  */
 
 export type GroupId =
-  | 'shell'
-  | 'carriage'
-  | 'ribbon'
-  | 'typebars'
-  | 'keys'
-  | 'levers'
-  | 'frame'
-  | 'hardware'
+  'shell' | 'carriage' | 'ribbon' | 'typebars' | 'keys' | 'levers' | 'frame' | 'hardware'
 
 export interface GroupMeta {
   id: GroupId

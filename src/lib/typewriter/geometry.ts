@@ -74,7 +74,14 @@ export function tubeAlong(points: [number, number, number][], radius: number): B
 /** 二维轮廓绕 Y 轴旋转（旋钮、脚垫、带盘） */
 export function lathe(profile: [number, number][], seg = 28): BufferGeometry {
   const key = `la:${seg}:${profile.map((p) => p.map((v) => v.toFixed(3)).join(',')).join('|')}`
-  return cached(key, () => new LatheGeometry(profile.map((p) => new Vector2(...p)), seg))
+  return cached(
+    key,
+    () =>
+      new LatheGeometry(
+        profile.map((p) => new Vector2(...p)),
+        seg,
+      ),
+  )
 }
 
 /** 带圆角的矩形薄板（沿 Z 挤出，面向 ±Z） */
@@ -132,7 +139,7 @@ export function sectorPlate(
 /** 合并同材质子几何为一个零件（统一转非索引，避免索引/属性不一致） */
 export function merge(geos: BufferGeometry[]): BufferGeometry {
   const normalized = geos.map((g) => {
-    let out: BufferGeometry = g.index ? g.toNonIndexed() : g
+    const out: BufferGeometry = g.index ? g.toNonIndexed() : g
     // 仅保留 position/normal/uv，去掉自定义属性
     const keep = ['position', 'normal', 'uv']
     for (const name of Object.keys(out.attributes)) {

@@ -154,8 +154,14 @@ export function buildHardware(): { parts: PartSpec[] } {
       description: '固定机架侧板与横梁的螺钉（演绎件）。',
       material: 'steel',
       make: screwGeometry,
-      assembled: at([side * 1.38, 0.42 + (j % 3) * 0.08, -0.9 + Math.floor(j / 3) * 0.9], [0, 0, side * (Math.PI / 2)]),
-      exploded: at([side * 1.9, 0.25, -0.9 + Math.floor(j / 3) * 0.9], [0, 0, side * (Math.PI / 2)]),
+      assembled: at(
+        [side * 1.38, 0.42 + (j % 3) * 0.08, -0.9 + Math.floor(j / 3) * 0.9],
+        [0, 0, side * (Math.PI / 2)],
+      ),
+      exploded: at(
+        [side * 1.9, 0.25, -0.9 + Math.floor(j / 3) * 0.9],
+        [0, 0, side * (Math.PI / 2)],
+      ),
       flatSize: [0.04, 0.04],
       flatHeight: 0.014,
     })

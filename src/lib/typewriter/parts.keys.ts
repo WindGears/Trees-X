@@ -48,9 +48,7 @@ export function buildKeys(): { parts: ReturnType<PartBuilder['add']>[]; keyIds: 
         : `深色功能键帽（${label}）。尺寸与字符键一致，保持阵列的完整节奏。`,
       material: mat,
       make: () =>
-        isSpace
-          ? roundedBox(0.98, 0.055, 0.17, 0.024)
-          : cyl(CAP_R * 0.94, CAP_R, 0.055, 20),
+        isSpace ? roundedBox(0.98, 0.055, 0.17, 0.024) : cyl(CAP_R * 0.94, CAP_R, 0.055, 20),
       assembled: at([key.x, key.y, key.z], [KEY_TILT, 0, 0]),
       exploded: at(
         [key.x, key.y + 0.52 + key.row * 0.09, key.z + 0.08 * key.row],
@@ -81,10 +79,7 @@ export function buildKeys(): { parts: ReturnType<PartBuilder['add']>[]; keyIds: 
           ? roundedBox(1.04, 0.02, 0.22, 0.008)
           : cyl(RING_R + 0.006, RING_R + 0.006, 0.045, 20),
       assembled: at([key.x, key.y - 0.012, key.z], [KEY_TILT, 0, 0]),
-      exploded: at(
-        [key.x, key.y + 0.86 + key.row * 0.09, key.z + 0.1 * key.row],
-        [KEY_TILT, 0, 0],
-      ),
+      exploded: at([key.x, key.y + 0.86 + key.row * 0.09, key.z + 0.1 * key.row], [KEY_TILT, 0, 0]),
       flatSize: isSpace ? [1.06, 0.24] : [0.2, 0.2],
       flatHeight: isSpace ? 0.011 : 0.023,
       flatYaw: ((keyIndex % 5) - 2) * -0.04,

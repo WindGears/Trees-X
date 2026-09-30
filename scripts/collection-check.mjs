@@ -40,7 +40,7 @@ try {
   })
   await page.getByRole('button', { name: /商品目录/ }).click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('button', { name: /^展示/ })).toHaveCount(7)
+  await expect(dialog.getByRole('button', { name: /^展示/ })).toHaveCount(9)
   await dialog.getByRole('button', { name: '家居', exact: true }).click()
   await expect(dialog.getByRole('button', { name: /^展示/ })).toHaveCount(3)
   await dialog
@@ -112,9 +112,12 @@ try {
     'home-furniture-set',
   )
   // Rapid changes must not let a late decoder overwrite the most recent product.
-  await page.getByRole('button', { name: '下一件商品', exact: true }).click()
-  await page.getByRole('button', { name: '下一件商品', exact: true }).click()
-  await page.getByRole('button', { name: '下一件商品', exact: true }).click()
+  // Catalog selection remains available across authored exhibits, which
+  // intentionally do not expose the generic next/previous toolbar.
+  for (const label of ['陶盆绿植', '迷你赛车', '复古游戏手柄']) {
+    await page.getByRole('button', { name: /商品目录/ }).click()
+    await dialog.getByRole('button', { name: `展示${label}`, exact: true }).click()
+  }
   await ready()
   await expect(page.locator('.product-viewer')).toHaveAttribute('data-product-id', 'gamepad')
   await page.reload()

@@ -15,12 +15,16 @@ await page.waitForTimeout(1200)
 await page.screenshot({ path: `${out}/1-assembled.png` })
 
 // 进度 30%（机构分解中段）
-await page.evaluate(`document.getElementById('slider').value = 300; document.getElementById('slider').dispatchEvent(new Event('input'))`)
+await page.evaluate(
+  `document.getElementById('slider').value = 300; document.getElementById('slider').dispatchEvent(new Event('input'))`,
+)
 await page.waitForTimeout(600)
 await page.screenshot({ path: `${out}/2-exploded.png` })
 
 // 进度 100%（平铺）
-await page.evaluate(`document.getElementById('slider').value = 1000; document.getElementById('slider').dispatchEvent(new Event('input'))`)
+await page.evaluate(
+  `document.getElementById('slider').value = 1000; document.getElementById('slider').dispatchEvent(new Event('input'))`,
+)
 await page.waitForTimeout(600)
 await page.screenshot({ path: `${out}/3-flatlay.png` })
 
@@ -31,7 +35,9 @@ await page.screenshot({ path: `${out}/4-flatlay-dark.png` })
 await page.click('#btn-theme')
 
 // 回到整机，打开检视（点一个键帽位置附近）
-await page.evaluate(`document.getElementById('slider').value = 0; document.getElementById('slider').dispatchEvent(new Event('input'))`)
+await page.evaluate(
+  `document.getElementById('slider').value = 0; document.getElementById('slider').dispatchEvent(new Event('input'))`,
+)
 await page.waitForTimeout(500)
 // 用 JS 打开第一件键的检视（模拟点击行为）
 const diag = await page.evaluate(`(() => {

@@ -6,6 +6,13 @@
 
 使用项目 package.json 声明的 Node 版本与 npm。
 
+汽车的 GLB、烘焙贴图与 HDR 通过 Git LFS 保存，运行资源约 1.75 GB。克隆前需安装 Git LFS；已有仓库也应执行下列拉取步骤，确保得到实际资源而不是指针文本：
+
+```sh
+git lfs install --local
+git lfs pull
+```
+
 ```sh
 npm ci
 npm run dev -- --port 5180 --strictPort
@@ -23,6 +30,8 @@ npm run preview -- --port 5181
 
 - Vue 3 + TypeScript + Vite + TresJS + Three.js + GSAP + Lenis + Pinia，Tailwind/shadcn-vue。
 - 七件样品：原创 FORM / 01 音箱，以及从用户 heritage-museum 商品版复用的手柄、主机、边桌、绿植、家具套件、赛车。
+- 独立打字机展品与 Reventón 汽车，共九件目录展品；Reventón 直达 `?product=reventon`。
+- Reventón 使用 Three.js 实时绘制原模型与 Blender 烘焙 PBR/AO；约 16 秒的开门、座舱、部件展开和合拢流程支持播放、暂停、章节与进度定位，不提供自由旋转。本轮按技术验证完成，未宣称与原参考图照片级等效。
 - 同一个 TresCanvas 切换模型；加载/失败重试、请求取消、迟到结果隔离、资源释放与 WebGL 上下文恢复。
 - 拖动、命名视角、缩放、局部试色、部件聚焦、外观分层和二/三步导览，按实际模型能力显示。
 - 桌面 HDR 反射、能量环、1600 粒子、全息扫描、Bloom/暗角与 2.4 秒演出；每件商品每次页面会话自动播放一次。重播不重置产品状态，用户输入立即中止。
@@ -46,19 +55,23 @@ npm run test:gesture-interaction
 npm run test:gesture-motion
 npm run test:gesture-dwell
 npm run test:visual
+npm run test:reventon
+npm run test:reventon-lifecycle
+npm run test:reventon-playback
 ```
 
-浏览器脚本使用本机 Microsoft Edge；默认检查 5180，可用 `CHECK_URL` 指定其他地址。截图/报告写入 `.impeccable/review/`。手势自动化使用合成视频或关键点，不能代替真人识别率与疲劳度验收。
+浏览器脚本使用本机 Microsoft Edge；普通脚本默认检查 5180，Reventón 脚本默认 5181，均可用 `CHECK_URL` 指定实际服务地址。截图/报告写入 `.impeccable/review/`。手势自动化使用合成视频或关键点，不能代替真人识别率与疲劳度验收。
 
 ## 配置与资源
 
 - `src/data/products.ts`：基础类型与原创音箱配置。
 - `src/data/collection.ts`：导入商品、实际节点、相机视角、材质与世界坐标展开配置。
 - `public/models/collection/manifest.json`：来源、作者、许可记录、SHA-256、体积、面数、节点。
+- `public/models/reventon/`：汽车实机所需模型、75 张烘焙 PNG、HDR、动作与来源清单；LFS 拉取后可直接运行，无需本机安装 Blender。原始下载包、Blender 制作工程和本地测试截图位于忽略目录，不随 Git 同步。
 - `public/draco/`：当前 Three 版本的自托管 glTF Draco 解码器与 Apache-2.0 许可。
 - `public/covers/`：参考项目封面与原创模型渲染截图；目录不额外创建 Canvas。
 - `public/textures/`、`public/fonts/`、`public/gesture/`：环境、字体、识别资源来源记录。
 
-GLB 交付格式为自包含原始/Draco GLB，单模型上限 5 MiB / 10 万三角形。Meshopt/KTX2 尚未接入。Pinia 只存可序列化数据，Three 对象由局部生命周期拥有。
+普通展品的 GLB 交付格式为自包含原始/Draco GLB，单模型上限 5 MiB / 10 万三角形。Reventón 按用户要求保留高精度原几何，是此预算的明确例外；详见其资源 README。Meshopt/KTX2 尚未接入。Pinia 只存可序列化数据，Three 对象由局部生命周期拥有。
 
 后续开发先读取 `.ai/project.md`、`.ai/architecture.md`；本次整合及验证见 `.ai/heritage-integration.md`，视觉规范见 `DESIGN.md`。

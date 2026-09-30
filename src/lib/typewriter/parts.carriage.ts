@@ -1,5 +1,16 @@
 import { PartBuilder } from './builder'
-import { box, cached, cyl, facePlate, lathe, merge, placed, ribbonStrip, roundedBox, tubeAlong } from './geometry'
+import {
+  box,
+  cached,
+  cyl,
+  facePlate,
+  lathe,
+  merge,
+  placed,
+  ribbonStrip,
+  roundedBox,
+  tubeAlong,
+} from './geometry'
 import { CARRIAGE } from './dim'
 import { at, type PartSpec } from './spec'
 
@@ -109,7 +120,15 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
     name: '压纸尺左臂',
     description: '压纸杆左端的弯臂，铰接于滑架端板。',
     material: 'steelSatin',
-    make: () => tubeAlong([[0, 0, 0], [-0.03, 0.16, 0.04], [-0.02, 0.3, 0.14]], 0.013),
+    make: () =>
+      tubeAlong(
+        [
+          [0, 0, 0],
+          [-0.03, 0.16, 0.04],
+          [-0.02, 0.3, 0.14],
+        ],
+        0.013,
+      ),
     assembled: at([-1.06, 1.1, -0.6]),
     exploded: at([-1.5, 1.9, -1.05], [0, 0, 0.2]),
     flatSize: [0.1, 0.36],
@@ -119,7 +138,15 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
     name: '压纸尺右臂',
     description: '压纸杆右端的弯臂，铰接于滑架端板。',
     material: 'steelSatin',
-    make: () => tubeAlong([[0, 0, 0], [0.03, 0.16, 0.04], [0.02, 0.3, 0.14]], 0.013),
+    make: () =>
+      tubeAlong(
+        [
+          [0, 0, 0],
+          [0.03, 0.16, 0.04],
+          [0.02, 0.3, 0.14],
+        ],
+        0.013,
+      ),
     assembled: at([1.06, 1.1, -0.6]),
     exploded: at([1.5, 1.9, -1.05], [0, 0, -0.2]),
     flatSize: [0.1, 0.36],
@@ -179,7 +206,16 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
     name: '回车臂',
     description: '从滑架左端伸出的弯臂，扳动它完成换行并送滑架回位。',
     material: 'steel',
-    make: () => tubeAlong([[0, 0, 0], [-0.12, 0.06, 0.1], [-0.22, 0.14, 0.22], [-0.26, 0.2, 0.3]], 0.02),
+    make: () =>
+      tubeAlong(
+        [
+          [0, 0, 0],
+          [-0.12, 0.06, 0.1],
+          [-0.22, 0.14, 0.22],
+          [-0.26, 0.2, 0.3],
+        ],
+        0.02,
+      ),
     assembled: at([-1.3, 1.12, -0.6]),
     exploded: at([-1.85, 1.35, -0.85], [0, 0.2, 0]),
     flatSize: [0.34, 0.36],
@@ -249,7 +285,15 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
     name: '牵纸带',
     description: '弹簧鼓通往滑架的织带，回车时拉动滑架左行（演绎件）。',
     material: 'ribbon',
-    make: () => ribbonStrip([[0.92, 0.52, -0.18], [1.1, 0.8, -0.42], [1.24, 1.05, -0.58]], 0.03),
+    make: () =>
+      ribbonStrip(
+        [
+          [0.92, 0.52, -0.18],
+          [1.1, 0.8, -0.42],
+          [1.24, 1.05, -0.58],
+        ],
+        0.03,
+      ),
     assembled: at([0, 0, 0]),
     exploded: at([0.35, 0.35, -0.35]),
     flatSize: [0.06, 0.85],
@@ -273,7 +317,11 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
     name: '脱纸扳杆',
     description: '滑架右端的压纸释放扳杆（演绎件）。',
     material: 'steelSatin',
-    make: () => merge([placed(box(0.02, 0.16, 0.014), [0, 0.08, 0]), placed(box(0.05, 0.024, 0.014), [0.014, 0.17, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.02, 0.16, 0.014), [0, 0.08, 0]),
+        placed(box(0.05, 0.024, 0.014), [0.014, 0.17, 0]),
+      ]),
     assembled: at([1.27, 1.06, -0.5], [0, 0, -0.3]),
     exploded: at([1.7, 0.9, -1.0], [0, 0, -0.55]),
     flatSize: [0.07, 0.2],
@@ -283,7 +331,11 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
     name: '换行拨杆',
     description: '左旋钮旁的换行间距拨杆（演绎件）。',
     material: 'steelSatin',
-    make: () => merge([placed(box(0.018, 0.13, 0.012), [0, 0.065, 0]), placed(box(0.04, 0.02, 0.012), [0.01, 0.14, 0])]),
+    make: () =>
+      merge([
+        placed(box(0.018, 0.13, 0.012), [0, 0.065, 0]),
+        placed(box(0.04, 0.02, 0.012), [0.01, 0.14, 0]),
+      ]),
     assembled: at([-1.42, 1.32, -0.58], [0, 0, 0.5]),
     exploded: at([-1.9, 1.6, -0.75], [0, 0, 0.9]),
     flatSize: [0.06, 0.17],
@@ -300,7 +352,13 @@ export function buildCarriage(): { parts: PartSpec[]; carriageIds: string[] } {
         const teeth = []
         for (let i = 0; i < 18; i++) {
           const a = (i / 18) * Math.PI * 2
-          teeth.push(placed(box(0.014, 0.03, 0.012), [Math.cos(a) * 0.093, 0, Math.sin(a) * 0.093], [0, -a, 0]))
+          teeth.push(
+            placed(
+              box(0.014, 0.03, 0.012),
+              [Math.cos(a) * 0.093, 0, Math.sin(a) * 0.093],
+              [0, -a, 0],
+            ),
+          )
         }
         return merge([wheel, ...teeth])
       }),

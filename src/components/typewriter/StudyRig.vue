@@ -26,7 +26,14 @@ function lerpCamera(pos: [number, number, number], look: [number, number, number
   camTween?.kill()
   const c = camera.value
   if (!c) return
-  const s = { x: c.position.x, y: c.position.y, z: c.position.z, tx: camTarget.x, ty: camTarget.y, tz: camTarget.z }
+  const s = {
+    x: c.position.x,
+    y: c.position.y,
+    z: c.position.z,
+    tx: camTarget.x,
+    ty: camTarget.y,
+    tz: camTarget.z,
+  }
   camTween = gsap.to(s, {
     x: pos[0],
     y: pos[1],
@@ -69,7 +76,11 @@ watch(
     const [cx, cy, cz] = info.center
     const r = Math.max(info.radius * 3.2, 0.5)
     const dir = new Vector3(cx - camTarget.x, cy - camTarget.y + 0.4, cz - camTarget.z).normalize()
-    lerpCamera([cx + dir.x * r, cy + Math.abs(dir.y) * r + 0.22, cz + dir.z * r], [cx, cy, cz], 0.55)
+    lerpCamera(
+      [cx + dir.x * r, cy + Math.abs(dir.y) * r + 0.22, cz + dir.z * r],
+      [cx, cy, cz],
+      0.55,
+    )
   },
 )
 

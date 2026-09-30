@@ -1,5 +1,25 @@
 # 架构
 
+## Reventón 实机已实现（2026-09-30）
+
+`ProductShowcase` 根据 `Product.experience` 装配普通展品、打字机或 Reventón；独立展品按需加载，任意时刻仅一个展示 Canvas。Reventón 内部重试/上下文恢复只重挂 `ReventonScene`，不重建 TresCanvas 或 renderer；离开此独立展品会卸载其 Canvas，再由目标展品建立自己的唯一 Canvas。
+
+- `ReventonExperience.vue`：唯一 TresCanvas、加载/失败/就绪 UI、可见性、四章节和用户控制。真实首帧完成前禁用播放；不提供自由轨道控制。
+- `ReventonScene.vue`：局部 shallowRef 模型、AbortController、PMREM、director、接触阴影和上下文监听器。卸载中止请求并按所有权清理。Three 实例不进入 Pinia。
+- `assets.ts`：同源 GLTF/EXR/动作并行加载，聚合失败、取消与迟到结果，核验真实几何身份。唯一释放 GLB geometry/material/texture/ImageBitmap 和原始 EXR；release 幂等。
+- `motion.ts`：验证 24 fps / 384 帧、7 个命名刚体与相机数据；复用向量/四元数，按采样驱动真实 Object3D，镜头切点不穿越车壳。`director.ts` 唯一管理 GSAP timeline，UI 状态最多每秒约 10 次。
+- `materials.ts`：原透明玻璃保留反射/透射，只在源 15103/21865 材质修正薄玻璃透射模糊与反射强度，不替换成图片或无反射透明。
+- `ReventonStudio.vue`：两个真实面光源、方向光、相机和中性棚景背景 Shader。灯和声明式对象有各自清理，不创建 renderer。
+- `contactShadow.ts`：唯一拥有 2K 投影目标、临时模糊目标、材质与承影面；真实不透明模型投影经过连续高斯模糊。仅姿态变化标脏，下次绘制更新；finally 恢复共享 renderer 状态，绝不释放原模型。
+
+资源在 `public/models/reventon/`；Blender 原材料源和可编辑 `.blend` 保留在 `artifacts/reventon/`。复杂材质已烘成标准 PBR 通道，固定组和七个运动组隔离 AO。HDR/动态反射/变化阴影在 Three 实时计算。参考原图只作目录封面和视觉对照，不作 Canvas 背景。资产所有权、尺寸/位深和验证见 [实机验收](reventon-runtime-validation.md) 与资源目录 README。
+
+## Reventón 实机方向纠正（2026-09-28，优先于以下历史记录）
+
+强制技术原理是 **Three.js 实时渲染**。GLTFLoader → Three Mesh/Material 与烘焙贴图 → Scene/Camera → Tres 托管的唯一 WebGLRenderer；GSAP 驱动真实对象/相机或 Three AnimationMixer。Blender 仅负责资产预处理，不参与浏览器运行时；视频/帧序列/外部查看器不满足验收。
+
+用户明确要求 Blender 烘焙材质/静态光照后，在 Vue/Tres/Three 中运行真实模型和动作。视频播放器不是交付。离线脚本负责 bake UV、PBR/遮蔽贴图、分组 GLB 与运动数据；运行时独立场景加载这些资产，GSAP 控制导演时间线与相机，一个 TresCanvas，资源由其加载生命周期唯一释放。运动部件产生的变化阴影不能烘死；实时 HDR 反射保留。具体阶段与验收见 [reventon-realtime.md](reventon-realtime.md)。
+
 ## Reventón 离线分支（2026-09-25）
 
 `scripts/reventon/` 是独立 Blender 制作管线，不创建浏览器 renderer、不进入 Pinia。源 3dm/VPB 只读恢复为 `artifacts/reventon/source` 的 NPZ/JSON 与 `textures` 的图像；后台 Blender 构建器唯一拥有生成场景、材质、摄影棚和相机，写入打包贴图的 `.blend`，进程退出释放资源。渲染器保存真实 Cycles PNG/线性 EXR 及文件摘要，比较页验证场景/图片同一版本后生成。源几何、额外摄影棚和原图字标贴片分组并保留来源。

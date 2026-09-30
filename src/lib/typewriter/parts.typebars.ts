@@ -71,7 +71,16 @@ export function buildTypebars(): { parts: PartSpec[]; barIds: string[] } {
     name: '字杆垫杆',
     description: '横贯字杆扇前方的毡面垫杆，字杆静置时杆臂落在其上（演绎件）。',
     material: 'enamelFlat',
-    make: () => lathe([[0.028, -0.5], [0.034, -0.46], [0.034, 0.46], [0.028, 0.5]], 16),
+    make: () =>
+      lathe(
+        [
+          [0.028, -0.5],
+          [0.034, -0.46],
+          [0.034, 0.46],
+          [0.028, 0.5],
+        ],
+        16,
+      ),
     assembled: at([0, 0.52, 0.52], [0, 0, Math.PI / 2]),
     exploded: at([0, 0.3, 0.95], [0, 0, Math.PI / 2]),
     flatSize: [1.05, 0.08],

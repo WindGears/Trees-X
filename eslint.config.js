@@ -38,8 +38,13 @@ export default defineConfigWithVueTs(
         window: 'readonly',
         innerWidth: 'readonly',
         HTMLCanvasElement: 'readonly',
+        Event: 'readonly',
       },
     },
+  },
+  {
+    files: ['scripts/tmp-dbg.mjs'],
+    languageOptions: { globals: { document: 'readonly' } },
   },
   {
     files: ['public/gesture/worker.js'],

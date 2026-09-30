@@ -82,9 +82,7 @@ try {
   // 9. 自动演示
   await page.keyboard.press('p')
   await page.waitForTimeout(900)
-  report.states.playing = await page
-    .locator('.tw-toolbar button', { hasText: '暂停' })
-    .count()
+  report.states.playing = await page.locator('.tw-toolbar button', { hasText: '暂停' }).count()
   await page.keyboard.press('p')
 
   // 10. 目录包含 8 件且可切换回其他商品

@@ -79,7 +79,17 @@ export function buildRibbon(): { parts: PartSpec[] } {
       name: `${label}带盘护盖`,
       description: `带盘上方的小护盖，防尘并引导色带走向（演绎件）。`,
       material: 'enamel',
-      make: () => lathe([[0.03, 0], [0.13, 0.004], [0.16, 0.014], [0.16, 0.02], [0.03, 0.02]], 28),
+      make: () =>
+        lathe(
+          [
+            [0.03, 0],
+            [0.13, 0.004],
+            [0.16, 0.014],
+            [0.16, 0.02],
+            [0.03, 0.02],
+          ],
+          28,
+        ),
       assembled: at([x, SPOOL_Y + 0.075, SPOOL_Z]),
       exploded: at([x * 1.75, SPOOL_Y + 0.82, SPOOL_Z - 0.1]),
       flatSize: [0.34, 0.34],

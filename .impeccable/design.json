@@ -1,8 +1,37 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-23T08:43:46+08:00",
+  "generatedAt": "2026-09-30T21:36:04+08:00",
   "title": "Design System: Trees X 沉浸式展厅",
   "extensions": {
+    "colorMeta": {
+      "reventon-studio": { "role": "neutral", "displayName": "Reventón 浅灰棚景中心" },
+      "reventon-studio-edge": { "role": "neutral", "displayName": "Reventón 灰绿棚景边缘" },
+      "reventon-ink": { "role": "neutral", "displayName": "Reventón 深墨正文" },
+      "reventon-muted": { "role": "neutral", "displayName": "Reventón 灰绿辅助文字" },
+      "reventon-header-muted": { "role": "neutral", "displayName": "Reventón 顶部辅助文字" },
+      "reventon-hover": { "role": "neutral", "displayName": "Reventón 外景悬停底色" },
+      "reventon-focus": { "role": "primary", "displayName": "Reventón 外景焦点" },
+      "reventon-progress": { "role": "primary", "displayName": "Reventón 外景进度" },
+      "reventon-cabin-ink": { "role": "neutral", "displayName": "Reventón 座舱近白文字" },
+      "reventon-cabin-muted": { "role": "neutral", "displayName": "Reventón 座舱辅助文字" },
+      "reventon-cabin-hover": { "role": "neutral", "displayName": "Reventón 座舱悬停底色" },
+      "reventon-cabin-focus": { "role": "primary", "displayName": "Reventón 座舱焦点" },
+      "reventon-cabin-progress": { "role": "primary", "displayName": "Reventón 座舱进度" }
+    },
+    "typographyMeta": {
+      "reventon-display": {
+        "displayName": "Reventón 桌面标题",
+        "purpose": "仅用于独立汽车展品的现有 Manrope 标题。"
+      },
+      "reventon-display-mobile": {
+        "displayName": "Reventón 手机标题",
+        "purpose": "640px 及以下的外景标题；座舱状态仍使用紧凑标题。"
+      },
+      "reventon-display-cabin": {
+        "displayName": "Reventón 座舱标题",
+        "purpose": "座舱章节降低标题体量，为真实内景留出观察面积。"
+      }
+    },
     "shadows": [
       {
         "name": "panel",
@@ -40,6 +69,11 @@
         "name": "speaker-film-control",
         "value": "180ms ease",
         "purpose": "音箱演绎按钮的背景与边框过渡；静态热点名称的透明度过渡"
+      },
+      {
+        "name": "reventon-director",
+        "value": "383 / 24 seconds GSAP timeline; ease: none",
+        "purpose": "仅 Reventón：主动播放真实对象与相机的采样动作；默认暂停，章节跳到代表姿态，减弱动态仅保留章节和进度定位。"
       }
     ],
     "breakpoints": [
@@ -50,6 +84,10 @@
       {
         "name": "wide",
         "value": "1700px"
+      },
+      {
+        "name": "reventon-mobile",
+        "value": "640px"
       }
     ]
   },
@@ -67,17 +105,35 @@
       "description": "音箱专属的浅银主动播放入口；播放后原位切换为接手探索，未就绪时禁用，减弱动态显示静态欣赏。",
       "html": "<button class=\"ds-speaker-film\" type=\"button\" aria-pressed=\"false\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 3 12 9-12 9V3Z\"/></svg>观看演绎<span>8 秒</span></button>",
       "css": ".ds-speaker-film{display:inline-flex;align-items:center;gap:12px;min-height:46px;padding:0 18px;border:1px solid #c7cdd3;border-radius:0;background:#dce2e7;color:#13181d;font-family:Manrope,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background 180ms ease,border-color 180ms ease}.ds-speaker-film:hover{background:#fff;border-color:#fff}.ds-speaker-film:focus-visible{outline:2px solid var(--ring,#9fc1ff);outline-offset:4px}.ds-speaker-film:disabled{opacity:.45;cursor:not-allowed}.ds-speaker-film span{margin-left:10px;color:#4e5862;font-size:12px;font-weight:400}"
+    },
+    {
+      "name": "Reventón 章节",
+      "kind": "nav",
+      "refersTo": "reventon-control",
+      "description": "仅 Reventón 的四章节；当前章节同时使用字重和下划线，44px 最小触达高度。",
+      "html": "<nav class=\"ds-reventon-chapters\" aria-label=\"展示章节\"><button type=\"button\" aria-current=\"step\">开启</button><button type=\"button\">座舱</button><button type=\"button\">展开</button><button type=\"button\">合拢</button></nav>",
+      "css": ".ds-reventon-chapters{display:flex;justify-content:center;gap:36px;background:#dededb;color:#222824;font-family:Manrope,'PingFang SC','Microsoft YaHei',sans-serif}.ds-reventon-chapters button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px;background:transparent;color:#434b45;border:0;border-bottom:1px solid transparent;cursor:pointer;font:14px Manrope,'PingFang SC','Microsoft YaHei',sans-serif}.ds-reventon-chapters button[aria-current=step]{border-color:currentColor;color:#222824;font-weight:600}.ds-reventon-chapters button:hover:not(:disabled){color:#000;background:#c9cdc8}.ds-reventon-chapters button:focus-visible{outline:2px solid #384e40;outline-offset:4px}.ds-reventon-chapters button:disabled{cursor:wait;opacity:.5}@media(max-width:640px){.ds-reventon-chapters{gap:16px}}"
+    },
+    {
+      "name": "Reventón 播放控件",
+      "kind": "button",
+      "refersTo": "reventon-control",
+      "description": "真实首帧就绪后启用，播放中原位切换暂停；减弱动态时隐藏连续播放入口。",
+      "html": "<button class=\"ds-reventon-play\" type=\"button\" aria-label=\"播放演示\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 3 12 9-12 9V3Z\"/></svg><span>播放演示</span></button>",
+      "css": ".ds-reventon-play{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px;background:transparent;color:#222824;border:0;cursor:pointer;font:14px Manrope,'PingFang SC','Microsoft YaHei',sans-serif}.ds-reventon-play:hover:not(:disabled){color:#000;background:#c9cdc8}.ds-reventon-play:focus-visible{outline:2px solid #384e40;outline-offset:4px}.ds-reventon-play:disabled{cursor:wait;opacity:.5}"
+    },
+    {
+      "name": "Reventón 进度",
+      "kind": "input",
+      "description": "原生范围输入直接定位真实动作姿态；座舱状态切换为浅绿进度与焦点。",
+      "html": "<label class=\"ds-reventon-progress\"><input type=\"range\" min=\"0\" max=\"15.958333333333334\" step=\"0.01\" value=\"0\" aria-label=\"演示进度\" /></label>",
+      "css": ".ds-reventon-progress{display:flex;width:100%}.ds-reventon-progress input{width:100%;accent-color:#394b3e;cursor:pointer}.ds-reventon-progress input:focus-visible{outline:2px solid #384e40;outline-offset:4px}.ds-reventon-progress[data-chapter=cabin] input{accent-color:#b7cbb9}.ds-reventon-progress[data-chapter=cabin] input:focus-visible{outline-color:#d5e4d4}"
     }
   ],
   "narrative": {
     "northStar": "先欣赏商品，再自然探索细节",
-    "overview": "真实产品居中，侧栏按需展开，三种商品舞台保持各自材质性格。",
-    "keyCharacteristics": [
-      "中文身份优先",
-      "真实三维封面",
-      "单一操作面板",
-      "桌面固定画质"
-    ],
+    "overview": "真实产品居中，侧栏按需展开，三种商品舞台保持各自材质性格。Reventón 为 Experience 模式的局部浅灰摄影棚例外。采用用户原 beauty 图的中性棚景与已有 Trees X 字体，让真实恢复的完整汽车主导第一屏；控件围绕固定观察流程保持克制。",
+    "keyCharacteristics": ["中文身份优先", "真实三维封面", "单一操作面板", "桌面固定画质"],
     "rules": [
       {
         "name": "单面板",
@@ -93,15 +149,19 @@
         "name": "主动演绎",
         "body": "只有用户触发才播放音箱镜头；正常结束合拢外观并保留配色，途中接手保留当前镜头与分层进度，减弱动态直接到完整外观。",
         "section": "components"
+      },
+      {
+        "name": "Reventón 摄影棚",
+        "body": "Reventón 保持浅灰棚景、连续接触阴影、可读玻璃内景与有层次的轮内金属；原 beauty 图只作视觉依据，不能代替真实浏览器帧。",
+        "section": "elevation"
+      },
+      {
+        "name": "Reventón 导演流程",
+        "body": "只由主动播放或章节/进度输入驱动真实汽车与镜头，保留固定流程，不提供自由轨道；减弱动态保留静态章节观察。",
+        "section": "components"
       }
     ],
-    "dos": [
-      "保留关闭面板前的观察状态",
-      "返回全景合拢结构但保留配色"
-    ],
-    "donts": [
-      "恢复首屏常驻完整控制台",
-      "把工程术语当成访客说明"
-    ]
+    "dos": ["保留关闭面板前的观察状态", "返回全景合拢结构但保留配色"],
+    "donts": ["恢复首屏常驻完整控制台", "把工程术语当成访客说明"]
   }
 }

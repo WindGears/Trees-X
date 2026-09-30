@@ -44,8 +44,8 @@ export interface ProductStoryStep {
 
 export interface Product {
   collection?: '数码' | '家居' | '潮玩' | '机械'
-  /** study=独立研究体验（自带 Canvas 与交互，不走 GLB 管线） */
-  experience?: 'study'
+  /** Standalone study owns its own Three scene and bypasses the generic GLB viewer. */
+  experience?: 'study' | 'reventon'
   coverUrl?: string
   label?: string
   source?: { author: string; url: string; license: string }

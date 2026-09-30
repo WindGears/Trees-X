@@ -82,6 +82,22 @@ class Adapter:
         mat['provenance'] = 'Original VPB assignment/parameters/images; Cycles BSDF is a documented reconstruction'
         nodes, links = mat.node_tree.nodes, mat.node_tree.links
         reflectivity = fields.get('reflectivity', .04)
+        if metallic and kind == 'UBrushedMetalMaterial':
+            # Legacy brushed metal stores reflectivity separately from its white
+            # tint. A metalness workflow encodes this F0 in the base color.
+            factor = reflectivity * fields.get('specularWeight', 1)
+            set_input(shader, 'Base Color', (*(v * factor for v in color), 1))
+            if fields.get('useSpecularTexture') and fields.get('specularMap'):
+                image, _ = self.image(mat, fields['specularMap'], fields, 'specular', True)
+                gamma = nodes.new('ShaderNodeGamma')
+                set_input(gamma, 'Gamma', max(1, fields.get('textureGamma', [0] * 12)[3]))
+                links.new(socket(image, 'Color', True), socket(gamma, 'Color'))
+                multiply = nodes.new('ShaderNodeMixRGB')
+                multiply.blend_type = 'MULTIPLY'
+                set_input(multiply, 'Fac', 1)
+                set_input(multiply, 'Color2', (*(v * factor for v in color), 1))
+                links.new(socket(gamma, 'Color', True), socket(multiply, 'Color1'))
+                links.new(socket(multiply, 'Color', True), socket(shader, 'Base Color'))
         if not metallic:
             set_input(shader, 'Specular IOR Level', min(1, reflectivity / .08))
         if kind == 'UGlassMaterial':

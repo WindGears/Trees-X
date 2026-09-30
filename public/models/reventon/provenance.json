@@ -1,0 +1,659 @@
+{
+  "engine": "Three.js",
+  "triangles": 1500363,
+  "sourceTriangles": 1500570,
+  "exporterRemovedDuplicateFaces": 207,
+  "originalObjects": 2998,
+  "meshes": 135,
+  "materials": 135,
+  "imagesBeforeDeduplication": 75,
+  "images": 75,
+  "resources": [
+    {
+      "file": "texture-32c687a38bb17750f1ae.png",
+      "bytes": 14929674,
+      "sha256": "4f7ad0a77d0a9560939511088958372f5c088b4dd18951e3e4c02b968330baf7",
+      "exportSha256": "32c687a38bb17750f1ae2d7cd42ca4299e1bbd22774552893f3046f82ae689de",
+      "exportBytes": 14929419,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-4e35b8bceea30d227870.png",
+      "bytes": 57054214,
+      "sha256": "b04a0053cbb2206b74f15a88a3547f9bcdb758932499c13e07b1f30aa39803b7",
+      "exportSha256": "4e35b8bceea30d2278705e3e98b5a7339dfb57b73c26bb9849e3247c7f18f808",
+      "exportBytes": 57053959,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-b65c8ce71aef9a30a359.png",
+      "bytes": 2557942,
+      "sha256": "0a2b4eae77d7cf691934086e1fd92aa92642531392f88e038e6144bebe9ff5a9",
+      "exportSha256": "b65c8ce71aef9a30a3590f92d4122783bbb92b8b10fa99cd2a510eed3488ce89",
+      "exportBytes": 2557687,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-55e7cf22a07e2db999df.png",
+      "bytes": 75800426,
+      "sha256": "7ebfd755ada063fb4254bab69c8d8a4bb8f104a45431883fe0ff41122aa53906",
+      "exportSha256": "55e7cf22a07e2db999df1247e16d7b4b1baac4b0c58daeff4d2cee6534cc2dac",
+      "exportBytes": 75800171,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-c6f9b86fedc2513b57b2.png",
+      "bytes": 45018937,
+      "sha256": "59d4965574fad90ede4ae471d8f6b71b9461b472ff8bcc84581c1f278822a487",
+      "exportSha256": "c6f9b86fedc2513b57b28ae8ff9a4da1f9b99abbc169c80448e5dd9243a277f8",
+      "exportBytes": 45018682,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6187f8140e372262e6c8.png",
+      "bytes": 21519087,
+      "sha256": "6c144c340a84769e6196dc3f43fb295580be191b8ddbabbcbf4b54edb4eaa596",
+      "exportSha256": "6187f8140e372262e6c846da2b4b9d6c08d2e5e0642bb2614c843df58294bddf",
+      "exportBytes": 21518832,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6c7de1f123a4c7675230.png",
+      "bytes": 9251611,
+      "sha256": "3c13512f8bc4755b200d4dfd729c640e52e8720397a96194f2a695767d8e3d91",
+      "exportSha256": "6c7de1f123a4c76752300664648d1909b5b6d19356697305a9b0ed0beb2a7890",
+      "exportBytes": 9251356,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-5869443778d7088fe5ca.png",
+      "bytes": 2290250,
+      "sha256": "9afa46f03bb3332a96c661ba6fd3f0b73129faefe317296a0b61419a229a72ec",
+      "exportSha256": "5869443778d7088fe5ca4b13af4e3376e6effba3736a56715fe48db5b4641ee0",
+      "exportBytes": 2289995,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-779274f739623df84438.png",
+      "bytes": 29918935,
+      "sha256": "931365d57ab71b7296eecf5db65091901c740d4d931d8a216c81f82d7dc1a56a",
+      "exportSha256": "779274f739623df8443835f2697ec884695e56e965c36adbb6478a128b568fa2",
+      "exportBytes": 29918680,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6abf31941f0ea3055e8f.png",
+      "bytes": 35249088,
+      "sha256": "f819a9dc9110ab8c0c18baba7917c8cee7f5c12a911f231ac3114c1ebddb55e4",
+      "exportSha256": "6abf31941f0ea3055e8fc144924200445b1679d74baf98cdd45bfd6d8444dbb5",
+      "exportBytes": 35248833,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6b9ccb72823c18c6d8ca.png",
+      "bytes": 63532374,
+      "sha256": "c25ac1d98e9bc9cbf67cac9f5cb49e1e88a3a3774338664e99f0d81aa79e4e5b",
+      "exportSha256": "6b9ccb72823c18c6d8cac1789ed09d71aa96675374d8d3cf8fd0fbb0dbdaf54f",
+      "exportBytes": 63532119,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-cfe8da51aee3f1edadee.png",
+      "bytes": 4104765,
+      "sha256": "2acc61c20b73dfd49aef48dc6002cfffb9cc13093ca03f52bbd89ff0645d9656",
+      "exportSha256": "cfe8da51aee3f1edadee1a35df4936bd08f758886a1fd75c85eb6666a6736f34",
+      "exportBytes": 4104510,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-4a3a965d330aad5feda8.png",
+      "bytes": 23750626,
+      "sha256": "930d9102fea87848073053026614008ca5cdf018c99fbee8c68d9be946947b63",
+      "exportSha256": "4a3a965d330aad5feda805b985ac8b2a5a678b16f39cab88685e5b89279e627c",
+      "exportBytes": 23750371,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-fcba0f49b0e367649ecb.png",
+      "bytes": 58378204,
+      "sha256": "3b252bf8170589e201bb188274b00f96702e5e5a8f0a8b92601c65a03f9948b0",
+      "exportSha256": "fcba0f49b0e367649ecbd3d6f6f62e38cba8e446483bfa4c9a8ce8a90a177299",
+      "exportBytes": 58377949,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-ec834405f48fe5bac330.png",
+      "bytes": 44657923,
+      "sha256": "b7b502f8037de0add0057299d28d20a2a27d2f6a76459b2e0214ae60a29f9f6d",
+      "exportSha256": "ec834405f48fe5bac3309cd0702e48ebb887c87381f5269d410033fa26dbb3bf",
+      "exportBytes": 44657668,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-0a44c25680bda365312a.png",
+      "bytes": 3202742,
+      "sha256": "429599fe80203cdbc635cdc67a1c527a351d1d30da5d0805c2a42e5c1c395b9a",
+      "exportSha256": "0a44c25680bda365312aa2f0963349cd8cee1fc03ee09a023c9ce07e6ee65ad6",
+      "exportBytes": 3202487,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-3d4fdaa8b658663fe794.png",
+      "bytes": 55675902,
+      "sha256": "e564d57e6491b4f9b9de5b7140056d9d70ef8d96b39b530a9b7d63ef2d22a63d",
+      "exportSha256": "3d4fdaa8b658663fe7948b28c8b924a540911b907f0037d3e8e3d85f993e1ec2",
+      "exportBytes": 55675647,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-0fb095ed938d8868ff78.png",
+      "bytes": 44349498,
+      "sha256": "9ab03db2cf3f1fa8d5fe1d479590b5b88ccab1a55fce270441fee2d237382bbd",
+      "exportSha256": "0fb095ed938d8868ff7896b90d541d8a31383b4db4137c8b2c33b145d7fa3aa1",
+      "exportBytes": 44349243,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-e04760546a46e990ac52.png",
+      "bytes": 1546907,
+      "sha256": "49d5ff27b38ff9aa1e87403be3a006c972f2118dfab788ad78e05b21c29e17d6",
+      "exportSha256": "e04760546a46e990ac52c022bb1aaaf4f8f885a81616044a99c59ab7a335931d",
+      "exportBytes": 1546652,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-e00886674843851f236d.png",
+      "bytes": 956308,
+      "sha256": "b7870d660c9581de081ddcd89c54d2c3cdfcf45e6a933e59fdd226926cc9e793",
+      "exportSha256": "e00886674843851f236d6d1da201500d28a119eff6e66526e65af205ca0c6804",
+      "exportBytes": 956053,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-9b18a83ac8ca0ddfe0c0.png",
+      "bytes": 293783,
+      "sha256": "99e14d3622270750cead61112230e1028ab91a4c6ba1d41bd8706a8c0ba42b13",
+      "exportSha256": "9b18a83ac8ca0ddfe0c0f8f09ce102ef2a133183a835b12ea4a876f78c6b2850",
+      "exportBytes": 293528,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-decb9d0d20308f8310ad.png",
+      "bytes": 10548057,
+      "sha256": "37514f60cf3847aaaf30c2ea4d19209c51784b3a8cd77fe7c9e7c955a4097e6f",
+      "exportSha256": "decb9d0d20308f8310ad7de090979e7684548367b25c413b33fbbe95a1f5bffd",
+      "exportBytes": 10547802,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-39456ff906ae66c56a80.png",
+      "bytes": 15786616,
+      "sha256": "fc1700011111f9e0114d5a5f4a14f7608f84984a27f64ebb4b003b37e78f8f87",
+      "exportSha256": "39456ff906ae66c56a8018a08d7d4df6cb1f80baefdd27972a4dc8af9107ca19",
+      "exportBytes": 15786361,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6657f5b8581aba5cf1ee.png",
+      "bytes": 4884507,
+      "sha256": "30d0f9ce3588e082bf11d7e2a31a01a6dce19707257debd67de81f1abce7af95",
+      "exportSha256": "6657f5b8581aba5cf1eedce19a1782206462cddce3fbd1f869c4d5ad115ed24a",
+      "exportBytes": 4884252,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-bc7e958d455e2188f8dd.png",
+      "bytes": 8669274,
+      "sha256": "1a92c85b170366d2dfb9a36de9215a85a02a8519b102d935c79a6e43dd9ed3d2",
+      "exportSha256": "bc7e958d455e2188f8dd95d28d0b3b919052a5118c525ba9595007ca8e4bec26",
+      "exportBytes": 8669019,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-564764f983fea7d0cf60.png",
+      "bytes": 3374874,
+      "sha256": "f71f21c5f2788aa9fa1c2e63534ad02516a05353b762caaa713c82d921f1412e",
+      "exportSha256": "564764f983fea7d0cf60acc8575d7dc73078c04c69cff3fe6557e3cd82b6aeb0",
+      "exportBytes": 3374619,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-5bd56f5c17ef00224fbe.png",
+      "bytes": 4300494,
+      "sha256": "427e002a3950dd78052667b5e3a78b174861cccfeac1857932ceb3e791ebc747",
+      "exportSha256": "5bd56f5c17ef00224fbe5ed730550082d35639b35d7ed438c1afd7204d877627",
+      "exportBytes": 4300239,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-d35da9768bb39cbda88e.png",
+      "bytes": 8193471,
+      "sha256": "747f6aff20b27a87ff596f0ca7614d6c8c6c716281bfc55a7459399dfdb7e90f",
+      "exportSha256": "d35da9768bb39cbda88ecf646473c33ccfecece8e6f7aac17a21af15e7d155e0",
+      "exportBytes": 8193216,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-054d2e896872e4082925.png",
+      "bytes": 11896503,
+      "sha256": "3a36aa2aedee2574cdaaf3f46ab5e708065096a2acc864831055e1cb431c1582",
+      "exportSha256": "054d2e896872e4082925d399d8bf7ebe88ce4688479a4848106fbeda1accf34f",
+      "exportBytes": 11896248,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-4f407dec6c72254593f3.png",
+      "bytes": 3287168,
+      "sha256": "433079c55bb21dac745f4351c41f5edd55db9d64e203ac34cf7461782b50f4c8",
+      "exportSha256": "4f407dec6c72254593f364ec0701b970a43e40daca4f0ff1f4d969722d052b13",
+      "exportBytes": 3286913,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-ab53b5be01ffbff93467.png",
+      "bytes": 6959235,
+      "sha256": "34f9f29f5f65fbf6006055ac0a7a2514d5b4c58ad9b98d88ad44bd1e368a4a03",
+      "exportSha256": "ab53b5be01ffbff934674cd206c9610531f932ca183f66bd4d1b26db79a63c7c",
+      "exportBytes": 6958980,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-03f669bb1f3a6a4b2061.png",
+      "bytes": 18475430,
+      "sha256": "4cacace6dfb992ab534fa47f9b86e19747fe0667a47c9ae7d4a9c6ff4a89dc60",
+      "exportSha256": "03f669bb1f3a6a4b206136007d9cdfabfc03b49609a6e1bcdf7ca1a9c691556d",
+      "exportBytes": 18475175,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-a261bebea77bebe632d1.png",
+      "bytes": 8460785,
+      "sha256": "f16a1e41f6d5543799973380f23efb24fef18325233734852f190d38f71f62da",
+      "exportSha256": "a261bebea77bebe632d1e4a45de21b48d768562a19ef0d42ab0fba2a12fb9b03",
+      "exportBytes": 8460530,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-65dd0e9a86ce510da60c.png",
+      "bytes": 19874433,
+      "sha256": "6906a301c2907b9e5feb4e957ebfc539209ad55556d4d7af67b742cc924fe497",
+      "exportSha256": "65dd0e9a86ce510da60cb10ac42d1bdd0f6c0c0ef12c1ec78332a51b34a70202",
+      "exportBytes": 19874178,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-ec18f295beabc08f5870.png",
+      "bytes": 45950246,
+      "sha256": "73801705ef6996f799f5d5bcbf99ff889c34ef904aa4f14faf0be3b21aaf4df9",
+      "exportSha256": "ec18f295beabc08f5870e0204a9e2b98a14aeee3fc0dacf14d6cb44048770831",
+      "exportBytes": 45949991,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-a1781e67454f2007078d.png",
+      "bytes": 69765044,
+      "sha256": "c5dc52113cfd1c533f72beaf8b319393520307d325c265fe1f9104d094a00157",
+      "exportSha256": "a1781e67454f2007078d3057e73eff534d820abb06159d7c2d5a85341a8f67d2",
+      "exportBytes": 69764789,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-2d1caead966d2c56b924.png",
+      "bytes": 1981952,
+      "sha256": "01798835d24f6e21ec6fdb66e94c230e34bb31d1c020ef7df0694bef739a3c96",
+      "exportSha256": "2d1caead966d2c56b924ce8a61d2cdfdc315a7af3699ccf47b01cfc9ec15fe04",
+      "exportBytes": 1981697,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-9c8ca04b19433a2b7c57.png",
+      "bytes": 56035304,
+      "sha256": "8e19e9dc1cce6154b0706deaf370c29f02132b48f45fcc69a1841839e0367564",
+      "exportSha256": "9c8ca04b19433a2b7c5704481a9ee39224b43c4ddfb3924adc8c9d199a98deca",
+      "exportBytes": 56035049,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6a5f0c13653be8c9b91e.png",
+      "bytes": 50317155,
+      "sha256": "93215e9ed5bbd61ee6d2594a7233c28b5e5008d5951a1dfa4d3bba33fa6cafc4",
+      "exportSha256": "6a5f0c13653be8c9b91efa1a1fa93b77bd6e3fdf60580312fb2b4130d19a2be8",
+      "exportBytes": 50316900,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-5ff6e44bf04aca609e11.png",
+      "bytes": 34450770,
+      "sha256": "2bdf812566c1b29b3a1c74761c979fcd120c0957b095a2a6bdced9e61025ffac",
+      "exportSha256": "5ff6e44bf04aca609e112355049d7c9d4b721d864182e2a8ec13ee3b564498c1",
+      "exportBytes": 34450515,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-3ce329de479cce03ea79.png",
+      "bytes": 55404838,
+      "sha256": "3a52b6d49a517029114c8890261b8df21d9f43ad794dbda8bde2e327218c8eab",
+      "exportSha256": "3ce329de479cce03ea790279eabd971a6dc8ade6a75d01ed08a3d06efae21947",
+      "exportBytes": 55404583,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-fe4c495b967ca400860b.png",
+      "bytes": 8454192,
+      "sha256": "1bf3c90f23f49309e2415702edf3c7cc086367f812fcd1ce6344988f75f9f9fa",
+      "exportSha256": "fe4c495b967ca400860b159385040f214f51be057bf70a36088e9e488e094d37",
+      "exportBytes": 8453937,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-939d0a72e0bedfa7fe90.png",
+      "bytes": 1426278,
+      "sha256": "2b44ef86520c85d15c022846254deaecc6ff0a2f5d2726ac2b85bf429f78444d",
+      "exportSha256": "939d0a72e0bedfa7fe90b03bd83711a8939393cc7b00dedf85a881e0170c7d72",
+      "exportBytes": 1426023,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-b8f1dc2f66bb74e370a2.png",
+      "bytes": 75264338,
+      "sha256": "598d51b26ccaf2b115f549f954a6fe3c5ef9a8aa9d17989da144b6b833786755",
+      "exportSha256": "b8f1dc2f66bb74e370a2e715901bbe206a089514c78a4bfde97a13e3931bfef3",
+      "exportBytes": 75264083,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-8bc1a59b237a58001152.png",
+      "bytes": 5910558,
+      "sha256": "4fda49bfed1e54debba47514d5748009d40fa0bcfcb40d2802cb3baa42898155",
+      "exportSha256": "8bc1a59b237a5800115252e574d895e29a7a38b7ddd3196361a96908c6de9e55",
+      "exportBytes": 5910303,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-45817fcfe5ee278b69a5.png",
+      "bytes": 39591896,
+      "sha256": "df7277a5da647fd9fe35a05bf743f27324bb2365f679342ac3b9e08e00dcfb98",
+      "exportSha256": "45817fcfe5ee278b69a5d16f09bb933888e704979c991ed1124c126feed533bf",
+      "exportBytes": 39591641,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-dda3c02e71eb1abe5f67.png",
+      "bytes": 7654691,
+      "sha256": "64445cb23de48cd8543685e371e5cdf25e7885bb126bedc7839ec3aaf73e5451",
+      "exportSha256": "dda3c02e71eb1abe5f67feb992f63dbf273f2ac69ff7badeb63f1326c0e7db97",
+      "exportBytes": 7654436,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-1087902ceaa058ff8a78.png",
+      "bytes": 6273403,
+      "sha256": "61899e087d7bb4b83198f1f1949c019dcc7ebe018b2edfa59089e9745cb91e9a",
+      "exportSha256": "1087902ceaa058ff8a785d7b310a5f931756831a08be4e912e52527c0abdc02c",
+      "exportBytes": 6273148,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6f842658d8f62a981035.png",
+      "bytes": 66760056,
+      "sha256": "1e4df4ba027a343a26cf366788a112d1631e79f5608630dd44d5294abca60faf",
+      "exportSha256": "6f842658d8f62a981035a555255a11dff7357b572917c0f04a65f19215259063",
+      "exportBytes": 66759801,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-3256c89c4fc49a483ae3.png",
+      "bytes": 21274112,
+      "sha256": "08df3ce4cf24fda11d2a4d61e71e8584fa900c58dd642c6cd02f784e894a4e90",
+      "exportSha256": "3256c89c4fc49a483ae391dd030a5c455e644de758718c3213c734f03d026766",
+      "exportBytes": 21273857,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-2978d58907b5e43bd984.png",
+      "bytes": 23516976,
+      "sha256": "a5b55c09f5bf6e729f67bb7e9b11518025fce14255c7de781dae84450875a45d",
+      "exportSha256": "2978d58907b5e43bd984c3b4847842318ebdfb530e0e897a983b5ba586066293",
+      "exportBytes": 23516721,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-c7969d4a5ab54dacfdaa.png",
+      "bytes": 33077789,
+      "sha256": "768f1493e799465d39c096991a5df493acb14f6580e9f5702e173b20af706f74",
+      "exportSha256": "c7969d4a5ab54dacfdaa110a2b3013f15d7b4a6da045c92409527c553116c872",
+      "exportBytes": 33077534,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-32df460b68cef60a5298.png",
+      "bytes": 15035601,
+      "sha256": "a6105db94baad1fa1618a18c9394ca78c7da89de94db1d413540b48230c0447d",
+      "exportSha256": "32df460b68cef60a5298ca32ac74fa1ba8c1712a22e2fd715db4419d5c5bea7e",
+      "exportBytes": 15035346,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-eba0458a326c5b8c4fb2.png",
+      "bytes": 7818528,
+      "sha256": "6cd9297b8f6ae43109bfeed6c3dd59eb445a90b1e478571c07a6c3fff9d8dd0c",
+      "exportSha256": "eba0458a326c5b8c4fb2b401cdd3b175380c2b9d2e9b3dfbc7d4e3667b6a3b3f",
+      "exportBytes": 7818273,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-e2d6675e37334901534e.png",
+      "bytes": 8405858,
+      "sha256": "c2748cd40ea797a28569cf791cac059bec6b2c86bc0dcd36e247e4fddb9042eb",
+      "exportSha256": "e2d6675e37334901534ee55812f5c50c539611d5706d0fae7f09b744cef272ab",
+      "exportBytes": 8405603,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-a0693ac7c4ba34794c26.png",
+      "bytes": 425788,
+      "sha256": "168cd6267ca524cf725a885bc2e03c3e2ff0151613e364bb961285c34a836848",
+      "exportSha256": "a0693ac7c4ba34794c26280ebb749e68e2321bcb6f14bd654d085de61dd00c42",
+      "exportBytes": 425533,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-e4bb6c50356bee667da5.png",
+      "bytes": 21168369,
+      "sha256": "c84d5070e7acf7fdbd1934ca4097321b2294cf6aeba6bc85993cea9f9286730e",
+      "exportSha256": "e4bb6c50356bee667da5609d6810e187ce97ffad121486cbedd74351345236f8",
+      "exportBytes": 21168114,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-9c821ecb231ca7a40ea3.png",
+      "bytes": 7818401,
+      "sha256": "03774a69382c9f7d7b4019158fe0a3688ef8f8d0bd9aaa7618be61d64d6077ee",
+      "exportSha256": "9c821ecb231ca7a40ea395b81a626c040addca40e16951e8c74a5fe6928e674c",
+      "exportBytes": 7818146,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-c01fabde820407445af0.png",
+      "bytes": 24121082,
+      "sha256": "9a4e0cf9040531c3b422ac441bbccaece0febfa5658dc150d25ba362cc7d84fe",
+      "exportSha256": "c01fabde820407445af0aa8eec333e694bee81ee8179badcb8c9c9ee96366427",
+      "exportBytes": 24120827,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-9a1255f9d7a1fd7fdf2d.png",
+      "bytes": 17247634,
+      "sha256": "4ae2c65d73286ca6f483ede70239cb35fec595df6af8082dbd65b2dcfe1f9ec4",
+      "exportSha256": "9a1255f9d7a1fd7fdf2d4a8a69c275a4d8895fe2a1e159a486bd69f97adea3bb",
+      "exportBytes": 17247379,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-e6ba0b478bb326e11f58.png",
+      "bytes": 16610491,
+      "sha256": "36bfe9510b1e478371a823f903fcee7075bf17bf16e687676394e0dcf2c54314",
+      "exportSha256": "e6ba0b478bb326e11f586e5697d82e1202fb6812e7292b85f776c9f8a83730fa",
+      "exportBytes": 16610236,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-b8ab43aeafcef57ea2c2.png",
+      "bytes": 21947694,
+      "sha256": "35ea25dc2a7f9f737e2ac8c54e497dbe4303e4886b181569a453f5d9f4cc12b4",
+      "exportSha256": "b8ab43aeafcef57ea2c26809c11dce6a3aaa543f258e35ce1238f6ee9ace3aa5",
+      "exportBytes": 21947439,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-f8d9211035b01c758286.png",
+      "bytes": 6581847,
+      "sha256": "f4bfe6d3bb8b491fb51dc34dc038d00cb898e7af579de3e8ec8ef56efa6f0392",
+      "exportSha256": "f8d9211035b01c758286a220981da7acffbb507ce159018dc8562f0886ede6e8",
+      "exportBytes": 6581592,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-7f6799b850bc5e62a67c.png",
+      "bytes": 12807187,
+      "sha256": "f6aaca2b1b1594caa305f7d2d7a8197c23a92ac124ab4ee144d627865d05ee40",
+      "exportSha256": "7f6799b850bc5e62a67c61681d02898bc026044a36baadfbe3f02aa98145742d",
+      "exportBytes": 12806932,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-2bce3f4d58fcc1fe3660.png",
+      "bytes": 7721440,
+      "sha256": "9cbaad262eb25f3174a7aebb2cdeafd851c31746f6aeca0262c97604bb3c3d0d",
+      "exportSha256": "2bce3f4d58fcc1fe3660bcb34925ada5acabb466f432bf746d76f55bea87cef0",
+      "exportBytes": 7721185,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-304e390e7010bb9d35bd.png",
+      "bytes": 727716,
+      "sha256": "335bd6d504581b7998fec3622aff00d0f11e611f461acfd61a1af607aafde121",
+      "exportSha256": "304e390e7010bb9d35bd2a90e1506818926fd023984ef1137b539717728c925b",
+      "exportBytes": 727461,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-6e93a365130e38749003.png",
+      "bytes": 16757846,
+      "sha256": "c10946ae50b7dd891889ccfed9ce9b89b6038833f097eedf18cc9c47704945f4",
+      "exportSha256": "6e93a365130e38749003237f6215b3ff0b8f0be7acf695d731d7d68844ff7496",
+      "exportBytes": 16757591,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-818bf2797a1a23f646d4.png",
+      "bytes": 7696667,
+      "sha256": "4ac86c90a1d875a37771713b11312a5d94f0f94563b6cba47d91248b1d592b59",
+      "exportSha256": "818bf2797a1a23f646d4a1baca9bb682a04f3dbf57e93ec3fd37245e3c627647",
+      "exportBytes": 7696412,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-ec9814ea5834cdbab1ae.png",
+      "bytes": 20118593,
+      "sha256": "4648796b95ec6881419c6ecf3041cc6fd02d6e3d2e5b6f3168422fdbf952598f",
+      "exportSha256": "ec9814ea5834cdbab1aecf52580124c68f2290cd1d515346dee82524b8d75986",
+      "exportBytes": 20118338,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-5d766d9a7970bd7867e6.png",
+      "bytes": 14307950,
+      "sha256": "7437c7b267d4235b0a2c1beaaa1d49f6d9485fde84d47ca0c3b67633f99cebe1",
+      "exportSha256": "5d766d9a7970bd7867e63a79887cfd866a8aa11e3696b5be9871239597425e4f",
+      "exportBytes": 14307695,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-f187c1e9a25f6b95e260.png",
+      "bytes": 16624644,
+      "sha256": "faf8034d466192b510b8321f5d2e3ed8af5884b0dc4b667c2bc41a065edfe837",
+      "exportSha256": "f187c1e9a25f6b95e260d161ece66d48154477c958db4577d559e5d95532fef4",
+      "exportBytes": 16624389,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-745b1755370f31dfd4a0.png",
+      "bytes": 22118180,
+      "sha256": "f957539f1d6ba997749320a686187c374b3cec37f3228ab2fc126b64d3096389",
+      "exportSha256": "745b1755370f31dfd4a0ac723773a2f03a2570c917f1e9895ce2dcded3cc89e6",
+      "exportBytes": 22117925,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-d80d6dcac9ac625c4678.png",
+      "bytes": 5760890,
+      "sha256": "82db5c302cf0b8381f70a42c974628548dece2a3ace852f19478e787f197687d",
+      "exportSha256": "d80d6dcac9ac625c467820569c241e4299081fe984cbea6cfb4c75118f747951",
+      "exportBytes": 5760635,
+      "pngBitDepth": 8
+    },
+    {
+      "file": "texture-6ad75e71b62972ec1e67.png",
+      "bytes": 16865360,
+      "sha256": "b60f8005e55f22235e3c7ea7c85a082612f16bd180aee22cadd8652d1c6b6ae8",
+      "exportSha256": "6ad75e71b62972ec1e675b3f534220d78111153bbbb8128f006dd7b7ca3ac74a",
+      "exportBytes": 16865105,
+      "pngBitDepth": 16
+    },
+    {
+      "file": "texture-f7f8e13c2dbfa89042cc.png",
+      "bytes": 7720524,
+      "sha256": "056b3e72f14df1124700b14b4585702de66edf28cee497971a2aef268f1cbe9f",
+      "exportSha256": "f7f8e13c2dbfa89042ccdea0fe844c1619361922ab99f896aa86448edbccb5b7",
+      "exportBytes": 7720269,
+      "pngBitDepth": 8
+    }
+  ],
+  "geometryBytes": 101099092,
+  "browserQualityApproved": false,
+  "source": "User-supplied VPB / original embedded imagery; no redistribution license supplied",
+  "referenceCover": "Original user-supplied beauty JPG, not a screenshot of the realtime build",
+  "baking": "Blender Cycles PBR channels and independent rigid-group AO; no video or frame sequence",
+  "files": [
+    {
+      "file": "reventon.glb",
+      "bytes": 101099092,
+      "sha256": "656630b71c3579bfe5a07dc9b2f6a31ecf945746273a1a9a509bfbd93df229b6"
+    },
+    {
+      "file": "motion.json",
+      "bytes": 709240,
+      "sha256": "cb81355e301c9bbfe71a8244f2ebce30ddd5c927f0e88df14f00e9f4eec0c55a"
+    },
+    {
+      "file": "studio.exr",
+      "bytes": 25182626,
+      "sha256": "64f2b59c8632be277d030a8ee194b8cb4c1d45bbc755574a03627b41f1118046"
+    },
+    {
+      "file": "reference.jpg",
+      "bytes": 3385654,
+      "sha256": "5179a951a1fe3a180de28240d5daaf70e5572ebe534cca00acdc9756274b5bc9"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "file": "lamborghini-reventon-re-made-1.snapshot.2\\2 TEMP.vpb",
+      "bytes": 378074196,
+      "sha256": "95bddf459624ea0f0612b2c8d7f46650ebe131472c5a14b826f33d1452247f04"
+    },
+    {
+      "file": "artifacts\\reventon\\reventon-vpb-film.blend",
+      "bytes": 213900782,
+      "sha256": "c33c46061792a63a14e68b14f63c7f72f755cb56f9ef45624c7255061e308ece"
+    },
+    {
+      "file": "lamborghini-reventon-re-made-1.snapshot.2\\6-beauty.jpg",
+      "bytes": 3385420,
+      "sha256": "13dcff2914706cbb1123cb66e63e8a56cf5bc9144a6a5107f48b31d18793ea33"
+    }
+  ],
+  "publishedBytes": 1748644543,
+  "rasterMetadata": "Lossless provenance chunks; PNG IDAT and JPEG compressed image data unchanged"
+}

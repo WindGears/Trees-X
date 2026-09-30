@@ -77,16 +77,22 @@ export function buildLevers(): {
       description: '键杆与字杆之间的钢丝拉杆，两端弯钩挂接。位置依扇面几何演绎。',
       material: 'steel',
       make: () => pullLink(len),
-      assembled: at([(sx + pivot[0]) / 2, (sy + pivot[1]) / 2, (sz + pivot[2]) / 2], [
-        Math.atan2(pivot[2] - sz, pivot[1] - sy),
-        0,
-        Math.atan2(pivot[0] - sx, pivot[1] - sy) * -1,
-      ]),
-      exploded: at([pivot[0] * 1.1, 0.7 + Math.abs(pivot[0]) * 0.15, pivot[2] + 0.55], [
-        Math.atan2(pivot[2] - sz, pivot[1] - sy),
-        0,
-        Math.atan2(pivot[0] - sx, pivot[1] - sy) * -1,
-      ]),
+      assembled: at(
+        [(sx + pivot[0]) / 2, (sy + pivot[1]) / 2, (sz + pivot[2]) / 2],
+        [
+          Math.atan2(pivot[2] - sz, pivot[1] - sy),
+          0,
+          Math.atan2(pivot[0] - sx, pivot[1] - sy) * -1,
+        ],
+      ),
+      exploded: at(
+        [pivot[0] * 1.1, 0.7 + Math.abs(pivot[0]) * 0.15, pivot[2] + 0.55],
+        [
+          Math.atan2(pivot[2] - sz, pivot[1] - sy),
+          0,
+          Math.atan2(pivot[0] - sx, pivot[1] - sy) * -1,
+        ],
+      ),
       flatSize: [0.05, len + 0.05],
       flatHeight: 0.007,
       char: CHARS[i]!,
@@ -108,7 +114,14 @@ export function buildLevers(): {
     {
       name: '万向杆',
       description: '横贯全部键杆下方的触杆，任一键按下都会带动它触发换行棘轮（演绎件）。',
-      make: () => lathe([[0.014, -1.1], [0.014, 1.1]], 10),
+      make: () =>
+        lathe(
+          [
+            [0.014, -1.1],
+            [0.014, 1.1],
+          ],
+          10,
+        ),
       assembled: at([0, 0.38, 0.3], [0, 0, Math.PI / 2]),
       exploded: at([0, 0.14, 0.72], [0, 0, Math.PI / 2]),
       flatSize: [2.25, 0.05],
@@ -135,7 +148,15 @@ export function buildLevers(): {
     {
       name: '换档左扳杆',
       description: '左换档键向下的弯杆，通向升降轨。',
-      make: () => tubeAlong([[0, 0, 0], [0, -0.2, -0.06], [0, -0.34, -0.02]], 0.011),
+      make: () =>
+        tubeAlong(
+          [
+            [0, 0, 0],
+            [0, -0.2, -0.06],
+            [0, -0.34, -0.02],
+          ],
+          0.011,
+        ),
       assembled: at([-1.14, 0.4, 1.5], [0, 0, 0.1]),
       exploded: at([-1.4, 0.18, 1.6], [0, 0, 0.3]),
       flatSize: [0.1, 0.42],
@@ -144,7 +165,15 @@ export function buildLevers(): {
     {
       name: '换档右扳杆',
       description: '右换档键向下的弯杆，通向升降轨。',
-      make: () => tubeAlong([[0, 0, 0], [0, -0.2, -0.06], [0, -0.34, -0.02]], 0.011),
+      make: () =>
+        tubeAlong(
+          [
+            [0, 0, 0],
+            [0, -0.2, -0.06],
+            [0, -0.34, -0.02],
+          ],
+          0.011,
+        ),
       assembled: at([1.14, 0.4, 1.5], [0, 0, -0.1]),
       exploded: at([1.4, 0.18, 1.6], [0, 0, -0.3]),
       flatSize: [0.1, 0.42],
@@ -154,7 +183,15 @@ export function buildLevers(): {
       name: '退格棘爪杆',
       description: '退格键通向棘轮罩的细杆，含反向棘爪。',
       uncertain: true,
-      make: () => tubeAlong([[0, 0, 0], [0, -0.1, -0.3], [0, -0.12, -0.62]], 0.01),
+      make: () =>
+        tubeAlong(
+          [
+            [0, 0, 0],
+            [0, -0.1, -0.3],
+            [0, -0.12, -0.62],
+          ],
+          0.01,
+        ),
       assembled: at([1.24, 0.44, 0.52], [0, 0, 0]),
       exploded: at([1.5, 0.2, 0.6], [0, 0, -0.2]),
       flatSize: [0.08, 0.7],
@@ -164,7 +201,15 @@ export function buildLevers(): {
       name: '边距释放杆',
       description: '边距释放键通向字车架锁扣的传动杆。',
       uncertain: true,
-      make: () => tubeAlong([[0, 0, 0], [0, -0.16, -0.25], [0, -0.2, -0.5]], 0.01),
+      make: () =>
+        tubeAlong(
+          [
+            [0, 0, 0],
+            [0, -0.16, -0.25],
+            [0, -0.2, -0.5],
+          ],
+          0.01,
+        ),
       assembled: at([1.2, 0.42, 0.86], [0, 0, 0]),
       exploded: at([1.46, 0.2, 0.9], [0, 0, -0.15]),
       flatSize: [0.08, 0.58],
@@ -173,7 +218,15 @@ export function buildLevers(): {
     {
       name: '换色选择杆',
       description: '色带黑/红半幅选择杆，拨动它改变导带叉的抬升高度。',
-      make: () => tubeAlong([[0, 0, 0], [0, -0.12, -0.2], [0, -0.14, -0.42]], 0.01),
+      make: () =>
+        tubeAlong(
+          [
+            [0, 0, 0],
+            [0, -0.12, -0.2],
+            [0, -0.14, -0.42],
+          ],
+          0.01,
+        ),
       assembled: at([-1.3, 0.42, 0.9], [0, 0, 0.12]),
       exploded: at([-1.55, 0.2, 1.0], [0, 0, 0.35]),
       flatSize: [0.08, 0.5],
@@ -183,7 +236,15 @@ export function buildLevers(): {
       name: '制表制动杆',
       description: '制表键通向制表齿条的制动杆。',
       uncertain: true,
-      make: () => tubeAlong([[0, 0, 0], [0, -0.1, -0.3], [0, -0.12, -0.6]], 0.01),
+      make: () =>
+        tubeAlong(
+          [
+            [0, 0, 0],
+            [0, -0.1, -0.3],
+            [0, -0.12, -0.6],
+          ],
+          0.01,
+        ),
       assembled: at([-1.26, 0.44, 0.52], [0, 0, 0]),
       exploded: at([-1.55, 0.22, 0.62], [0, 0, 0.2]),
       flatSize: [0.08, 0.68],
