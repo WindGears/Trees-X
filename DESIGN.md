@@ -1,182 +1,271 @@
 ---
-name: Trees X 沉浸式展厅
-description: 先欣赏商品，再自然探索细节的桌面三维展示系统。
+name: Trees X 三维商品工作台
+description: 以模型为主、工具按需出现的深蓝灰商品观察界面。
 colors:
-  background: '#0a0c0f'
-  foreground: '#f4f7fb'
-  panel: '#12181df5'
-  body: '#a9b5bf'
-  metal: '#b7d5ed'
-  play: '#e7ae7d'
-  botanical: '#b5c9a4'
-  focus: '#9fc1ff'
-  reventon-studio: '#dededb'
-  reventon-studio-edge: '#939691'
-  reventon-ink: '#222824'
-  reventon-muted: '#434b45'
-  reventon-header-muted: '#555c55'
-  reventon-hover: '#c9cdc8'
-  reventon-focus: '#384e40'
-  reventon-progress: '#394b3e'
-  reventon-cabin-ink: '#f5f6f3'
-  reventon-cabin-muted: '#d5d9d3'
-  reventon-cabin-hover: '#38433c'
-  reventon-cabin-focus: '#d5e4d4'
-  reventon-cabin-progress: '#b7cbb9'
+  wb-accent: '#bed4ef'
+  wb-accent-hover: '#d1e2f5'
+  wb-accent-ink: '#101923'
+  wb-focus: '#d1e5ff'
+  wb-bg: '#101720'
+  wb-stage: '#151c25'
+  wb-panel: '#131d29'
+  wb-foreground: '#f0f4fa'
+  wb-muted: '#abbacb'
+  wb-line: '#304052'
+  wb-button: '#1d2b3c'
+  wb-button-hover: '#2b3d51'
+  wb-field: '#172330'
+  wb-label: '#bccce0'
+  wb-tool-line: '#405369'
+  wb-toolbar: '#111d2bea'
+  wb-search-line: '#52708f'
+  wb-placeholder: '#aebed0'
+  wb-scrollbar: '#526a85'
+  wb-swatch-line: '#7890ac'
+  wb-status: '#151c25f5'
+  wb-hotspot: '#111b28d9'
+  wb-hotspot-line: '#7990ac'
 typography:
-  display:
-    fontFamily: 'Noto Sans SC Display, Microsoft YaHei, sans-serif'
-    fontSize: 'clamp(36px, 3.1vw, 48px)'
+  wb-display:
+    fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
+    fontSize: '36px'
     fontWeight: 500
     lineHeight: 1.3
-    letterSpacing: '-0.035em'
-  body:
-    fontFamily: 'Manrope, PingFang SC, Microsoft YaHei, sans-serif'
+    letterSpacing: '-0.025em'
+  wb-display-mobile:
+    fontSize: '27px'
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: '-0.025em'
+  wb-brand:
+    fontSize: '23px'
+    fontWeight: 600
+    letterSpacing: '-0.03em'
+  wb-brand-mobile:
+    fontSize: '20px'
+    fontWeight: 600
+    letterSpacing: '-0.03em'
+  wb-panel-heading:
+    fontSize: '22px'
+    fontWeight: 500
+  wb-panel-heading-mobile:
+    fontSize: '19px'
+    fontWeight: 500
+  wb-status-heading:
+    fontSize: '25px'
+    fontWeight: 500
+  wb-section-heading:
+    fontSize: '16px'
+    fontWeight: 500
+    lineHeight: 1.7
+  wb-catalog-title:
+    fontSize: '17px'
+    fontWeight: 500
+  wb-body:
+    fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
     fontSize: '14px'
-    lineHeight: 1.9
-  label:
+    lineHeight: 1.85
+  wb-catalog-body:
+    fontSize: '13px'
+    lineHeight: 1.75
+  wb-label:
     fontSize: '12px'
-  reventon-display:
-    fontFamily: 'Manrope, sans-serif'
-    fontSize: 'clamp(40px, 4vw, 68px)'
-    fontWeight: 500
-    lineHeight: 1.05
-    letterSpacing: '-0.035em'
-  reventon-display-mobile:
-    fontFamily: 'Manrope, sans-serif'
-    fontSize: '42px'
-    fontWeight: 500
-    lineHeight: 1.05
-    letterSpacing: '-0.035em'
-  reventon-display-cabin:
-    fontFamily: 'Manrope, sans-serif'
-    fontSize: '32px'
-    fontWeight: 500
-    lineHeight: 1.05
-    letterSpacing: '-0.035em'
 rounded:
-  panel: '8px'
-  dock: '6px'
-  control: '4px'
+  wb-flat: '0px'
+  wb-label: '3px'
+  wb-hotspot: '4px'
+  wb-field: '6px'
+  wb-control: '7px'
+  wb-toolbar: '10px'
+  wb-circle: '50%'
 spacing:
-  compact: '8px'
-  section: '24px'
-  desktop-edge: '48px'
-  reventon-chapters: '36px'
-  reventon-chapters-mobile: '16px'
+  wb-icon-gap: '8px'
+  wb-list-gap: '10px'
+  wb-copy-gap: '12px'
+  wb-section: '24px'
+  wb-panel-header-gap: '30px'
+  wb-header-edge: '32px'
 components:
-  reventon-control:
+  wb-button:
+    backgroundColor: '{colors.wb-button}'
+    textColor: '{colors.wb-foreground}'
+    rounded: '{rounded.wb-control}'
+    padding: '9px 13px'
+  wb-button-hover:
+    backgroundColor: '{colors.wb-button-hover}'
+  wb-button-selected:
+    backgroundColor: '{colors.wb-accent}'
+    textColor: '{colors.wb-accent-ink}'
+    rounded: '{rounded.wb-control}'
+    padding: '9px 13px'
+  wb-button-selected-hover:
+    backgroundColor: '{colors.wb-accent-hover}'
+    textColor: '{colors.wb-accent-ink}'
+  wb-button-ghost:
     backgroundColor: 'transparent'
-    textColor: '{colors.reventon-ink}'
-    padding: '0 10px'
-  reventon-control-hover:
-    backgroundColor: '{colors.reventon-hover}'
-    textColor: '#000'
-  reventon-control-cabin:
+    textColor: '{colors.wb-foreground}'
+    rounded: '{rounded.wb-control}'
+    padding: '9px 17px'
+  wb-field:
+    backgroundColor: '{colors.wb-field}'
+    textColor: '{colors.wb-foreground}'
+    rounded: '{rounded.wb-field}'
+    padding: '9px 10px'
+  wb-search:
     backgroundColor: 'transparent'
-    textColor: '{colors.reventon-cabin-ink}'
+    textColor: '{colors.wb-foreground}'
+    padding: '9px 10px 9px 0'
+  wb-toolbar:
+    backgroundColor: '{colors.wb-toolbar}'
+    rounded: '{rounded.wb-toolbar}'
+    padding: '5px'
+  wb-panel:
+    backgroundColor: '{colors.wb-panel}'
+    textColor: '{colors.wb-foreground}'
+    padding: '26px 23px'
+  wb-catalog-row:
+    backgroundColor: 'transparent'
+    textColor: '{colors.wb-foreground}'
+    rounded: '{rounded.wb-flat}'
+    padding: '21px 10px'
+  wb-sample-label:
+    backgroundColor: 'transparent'
+    textColor: '{colors.wb-label}'
+    rounded: '{rounded.wb-label}'
+    padding: '4px 8px'
+  wb-hotspot:
+    backgroundColor: '{colors.wb-hotspot}'
+    textColor: '{colors.wb-foreground}'
+    rounded: '{rounded.wb-hotspot}'
+    padding: '5px 10px'
 ---
 
-# Trees X 沉浸式展厅
-
-## Reventón 方向纠正（2026-09-28，覆盖下方历史方案）
-
-交付必须是 Blender 烘焙材质/静态阴影后的真实三维实机 Demo。模型、剪刀门、部件和镜头均在 Tres/Three 内实时运行，使用固定演示流程，取消自由轨道操作。影片、帧序列与图片转场不能替代该体验。该方向已于 2026-09-30 在 `/?product=reventon` 实现；原 beauty JPG 仍是浏览器实际材质/光影的对照依据，仅作为目录封面，不是实机截图。最新复核只确认接触阴影、玻璃、轮内金属和手机目录出口四项修正通过；整体参考画质、连续动作质量与帧率未验收，不以离线渲染或局部 `ship` 结论宣称整体达标。此前影片入口已撤下，相关制作预览只保存在 artifacts 中。具体边界见 [.ai/reventon-realtime.md](.ai/reventon-realtime.md) 与[四项修正复核](.impeccable/review/reventon/fix-verdict-2.md)。
-
-## Reventón 离线检查稿（2026-09-25）
-
-当前新增的是 Blender 静帧校准产物，不是已发布的前台改版。整车与轮圈使用中性摄影棚、真实源几何与 VPB 内嵌贴图，在 Cycles 中重建车漆、玻璃、轮胎、碳纤维与环向刹车盘反射。4K 检查图保留 AgX 输出及线性 EXR 母版；原图只在验收页标注为参考，不混入新渲染。
-
-最终视觉仍未达到用户要求：车灯/风挡高光、车漆反射关系、背景梯度和局部纹理需继续校准。静帧验收之前不制作完整动画，也不以页面动效掩盖差距。未来该演示仅提供固定流程播放、暂停、章节和重播，不提供自由操纵；播放器尚未实现。详见 [.ai/reventon-validation.md](.ai/reventon-validation.md)。
-
-现有 16 秒开门/座舱/分离工程只用于验证动作，三张 4K 关键帧明确标为检查稿。用户已再次确认以原参考图画质作为完整渲染的前提。后续校准改为直接使用 VPB 原几何和材质绑定，避免按 Rhino 网格名称统一赋材质；旧版 VRED 粗糙度先换算尺度，内部凹凸贴图分离高度与法线信息。Cycles 着色仍属于重建，不宣称逐像素等价。
+# Design System: Trees X 三维商品工作台
 
 ## Overview
 
-Reventón 为 Experience 模式的局部浅灰摄影棚例外。采用用户原 beauty 图的中性棚景与已有 Trees X 字体，让真实恢复的完整汽车主导第一屏；控件围绕固定观察流程保持克制。下列 `reventon-*` token 仅属于此展品，来自 `src/assets/styles/reventon.css` 与 `ReventonStudio.vue`，不替换其他展品规范。表面方向与验收范围见 [Reventón surface](.impeccable/surfaces/src-components-reventon-reventonexperience-vue.md)。
+**Creative North Star: "先欣赏商品，再自然探索细节"**
 
-2026-09-23 音箱视觉样板延伸现有近黑摄影棚：条形柔光、方向性金属反射与干净背景替代该商品的发光环、粒子及全息扫描；其他商品保留各自舞台。音箱左侧「观看演绎」入口主动触发 7.8 秒短片，依次呈现旋钮特写、完整轮廓、外观分层与合拢。章节标题与镜头同步，完成后提示自由探索。默认入场只揭示灯光，不自动运镜；减弱动态的「静态欣赏」直接到达完整外观。
+Trees X 延续深色、中文身份、银灰模型与冷色重点。深蓝灰界面安静地承托三维对象，信息用清楚的字号、间距与细线组织；工具的亮色状态帮助访客确认自己正在观察和操作什么。
 
-本轮按已确认的「先欣赏，再探索」方向重构。首屏默认只呈现商品身份、真实三维模型、底部探索入口与紧凑视角工具。完整控制台由顶部主动打开，替换旧版「完整控制台必须首屏常驻」要求。
+当前系统以一致的操作和可读性服务商品观察。模型通过真实 Three 场景呈现，当前的简化几何明确标为“流程样板”。界面不借助摄影封面、装饰光效或自动演出来掩盖样板范围；颜色、标题和控件不作真实商品规格或可购款式承诺。
 
-体验模式为 Experience。主要面向高配桌面的商品观察者和答辩演示者，默认桌面音箱，保留七件商品与已有 URL 深链接。主展品依次为音箱、赛车、绿植。文案只讲可见形态，无价格、性能或工艺推断。
+**Key Characteristics:**
+
+- 模型主导，工具按需出现。
+- 深蓝灰层次、冷银选中态与清晰焦点。
+- 中文信息优先，图标始终服务操作。
+- 三件流程样板共享组件与状态语言。
+
+本文件记录 2026-10-02 核对的已实现系统，视觉真值为 src/assets/styles/workbench.css、src/components/workbench/ 与现有实机截图。布局策略、模式和验收范围见 [workbench surface](.impeccable/surfaces/src-components-workbench-workbenchroot-vue.md)。旧 Reventón 摄影棚与固定导演流程、音箱影片、各商品独立舞台和旧完整控制台全部属于 **legacy-only**，已连同原侧车保存到 [2026-09 设计历史](.ai/history/2026-09-design.md)。旧汽车入口为 ?legacy=1&product=reventon；历史中的旧默认路由不再代表当前首页。
 
 ## Colors
 
-石墨中性色承托真实材质，空间色随商品变化。金属舞台以冷白与银灰反射为主，赛车使用暖色轮廓和深色展台，绿植使用深灰绿背景与柔和侧光、无发光圆环。每个舞台的强调色用于当前选择和返回操作。键盘焦点统一使用 focus 色。
+以带蓝倾向的石板灰建立背景、工具和正文之间的层次。规范值以 frontmatter 为准；wb-* 是当前工作台命名空间，商品配色由展示配置提供，不扩充为界面主题色。
 
-Reventón 外景使用浅灰棚景底色与灰绿边缘衰减，深墨色文字、低调的灰绿辅助文字和控件状态。进入座舱后改为近白文字、浅灰绿辅助信息和更亮的焦点/进度色；这一状态随章节切换，顶部目录仍可辨认。色值以 frontmatter 中 `reventon-*` 为准。
+### Primary
+
+- **冷银蓝**（wb-accent / wb-accent-hover）：表示已选配色、部件、动作或当前工具；配合深墨选中文字。文本选区和输入光标延续同一重点色。
+- **冰蓝焦点**（wb-focus）：可聚焦控件采用实线焦点环，宽度（2px）、外偏移（4px），不只以背景色变化传达键盘位置。
+
+### Neutral
+
+- **深海底色与石板舞台**（wb-bg / wb-stage）：分别承托框架与三维视野。舞台明暗来自场景、地面与照明，不把 CSS 色值当作整张实机图的像素目标。
+- **蓝灰面板与工具表面**（wb-panel / wb-toolbar）：面板为实底，覆盖舞台的工具条保留轻微透明度；两者以细边线分界。
+- **霜白正文与灰蓝辅助字**（wb-foreground / wb-muted）：主操作与商品名清楚，说明、分类与提示退后一级。样板标记与搜索占位字分别使用 wb-label 和 wb-placeholder。
+- **控制与边界**（wb-button / wb-button-hover / wb-field / wb-line）：按钮、悬停、输入与分隔线各有固定层次。工具边线、搜索下划线、滚动条及色样边线使用各自已记录的细部色。
+- **状态覆盖与部件标签**（wb-status / wb-hotspot / wb-hotspot-line）：状态覆盖层保护错误说明的可读性；热点深色底与细描边使名称在模型上可辨。
+
+**The 重点即状态 Rule.** 冷银蓝服务选中状态，焦点另有清晰描边；动作开关同时显示文字状态，配色选中同时显示勾选。
 
 ## Typography
 
-中文名称是唯一主标题：36–48px、500 字重、1.3 行高。英文编号为 12px 辅助信息；介绍 15px，面板正文 14px、1.9 行高；面板标题 20px，功能标题 15–17px，按钮 13–14px，辅助文字至少 12px。中文长句自然换行，不使用全大写工程标签代替说明。
+**Display Font:** Manrope，中文回落到现有 Noto Sans SC Display，随后为 sans-serif。
+**Body Font:** 同一字体栈；不为工具引入另一套工程等宽字体。现有中文字体由本地文件加载。
 
-音箱演绎期间，主标题切换为当前章节，字号采用 `clamp(32px, 2.8vw, 44px)` 并平衡换行；说明区保留至少 58px 高度，减少章节切换时的布局跳动。演绎按钮为 14px、600 字重，时长与辅助提示为 12px。
+商品标题、面板标题、正文和辅助信息分别使用 frontmatter 的 wb-display、wb-panel-heading、wb-body 与 wb-label。中文名称是主标题；品牌稍紧的字距、面板标题和目录名的中等字重区分层级。桌面与移动的标题、品牌及面板标题均有独立 token。
 
-Reventón 标题使用现有 Manrope；桌面、手机与座舱标题分别对应 frontmatter 的三个 display token，座舱的紧凑标题优先于手机字号。说明与章节描述为 15px，控件为 14px，部件分离说明为 12px；手机章节描述为 14px。当前章节用下划线及 600 字重共同标记。
+介绍行高为（1.8），面板正文沿用正文 token，状态说明最大宽度为（38ch）。目录说明使用紧凑正文层级，样板标记、输入提示与动作状态使用辅助字级。导览步数使用等宽数字与字距（0.08em），仍属普通界面文字。
+
+**The 中文身份 Rule.** 商品名称和功能名称直接说明内容；英文品牌不替代中文身份，流程样板标记是事实说明。
 
 ## Layout
 
-桌面顶部 88px，左右边距 48px。左侧身份区宽 248px，自屏幕约 32% 高处开始；主 Canvas 在身份右侧铺开。右侧默认留空。打开任一面板后，Canvas 右边界收至 416px，侧栏在右侧 24px 处，宽 360px；1700px 以上侧栏宽 384px、右边距 40px。侧栏独立滚动，不覆盖 Canvas。模型取景由每件商品的镜头配置决定。
+工作台占据（100svh），最小高度（640px）。桌面顶栏高（76px），两侧内边距来自 wb-header-edge；下方为剩余高度的网格。无面板时场景使用整行；目录打开时左栏宽（310px），工具面板打开时右栏宽（340px）。宽度不超过（1100px）时分别收至（280px）和（300px）。面板独立纵向滚动，保持场景可观察。
 
-左下角提供外观、细节、结构、手势；视角、缩放、复位位于展示区下方。无结构能力的商品隐藏普通结构入口。目录为三列真实模型封面，三件精选优先，支持分类和搜索。
+商品身份位于场景左上，桌面偏移为上（32px）、左（38px），介绍宽度最多（330px）；较窄桌面的左偏移为（26px）。底部工具分两行、水平居中，上行为视角与缩放，下行为探索入口；整体距场景底部（66px）。独立输入提示距左（38px）、距底（28px）。
 
-小于 1024px 时采用纵向兼容布局：身份、场景、工具条、按需面板顺序排布；不改变桌面画质策略。验收尺寸为 1280×720、1440×1000、1920×1080；390px 和 320px 只做兼容回归。
+不超过（760px）时顶栏改为（66px），品牌副说明与当前商品缩略名隐藏。场景在上，已打开的目录或面板在下；网格行分别为 minmax(310px, 1fr) 与 minmax(220px, 38%)。下面板内边距（16px 20px），场景保留商品名与两行工具；介绍和样板标记在面板打开时隐藏，完整样板身份仍可从目录获取。工具距底（37px），输入提示距底（13px）。DOM 热点在该断点隐藏，部件仍可由“细节”列表选择。
 
-音箱演绎入口在桌面介绍下方留 24px 间距；高度不超过 780px 的桌面将身份区上移至 25%，缩减该区间距。窄屏入口间距为 14px，隐藏补充提示，场景和工具沿纵向排布。这些调整仅服务音箱新增入口，不推广为其他商品的排版规则。
-
-Reventón 独立展区为 `100svh`、最低 640px 高，全幅唯一 Canvas 置于底层。标题距顶 108px，左边距 `clamp(28px, 5vw, 96px)`；底部控制区距底 24px、宽 `min(640px, calc(100% - 48px))`，四章节横向排列。640px 及以下标题距顶 112px、距左 24px，章节间距使用手机 token，控制区距底 20px。390px 与 320px 基础兼容均保留商品目录、四章节和进度/复位入口；不将桌面完整侧栏布局套入此独立展品。
+**The 单活动面板 Rule.** 目录与工具面板同一时间只出现一个；桌面通过网格分配空间，移动端移到场景下方。
 
 ## Elevation & Depth
 
-主要深度来自真实 HDR 反射、方向光、阴影和模型自身材质。背景为低对比舞台光晕，旧工程网格和 CSS 椭圆装饰已移除。面板以近乎不透明的深色表面保证可读性，24px/70px 的柔和阴影仅区分操作层与场景。热点用名称、选中底色和描边反馈。
+当前工作台控件与面板不使用盒阴影或背景模糊。深度依靠轻微透明的工具底、实色面板、细分隔线与三维对象自身的照明建立，不把每组内容再包成卡片。
 
-桌面仍保留 DPR 上限 2、Composer 1.0、HalfFloat 与 8× MSAA。音箱的 Bloom 为 0.32、环境强度为 0.42，粒子缓冲数量为零，环不可见且不创建扫描覆盖层。其他商品维持 1600 个固定粒子及已有视觉层；Bloom 为赛车 0.9、植物 0.45、通用 0.85，植物环透明度仍为零。稳定态色散为零。其他商品约 2.4 秒的自动视觉演出不移动相机；音箱采用 2.1 秒灯光揭示，主动输入结束入场演出。
+舞台使用 RoomEnvironment 反射、主光与轮廓光、雾和接收阴影的地面，形成简洁摄影棚空间；模型仍是程序化流程样板。单个 TresCanvas 使用按需渲染，当前 DPR 上限为（2），不能由此推断帧率或照片级画质。
 
-音箱由三盏矩形面光形成冷白主光、微暖边光和顶部补光，轮廓靠反射宽度与明暗变化显现。外壳使用确定性细纹粗糙度与方向性反射，深色前板保持更散的高光，旋钮滚花和顶面在近景中可读。此处描述的是概念模型的渲染表现，不是实物工艺承诺。
-
-**The 音箱摄影棚 Rule.** 音箱以条形光、表面细纹和外观轮廓构成层次，不恢复该商品的发光环、粒子或全息扫描；其他商品保持各自舞台。
-
-Reventón 通过两盏真实面光、HDR 反射、浅灰棚景 Shader 与随姿态更新的连续接触投影形成空间深度。车漆、玻璃和轮内金属保留真实几何与材质反应；玻璃需让座舱轮廓可读，同时保留局部反射。座舱顶部与底部的暗色渐变仅保护叠层文字可读性，不代替三维场景光照。该展品控件无卡片阴影，不继承普通展品的 Bloom、粒子或发光环规则。
-
-**The Reventón 摄影棚 Rule.** Reventón 保持浅灰棚景、连续接触阴影、可读玻璃内景与有层次的轮内金属；原 beauty 图只作视觉依据，不能代替真实浏览器帧。
-
-2026-09-30 用户将本轮收口为技术验证：保留当前摄影棚效果，停止照片级材质和光影对齐。原参考图等效不是本轮交付门槛，不据此追加精调或重烘焙。
+**The 模型承载深度 Rule.** 界面保持平实，空间层次交给真实三维几何、光照与阴影；当前样板不追加装饰性光效。
 
 ## Shapes
 
-面板 8px、工具栏 6px、内部按钮 4px 圆角。分组主要靠间距与细分隔线，避免层层套卡。圆形仅用于色样、热点和真实舞台的环形元素。
-
-Reventón 以透明无边框按钮、当前章节细下划线与原生进度条构成控制区，按钮最小触达高度 44px。无需新增面板容器或另设圆角体系。
+形状以紧凑、轻微圆角的矩形控件为主。按钮、字段、工具条、热点与样板标签分别采用 frontmatter 的独立圆角角色；目录条目和面板保持平直。分组主要靠空白和（1px）细线。圆形只用于配色色样和热点中的小圆点，不作额外的舞台装饰。
 
 ## Components
 
-- `StudioIntro`：中文名称、一句介绍、辅助编号与商品切换。
-- `ExperienceDock`：单一活动面板入口，按商品能力显示结构；聚焦或展开后提供返回全景。
-- `StudioControls`：单一侧栏与完整控制台两种呈现，关闭不重置配色、镜头、结构或会话；240ms GSAP 过渡。
-- `ProductGuide`：主动开始，步骤对应真实部件或结构。退出保留观察状态，自由旋转或操作终止步骤控制。
-- `GesturePanel`：摄像头默认关闭；动作示范可跳过，显式点击才请求权限。开启后展示镜像预览、取景框及识别状态，诊断折叠。默认悬停确认，捏合属于进阶选项。
-- `SiteHeader`：目录、完整控制台、作品信息；摄像头运行时提供持续状态及关闭入口。
-- `ProductViewer`：唯一 Canvas；加载时用当前商品封面遮住舞台，失败可重试或返回目录。完成首帧后才开放操作。
-- `ProductFilm`：仅音箱提供浅银实底入口，最小高度 46px、左右内边距 18px；悬停变白，键盘焦点沿用全局焦点环，未就绪时禁用。播放时切换为「接手探索」及停止图标，辅助状态以文字说明中断与完成。按钮显示「8 秒」，实际时间线为 7.8 秒。
-- 音箱默认热点：保留小型轮廓标记，名称在悬停或键盘聚焦时显示，避免抢占静态欣赏画面；仍使用原有部件聚焦入口。
+### Buttons
 
-**The 主动演绎 Rule.** 只有用户触发才播放音箱镜头；正常结束合拢外观并保留配色，途中接手保留当前镜头与分层进度，减弱动态直接到完整外观。
+普通按钮是深蓝灰实底、细描边与霜白文字，最小高度（42px），图标间距采用 wb-icon-gap。悬停加亮，背景与文字过渡为（150ms）；禁用透明度（0.4），不可操作。选中采用冷银蓝底和深墨文字，aria-pressed 与可见状态保持一致。配色和动作列表行的最小高度为（50px）。
 
-拖动、滚轮、Esc、面板、目录、手势入口或商品切换均可中断短片。镜头、灯位与分层由同一 GSAP 时间线协调；资源所有权及相机接手约束见 [音箱主动演绎架构](.ai/architecture.md#音箱主动演绎)。
+工具条内部按钮使用透明底，选中后沿用同一高亮语言；关闭按钮为透明无边框图标控件。当前没有独立的按下位移或弹跳规则。
 
-### Reventón 独立体验
+### Chips
 
-`ReventonExperience` 在真实首帧完成后启用四章节、播放/暂停、进度条与回到开始。约 16 秒的 GSAP 时间线从闭合外观进入剪刀门开启、座舱、部件分离，最后复原；点击章节直接到代表姿态。目录、页面隐藏或离开展区暂停流程，返回后保留姿态，未自动恢复播放。减弱动态时隐藏连续播放入口，保留直接定位章节与进度。
+“流程样板”为非交互事实标记，透明底、灰蓝字与细描边；桌面使用 frontmatter 对应内边距，手机收至（2px 6px）。它不是筛选按钮或装饰性的栏目标签。
 
-外景控件使用透明底与局部 hover 色，键盘焦点为 2px 实线、4px 外偏移；座舱改用对应浅色焦点。加载过程以棚景底色和状态文字覆盖，失败提供「重新加载」「返回目录」。顶部「商品目录」在桌面、390px 和 320px 均持续可用。
+### Cards / Containers
 
-**The Reventón 导演流程 Rule.** 只由主动播放或章节/进度输入驱动真实汽车与镜头，保留固定流程，不提供自由轨道；减弱动态保留静态章节观察。
+工作台没有独立商品卡片网格。目录采用纵向文本条目，商品名、描述、分类和样板身份形成一行组，以底边线分隔；当前商品沿用选中底色。其余分组由间距和线条组织。
+
+面板标题与关闭按钮并排，正文和操作列表向下排列；统一“还原商品”区域通过上边线与更大间隔分开。它附有恢复范围说明，不与“复位视角”混称。
+
+### Inputs / Fields
+
+原生下拉框与输入框保持深色字段底、细描边与明确焦点。目录搜索使用透明输入和底部细线，保留可访问名称及搜索图标；分类为带文字标签的原生下拉框。目录有读取中、错误重试、空搜索结果三个文字状态。
+
+### Navigation
+
+顶栏保留品牌与“商品目录”，桌面右端显示当前商品名。底部相机工具包含命名视角、缩小、放大和“复位视角”；探索导航根据商品能力显示外观、细节、结构与动作、导览。经导航打开面板后关闭按钮获得焦点，关闭时恢复原入口焦点，Escape 可关闭当前面板。
+
+面板进入由 GSAP 完成透明度过渡（240ms，power3.out）；当前没有离场滑动或持续浮动动画。窄屏工具缩小内边距，保留文字与图标，不改成仅图标导航。
+
+### Hotspots and Stage States
+
+热点由小圆点和部件名称组成，最小高度（32px），默认深色表面，选中沿用冷银蓝底和深墨文字；悬停使用通用按钮高亮，键盘焦点保留明确描边。选中的部件也可在细节列表及描述中确认。手机通过细节列表承担该入口。
+
+加载和失败覆盖层保留同一舞台空间。加载显示“正在准备商品”，真实首帧完成才开放操作。失败显示“暂时无法展示”，提供重新加载和打开目录；错误与等待分别使用 alert / status 语义，不以静态样例假装加载完成。
+
+### Observation and Guide
+
+命名视角及部件聚焦使用（650ms，power3.out），状态切换和结构动作使用（550ms，power3.out），瞬时按键动作使用单程（180ms，power1.inOut）并返回。导览由开始、上一步、下一步、完成及退出组成，步骤文字主动更新，不自动推进。
+
+**The 主动观察 Rule.** 默认静止呈现商品；拖动或缩放立即接手镜头并退出导览，关闭面板保留观察状态。
+
+减弱动态时 GSAP 面板、镜头和状态切换直接到达目标态，瞬时动作不循环；全局 CSS 将动画与过渡缩至（0.01ms）。页面隐藏暂停场景和补间。详细生命周期与状态契约由 [.ai/architecture.md](.ai/architecture.md) 和 [.ai/workbench-contract.md](.ai/workbench-contract.md) 维护。
 
 ## Do's and Don'ts
 
-保留主体的最大可读面积。操作面板只开一个，滚轮在展示区缩放、在侧栏滚动内容。返回全景恢复完整外观并保留配色。作品来源集中到作品信息。
+### Do:
 
-不要恢复首屏常驻控制台；不要在访客导览中讲节点、贴图或世界坐标；不要用降低桌面画质代替体验修复；不要用重新创建整个 Canvas 掩盖商品切换问题。减弱动态与设备能力不足仍走已有静态兼容路径。
+- **Do** 让模型保持主要观察面积，沿用单活动面板与共享工具。
+- **Do** 使用已记录的深蓝灰层次、冷银选中态和独立键盘焦点。
+- **Do** 清楚标注流程样板，并为操作状态、错误与空结果提供文字。
+- **Do** 区分复位视角、返回全景和还原商品，保留各自范围说明。
+- **Do** 用真实场景和实机截图验证当前实现，扩展正式模型时复用现有界面。
 
-Reventón 的浅灰棚景、全幅取景与固定导演流程仅约束该展品。保留真实车辆的可读面积与手机目录出口；不得把参考 JPG 记作实机截图，也不得把四项局部修正通过写成整体画质、动作流畅度或性能验收通过。
+### Don't:
+
+- **Don't** 把 legacy 的影片、固定导演流程或常驻完整控制台规则带入当前工作台。
+- **Don't** 用图片、影片或装饰光效代替真实三维操作与样板身份。
+- **Don't** 让左目录和右面板同时占据工作台，或让手机面板盖住模型。
+- **Don't** 把样板配色、分层关系或静态截图写成真实商品、维修顺序、帧率或照片级画质结论。

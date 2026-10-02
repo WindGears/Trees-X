@@ -16,3 +16,5 @@ lamborghini-reventon-re-made-1.snapshot.2/
 .tools/
 __pycache__/
 *.pyc
+server/target/
+.impeccable/*.log

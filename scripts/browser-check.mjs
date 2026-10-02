@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium, expect } from '@playwright/test'
 
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -25,7 +25,7 @@ try {
     page.on('console', (message) => {
       if (message.type() === 'error') errors.push(message.text())
     })
-    await page.goto(base)
+    await page.goto(`${base}/?legacy=1`)
     await expect(page.getByRole('button', { name: '正面', exact: true })).toBeEnabled({
       timeout: 30000,
     })
@@ -70,7 +70,7 @@ try {
   const context = await browser.newContext({ reducedMotion: 'reduce' })
   const page = await context.newPage()
   await page.route('**/models/form-01.glb', (route) => route.fulfill({ status: 404, body: '' }))
-  await page.goto(base)
+  await page.goto(`${base}/?legacy=1`)
   await expect(page.getByRole('button', { name: '重新加载', exact: true })).toBeVisible()
   await page.unroute('**/models/form-01.glb')
   await page.getByRole('button', { name: '重新加载', exact: true }).click()
@@ -98,7 +98,7 @@ try {
     }
   })
   const fallbackPage = await fallback.newPage()
-  await fallbackPage.goto(base)
+  await fallbackPage.goto(`${base}/?legacy=1`)
   await expect(fallbackPage.getByText('换个窗口，继续探索。')).toBeVisible()
   await expect(fallbackPage.locator('canvas')).toHaveCount(0)
   results.push({ webglFallback: 'pass' })
@@ -106,7 +106,7 @@ try {
 
   const motion = await browser.newContext({ viewport: { width: 320, height: 800 } })
   const motionPage = await motion.newPage()
-  await motionPage.goto(base)
+  await motionPage.goto(`${base}/?legacy=1`)
   await expect(motionPage.getByRole('button', { name: '正面', exact: true })).toBeEnabled()
   await motionPage.keyboard.press('Tab')
   await expect(motionPage.getByText('跳转到内容')).toBeFocused()

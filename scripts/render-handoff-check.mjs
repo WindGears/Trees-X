@@ -1,6 +1,6 @@
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -11,7 +11,7 @@ try {
     reducedMotion: 'no-preference',
   })
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto(`${base}/?product=toy-racer`)
+  await page.goto(`${base}/?legacy=1&product=toy-racer`)
 
   await page.getByRole('button', { name: '完整控制台', exact: true }).click()
   const viewer = page.locator('.product-viewer')

@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium, expect } from '@playwright/test'
 import { assertStablePixels } from './pixel-stability.mjs'
 
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -15,7 +15,7 @@ try {
     const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' })
     const errors = []
     page.on('pageerror', (error) => errors.push(error.message))
-    await page.goto(base)
+    await page.goto(`${base}/?legacy=1`)
 
     await page.getByRole('button', { name: '完整控制台', exact: true }).click()
     const button = (label) => page.getByRole('button', { name: label, exact: true })
@@ -117,7 +117,7 @@ try {
   }
   // Animation interruption and rapid intent replacement with motion enabled.
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
-  await page.goto(base)
+  await page.goto(`${base}/?legacy=1`)
 
   await page.getByRole('button', { name: '完整控制台', exact: true }).click()
   await expect(page.getByRole('button', { name: '展开结构', exact: true })).toBeEnabled({

@@ -1,6 +1,6 @@
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review/exhibition'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -14,7 +14,7 @@ try {
   page.on('request', (r) => {
     if (/^https?:/.test(r.url()) && !r.url().startsWith(base)) report.external.push(r.url())
   })
-  await page.goto(base)
+  await page.goto(`${base}/?legacy=1`)
   const button = (name) => page.getByRole('button', { name, exact: true })
   await expect(button('正面')).toBeEnabled({ timeout: 40000 })
   await expect(page.locator('.studio-console')).toBeHidden()
@@ -73,7 +73,7 @@ try {
     const scene = await browser.newPage({ viewport: { width, height } })
     scene.on('pageerror', (e) => report.errors.push(e.message))
     for (const id of ['form-01', 'toy-racer', 'potted-plant']) {
-      await scene.goto(`${base}/?product=${id}`)
+      await scene.goto(`${base}/?legacy=1&product=${id}`)
       await expect(scene.getByRole('button', { name: '正面', exact: true })).toBeEnabled({
         timeout: 40000,
       })
@@ -107,7 +107,7 @@ try {
   }
   for (const width of [390, 320]) {
     const mobile = await browser.newPage({ viewport: { width, height: 844 } })
-    await mobile.goto(base)
+    await mobile.goto(`${base}/?legacy=1`)
     await expect(mobile.getByRole('button', { name: '正面', exact: true })).toBeEnabled({
       timeout: 40000,
     })

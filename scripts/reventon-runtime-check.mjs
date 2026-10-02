@@ -16,7 +16,7 @@ try {
     if (request.url().startsWith('http') && new URL(request.url()).origin !== new URL(base).origin)
       report.external.push(request.url())
   })
-  await page.goto(`${base}/?product=reventon`)
+  await page.goto(`${base}/?legacy=1&product=reventon`)
   const host = page.locator('.reventon-experience')
   await expect(host).toHaveAttribute('data-status', 'ready', { timeout: 180000 })
   await expect(page.locator('canvas')).toHaveCount(1)

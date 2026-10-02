@@ -1,0 +1,360 @@
+[
+  {
+    "slug": "form-01",
+    "name": "桌面音箱",
+    "category": "数码",
+    "description": "从单元、旋钮到外壳，逐层认识一件商品。",
+    "presentation": {
+      "version": 1,
+      "source": {
+        "kind": "procedural",
+        "key": "speaker"
+      },
+      "camera": {
+        "position": [3.5, 2.3, 5],
+        "target": [0, 1, 0],
+        "minDistance": 2,
+        "maxDistance": 12
+      },
+      "views": [
+        {
+          "id": "perspective",
+          "label": "全景",
+          "position": [3.5, 2.3, 5],
+          "target": [0, 1, 0]
+        },
+        {
+          "id": "front",
+          "label": "正面",
+          "position": [0, 1.6, 6.4],
+          "target": [0, 1, 0]
+        },
+        {
+          "id": "side",
+          "label": "侧面",
+          "position": [6.4, 2, 0],
+          "target": [0, 1, 0]
+        },
+        {
+          "id": "top",
+          "label": "俯视",
+          "position": [0, 7, 0.01],
+          "target": [0, 1, 0]
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "driver",
+          "node": "driver",
+          "name": "扬声器单元",
+          "description": "观察前面的同心层次与单元轮廓。",
+          "cameraOffset": [1.2, 0.5, 2.5]
+        },
+        {
+          "id": "knob",
+          "node": "knob",
+          "name": "顶部旋钮",
+          "description": "旋钮可以转动，演示统一动作入口。",
+          "cameraOffset": [1.5, 1.2, 1.8]
+        },
+        {
+          "id": "shell",
+          "node": "shell",
+          "name": "外壳",
+          "description": "通过试色与分层观察外壳和前面板的关系。",
+          "cameraOffset": [2.5, 1, 2.5]
+        }
+      ],
+      "finishes": [
+        {
+          "id": "graphite",
+          "name": "石墨",
+          "color": "#454e5a"
+        },
+        {
+          "id": "silver",
+          "name": "雾银",
+          "color": "#c1c6cb"
+        },
+        {
+          "id": "sand",
+          "name": "砂岩",
+          "color": "#b59b7c"
+        }
+      ],
+      "actions": [
+        {
+          "id": "turn-knob",
+          "label": "转动旋钮",
+          "kind": "toggle",
+          "node": "knob"
+        }
+      ],
+      "structure": true,
+      "guide": [
+        {
+          "id": "overview",
+          "title": "完整轮廓",
+          "description": "先观察音箱正面与顶部的比例。",
+          "view": "perspective"
+        },
+        {
+          "id": "detail",
+          "title": "靠近单元",
+          "description": "看清单元与前面板的层次。",
+          "hotspotId": "driver"
+        },
+        {
+          "id": "action",
+          "title": "转动与分层",
+          "description": "旋钮转动，前面板分开，观察各部分的位置。",
+          "actionId": "turn-knob",
+          "explode": true
+        },
+        {
+          "id": "complete",
+          "title": "回到全景",
+          "description": "部件合拢，保留当前配色，继续自由观察。",
+          "overview": true
+        }
+      ]
+    }
+  },
+  {
+    "slug": "typewriter-study",
+    "name": "机械打字机",
+    "category": "机械",
+    "description": "让一次按键连接到可观察的机构动作。",
+    "presentation": {
+      "version": 1,
+      "source": {
+        "kind": "procedural",
+        "key": "typewriter"
+      },
+      "camera": {
+        "position": [4, 3, 5],
+        "target": [0, 0.7, 0],
+        "minDistance": 2,
+        "maxDistance": 12
+      },
+      "views": [
+        {
+          "id": "perspective",
+          "label": "全景",
+          "position": [4, 3, 5],
+          "target": [0, 0.7, 0]
+        },
+        {
+          "id": "front",
+          "label": "正面",
+          "position": [0, 1.6, 6.4],
+          "target": [0, 0.7, 0]
+        },
+        {
+          "id": "side",
+          "label": "侧面",
+          "position": [6.4, 2, 0],
+          "target": [0, 0.7, 0]
+        },
+        {
+          "id": "top",
+          "label": "俯视",
+          "position": [0, 7, 0.01],
+          "target": [0, 0.7, 0]
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "keys",
+          "node": "keys",
+          "name": "键盘",
+          "description": "点击动作入口，观察一个按键与字杆的联动。",
+          "cameraOffset": [1.8, 1.6, 2.5]
+        },
+        {
+          "id": "lever",
+          "node": "lever",
+          "name": "字杆",
+          "description": "简化字杆用于验证动作和细节聚焦。",
+          "cameraOffset": [1.5, 1.1, 2]
+        },
+        {
+          "id": "carriage",
+          "node": "carriage",
+          "name": "滚筒与滑架",
+          "description": "滑架可以随按键演示移动；样板不表达真实机械尺寸。",
+          "cameraOffset": [2, 1.4, 2]
+        }
+      ],
+      "finishes": [
+        {
+          "id": "ink",
+          "name": "墨黑",
+          "color": "#34434d"
+        },
+        {
+          "id": "cream",
+          "name": "暖白",
+          "color": "#c9bc9b"
+        }
+      ],
+      "actions": [
+        {
+          "id": "press-key",
+          "label": "演示按键联动",
+          "kind": "pulse",
+          "node": "key"
+        }
+      ],
+      "structure": true,
+      "guide": [
+        {
+          "id": "overview",
+          "title": "认识打字机",
+          "description": "先从键盘、字杆和滚筒的位置观察整体。",
+          "view": "perspective"
+        },
+        {
+          "id": "detail",
+          "title": "看向字杆",
+          "description": "靠近连接输入与输出的机构。",
+          "hotspotId": "lever"
+        },
+        {
+          "id": "action",
+          "title": "一次按键",
+          "description": "按键、字杆与滑架完成一次简化联动。",
+          "actionId": "press-key"
+        },
+        {
+          "id": "complete",
+          "title": "回到全景",
+          "description": "恢复完整外观，自由选择想看的部位。",
+          "overview": true
+        }
+      ]
+    }
+  },
+  {
+    "slug": "reventon",
+    "name": "汽车样板",
+    "category": "交通",
+    "description": "从车身、车门到座舱，验证自由观察与动作。",
+    "presentation": {
+      "version": 1,
+      "source": {
+        "kind": "procedural",
+        "key": "car"
+      },
+      "camera": {
+        "position": [5, 3.2, 6],
+        "target": [0, 0.65, 0],
+        "minDistance": 2,
+        "maxDistance": 12
+      },
+      "views": [
+        {
+          "id": "perspective",
+          "label": "全景",
+          "position": [5, 3.2, 6],
+          "target": [0, 0.65, 0]
+        },
+        {
+          "id": "front",
+          "label": "正面",
+          "position": [0, 1.6, 6.4],
+          "target": [0, 0.65, 0]
+        },
+        {
+          "id": "side",
+          "label": "侧面",
+          "position": [6.4, 2, 0],
+          "target": [0, 0.65, 0]
+        },
+        {
+          "id": "top",
+          "label": "俯视",
+          "position": [0, 7, 0.01],
+          "target": [0, 0.65, 0]
+        }
+      ],
+      "hotspots": [
+        {
+          "id": "body",
+          "node": "body",
+          "name": "车身轮廓",
+          "description": "从不同视角观察车身的整体比例。",
+          "cameraOffset": [3, 1.4, 3]
+        },
+        {
+          "id": "door",
+          "node": "door-left",
+          "name": "车门",
+          "description": "开门后观察车门和座舱的相对位置。",
+          "cameraOffset": [-2, 1.2, 2.5]
+        },
+        {
+          "id": "cabin",
+          "node": "cabin",
+          "name": "座舱",
+          "description": "座椅与中控仅使用简化形体，验证内部观察流程。",
+          "cameraOffset": [1.4, 1.7, 1.6]
+        }
+      ],
+      "finishes": [
+        {
+          "id": "slate",
+          "name": "岩灰",
+          "color": "#667681"
+        },
+        {
+          "id": "chalk",
+          "name": "浅银",
+          "color": "#c6cdd1"
+        },
+        {
+          "id": "copper",
+          "name": "铜棕",
+          "color": "#a56d48"
+        }
+      ],
+      "actions": [
+        {
+          "id": "open-doors",
+          "label": "打开车门",
+          "kind": "toggle",
+          "node": "door-left"
+        }
+      ],
+      "structure": true,
+      "guide": [
+        {
+          "id": "overview",
+          "title": "完整车身",
+          "description": "自由旋转，先认识车身与车轮的关系。",
+          "view": "perspective"
+        },
+        {
+          "id": "detail",
+          "title": "打开车门",
+          "description": "观察车门升起后的姿态。",
+          "hotspotId": "door",
+          "actionId": "open-doors"
+        },
+        {
+          "id": "structure",
+          "title": "走近座舱",
+          "description": "聚焦内部位置，并观察部件分离。",
+          "hotspotId": "cabin",
+          "explode": true
+        },
+        {
+          "id": "complete",
+          "title": "合拢与全景",
+          "description": "关门、合拢，回到整体观察。",
+          "overview": true
+        }
+      ]
+    }
+  }
+]

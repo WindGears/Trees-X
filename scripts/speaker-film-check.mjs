@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { assertStablePixels } from './pixel-stability.mjs'
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review/speaker-film'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -12,7 +12,7 @@ try {
   page.on('console', (message) => {
     if (message.type() === 'error') report.errors.push(message.text())
   })
-  await page.goto(base)
+  await page.goto(`${base}/?legacy=1`)
   const studio = page.locator('.product-studio')
   const button = (name) => page.getByRole('button', { name, exact: true })
   const start = page.getByRole('button', { name: /观看演绎/ })
@@ -100,7 +100,7 @@ try {
   ]) {
     const layout = await browser.newPage({ viewport: { width, height }, reducedMotion: motion })
     layout.on('pageerror', (error) => report.errors.push(error.message))
-    await layout.goto(base)
+    await layout.goto(`${base}/?legacy=1`)
     await expect(layout.getByRole('button', { name: '正面', exact: true })).toBeEnabled({
       timeout: 40000,
     })

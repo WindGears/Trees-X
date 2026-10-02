@@ -1,55 +1,75 @@
 # Trees X
 
-本科毕业设计《基于 Three.js 的 Web 端三维商品展示与交互系统的设计与实现》。当前为桌面优先的多商品交互舞台。
+面向商品观察与理解的三维工作台。当前先统一商品流程与前后端框架，使用真实 Three.js 程序化音箱、打字机和汽车验证操作，再逐件替换正式模型。
 
-## 运行
+## 启动
 
-使用项目 package.json 声明的 Node 版本与 npm。
+Node/npm 版本遵循 package.json。另需 Java 17 和 MySQL 8.0。
 
-汽车的 GLB、烘焙贴图与 HDR 通过 Git LFS 保存，运行资源约 1.75 GB。克隆前需安装 Git LFS；已有仓库也应执行下列拉取步骤，确保得到实际资源而不是指针文本：
+1. `npm ci`
+2. 复制 `server/.env.example` 为 `server/.env.local`，填写 Java 路径、MySQL 账号/密码。此文件已被 Git 忽略；环境变量优先。
+3. 在两个终端分别启动：
+
+```sh
+npm run server:dev
+npm run dev -- --strictPort
+```
+
+打开 [工作台](http://127.0.0.1:5181/)。后端默认 8089，前端 5181，通过 `/api` 同源代理访问。Java 启动脚本优先使用 TREES_JAVA_HOME，再检查当前用户 `.jdks/ms-17.0.18`，不改变系统默认 Java。数据库为独立 `trees_x`，首次通过 Flyway 建表与插入三件样板；重启不会覆盖已有记录。数据库账号需拥有该独立库建库/迁移权限。
+
+本地端口可分别用 TREES_PORT 和 Vite 参数调整；若后端端口变动，同步调整 vite.config.ts 的代理。完整配置/API 说明见 [server/README.md](server/README.md)。
+
+## 当前工作台
+
+- 首页为音箱；目录支持名称搜索、分类过滤；`?product=form-01`、`?product=typewriter-study`、`?product=reventon` 深链接及返回/前进均可用。
+- 左键拖动、滚轮缩放、命名视角、相机复位；目录左开、操作右开，同时只显示一个面板。关闭面板保留观察状态。
+- 音箱：试色、单元/旋钮/外壳热点、旋钮转动和外观分层。
+- 打字机：试色、键盘/字杆/滚筒热点、按键联动和机构分层。
+- 汽车：试色、车身/车门/座舱热点、开门和部件分离。
+- 四步导览主动开始，允许随时自由观察。相机复位只影响镜头；还原商品恢复默认配色、动作、结构和镜头。
+- 单 TresCanvas/renderer 切换；加载/服务失败明确重试；迟到响应隔离；WebGL 上下文恢复。
+- 商品和展示配置来自真实 Spring Boot 4.1.1 + JPA + Flyway + MySQL；无运行时静态假数据回退，无匿名写端点。
+
+所有新模型都标明“流程样板”，不表示真实商品品牌、内部构造、性能或维修顺序。新工作台首屏不自动演出，不加载旧高精汽车、手势或后处理资源。
+
+## 保留旧版
+
+旧版入口：`?legacy=1&product=form-01`、`?legacy=1&product=typewriter-study`、`?legacy=1&product=reventon`。六件非样板旧 ID（如 `?product=potted-plant`）仍自动打开旧体验。
+
+旧精细汽车是 Three.js + Blender 烘焙 PBR/AO 的固定实机流程，仍有播放、暂停、章节定位；现在与新汽车样板分开。其他旧展品、手势、后处理和资源许可记录保留。
+
+旧汽车 LFS 运行资源约 1.75 GB，仅使用旧高精 Demo 时需要拉取：
 
 ```sh
 git lfs install --local
 git lfs pull
 ```
 
-```sh
-npm ci
-npm run dev -- --port 5180 --strictPort
-```
+新工作台无需这批模型即可验证完整流程。构建仍保留 public 中的旧资源，以便旧入口继续可用；不要把新工作台零高精模型请求等同于整个发布目录很小。
 
-打开 `http://127.0.0.1:5180/`。顶部“商品目录”支持分类、搜索与选择；舞台左侧可前后切换。`?product=toy-racer` 等链接可直接进入指定商品，支持刷新与浏览器后退。
+## 验证
 
 ```sh
 npm run check
 npm run build
-npm run preview -- --port 5181
+npm run server:test
+npm run server:build
+npm run test:workbench
 ```
 
-## 已实现
+`server:test` 使用本机独立 `trees_x_test`，执行真实 API、迁移、数据库修改和 Spring 重启持久化验证，结束恢复测试记录。原生 Maven 未设 TREES_MYSQL_TEST=true 时只运行纯契约测试，不能替代实际 MySQL 验收。
 
-- Vue 3 + TypeScript + Vite + TresJS + Three.js + GSAP + Lenis + Pinia，Tailwind/shadcn-vue。
-- 七件样品：原创 FORM / 01 音箱，以及从用户 heritage-museum 商品版复用的手柄、主机、边桌、绿植、家具套件、赛车。
-- 独立打字机展品与 Reventón 汽车，共九件目录展品；Reventón 直达 `?product=reventon`。
-- Reventón 使用 Three.js 实时绘制原模型与 Blender 烘焙 PBR/AO；约 16 秒的开门、座舱、部件展开和合拢流程支持播放、暂停、章节与进度定位，不提供自由旋转。本轮按技术验证完成，未宣称与原参考图照片级等效。
-- 同一个 TresCanvas 切换模型；加载/失败重试、请求取消、迟到结果隔离、资源释放与 WebGL 上下文恢复。
-- 拖动、命名视角、缩放、局部试色、部件聚焦、外观分层和二/三步导览，按实际模型能力显示。
-- 桌面 HDR 反射、能量环、1600 粒子、全息扫描、Bloom/暗角与 2.4 秒演出；每件商品每次页面会话自动播放一次。重播不重置产品状态，用户输入立即中止。
-- 手势观察采用独立运动时钟与有限惯性；可见停手快速制动，离镜缓慢停止，重新入镜建立新基线。
-- 手势选择默认试用悬停确认，也可切换捏合确认；共享部件热点与配色/结构/视角操作盘。漏检不累计确认时间，鼠标可随时接管。
-- 摄像头须手动开启，原始画面留在本机，MediaPipe Worker/模型/WASM 自托管。关闭或页面进入后台即停止摄像头。
+浏览器测试需先启动前后端；使用本机 Edge。默认 5181，可用 CHECK_URL 覆盖。工作台测试核对真实场景节点、动作姿态、同一 renderer、错误重试、桌面三个尺寸及移动基础操作。截图与报告位于 `.impeccable/review/workbench/`。
 
-所有商品都是三维展示样品；试色不代表真实产品配色，不含价格、购买或性能承诺。参考项目的 Spring Boot 后台、管理员/上传/数据库尚未接入 Trees X；多商品同时陈列、AI 讲解与滚动叙事仍是后续工作。
+另启动 `npm run preview -- --port 5182` 后，可运行 `npm run test:workbench-production` 核对生产构建的真实像素、操作与错误恢复。
 
-## 验证
-
-先启动本地服务，再执行：
+保留的旧版回归脚本均使用 `legacy=1`：
 
 ```sh
-npm run test:browser
-npm run test:experience
-npm run test:collection
 npm run test:render-handoff
+npm run test:collection
+npm run test:experience
+npm run test:browser
 npm run test:gesture
 npm run test:gesture-interaction
 npm run test:gesture-motion
@@ -60,18 +80,17 @@ npm run test:reventon-lifecycle
 npm run test:reventon-playback
 ```
 
-浏览器脚本使用本机 Microsoft Edge；普通脚本默认检查 5180，Reventón 脚本默认 5181，均可用 `CHECK_URL` 指定实际服务地址。截图/报告写入 `.impeccable/review/`。手势自动化使用合成视频或关键点，不能代替真人识别率与疲劳度验收。
+手势测试使用合成输入，不能替代真人识别率验收。生产构建可用 `npm run preview -- --port 5182` 预览，后端保持 8089；实际部署须为 `/api` 配置同源反向代理。
 
-## 配置与资源
+## 扩展入口
 
-- `src/data/products.ts`：基础类型与原创音箱配置。
-- `src/data/collection.ts`：导入商品、实际节点、相机视角、材质与世界坐标展开配置。
-- `public/models/collection/manifest.json`：来源、作者、许可记录、SHA-256、体积、面数、节点。
-- `public/models/reventon/`：汽车实机所需模型、75 张烘焙 PNG、HDR、动作与来源清单；LFS 拉取后可直接运行，无需本机安装 Blender。原始下载包、Blender 制作工程和本地测试截图位于忽略目录，不随 Git 同步。
-- `public/draco/`：当前 Three 版本的自托管 glTF Draco 解码器与 Apache-2.0 许可。
-- `public/covers/`：参考项目封面与原创模型渲染截图；目录不额外创建 Canvas。
-- `public/textures/`、`public/fonts/`、`public/gesture/`：环境、字体、识别资源来源记录。
+- `server/src/main/resources/samples/products.json`：初始三件脚本；只由 Flyway 首次导入，不是前端备用数据。
+- `src/lib/workbench/types.ts` / `api.ts`：配置契约与响应校验。
+- `src/stores/workbench.ts`：可序列化状态与意图。
+- `src/lib/workbench/adapter.ts` / `samples.ts` / `controller.ts`：模型构建、局部资源、统一相机/动作操作。
+- `src/components/workbench`：统一界面与唯一 Canvas。
+- `public/models/collection/manifest.json` / `public/models/reventon/provenance.json`：原资产事实与许可。
 
-普通展品的 GLB 交付格式为自包含原始/Draco GLB，单模型上限 5 MiB / 10 万三角形。Reventón 按用户要求保留高精度原几何，是此预算的明确例外；详见其资源 README。Meshopt/KTX2 尚未接入。Pinia 只存可序列化数据，Three 对象由局部生命周期拥有。
+后续按音箱 → 打字机 → 汽车接入正式模型，保持布局、接口和基本操作不变。手势适配、管理后台、鉴权与上传另设阶段。本轮不扩展这些内容。
 
-后续开发先读取 `.ai/project.md`、`.ai/architecture.md`；本次整合及验证见 `.ai/heritage-integration.md`，视觉规范见 `DESIGN.md`。
+开发前阅读 [.ai/project.md](.ai/project.md)、[.ai/architecture.md](.ai/architecture.md)；产品事实见 [PRODUCT.md](PRODUCT.md)，视觉规范见 [DESIGN.md](DESIGN.md)，证据见 [工作台验收](.ai/workbench-validation.md)。

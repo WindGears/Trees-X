@@ -7,6 +7,9 @@
     "node": "^20.19.0 || ^22.13.0 || >=24"
   },
   "scripts": {
+    "server:dev": "node scripts/server.mjs dev",
+    "server:test": "node scripts/server.mjs test",
+    "server:build": "node scripts/server.mjs package",
     "dev": "vite --host 127.0.0.1",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
@@ -16,6 +19,8 @@
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run lint && npm run format:check && node scripts/check-architecture.mjs && npm run model:check && npm run test",
     "test": "vitest run",
+    "test:workbench": "node scripts/workbench-check.mjs",
+    "test:workbench-production": "node scripts/workbench-production-check.mjs",
     "test:browser": "node scripts/browser-check.mjs",
     "test:collection": "node scripts/collection-check.mjs",
     "test:render-handoff": "node scripts/render-handoff-check.mjs",

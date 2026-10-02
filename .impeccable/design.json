@@ -1,167 +1,543 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-30T21:36:04+08:00",
-  "title": "Design System: Trees X 沉浸式展厅",
+  "generatedAt": "2026-10-02T04:46:53Z",
+  "title": "Design System: Trees X 三维商品工作台",
   "extensions": {
     "colorMeta": {
-      "reventon-studio": { "role": "neutral", "displayName": "Reventón 浅灰棚景中心" },
-      "reventon-studio-edge": { "role": "neutral", "displayName": "Reventón 灰绿棚景边缘" },
-      "reventon-ink": { "role": "neutral", "displayName": "Reventón 深墨正文" },
-      "reventon-muted": { "role": "neutral", "displayName": "Reventón 灰绿辅助文字" },
-      "reventon-header-muted": { "role": "neutral", "displayName": "Reventón 顶部辅助文字" },
-      "reventon-hover": { "role": "neutral", "displayName": "Reventón 外景悬停底色" },
-      "reventon-focus": { "role": "primary", "displayName": "Reventón 外景焦点" },
-      "reventon-progress": { "role": "primary", "displayName": "Reventón 外景进度" },
-      "reventon-cabin-ink": { "role": "neutral", "displayName": "Reventón 座舱近白文字" },
-      "reventon-cabin-muted": { "role": "neutral", "displayName": "Reventón 座舱辅助文字" },
-      "reventon-cabin-hover": { "role": "neutral", "displayName": "Reventón 座舱悬停底色" },
-      "reventon-cabin-focus": { "role": "primary", "displayName": "Reventón 座舱焦点" },
-      "reventon-cabin-progress": { "role": "primary", "displayName": "Reventón 座舱进度" }
+      "wb-accent": {
+        "role": "primary",
+        "displayName": "冷银蓝选中态",
+        "tonalRamp": [
+          "oklch(15.00% 0.0445 253.62)",
+          "oklch(26.43% 0.0445 253.62)",
+          "oklch(37.86% 0.0445 253.62)",
+          "oklch(49.29% 0.0445 253.62)",
+          "oklch(60.71% 0.0445 253.62)",
+          "oklch(72.14% 0.0445 253.62)",
+          "oklch(83.57% 0.0445 253.62)",
+          "oklch(95.00% 0.0445 253.62)"
+        ]
+      },
+      "wb-accent-hover": {
+        "role": "primary",
+        "displayName": "冷银蓝悬停",
+        "tonalRamp": [
+          "oklch(15.00% 0.0318 251.13)",
+          "oklch(26.43% 0.0318 251.13)",
+          "oklch(37.86% 0.0318 251.13)",
+          "oklch(49.29% 0.0318 251.13)",
+          "oklch(60.71% 0.0318 251.13)",
+          "oklch(72.14% 0.0318 251.13)",
+          "oklch(83.57% 0.0318 251.13)",
+          "oklch(95.00% 0.0318 251.13)"
+        ]
+      },
+      "wb-accent-ink": {
+        "role": "neutral",
+        "displayName": "选中深墨文字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0240 251.59)",
+          "oklch(26.43% 0.0240 251.59)",
+          "oklch(37.86% 0.0240 251.59)",
+          "oklch(49.29% 0.0240 251.59)",
+          "oklch(60.71% 0.0240 251.59)",
+          "oklch(72.14% 0.0240 251.59)",
+          "oklch(83.57% 0.0240 251.59)",
+          "oklch(95.00% 0.0240 251.59)"
+        ]
+      },
+      "wb-focus": {
+        "role": "primary",
+        "displayName": "冰蓝键盘焦点",
+        "tonalRamp": [
+          "oklch(15.00% 0.0416 255.01)",
+          "oklch(26.43% 0.0416 255.01)",
+          "oklch(37.86% 0.0416 255.01)",
+          "oklch(49.29% 0.0416 255.01)",
+          "oklch(60.71% 0.0416 255.01)",
+          "oklch(72.14% 0.0416 255.01)",
+          "oklch(83.57% 0.0416 255.01)",
+          "oklch(95.00% 0.0416 255.01)"
+        ]
+      },
+      "wb-bg": {
+        "role": "neutral",
+        "displayName": "深海框架底色",
+        "tonalRamp": [
+          "oklch(15.00% 0.0210 254.94)",
+          "oklch(26.43% 0.0210 254.94)",
+          "oklch(37.86% 0.0210 254.94)",
+          "oklch(49.29% 0.0210 254.94)",
+          "oklch(60.71% 0.0210 254.94)",
+          "oklch(72.14% 0.0210 254.94)",
+          "oklch(83.57% 0.0210 254.94)",
+          "oklch(95.00% 0.0210 254.94)"
+        ]
+      },
+      "wb-stage": {
+        "role": "neutral",
+        "displayName": "石板舞台背景",
+        "tonalRamp": [
+          "oklch(15.00% 0.0205 254.90)",
+          "oklch(26.43% 0.0205 254.90)",
+          "oklch(37.86% 0.0205 254.90)",
+          "oklch(49.29% 0.0205 254.90)",
+          "oklch(60.71% 0.0205 254.90)",
+          "oklch(72.14% 0.0205 254.90)",
+          "oklch(83.57% 0.0205 254.90)",
+          "oklch(95.00% 0.0205 254.90)"
+        ]
+      },
+      "wb-panel": {
+        "role": "neutral",
+        "displayName": "蓝灰面板",
+        "tonalRamp": [
+          "oklch(15.00% 0.0276 253.44)",
+          "oklch(26.43% 0.0276 253.44)",
+          "oklch(37.86% 0.0276 253.44)",
+          "oklch(49.29% 0.0276 253.44)",
+          "oklch(60.71% 0.0276 253.44)",
+          "oklch(72.14% 0.0276 253.44)",
+          "oklch(83.57% 0.0276 253.44)",
+          "oklch(95.00% 0.0276 253.44)"
+        ]
+      },
+      "wb-foreground": {
+        "role": "neutral",
+        "displayName": "霜白正文",
+        "tonalRamp": [
+          "oklch(15.00% 0.0091 258.34)",
+          "oklch(26.43% 0.0091 258.34)",
+          "oklch(37.86% 0.0091 258.34)",
+          "oklch(49.29% 0.0091 258.34)",
+          "oklch(60.71% 0.0091 258.34)",
+          "oklch(72.14% 0.0091 258.34)",
+          "oklch(83.57% 0.0091 258.34)",
+          "oklch(95.00% 0.0091 258.34)"
+        ]
+      },
+      "wb-muted": {
+        "role": "neutral",
+        "displayName": "灰蓝辅助字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0294 251.51)",
+          "oklch(26.43% 0.0294 251.51)",
+          "oklch(37.86% 0.0294 251.51)",
+          "oklch(49.29% 0.0294 251.51)",
+          "oklch(60.71% 0.0294 251.51)",
+          "oklch(72.14% 0.0294 251.51)",
+          "oklch(83.57% 0.0294 251.51)",
+          "oklch(95.00% 0.0294 251.51)"
+        ]
+      },
+      "wb-line": {
+        "role": "neutral",
+        "displayName": "蓝灰分隔线",
+        "tonalRamp": [
+          "oklch(15.00% 0.0375 251.79)",
+          "oklch(26.43% 0.0375 251.79)",
+          "oklch(37.86% 0.0375 251.79)",
+          "oklch(49.29% 0.0375 251.79)",
+          "oklch(60.71% 0.0375 251.79)",
+          "oklch(72.14% 0.0375 251.79)",
+          "oklch(83.57% 0.0375 251.79)",
+          "oklch(95.00% 0.0375 251.79)"
+        ]
+      },
+      "wb-button": {
+        "role": "neutral",
+        "displayName": "深蓝灰按钮",
+        "tonalRamp": [
+          "oklch(15.00% 0.0368 253.76)",
+          "oklch(26.43% 0.0368 253.76)",
+          "oklch(37.86% 0.0368 253.76)",
+          "oklch(49.29% 0.0368 253.76)",
+          "oklch(60.71% 0.0368 253.76)",
+          "oklch(72.14% 0.0368 253.76)",
+          "oklch(83.57% 0.0368 253.76)",
+          "oklch(95.00% 0.0368 253.76)"
+        ]
+      },
+      "wb-button-hover": {
+        "role": "neutral",
+        "displayName": "按钮悬停层",
+        "tonalRamp": [
+          "oklch(15.00% 0.0421 251.63)",
+          "oklch(26.43% 0.0421 251.63)",
+          "oklch(37.86% 0.0421 251.63)",
+          "oklch(49.29% 0.0421 251.63)",
+          "oklch(60.71% 0.0421 251.63)",
+          "oklch(72.14% 0.0421 251.63)",
+          "oklch(83.57% 0.0421 251.63)",
+          "oklch(95.00% 0.0421 251.63)"
+        ]
+      },
+      "wb-field": {
+        "role": "neutral",
+        "displayName": "字段底色",
+        "tonalRamp": [
+          "oklch(15.00% 0.0300 251.03)",
+          "oklch(26.43% 0.0300 251.03)",
+          "oklch(37.86% 0.0300 251.03)",
+          "oklch(49.29% 0.0300 251.03)",
+          "oklch(60.71% 0.0300 251.03)",
+          "oklch(72.14% 0.0300 251.03)",
+          "oklch(83.57% 0.0300 251.03)",
+          "oklch(95.00% 0.0300 251.03)"
+        ]
+      },
+      "wb-label": {
+        "role": "neutral",
+        "displayName": "流程样板文字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0330 254.02)",
+          "oklch(26.43% 0.0330 254.02)",
+          "oklch(37.86% 0.0330 254.02)",
+          "oklch(49.29% 0.0330 254.02)",
+          "oklch(60.71% 0.0330 254.02)",
+          "oklch(72.14% 0.0330 254.02)",
+          "oklch(83.57% 0.0330 254.02)",
+          "oklch(95.00% 0.0330 254.02)"
+        ]
+      },
+      "wb-tool-line": {
+        "role": "neutral",
+        "displayName": "工具与标记边线",
+        "tonalRamp": [
+          "oklch(15.00% 0.0436 252.47)",
+          "oklch(26.43% 0.0436 252.47)",
+          "oklch(37.86% 0.0436 252.47)",
+          "oklch(49.29% 0.0436 252.47)",
+          "oklch(60.71% 0.0436 252.47)",
+          "oklch(72.14% 0.0436 252.47)",
+          "oklch(83.57% 0.0436 252.47)",
+          "oklch(95.00% 0.0436 252.47)"
+        ]
+      },
+      "wb-toolbar": {
+        "role": "neutral",
+        "displayName": "轻透工具表面",
+        "tonalRamp": [
+          "oklch(15.00% 0.0323 252.96 / 0.9176)",
+          "oklch(26.43% 0.0323 252.96 / 0.9176)",
+          "oklch(37.86% 0.0323 252.96 / 0.9176)",
+          "oklch(49.29% 0.0323 252.96 / 0.9176)",
+          "oklch(60.71% 0.0323 252.96 / 0.9176)",
+          "oklch(72.14% 0.0323 252.96 / 0.9176)",
+          "oklch(83.57% 0.0323 252.96 / 0.9176)",
+          "oklch(95.00% 0.0323 252.96 / 0.9176)"
+        ]
+      },
+      "wb-search-line": {
+        "role": "neutral",
+        "displayName": "搜索下划线",
+        "tonalRamp": [
+          "oklch(15.00% 0.0602 249.82)",
+          "oklch(26.43% 0.0602 249.82)",
+          "oklch(37.86% 0.0602 249.82)",
+          "oklch(49.29% 0.0602 249.82)",
+          "oklch(60.71% 0.0602 249.82)",
+          "oklch(72.14% 0.0602 249.82)",
+          "oklch(83.57% 0.0602 249.82)",
+          "oklch(95.00% 0.0602 249.82)"
+        ]
+      },
+      "wb-placeholder": {
+        "role": "neutral",
+        "displayName": "搜索占位字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0311 251.33)",
+          "oklch(26.43% 0.0311 251.33)",
+          "oklch(37.86% 0.0311 251.33)",
+          "oklch(49.29% 0.0311 251.33)",
+          "oklch(60.71% 0.0311 251.33)",
+          "oklch(72.14% 0.0311 251.33)",
+          "oklch(83.57% 0.0311 251.33)",
+          "oklch(95.00% 0.0311 251.33)"
+        ]
+      },
+      "wb-scrollbar": {
+        "role": "neutral",
+        "displayName": "滚动条",
+        "tonalRamp": [
+          "oklch(15.00% 0.0517 251.77)",
+          "oklch(26.43% 0.0517 251.77)",
+          "oklch(37.86% 0.0517 251.77)",
+          "oklch(49.29% 0.0517 251.77)",
+          "oklch(60.71% 0.0517 251.77)",
+          "oklch(72.14% 0.0517 251.77)",
+          "oklch(83.57% 0.0517 251.77)",
+          "oklch(95.00% 0.0517 251.77)"
+        ]
+      },
+      "wb-swatch-line": {
+        "role": "neutral",
+        "displayName": "色样边线",
+        "tonalRamp": [
+          "oklch(15.00% 0.0503 252.51)",
+          "oklch(26.43% 0.0503 252.51)",
+          "oklch(37.86% 0.0503 252.51)",
+          "oklch(49.29% 0.0503 252.51)",
+          "oklch(60.71% 0.0503 252.51)",
+          "oklch(72.14% 0.0503 252.51)",
+          "oklch(83.57% 0.0503 252.51)",
+          "oklch(95.00% 0.0503 252.51)"
+        ]
+      },
+      "wb-status": {
+        "role": "neutral",
+        "displayName": "状态覆盖层",
+        "tonalRamp": [
+          "oklch(15.00% 0.0205 254.90 / 0.9608)",
+          "oklch(26.43% 0.0205 254.90 / 0.9608)",
+          "oklch(37.86% 0.0205 254.90 / 0.9608)",
+          "oklch(49.29% 0.0205 254.90 / 0.9608)",
+          "oklch(60.71% 0.0205 254.90 / 0.9608)",
+          "oklch(72.14% 0.0205 254.90 / 0.9608)",
+          "oklch(83.57% 0.0205 254.90 / 0.9608)",
+          "oklch(95.00% 0.0205 254.90 / 0.9608)"
+        ]
+      },
+      "wb-hotspot": {
+        "role": "neutral",
+        "displayName": "部件名称表面",
+        "tonalRamp": [
+          "oklch(15.00% 0.0296 255.30 / 0.8510)",
+          "oklch(26.43% 0.0296 255.30 / 0.8510)",
+          "oklch(37.86% 0.0296 255.30 / 0.8510)",
+          "oklch(49.29% 0.0296 255.30 / 0.8510)",
+          "oklch(60.71% 0.0296 255.30 / 0.8510)",
+          "oklch(72.14% 0.0296 255.30 / 0.8510)",
+          "oklch(83.57% 0.0296 255.30 / 0.8510)",
+          "oklch(95.00% 0.0296 255.30 / 0.8510)"
+        ]
+      },
+      "wb-hotspot-line": {
+        "role": "neutral",
+        "displayName": "部件名称边线",
+        "tonalRamp": [
+          "oklch(15.00% 0.0497 253.54)",
+          "oklch(26.43% 0.0497 253.54)",
+          "oklch(37.86% 0.0497 253.54)",
+          "oklch(49.29% 0.0497 253.54)",
+          "oklch(60.71% 0.0497 253.54)",
+          "oklch(72.14% 0.0497 253.54)",
+          "oklch(83.57% 0.0497 253.54)",
+          "oklch(95.00% 0.0497 253.54)"
+        ]
+      }
     },
     "typographyMeta": {
-      "reventon-display": {
-        "displayName": "Reventón 桌面标题",
-        "purpose": "仅用于独立汽车展品的现有 Manrope 标题。"
+      "wb-display": {
+        "displayName": "商品主标题",
+        "purpose": "桌面中文商品身份；工作台字体栈统一。"
       },
-      "reventon-display-mobile": {
-        "displayName": "Reventón 手机标题",
-        "purpose": "640px 及以下的外景标题；座舱状态仍使用紧凑标题。"
+      "wb-display-mobile": {
+        "displayName": "手机商品标题",
+        "purpose": "760px 及以下缩小字号，面板打开时仍保留。"
       },
-      "reventon-display-cabin": {
-        "displayName": "Reventón 座舱标题",
-        "purpose": "座舱章节降低标题体量，为真实内景留出观察面积。"
+      "wb-brand": {
+        "displayName": "Trees X 品牌",
+        "purpose": "顶栏品牌文字；不替代中文商品名称。"
+      },
+      "wb-brand-mobile": {
+        "displayName": "手机品牌",
+        "purpose": "760px 及以下的紧凑品牌。"
+      },
+      "wb-panel-heading": {
+        "displayName": "工具面板标题",
+        "purpose": "与透明关闭按钮同一行。"
+      },
+      "wb-panel-heading-mobile": {
+        "displayName": "下面板标题",
+        "purpose": "手机面板转到模型下方时使用。"
+      },
+      "wb-status-heading": {
+        "displayName": "舞台状态标题",
+        "purpose": "加载与错误覆盖层。"
+      },
+      "wb-section-heading": {
+        "displayName": "面板功能标题",
+        "purpose": "外观、细节、动作、导览内容。"
+      },
+      "wb-catalog-title": {
+        "displayName": "目录商品名",
+        "purpose": "纵向目录条目中的首要内容。"
+      },
+      "wb-body": {
+        "displayName": "面板正文",
+        "purpose": "工具说明和真实状态。"
+      },
+      "wb-catalog-body": {
+        "displayName": "紧凑目录说明",
+        "purpose": "商品条目描述。"
+      },
+      "wb-label": {
+        "displayName": "辅助文字",
+        "purpose": "样板身份、输入提示、动作状态及手机工具。"
       }
     },
-    "shadows": [
-      {
-        "name": "panel",
-        "value": "0 24px 70px #0004",
-        "purpose": "操作层与舞台区分"
-      }
-    ],
+    "shadows": [],
     "motion": [
       {
-        "name": "panel",
-        "value": "240ms power2.out",
-        "purpose": "面板进入和退出"
+        "name": "wb-control",
+        "value": "150ms ease",
+        "purpose": "按钮背景和文字；减弱动态时全局缩至 0.01ms。"
       },
       {
-        "name": "focus",
-        "value": "800ms power3.out",
-        "purpose": "主动视角与部件聚焦"
+        "name": "wb-panel-enter",
+        "value": "240ms power3.out",
+        "purpose": "进入面板时 opacity 0.3 → 1；减弱动态 duration 0，无离场动画。"
       },
       {
-        "name": "intro",
-        "value": "2400ms GSAP timeline",
-        "purpose": "除音箱外保留的视觉演出，不自动移动镜头"
+        "name": "wb-camera",
+        "value": "650ms power3.out",
+        "purpose": "命名视角和部件聚焦；手动拖动/缩放立即接手，减弱动态直接到目标。"
       },
       {
-        "name": "speaker-light-reveal",
-        "value": "2100ms power2.out",
-        "purpose": "音箱默认入场只揭示条形面光，不移动相机"
+        "name": "wb-pose",
+        "value": "550ms power3.out",
+        "purpose": "状态和结构切换；减弱动态直接到目标。"
       },
       {
-        "name": "speaker-film",
-        "value": "7800ms GSAP timeline; power2.inOut / sine.inOut",
-        "purpose": "用户主动触发旋钮特写、完整轮廓、外观分层与合拢；中断保留当前镜头与分层，减弱动态直接到完整外观"
-      },
-      {
-        "name": "speaker-film-control",
-        "value": "180ms ease",
-        "purpose": "音箱演绎按钮的背景与边框过渡；静态热点名称的透明度过渡"
-      },
-      {
-        "name": "reventon-director",
-        "value": "383 / 24 seconds GSAP timeline; ease: none",
-        "purpose": "仅 Reventón：主动播放真实对象与相机的采样动作；默认暂停，章节跳到代表姿态，减弱动态仅保留章节和进度定位。"
+        "name": "wb-pulse",
+        "value": "180ms power1.inOut; repeat 1; yoyo true",
+        "purpose": "瞬时按键联动单程与返回；减弱动态不循环并归零。"
       }
     ],
     "breakpoints": [
       {
-        "name": "desktop",
-        "value": "1024px"
+        "name": "wb-compact-desktop",
+        "value": "1100px"
       },
       {
-        "name": "wide",
-        "value": "1700px"
-      },
-      {
-        "name": "reventon-mobile",
-        "value": "640px"
+        "name": "wb-mobile",
+        "value": "760px"
       }
     ]
   },
   "components": [
     {
-      "name": "外观选项",
+      "name": "工作台普通按钮",
       "kind": "button",
-      "description": "配色选中同时使用文字、勾选与边框。",
-      "html": "<button class=\"finish\" aria-pressed=\"true\"><span></span>雾银</button>",
-      "css": ".finish {display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:10px 14px;background:#ffffff0c;border:1px solid #b7d5ed;border-radius:4px;color:#f4f7fb;font:13px sans-serif}.finish span{width:20px;height:20px;border-radius:50%;background:#b7bdc9;border:1px solid #ffffff40}"
+      "refersTo": "wb-button",
+      "description": "普通动作、重试和还原入口；未就绪时禁用。",
+      "html": "<button class=\"ds-wb-button\" type=\"button\">还原商品</button>",
+      "css": ".ds-wb-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;background:#1d2b3c;color:#f0f4fa;border:1px solid #304052;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-button:hover:not(:disabled){background:#2b3d51}.ds-wb-button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-button:disabled{opacity:.4;cursor:default}@media(prefers-reduced-motion:reduce){.ds-wb-button{transition-duration:.01ms}}"
     },
     {
-      "name": "音箱演绎入口",
+      "name": "选中的外观选项",
       "kind": "button",
-      "description": "音箱专属的浅银主动播放入口；播放后原位切换为接手探索，未就绪时禁用，减弱动态显示静态欣赏。",
-      "html": "<button class=\"ds-speaker-film\" type=\"button\" aria-pressed=\"false\"><svg width=\"15\" height=\"15\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 3 12 9-12 9V3Z\"/></svg>观看演绎<span>8 秒</span></button>",
-      "css": ".ds-speaker-film{display:inline-flex;align-items:center;gap:12px;min-height:46px;padding:0 18px;border:1px solid #c7cdd3;border-radius:0;background:#dce2e7;color:#13181d;font-family:Manrope,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background 180ms ease,border-color 180ms ease}.ds-speaker-film:hover{background:#fff;border-color:#fff}.ds-speaker-film:focus-visible{outline:2px solid var(--ring,#9fc1ff);outline-offset:4px}.ds-speaker-film:disabled{opacity:.45;cursor:not-allowed}.ds-speaker-film span{margin-left:10px;color:#4e5862;font-size:12px;font-weight:400}"
+      "refersTo": "wb-button-selected",
+      "description": "冷银蓝底、深墨字与勾选同时指示选中；实际配色来自当前商品配置。",
+      "html": "<button class=\"ds-wb-selected\" type=\"button\" aria-pressed=\"true\">选择外壳颜色<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m20 6-11 11-5-5\"/></svg></button>",
+      "css": ".ds-wb-selected{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;background:#bed4ef;color:#101923;border:1px solid #bed4ef;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-selected:hover:not(:disabled){background:#d1e2f5}.ds-wb-selected:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-selected:disabled{opacity:.4;cursor:default}@media(prefers-reduced-motion:reduce){.ds-wb-selected{transition-duration:.01ms}}.ds-wb-selected{min-height:50px;justify-content:flex-start;width:100%}.ds-wb-selected svg{margin-left:auto}"
     },
     {
-      "name": "Reventón 章节",
-      "kind": "nav",
-      "refersTo": "reventon-control",
-      "description": "仅 Reventón 的四章节；当前章节同时使用字重和下划线，44px 最小触达高度。",
-      "html": "<nav class=\"ds-reventon-chapters\" aria-label=\"展示章节\"><button type=\"button\" aria-current=\"step\">开启</button><button type=\"button\">座舱</button><button type=\"button\">展开</button><button type=\"button\">合拢</button></nav>",
-      "css": ".ds-reventon-chapters{display:flex;justify-content:center;gap:36px;background:#dededb;color:#222824;font-family:Manrope,'PingFang SC','Microsoft YaHei',sans-serif}.ds-reventon-chapters button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px;background:transparent;color:#434b45;border:0;border-bottom:1px solid transparent;cursor:pointer;font:14px Manrope,'PingFang SC','Microsoft YaHei',sans-serif}.ds-reventon-chapters button[aria-current=step]{border-color:currentColor;color:#222824;font-weight:600}.ds-reventon-chapters button:hover:not(:disabled){color:#000;background:#c9cdc8}.ds-reventon-chapters button:focus-visible{outline:2px solid #384e40;outline-offset:4px}.ds-reventon-chapters button:disabled{cursor:wait;opacity:.5}@media(max-width:640px){.ds-reventon-chapters{gap:16px}}"
-    },
-    {
-      "name": "Reventón 播放控件",
+      "name": "透明工具按钮",
       "kind": "button",
-      "refersTo": "reventon-control",
-      "description": "真实首帧就绪后启用，播放中原位切换暂停；减弱动态时隐藏连续播放入口。",
-      "html": "<button class=\"ds-reventon-play\" type=\"button\" aria-label=\"播放演示\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m6 3 12 9-12 9V3Z\"/></svg><span>播放演示</span></button>",
-      "css": ".ds-reventon-play{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px;background:transparent;color:#222824;border:0;cursor:pointer;font:14px Manrope,'PingFang SC','Microsoft YaHei',sans-serif}.ds-reventon-play:hover:not(:disabled){color:#000;background:#c9cdc8}.ds-reventon-play:focus-visible{outline:2px solid #384e40;outline-offset:4px}.ds-reventon-play:disabled{cursor:wait;opacity:.5}"
+      "refersTo": "wb-button-ghost",
+      "description": "工具条内部的未选中入口；悬停和键盘焦点复用工作台状态。",
+      "html": "<button class=\"ds-wb-ghost\" type=\"button\" aria-pressed=\"false\">细节</button>",
+      "css": ".ds-wb-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;background:transparent;color:#f0f4fa;border:1px solid transparent;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-ghost:hover:not(:disabled){background:#2b3d51}.ds-wb-ghost:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-ghost:disabled{opacity:.4;cursor:default}@media(prefers-reduced-motion:reduce){.ds-wb-ghost{transition-duration:.01ms}}.ds-wb-ghost{padding-inline:17px}"
     },
     {
-      "name": "Reventón 进度",
+      "name": "目录搜索与分类",
       "kind": "input",
-      "description": "原生范围输入直接定位真实动作姿态；座舱状态切换为浅绿进度与焦点。",
-      "html": "<label class=\"ds-reventon-progress\"><input type=\"range\" min=\"0\" max=\"15.958333333333334\" step=\"0.01\" value=\"0\" aria-label=\"演示进度\" /></label>",
-      "css": ".ds-reventon-progress{display:flex;width:100%}.ds-reventon-progress input{width:100%;accent-color:#394b3e;cursor:pointer}.ds-reventon-progress input:focus-visible{outline:2px solid #384e40;outline-offset:4px}.ds-reventon-progress[data-chapter=cabin] input{accent-color:#b7cbb9}.ds-reventon-progress[data-chapter=cabin] input:focus-visible{outline-color:#d5e4d4}"
+      "refersTo": "wb-field",
+      "description": "透明搜索输入与原生分类下拉；可访问名称和焦点清晰。",
+      "html": "<div class=\"ds-wb-fields\"><label class=\"ds-wb-search\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input aria-label=\"搜索商品\" placeholder=\"搜索商品\"></label><label class=\"ds-wb-filter\">商品分类<select aria-label=\"商品分类\"><option>全部商品</option><option>数码</option><option>机械</option><option>交通</option></select></label></div>",
+      "css": ".ds-wb-fields{padding:20px;background:#131d29;color:#f0f4fa;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-search{display:flex;align-items:center;gap:9px;border-bottom:1px solid #52708f;margin-bottom:20px}.ds-wb-search input{min-width:0;width:100%;min-height:42px;padding:9px 10px 9px 0;border:0;border-radius:6px;background:transparent;color:#f0f4fa;caret-color:#bed4ef;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-search input::placeholder{color:#aebed0}.ds-wb-filter{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#abbacb;font-size:13px}.ds-wb-filter select{width:142px;max-width:100%;min-height:42px;padding:9px 10px;border:1px solid #304052;border-radius:6px;background:#172330;color:#f0f4fa;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-fields :focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-fields ::selection{color:#101923;background:#bed4ef}"
+    },
+    {
+      "name": "探索商品导航",
+      "kind": "nav",
+      "refersTo": "wb-toolbar",
+      "description": "同一活动面板；只有商品支持的能力才显示对应入口。",
+      "html": "<nav class=\"ds-wb-nav\" aria-label=\"探索商品\"><button type=\"button\" aria-pressed=\"false\">外观</button><button type=\"button\" aria-pressed=\"true\">细节</button><button type=\"button\" aria-pressed=\"false\">结构与动作</button><button type=\"button\" aria-pressed=\"false\">导览</button></nav>",
+      "css": ".ds-wb-nav{display:flex;align-items:center;gap:5px;width:max-content;max-width:100%;padding:5px;border:1px solid #405369;border-radius:10px;background:#111d2bea}.ds-wb-nav button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 17px;background:transparent;color:#f0f4fa;border:1px solid transparent;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;white-space:nowrap;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-nav button:hover:not(:disabled){background:#2b3d51}.ds-wb-nav button[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-nav button[aria-pressed=true]:hover:not(:disabled){background:#d1e2f5}.ds-wb-nav button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-nav button:disabled{opacity:.4;cursor:default}@media(max-width:760px){.ds-wb-nav{gap:0;padding:3px}.ds-wb-nav button{padding:7px 8px;font-size:12px}}@media(prefers-reduced-motion:reduce){.ds-wb-nav button{transition-duration:.01ms}}"
+    },
+    {
+      "name": "商品目录条目",
+      "kind": "custom",
+      "refersTo": "wb-catalog-row",
+      "description": "平直文本条目而非图片卡片；名称、可见描述、分类与样板身份分层。",
+      "html": "<button class=\"ds-wb-product\" type=\"button\" aria-pressed=\"false\"><strong>桌面音箱</strong><span>从单元、旋钮到外壳，逐层认识一件商品。</span><small>数码 · 流程样板</small></button>",
+      "css": ".ds-wb-product{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;padding:21px 10px;background:transparent;color:#f0f4fa;border:0;border-bottom:1px solid #304052;border-radius:0;text-align:left;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-product strong{font-size:17px;font-weight:500}.ds-wb-product span{font-size:13px;line-height:1.75;opacity:.85}.ds-wb-product small{font-size:12px;opacity:.85}.ds-wb-product:hover:not(:disabled){background:#2b3d51}.ds-wb-product[aria-pressed=true]{background:#bed4ef;color:#101923}.ds-wb-product[aria-pressed=true]:hover{background:#d1e2f5}.ds-wb-product:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-wb-product{transition-duration:.01ms}}"
+    },
+    {
+      "name": "流程样板标记",
+      "kind": "chip",
+      "refersTo": "wb-sample-label",
+      "description": "非交互事实标记，不是筛选标签。",
+      "html": "<span class=\"ds-wb-sample\">流程样板</span>",
+      "css": ".ds-wb-sample{display:inline-block;margin-top:15px;padding:4px 8px;border:1px solid #405369;border-radius:3px;color:#bccce0;background:transparent;font:12px Manrope,'Noto Sans SC Display',sans-serif}@media(max-width:760px){.ds-wb-sample{margin-top:9px;padding:2px 6px}}"
+    },
+    {
+      "name": "部件热点",
+      "kind": "button",
+      "refersTo": "wb-hotspot",
+      "description": "模型上的部件名称；本片段只展示外观，实际位置由场景投影更新。",
+      "html": "<button class=\"ds-wb-hotspot\" type=\"button\" aria-pressed=\"false\"><span aria-hidden=\"true\"></span>顶部旋钮</button>",
+      "css": ".ds-wb-hotspot{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;padding:5px 10px;border:1px solid #7990ac;border-radius:4px;background:#111b28d9;color:#f0f4fa;white-space:nowrap;font:12px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-hotspot span{width:5px;height:5px;border-radius:50%;background:currentColor}.ds-wb-hotspot:hover{background:#2b3d51}.ds-wb-hotspot:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-wb-hotspot{transition-duration:.01ms}}.ds-wb-hotspot[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-hotspot[aria-pressed=true]:hover{background:#d1e2f5;color:#101923}"
+    },
+    {
+      "name": "右侧操作面板",
+      "kind": "custom",
+      "refersTo": "wb-panel",
+      "description": "实色滚动面板、清楚标题和透明关闭入口，移动端转到场景下方。",
+      "html": "<aside class=\"ds-wb-panel\"><header><h2>细节</h2><button type=\"button\" aria-label=\"收起面板\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m18 6-12 12M6 6l12 12\"/></svg></button></header><h3>选择值得靠近的地方</h3><p>点击模型上的名称，也可以在这里选择部位。</p></aside>",
+      "css": ".ds-wb-panel{padding:26px 23px;background:#131d29;color:#f0f4fa;border-left:1px solid #304052;overflow-y:auto;scrollbar-color:#526a85 #131d29;scrollbar-width:thin;overscroll-behavior:contain;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-panel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px}.ds-wb-panel h2{font-size:22px;font-weight:500;margin:0}.ds-wb-panel h3{font-size:16px;font-weight:500;line-height:1.7;margin:0 0 12px}.ds-wb-panel p{color:#abbacb;font-size:14px;line-height:1.85;margin:0 0 22px}.ds-wb-panel button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px;background:transparent;border:0;border-radius:7px;color:inherit;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-panel button:hover{background:#2b3d51}.ds-wb-panel button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(max-width:760px){.ds-wb-panel{padding:16px 20px;border-left:0;border-top:1px solid #304052}.ds-wb-panel header{margin-bottom:18px}.ds-wb-panel h2{font-size:19px}}@media(prefers-reduced-motion:reduce){.ds-wb-panel button{transition-duration:.01ms}}"
     }
   ],
   "narrative": {
     "northStar": "先欣赏商品，再自然探索细节",
-    "overview": "真实产品居中，侧栏按需展开，三种商品舞台保持各自材质性格。Reventón 为 Experience 模式的局部浅灰摄影棚例外。采用用户原 beauty 图的中性棚景与已有 Trees X 字体，让真实恢复的完整汽车主导第一屏；控件围绕固定观察流程保持克制。",
-    "keyCharacteristics": ["中文身份优先", "真实三维封面", "单一操作面板", "桌面固定画质"],
+    "overview": "Trees X 延续深色、中文身份、银灰模型与冷色重点。深蓝灰界面安静地承托三维对象，信息用清楚的字号、间距与细线组织；工具的亮色状态帮助访客确认自己正在观察和操作什么。\n\n当前系统以一致的操作和可读性服务商品观察。模型通过真实 Three 场景呈现，当前的简化几何明确标为“流程样板”。界面不借助摄影封面、装饰光效或自动演出来掩盖样板范围；颜色、标题和控件不作真实商品规格或可购款式承诺。",
+    "keyCharacteristics": [
+      "模型主导，工具按需出现。",
+      "深蓝灰层次、冷银选中态与清晰焦点。",
+      "中文信息优先，图标始终服务操作。",
+      "三件流程样板共享组件与状态语言。"
+    ],
     "rules": [
       {
-        "name": "单面板",
-        "body": "外观、细节、结构、手势一次展开一个。",
+        "name": "The 重点即状态 Rule",
+        "body": "冷银蓝服务选中状态，焦点另有清晰描边；动作开关同时显示文字状态，配色选中同时显示勾选。",
+        "section": "colors"
+      },
+      {
+        "name": "The 中文身份 Rule",
+        "body": "商品名称和功能名称直接说明内容；英文品牌不替代中文身份，流程样板标记是事实说明。",
+        "section": "typography"
+      },
+      {
+        "name": "The 单活动面板 Rule",
+        "body": "目录与工具面板同一时间只出现一个；桌面通过网格分配空间，移动端移到场景下方。",
         "section": "layout"
       },
       {
-        "name": "音箱摄影棚",
-        "body": "音箱以条形光、表面细纹和外观轮廓构成层次，不恢复该商品的发光环、粒子或全息扫描；其他商品保持各自舞台。",
+        "name": "The 模型承载深度 Rule",
+        "body": "界面保持平实，空间层次交给真实三维几何、光照与阴影；当前样板不追加装饰性光效。",
         "section": "elevation"
       },
       {
-        "name": "主动演绎",
-        "body": "只有用户触发才播放音箱镜头；正常结束合拢外观并保留配色，途中接手保留当前镜头与分层进度，减弱动态直接到完整外观。",
-        "section": "components"
-      },
-      {
-        "name": "Reventón 摄影棚",
-        "body": "Reventón 保持浅灰棚景、连续接触阴影、可读玻璃内景与有层次的轮内金属；原 beauty 图只作视觉依据，不能代替真实浏览器帧。",
-        "section": "elevation"
-      },
-      {
-        "name": "Reventón 导演流程",
-        "body": "只由主动播放或章节/进度输入驱动真实汽车与镜头，保留固定流程，不提供自由轨道；减弱动态保留静态章节观察。",
+        "name": "The 主动观察 Rule",
+        "body": "默认静止呈现商品；拖动或缩放立即接手镜头并退出导览，关闭面板保留观察状态。",
         "section": "components"
       }
     ],
-    "dos": ["保留关闭面板前的观察状态", "返回全景合拢结构但保留配色"],
-    "donts": ["恢复首屏常驻完整控制台", "把工程术语当成访客说明"]
+    "dos": [
+      "Do 让模型保持主要观察面积，沿用单活动面板与共享工具。",
+      "Do 使用已记录的深蓝灰层次、冷银选中态和独立键盘焦点。",
+      "Do 清楚标注流程样板，并为操作状态、错误与空结果提供文字。",
+      "Do 区分复位视角、返回全景和还原商品，保留各自范围说明。",
+      "Do 用真实场景和实机截图验证当前实现，扩展正式模型时复用现有界面。"
+    ],
+    "donts": [
+      "Don't 把 legacy 的影片、固定导演流程或常驻完整控制台规则带入当前工作台。",
+      "Don't 用图片、影片或装饰光效代替真实三维操作与样板身份。",
+      "Don't 让左目录和右面板同时占据工作台，或让手机面板盖住模型。",
+      "Don't 把样板配色、分层关系或静态截图写成真实商品、维修顺序、帧率或照片级画质结论。"
+    ]
   }
 }

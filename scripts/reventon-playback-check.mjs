@@ -7,7 +7,7 @@ const report = { checks: [], errors: [] }
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
   page.on('pageerror', (error) => report.errors.push(error.message))
-  await page.goto(`${base}/?product=reventon`)
+  await page.goto(`${base}/?legacy=1&product=reventon`)
   const host = page.locator('.reventon-experience')
   await expect(host).toHaveAttribute('data-status', 'ready', { timeout: 180000 })
   await page.evaluate(() => {

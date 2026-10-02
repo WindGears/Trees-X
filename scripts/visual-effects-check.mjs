@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { URL } from 'node:url'
 import { chromium, expect } from '@playwright/test'
 
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -32,7 +32,7 @@ try {
     if (message.type() === 'error') errors.push(message.text())
   })
   page.on('request', (request) => requests.push(request.url()))
-  await page.goto(`${base}/?product=toy-racer`)
+  await page.goto(`${base}/?legacy=1&product=toy-racer`)
   const viewer = page.locator('.product-viewer')
   await expect(viewer).toHaveAttribute('data-visual-quality', 'cinematic', { timeout: 30000 })
   await expect(viewer).toHaveAttribute('data-composer-count', '1', { timeout: 30000 })
@@ -132,7 +132,7 @@ try {
     const fallbackPage = await fallback.newPage()
     const network = []
     fallbackPage.on('request', (request) => network.push(request.url()))
-    await fallbackPage.goto(base)
+    await fallbackPage.goto(`${base}/?legacy=1`)
     const fallbackViewer = fallbackPage.locator('.product-viewer')
     await expect(fallbackViewer).toHaveAttribute('data-visual-quality', 'eco')
     await expect(fallbackViewer).toHaveAttribute('data-composer-count', '0')

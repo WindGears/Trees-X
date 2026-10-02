@@ -7,3 +7,7 @@ public/gesture/vision_bundle.js
 public/gesture/wasm
 public/draco
 public/models/reventon/motion.json
+server/target
+server/.mvn
+server/mvnw
+server/mvnw.cmd

@@ -1,0 +1,17 @@
+server:
+  port: ${TREES_PORT:8089}
+  address: ${TREES_BIND_ADDRESS:127.0.0.1}
+spring:
+  datasource:
+    url: ${TREES_DB_URL:jdbc:mysql://127.0.0.1:3306/trees_x?createDatabaseIfNotExist=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${TREES_DB_USERNAME:root}
+    password: ${TREES_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  mvc:
+    problemdetails:
+      enabled: true

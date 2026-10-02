@@ -1,0 +1,13 @@
+package com.treesx.product;
+import jakarta.persistence.*;
+@Entity @Table(name="products")
+public class ProductEntity {
+    @Id @Column(length=80) String slug;
+    @Column(nullable=false,length=120) String name;
+    @Column(nullable=false,length=40) String category;
+    @Column(nullable=false,length=600) String description;
+    @Column(name="sort_order",nullable=false) int sortOrder;
+    protected ProductEntity() {}
+    ProductDto.Summary summary() { return new ProductDto.Summary(slug,name,category,description); }
+}
+

@@ -2,7 +2,7 @@
 import { assertStablePixels } from './pixel-stability.mjs'
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({
@@ -51,7 +51,7 @@ try {
       }
     }
   })
-  await page.goto(base)
+  await page.goto(`${base}/?legacy=1`)
 
   await page.getByRole('button', { name: '完整控制台', exact: true }).click()
   await expect(page.getByRole('button', { name: '开启手势体验', exact: true })).toBeEnabled({

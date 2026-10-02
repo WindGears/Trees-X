@@ -13,7 +13,7 @@ try {
   })
 
   // 1. 直达链接进入打字机研究
-  await page.goto(`${base}/?product=typewriter-study`)
+  await page.goto(`${base}/?legacy=1&product=typewriter-study`)
   await page.waitForTimeout(4000)
   await page.screenshot({ path: `${output}/01-assembled.png` })
   report.states.assembled = await page.locator('.study-host').getAttribute('data-mode')

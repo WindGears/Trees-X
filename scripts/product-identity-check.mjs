@@ -2,7 +2,7 @@
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -55,7 +55,7 @@ try {
       return document.querySelector('.product-viewer').dataset.renderedMeshes.split('|').sort()
     })
   }
-  await page.goto(`${base}/?product=potted-plant`)
+  await page.goto(`${base}/?legacy=1&product=potted-plant`)
   await ready()
   await page.evaluate(() => {
     window.__identityCanvas = document.querySelector('canvas')

@@ -9,7 +9,7 @@ try {
   await page.route('**/models/reventon/motion.json', (route) =>
     route.fulfill({ status: 503, body: 'unavailable' }),
   )
-  await page.goto(`${base}/?product=reventon`)
+  await page.goto(`${base}/?legacy=1&product=reventon`)
   const host = page.locator('.reventon-experience')
   await expect(host).toHaveAttribute('data-status', 'error', { timeout: 180000 })
   await expect(page.getByRole('button', { name: '播放演示', exact: true })).toBeDisabled()

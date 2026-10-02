@@ -1,7 +1,7 @@
 import { chromium, expect } from '@playwright/test'
 import { URL } from 'node:url'
 import { mkdir, writeFile } from 'node:fs/promises'
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5180'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = '.impeccable/review'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -31,7 +31,7 @@ try {
     await expect(page.locator('canvas')).toHaveCount(1)
     await page.waitForTimeout(150)
   }
-  await page.goto(base)
+  await page.goto(`${base}/?legacy=1`)
 
   await page.getByRole('button', { name: '完整控制台', exact: true }).click()
   await ready()
@@ -147,7 +147,7 @@ try {
     reducedMotion: 'no-preference',
   })
   cinematic.on('pageerror', (error) => report.errors.push(error.message))
-  await cinematic.goto(`${base}/?product=toy-racer`)
+  await cinematic.goto(`${base}/?legacy=1&product=toy-racer`)
   await expect(cinematic.locator('.product-viewer')).toHaveAttribute('data-composer-count', '1', {
     timeout: 40000,
   })
