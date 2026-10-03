@@ -1,6 +1,6 @@
 # 架构 — 统一工作台
 
-2026-10-01。新工作台与旧版分开装配，不改变旧资源或将高精模型预加载进新场景。
+2026-10-03。阶段 1 正式资产接入；新工作台与旧版分开装配，不改变旧资源或将高精模型预加载进新场景。
 
 ## 路由与界面
 
@@ -26,11 +26,17 @@ view 只控制镜头；overview 复原动作/结构、保留配色并回默认�
 - 拖动/滚轮停止镜头 tween，GSAP 只驱动主动操作。页面隐藏暂停时钟和补间。Tres 5.8.3 start 非幂等：先核验初始化和 isActive，避免 Three Timer 重复连接 visibilitychange。
 - viewport 变化仅调整投影 zoom/view offset 为工具留白，不重置观察 pose。减弱动态直接到结束态。第一屏无自动镜头、聚合或长期连续动画。
 
-后续 GLB adapter 应实现相同 root/point/setFinish/pose/apply/dispose 接口；loader 唯一管理 GLB 原始 geometry/material/texture，其他层不得二次释放。扩展展示源时同步前后端校验与 migration，不改变基本操作。
+GLB 与程序化 adapter 已共用 root/point/setFinish/pose/apply/dispose 接口。controller.load 异步，parseProduct 复制不可变配置快照；ResourceSlot 拥有当前 adapter，取消旧请求、忽略旧失败并释放迟到结果。controls 在编译并完成首帧后才启用。
+
+assetBundle 只读取同源已登记文件，核验 manifest 版本/摘要及文件大小/摘要，三路下载、180 秒请求期限。glbDocument 在解析前拒绝包外图片/缓冲引用。glbLoader 按需加载 Draco、Meshopt、KTX2；ownedResources 跟踪部分解析结果及迟到资源，geometry/material/texture/skeleton 与 ImageBitmap 去重释放。GLB 解析中途无法硬中止的任务等待落定后释放，不能带入新选择。
+
+glbAdapter 根据稳定节点/材质名绑定，并从原始局部姿态组合分层与注册 rotate/translate 行为，不改顶点/UV/轴心。每个包拥有独立实际三角形预算。scene 背景/曝光/光照来自 v2 stage，v1 使用原默认舞台。EXR/HDR 原纹理由 assetEnvironment 即时释放；PMREM 由该 adapter 唯一拥有，卸载先恢复场景 RoomEnvironment 引用再释放目标。
+
+版本 2 和工程夹具详见 [制作流程](asset-production.md)，三件正式商品记录仍为 v1 样板，不能将工程接入等同于画质完成。
 
 ## 后端与持久化
 
-server/ 是独立 Spring Boot 4.1.1 Maven 应用。Controller 返回概要或详情 DTO；JPA products/presentations 分表，配置为 MySQL JSON，schemaVersion/version 双重核验。Flyway V1 建表、V2 校验并插入三件样板，重启不重 seed。业务库 trees_x，测试库 trees_x_test。
+server/ 是独立 Spring Boot 4.1.1 Maven 应用。Controller 返回概要或详情 DTO；JPA products/presentations 分表，配置为 MySQL JSON，schemaVersion/version 双重核验。Flyway V1 建表、V2 校验并插入三件样板，V3 追加封面/样板或正式状态字段，重启不重 seed。业务库 trees_x，测试库 trees_x_test。
 
 GET /api/v1/products?q=&category=；GET /api/v1/products/{slug}。未知 slug 404、无效搜索 400、损坏配置 503；首轮无写接口。模型/贴图存文件，未来库里仅存引用/元数据；逐帧交互不请求后端。
 

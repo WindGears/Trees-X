@@ -47,12 +47,22 @@ onScopeDispose(() => clearTimeout(timer))
         :aria-pressed="item.slug === store.slug"
         @click="emit('select', item.slug)"
       >
+        <img
+          v-if="item.cover"
+          :src="item.cover"
+          :alt="item.name + '模型预览'"
+          class="wb-cover"
+          loading="lazy"
+        />
         <span class="wb-product-row"
           ><strong>{{ item.name }}</strong
           ><ArrowUpRight :size="18"
         /></span>
         <span>{{ item.description }}</span>
-        <small>{{ item.category }} · 流程样板</small>
+        <small
+          >{{ item.category }} ·
+          {{ item.displayStatus === 'formal' ? '正式展品' : '流程样板' }}</small
+        >
       </button>
     </div>
     <p class="wb-note">先验证观察与操作流程，再逐件接入正式模型。</p>

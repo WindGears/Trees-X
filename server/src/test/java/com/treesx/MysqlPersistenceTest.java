@@ -25,7 +25,7 @@ class MysqlPersistenceTest {
         return response.body();
     }
     @Test void mysqlMigrationApiAndRestartPreserveData() throws Exception {
-        String original;
+        String original, originalConfig;
         try(var context=SpringApplication.run(TreesApplication.class,ARGS)) {
             var jdbc=context.getBean(JdbcTemplate.class);
             assertEquals("trees_x_test",jdbc.queryForObject("SELECT DATABASE()",String.class));
@@ -41,10 +41,17 @@ class MysqlPersistenceTest {
                 HttpResponse.BodyHandlers.ofString());
             assertEquals(405,post.statusCode());
             String config=jdbc.queryForObject("SELECT config_json FROM presentations WHERE slug='form-01'",String.class);
+            originalConfig=config;
             try {
                 jdbc.update("UPDATE presentations SET config_json=JSON_SET(config_json,'$.version',2) WHERE slug='form-01'");
                 get(port,"/api/v1/products/form-01",503);
             } finally { jdbc.update("UPDATE presentations SET config_json=? WHERE slug='form-01'",config); }
+            try(var fixture=getClass().getResourceAsStream("/fixtures/speaker-glb-v2.json")) {
+                var mapper=context.getBean(tools.jackson.databind.ObjectMapper.class);
+                var value=mapper.readValue(fixture,com.treesx.product.ProductDto.class);
+                jdbc.update("UPDATE presentations SET schema_version=2,config_json=? WHERE slug='form-01'",mapper.writeValueAsString(value.presentation()));
+                assertTrue(get(port,"/api/v1/products/form-01",200).contains("speaker-engineering"));
+            }
             jdbc.update("UPDATE products SET description=? WHERE slug='form-01'","persistence-probe");
         }
         try(var context=SpringApplication.run(TreesApplication.class,ARGS)) {
@@ -52,8 +59,14 @@ class MysqlPersistenceTest {
             try {
                 context.getBean(Flyway.class).migrate();
                 assertEquals("persistence-probe",jdbc.queryForObject("SELECT description FROM products WHERE slug='form-01'",String.class));
+                int port=((WebServerApplicationContext)context).getWebServer().getPort();
+                assertTrue(get(port,"/api/v1/products/form-01",200).contains("speaker-engineering"));
+                assertEquals(2,jdbc.queryForObject("SELECT schema_version FROM presentations WHERE slug='form-01'",Integer.class));
                 assertEquals(3,jdbc.queryForObject("SELECT COUNT(*) FROM products",Integer.class));
-            } finally { jdbc.update("UPDATE products SET description=? WHERE slug='form-01'",original); }
+            } finally {
+                jdbc.update("UPDATE products SET description=? WHERE slug='form-01'",original);
+                jdbc.update("UPDATE presentations SET schema_version=1,config_json=? WHERE slug='form-01'",originalConfig);
+            }
         }
     }
 }

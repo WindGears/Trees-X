@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "speaker-engineering",
+  "version": 1,
+  "entry": "model.glb",
+  "files": [
+    {
+      "path": "model.glb",
+      "bytes": 891500,
+      "sha256": "e6dfc2bfefadaf4ea2813f224c9a40d314f1cb574ff6b0dd3d43945c0ccd8ad7",
+      "role": "model"
+    }
+  ],
+  "budget": { "maxBytes": 891500, "maxTriangles": 16000 },
+  "provenance": {
+    "author": "Trees X project",
+    "source": "scripts/create-demo-model.mjs",
+    "license": "Project-authored procedural geometry",
+    "redistribution": "No external model assets; engineering fixture, not a quality-approved exhibit"
+  }
+}

@@ -94,3 +94,19 @@ npm run test:reventon-playback
 后续按音箱 → 打字机 → 汽车接入正式模型，保持布局、接口和基本操作不变。手势适配、管理后台、鉴权与上传另设阶段。本轮不扩展这些内容。
 
 开发前阅读 [.ai/project.md](.ai/project.md)、[.ai/architecture.md](.ai/architecture.md)；产品事实见 [PRODUCT.md](PRODUCT.md)，视觉规范见 [DESIGN.md](DESIGN.md)，证据见 [工作台验收](.ai/workbench-validation.md)。
+
+## 正式资产通道（2026-10-03）
+
+阶段 1 增加 v2 配置与 GLB 异步接入，兼容 v1 样板。正式目录仍保留三件流程样板；工程夹具不会替代画质验收。后端 V3 只追加封面/展示状态字段，已有配置不被覆盖。
+
+- `npm run asset:fixture`：生成旧音箱 GLB 工程夹具和测试配置。
+- `npm run asset:check -- public/models/bundles/speaker-engineering/v1/manifest.json`：资源完整性及 glTF 规范校验。
+- `npm run test:asset-ingestion`：真实 GLB/相机/动作/释放/错误恢复测试，使用受控 v2 API 响应，不改写正式库。
+- `npm run test:asset-production`：先构建并在 5182 启动 preview，核对 GLB 的生产操作与实际像素。
+- `npm run test:asset-performance`：1440×1000 下记录工程音箱连续 10 秒鼠标拖动的渲染完成间隔与资源数量，不外推整车成绩。
+- `npm run test:asset-textures`：ORM 逐像素检查及汽车局部 KTX2 实机对照；对照准备步骤见制作说明。
+- Blender 导出、资源打包、ORM 和 KTX2 说明见 [.ai/asset-production.md](.ai/asset-production.md)。
+
+阶段 1 结论、截图与明确未完成项见 [.ai/stage-1-acceptance.md](.ai/stage-1-acceptance.md)。
+
+完整后续阶段与边界见 [.ai/implementation-roadmap.md](.ai/implementation-roadmap.md)。当前恢复基线见 [.ai/stage-0-baseline.md](.ai/stage-0-baseline.md)。

@@ -4,6 +4,7 @@ import { TresCanvas } from '@tresjs/core'
 import { ACESFilmicToneMapping, PCFShadowMap, SRGBColorSpace, Vector3 } from 'three'
 import { useDocumentVisibility } from '@vueuse/core'
 import { useWorkbenchStore } from '@/stores/workbench'
+import { phaseLabels } from '@/lib/workbench/assetBundle'
 import WorkbenchScene from './WorkbenchScene.vue'
 const store = useWorkbenchStore()
 const revision = ref(0)
@@ -76,7 +77,7 @@ onErrorCaptured(() => {
       :role="store.status === 'error' ? 'alert' : 'status'"
     >
       <h2>{{ store.status === 'error' ? '暂时无法展示' : '正在准备商品' }}</h2>
-      <p>{{ store.status === 'error' ? store.error : '读取展示配置，准备可操作的三维样板。' }}</p>
+      <p>{{ store.status === 'error' ? store.error : phaseLabels[store.loadPhase] }}</p>
       <div v-if="store.status === 'error'" class="wb-inline-actions">
         <button type="button" @click="store.select(store.slug)">重新加载</button>
         <button type="button" @click="store.panel = 'catalog'">打开目录</button>

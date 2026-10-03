@@ -24,6 +24,7 @@ export interface Action {
   label: string
   kind: 'toggle' | 'pulse'
   node: string
+  behavior?: { type: 'rotate' | 'translate'; axis: Vec3; amount: number }
 }
 export interface GuideStep {
   id: string
@@ -35,9 +36,32 @@ export interface GuideStep {
   explode?: boolean
   overview?: boolean
 }
-export interface ProductPresentation {
-  version: 1
-  source: { kind: 'procedural'; key: SampleKey }
+export interface StageConfig {
+  background: string
+  ground: string
+  groundY: number
+  exposure: number
+  environmentIntensity: number
+  environmentFile?: string
+  ambient: number
+  key: { position: Vec3; color: string; intensity: number }
+  rim: { position: Vec3; color: string; intensity: number }
+}
+export interface BundleReference {
+  manifest: string
+  id: string
+  version: number
+  sha256: string
+}
+export interface GlbSource {
+  kind: 'glb'
+  adapter: 'pbr-v1'
+  bundle: BundleReference
+  transform: { position: Vec3; rotation: Vec3; scale: number }
+  finishMaterials: string[]
+  explode: { node: string; offset: Vec3 }[]
+}
+interface PresentationFields {
   camera: { position: Vec3; target: Vec3; minDistance: number; maxDistance: number }
   views: View[]
   hotspots: Hotspot[]
@@ -46,11 +70,18 @@ export interface ProductPresentation {
   structure: boolean
   guide: GuideStep[]
 }
+export type ProductPresentation = PresentationFields &
+  (
+    | { version: 1; source: { kind: 'procedural'; key: SampleKey }; stage?: never }
+    | { version: 2; source: { kind: 'procedural'; key: SampleKey } | GlbSource; stage: StageConfig }
+  )
 export interface ProductSummary {
   slug: string
   name: string
   category: string
   description: string
+  cover?: string
+  displayStatus?: 'prototype' | 'formal'
 }
 export interface WorkbenchProduct extends ProductSummary {
   presentation: ProductPresentation

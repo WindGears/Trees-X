@@ -126,7 +126,9 @@ onScopeDispose(() => {
         <div v-if="store.product" class="wb-intro">
           <h1 id="wb-product-title">{{ store.product.name }}</h1>
           <p>{{ store.product.description }}</p>
-          <span class="wb-sample-label">流程样板</span>
+          <span class="wb-sample-label">{{
+            store.product.displayStatus === 'formal' ? '正式展品' : '流程样板'
+          }}</span>
         </div>
         <p class="wb-input-hint">拖动旋转 · 滚轮缩放 · 点击部件查看</p>
         <WorkbenchTools @panel="openPanel" />

@@ -1,0 +1,153 @@
+{
+  "slug": "form-01",
+  "name": "桌面音箱",
+  "category": "数码",
+  "description": "现有音箱 GLB，用于验证正式资产接入、部件与动作；尚未通过正式展品质检。",
+  "presentation": {
+    "version": 2,
+    "source": {
+      "kind": "glb",
+      "adapter": "pbr-v1",
+      "bundle": {
+        "id": "speaker-engineering",
+        "version": 1,
+        "manifest": "/models/bundles/speaker-engineering/v1/manifest.json",
+        "sha256": "3e4c7b6e129ae7d5426e3b404671dbfdf25b3614dd0f5a9bc86e1f7a08c29f8c"
+      },
+      "transform": {
+        "position": [0, 1.12, 0],
+        "rotation": [0, 0, 0],
+        "scale": 1
+      },
+      "finishMaterials": ["Chassis_Aluminium"],
+      "explode": [
+        { "node": "Front_Baffle", "offset": [0, 0, 0.35] },
+        { "node": "Woofer_Frame", "offset": [0, 0, 0.35] },
+        { "node": "Woofer_Bed", "offset": [0, 0, 0.35] },
+        { "node": "Woofer_Surround", "offset": [0, 0, 0.35] },
+        { "node": "Woofer_Cone", "offset": [0, 0, 0.35] },
+        { "node": "Woofer_Dustcap", "offset": [0, 0, 0.35] },
+        { "node": "Tweeter_Frame", "offset": [0, 0, 0.35] },
+        { "node": "Tweeter_Surround", "offset": [0, 0, 0.35] },
+        { "node": "Tweeter_Dome", "offset": [0, 0, 0.35] },
+        { "node": "Front_Fastener_0", "offset": [0, 0, 0.35] },
+        { "node": "Front_Fastener_1", "offset": [0, 0, 0.35] },
+        { "node": "Front_Fastener_2", "offset": [0, 0, 0.35] },
+        { "node": "Front_Fastener_3", "offset": [0, 0, 0.35] },
+        { "node": "Indicator", "offset": [0, 0, 0.35] },
+        { "node": "Rear_Panel", "offset": [0, 0, -0.5] },
+        { "node": "Rear_Port_Rim", "offset": [0, 0, -0.5] },
+        { "node": "Rear_Port", "offset": [0, 0, -0.5] },
+        { "node": "Rear_Connector", "offset": [0, 0, -0.5] }
+      ]
+    },
+    "camera": {
+      "position": [3.5, 2.3, 5],
+      "target": [0, 1, 0],
+      "minDistance": 2,
+      "maxDistance": 12
+    },
+    "views": [
+      {
+        "id": "perspective",
+        "label": "全景",
+        "position": [3.5, 2.3, 5],
+        "target": [0, 1, 0]
+      },
+      {
+        "id": "front",
+        "label": "正面",
+        "position": [0, 1.6, 6.4],
+        "target": [0, 1, 0]
+      },
+      {
+        "id": "side",
+        "label": "侧面",
+        "position": [6.4, 2, 0],
+        "target": [0, 1, 0]
+      },
+      {
+        "id": "top",
+        "label": "俯视",
+        "position": [0, 7, 0.01],
+        "target": [0, 1, 0]
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "driver",
+        "node": "Woofer_Cone",
+        "name": "扬声器单元",
+        "description": "观察前面的同心层次与单元轮廓。",
+        "cameraOffset": [1.2, 0.5, 2.5]
+      },
+      {
+        "id": "knob",
+        "node": "Volume_Dial",
+        "name": "顶部旋钮",
+        "description": "旋钮可以转动，演示统一动作入口。",
+        "cameraOffset": [1.5, 1.2, 1.8]
+      },
+      {
+        "id": "shell",
+        "node": "Chassis",
+        "name": "外壳",
+        "description": "通过试色与分层观察外壳和前面板的关系。",
+        "cameraOffset": [2.5, 1, 2.5]
+      }
+    ],
+    "finishes": [
+      { "id": "graphite", "name": "石墨", "color": "#454e5a" },
+      { "id": "silver", "name": "雾银", "color": "#c1c6cb" },
+      { "id": "sand", "name": "砂岩", "color": "#b59b7c" }
+    ],
+    "actions": [
+      {
+        "id": "turn-knob",
+        "label": "转动旋钮",
+        "kind": "toggle",
+        "node": "Volume_Dial",
+        "behavior": { "type": "rotate", "axis": [0, 1, 0], "amount": 1.2 }
+      }
+    ],
+    "structure": true,
+    "guide": [
+      {
+        "id": "overview",
+        "title": "完整轮廓",
+        "description": "先观察音箱正面与顶部的比例。",
+        "view": "perspective"
+      },
+      {
+        "id": "detail",
+        "title": "靠近单元",
+        "description": "看清单元与前面板的层次。",
+        "hotspotId": "driver"
+      },
+      {
+        "id": "action",
+        "title": "转动与分层",
+        "description": "旋钮转动，前面板分开，观察各部分的位置。",
+        "actionId": "turn-knob",
+        "explode": true
+      },
+      {
+        "id": "complete",
+        "title": "回到全景",
+        "description": "部件合拢，保留当前配色，继续自由观察。",
+        "overview": true
+      }
+    ],
+    "stage": {
+      "background": "#151c25",
+      "ground": "#05080d",
+      "groundY": -0.04,
+      "exposure": 1.1,
+      "environmentIntensity": 0.7,
+      "ambient": 0.25,
+      "key": { "position": [3, 6, 4], "intensity": 3.5, "color": "#eef5ff" },
+      "rim": { "position": [-4, 3, -2], "intensity": 2, "color": "#afbdd4" }
+    }
+  },
+  "displayStatus": "prototype"
+}

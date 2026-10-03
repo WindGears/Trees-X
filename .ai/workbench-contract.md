@@ -20,3 +20,11 @@ ProductPresentation version=1：procedural source、camera、views、hotspots、
 - 汽车：全景 → 车门开启与聚焦 → 座舱聚焦与部件分离 → 关门合拢全景。
 
 旧版仅由 legacy=1 或六件旧商品 ID 导入，旧资产不在新目录混排。
+
+## 2026-10-03：版本 2
+
+v1 保持兼容。v2 必须携带 stage（背景、地面、曝光、环境强度、主/轮廓/环境灯；GLB 可引用包内 EXR/HDR）。source 可以保持 procedural，或 glb + 已注册 pbr-v1 adapter。GLB source 含 bundle 的 id/version/manifest/sha256、整体 transform、finishMaterials、explode 节点/局部偏移。actions 在 GLB 中必须绑定 rotate/translate + 单位轴 + 有限幅度。
+
+摘要增加可空同源 cover 与 displayStatus（prototype/formal）；V3 迁移仅增加字段，不改旧配置。当前所有商品还是 prototype。示例在 server/src/test/resources/fixtures/speaker-glb-v2.json，仅用于校验和浏览器注入测试，不在 API 失败时回退。
+
+phase（config/manifest/download/parse/materials/first-frame）为实际过程提示，不伪造百分比。阶段更新、失败与首帧同样核验 slug+revision；界面可操作需要首帧成功。配置高频部分不持有 Three 对象。

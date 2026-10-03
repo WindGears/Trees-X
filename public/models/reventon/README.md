@@ -1,6 +1,6 @@
 # Reventón 实时资产
 
-用于 `/?product=reventon` 的真实 Three.js 模型、烘焙 PBR/AO 和动作数据。Blender 是离线制作工具，浏览器通过 GLTFLoader、MeshPhysicalMaterial、HDR/PMREM 和 GSAP 绘制与驱动实际几何；本目录无影片或预渲染帧序列。
+用于 `/?legacy=1&product=reventon` 的真实 Three.js 模型、烘焙 PBR/AO 和动作数据。Blender 是离线制作工具，浏览器通过 GLTFLoader、MeshPhysicalMaterial、HDR/PMREM 和 GSAP 绘制与驱动实际几何；本目录无影片或预渲染帧序列。
 
 ## 来源与许可
 

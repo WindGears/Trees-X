@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { getProduct, getProducts } from '@/lib/workbench/api'
+import type { LoadPhase } from '@/lib/workbench/assetBundle'
 import { LatestRequest } from '@/lib/workbench/latest'
 import type { Panel, ProductSummary, SceneCommand, WorkbenchProduct } from '@/lib/workbench/types'
 
@@ -11,6 +12,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     revision = ref(0)
   const status = ref<'loading' | 'ready' | 'error'>('loading'),
     error = ref('')
+  const loadPhase = ref<LoadPhase | 'config'>('config')
   const catalogStatus = ref<'loading' | 'ready' | 'error'>('loading'),
     catalogError = ref('')
   const panel = ref<Panel | null>(null),
@@ -120,6 +122,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     slug.value = id
     revision.value++
     status.value = 'loading'
+    loadPhase.value = 'config'
     error.value = ''
     product.value = null
     panel.value = null
@@ -139,6 +142,10 @@ export const useWorkbenchStore = defineStore('workbench', () => {
         error.value = cause instanceof Error ? cause.message : '商品加载失败'
       },
     )
+  }
+  function loading(id: string, generation: number, phase: LoadPhase) {
+    if (slug.value === id && revision.value === generation && status.value === 'loading')
+      loadPhase.value = phase
   }
   function ready(id: string, generation: number) {
     if (slug.value === id && revision.value === generation) status.value = 'ready'
@@ -161,6 +168,8 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     slug,
     revision,
     status,
+    loadPhase,
+    loading,
     error,
     catalogStatus,
     catalogError,

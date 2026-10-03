@@ -8,11 +8,13 @@ export default defineConfigWithVueTs(
     ignores: [
       'dist/**',
       'node_modules/**',
+      '.tools/**',
       '.impeccable/**',
       'artifacts/**',
       'public/gesture/vision_bundle.js',
       'public/gesture/wasm/**',
       'public/draco/**',
+      'public/basis/**',
     ],
   },
   js.configs.recommended,

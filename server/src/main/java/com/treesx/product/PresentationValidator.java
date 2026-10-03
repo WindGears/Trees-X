@@ -9,6 +9,7 @@ public final class PresentationValidator {
     private PresentationValidator() {}
     public static void validate(Presentation p, Validator validator) {
         if (p == null || !validator.validate(p).isEmpty()) fail();
+        PresentationV2Validator.validate(p);
         if (p.camera().maxDistance() <= p.camera().minDistance()) fail();
         vector(p.camera().position()); vector(p.camera().target());
         Set<String> views = unique(p.views().stream().map(Presentation.View::id).toList());
@@ -36,4 +37,3 @@ public final class PresentationValidator {
     }
     private static void fail() { throw new IllegalArgumentException("Invalid presentation configuration"); }
 }
-

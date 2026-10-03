@@ -8,7 +8,11 @@ import {
   type Scene,
 } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { createSampleAdapter, type SceneAdapter } from './adapter'
+import type { SceneAdapter } from './adapter'
+import { loadAdapter } from './loadAdapter'
+import { ResourceSlot } from './resourceSlot'
+import { parseProduct } from './api'
+import type { LoadPhase } from './assetBundle'
 import type { SceneCommand, Vec3, WorkbenchProduct } from './types'
 
 export function createStageController(
@@ -19,7 +23,11 @@ export function createStageController(
   manual: () => void,
   focus: (id: string) => void,
 ) {
+  const slot = new ResourceSlot<SceneAdapter>()
+  const baseEnvironment = scene.environment
+  let interactive = false
   const controls = new OrbitControls(camera, renderer.domElement)
+  controls.enabled = false
   controls.enablePan = false
   controls.enableDamping = false
   controls.maxPolarAngle = Math.PI * 0.49
@@ -106,21 +114,26 @@ export function createStageController(
     stopCamera()
     motion.forEach((t) => t.kill())
     motion.clear()
-    adapter?.dispose()
+    scene.environment = baseEnvironment
+    slot.clear()
+    interactive = false
     adapter = undefined
     product = undefined
     controls.enabled = false
   }
-  function load(value: WorkbenchProduct) {
+  async function load(value: WorkbenchProduct, phase: (p: LoadPhase) => void) {
     unload()
-    product = value
-    adapter = createSampleAdapter(value)
-    scene.add(adapter.root)
-    controls.minDistance = value.presentation.camera.minDistance
-    controls.maxDistance = value.presentation.camera.maxDistance
-    controls.enabled = active
-    move(value.presentation.camera.position, value.presentation.camera.target, true)
-    return adapter
+    const snapshot = parseProduct(value)
+    const loaded = await slot.load((signal) => loadAdapter(snapshot, renderer, signal, phase))
+    if (!loaded) return
+    product = snapshot
+    adapter = loaded
+    scene.add(loaded.root)
+    scene.environment = loaded.environment ?? baseEnvironment
+    controls.minDistance = snapshot.presentation.camera.minDistance
+    controls.maxDistance = snapshot.presentation.camera.maxDistance
+    move(snapshot.presentation.camera.position, snapshot.presentation.camera.target, true)
+    return loaded
   }
   function command(value: SceneCommand) {
     if (!adapter || !product) return
@@ -186,6 +199,10 @@ export function createStageController(
     load,
     unload,
     command,
+    enableInteraction() {
+      interactive = true
+      controls.enabled = active && Boolean(adapter)
+    },
     stopCamera,
     resetMotion() {
       motion.forEach((t) => t.kill())
@@ -239,7 +256,7 @@ export function createStageController(
     },
     setActive(value: boolean) {
       active = value
-      controls.enabled = value && Boolean(adapter)
+      controls.enabled = value && interactive && Boolean(adapter)
       cameraTween?.paused(!value)
       motion.forEach((t) => t.paused(!value))
       if (value) invalidate()

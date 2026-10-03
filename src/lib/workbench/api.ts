@@ -1,40 +1,20 @@
+import { object, string, number, vector, list, unique, color, localPath } from './validation'
+import { parseSource, parseStage, parseBehavior } from './presentationV2'
 import type {
   Action,
   GuideStep,
   ProductPresentation,
   ProductSummary,
-  SampleKey,
-  Vec3,
   WorkbenchProduct,
 } from './types'
 
-function object(value: unknown): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value))
-    throw new Error('商品配置格式不正确')
-  return value as Record<string, unknown>
-}
-function string(value: unknown): string {
-  if (typeof value !== 'string' || !value.trim()) throw new Error('商品配置缺少文字字段')
-  return value
-}
-function number(value: unknown): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error('商品配置包含无效数值')
-  return value
-}
-function vector(value: unknown): Vec3 {
-  if (!Array.isArray(value) || value.length !== 3) throw new Error('商品视角配置不正确')
-  return [number(value[0]), number(value[1]), number(value[2])]
-}
-function list<T>(value: unknown, parse: (v: unknown) => T): T[] {
-  if (!Array.isArray(value)) throw new Error('商品配置缺少列表')
-  return value.map(parse)
-}
-function unique(items: { id: string }[]) {
-  if (new Set(items.map((i) => i.id)).size !== items.length) throw new Error('商品配置存在重复编号')
-}
 export function parseSummary(value: unknown): ProductSummary {
   const p = object(value)
+  if (p.displayStatus != null && p.displayStatus !== 'prototype' && p.displayStatus !== 'formal')
+    throw new Error('商品展示状态无效')
   return {
+    ...(p.cover == null ? {} : { cover: localPath(p.cover) }),
+    displayStatus: p.displayStatus === 'formal' ? 'formal' : 'prototype',
     slug: string(p.slug),
     name: string(p.name),
     category: string(p.category),
@@ -44,17 +24,14 @@ export function parseSummary(value: unknown): ProductSummary {
 export function parseProduct(value: unknown): WorkbenchProduct {
   const root = object(value),
     p = object(root.presentation),
-    source = object(p.source),
+    source = parseSource(p.version, p.source),
     camera = object(p.camera)
-  if (
-    p.version !== 1 ||
-    source.kind !== 'procedural' ||
-    !['speaker', 'typewriter', 'car'].includes(string(source.key))
-  )
-    throw new Error('暂不支持此商品展示版本')
+  const format =
+    p.version === 1 && source.kind === 'procedural'
+      ? { version: 1 as const, source }
+      : { version: 2 as const, source, stage: parseStage(p.stage) }
   const presentation: ProductPresentation = {
-    version: 1,
-    source: { kind: 'procedural', key: source.key as SampleKey },
+    ...format,
     camera: {
       position: vector(camera.position),
       target: vector(camera.target),
@@ -82,9 +59,7 @@ export function parseProduct(value: unknown): WorkbenchProduct {
     }),
     finishes: list(p.finishes, (v) => {
       const x = object(v)
-      const color = string(x.color)
-      if (!/^#[0-9a-f]{6}$/i.test(color)) throw new Error('商品配色无效')
-      return { id: string(x.id), name: string(x.name), color }
+      return { id: string(x.id), name: string(x.name), color: color(x.color) }
     }),
     actions: list(p.actions, (v) => {
       const x = object(v)
@@ -94,6 +69,7 @@ export function parseProduct(value: unknown): WorkbenchProduct {
         label: string(x.label),
         kind: x.kind,
         node: string(x.node),
+        ...(x.behavior == null ? {} : { behavior: parseBehavior(x.behavior) }),
       } as Action
     }),
     structure: p.structure === true,
@@ -114,6 +90,16 @@ export function parseProduct(value: unknown): WorkbenchProduct {
       return step
     }),
   }
+  if (source.kind === 'glb') {
+    if (
+      presentation.actions.some((a) => !a.behavior) ||
+      presentation.structure !== source.explode.length > 0
+    )
+      throw new Error('GLB 动作或结构绑定不完整')
+    if (presentation.finishes.length > 1 && !source.finishMaterials.length)
+      throw new Error('GLB 缺少可试色材质')
+  } else if (presentation.actions.some((a) => a.behavior) || presentation.stage?.environmentFile)
+    throw new Error('样板不能覆盖注册行为或引用包外环境')
   const cfg = presentation
   if (
     typeof p.structure !== 'boolean' ||

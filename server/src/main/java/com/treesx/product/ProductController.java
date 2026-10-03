@@ -39,10 +39,9 @@ public class ProductController {
             Presentation p=mapper.readValue(config.configJson,Presentation.class);
             PresentationValidator.validate(p,validator);
             if (config.schemaVersion != p.version()) throw new IllegalArgumentException();
-            return new ProductDto(product.slug,product.name,product.category,product.description,p);
+            return new ProductDto(product.slug,product.name,product.category,product.description,product.cover,product.displayStatus,p);
         } catch (RuntimeException e) {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"商品展示配置不可用");
         }
     }
 }
-

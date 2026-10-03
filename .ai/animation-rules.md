@@ -1,5 +1,7 @@
 # 动效规则
 
+2026-10-02：新工作台自由观察为主，无自动入场演出。动作、用户相机、导览相机各自管理；鼠标立即退出导览。以下 Phase 2/4、音箱 7.8 秒演绎属于 legacy 历史，不适用于新工作台。
+
 - GSAP 为复杂动画唯一管理器；CSS 仅做颜色/边框的短过渡。
 - 页面动画使用 gsap.context，卸载 revert；相机动画保存 tween，重复操作覆盖旧 tween。
 - Lenis 禁用 autoRaf，由 GSAP ticker 驱动；卸载 remove ticker、解绑 scroll、destroy。

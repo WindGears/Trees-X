@@ -15,7 +15,7 @@ describe('workbench contract', () => {
     const p = parseProduct(samples[0])
     p.presentation.guide[1]!.hotspotId = 'missing'
     expect(() => parseProduct(p)).toThrow('导览')
-    expect(() => parseProduct({ ...p, presentation: { ...p.presentation, version: 2 } })).toThrow(
+    expect(() => parseProduct({ ...p, presentation: { ...p.presentation, version: 3 } })).toThrow(
       '版本',
     )
     const camera = { ...p.presentation.camera, position: [Infinity, 0, 1] }

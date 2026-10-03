@@ -11,3 +11,7 @@ server/target
 server/.mvn
 server/mvnw
 server/mvnw.cmd
+
+public/basis
+
+.tools

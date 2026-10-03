@@ -7,7 +7,8 @@ public class ProductEntity {
     @Column(nullable=false,length=40) String category;
     @Column(nullable=false,length=600) String description;
     @Column(name="sort_order",nullable=false) int sortOrder;
+    @Column(length=512) String cover;
+    @Column(name="display_status",nullable=false,length=20) String displayStatus;
     protected ProductEntity() {}
-    ProductDto.Summary summary() { return new ProductDto.Summary(slug,name,category,description); }
+    ProductDto.Summary summary() { return new ProductDto.Summary(slug,name,category,description,cover,displayStatus); }
 }
-

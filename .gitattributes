@@ -3,3 +3,5 @@ public/models/reventon/*.png filter=lfs diff=lfs merge=lfs -text
 public/models/reventon/*.exr filter=lfs diff=lfs merge=lfs -text
 public/models/reventon/*.jpg filter=lfs diff=lfs merge=lfs -text
 public/models/reventon/motion.json -text -diff
+public/models/bundles/** -text
+public/basis/** -text
