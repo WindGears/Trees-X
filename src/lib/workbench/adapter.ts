@@ -1,7 +1,8 @@
 import { Vector3, type Group, type Object3D, type Texture } from 'three'
 import { modelKit } from './modelKit'
 import { sampleBuilders } from './samples'
-import type { WorkbenchProduct } from './types'
+import type { Vec3, WorkbenchProduct } from './types'
+import { bindMotionPose } from './motionPose'
 
 export interface SceneAdapter {
   root: Group
@@ -10,15 +11,20 @@ export interface SceneAdapter {
   environment?: Texture
   apply(): void
   setFinish(color: string): void
-  point(node: string, result: Vector3): Vector3 | undefined
+  point(node: string, result: Vector3, anchor?: Vec3): Vector3 | undefined
   dispose(): void
+  select?(node?: string): void
+  nodeForHit?(object: Object3D, instanceId?: number): Object3D | undefined
 }
 
 export function createSampleAdapter(product: WorkbenchProduct): SceneAdapter {
   const kit = modelKit()
   try {
     if (product.presentation.source.kind !== 'procedural') throw new Error('样板适配器不能读取 GLB')
-    const animate = sampleBuilders[product.presentation.source.key](kit)
+    const animate = sampleBuilders[product.presentation.source.key](
+      kit,
+      new Set(product.presentation.actions.filter((a) => a.kind !== 'progress').map((a) => a.id)),
+    )
     for (const item of [...product.presentation.hotspots, ...product.presentation.actions]) {
       if (!kit.nodes.has(item.node)) throw new Error('样板缺少部件：' + item.node)
     }
@@ -27,9 +33,12 @@ export function createSampleAdapter(product: WorkbenchProduct): SceneAdapter {
     kit.root.userData.sourceKind = 'procedural'
     const pose: Record<string, number> = { explosion: 0 }
     for (const action of product.presentation.actions) pose[action.id] = 0
+    const applyMotion = bindMotionPose(product.presentation, kit.nodes)
+    const mappedStructure = Boolean(product.presentation.structureActionId)
     const apply = () => {
-      kit.resetPositions(pose.explosion ?? 0)
+      kit.resetPositions(mappedStructure ? 0 : (pose.explosion ?? 0))
       animate(pose)
+      applyMotion(pose)
       kit.root.updateMatrixWorld(true)
     }
     apply()
@@ -41,8 +50,11 @@ export function createSampleAdapter(product: WorkbenchProduct): SceneAdapter {
       setFinish(color: string) {
         kit.finish.color.set(color)
       },
-      point(node: string, result: Vector3) {
-        return kit.nodes.get(node)?.getWorldPosition(result)
+      point(node: string, result: Vector3, anchor?: Vec3) {
+        const target = kit.nodes.get(node)
+        return anchor
+          ? target?.localToWorld(result.fromArray(anchor))
+          : target?.getWorldPosition(result)
       },
       dispose: kit.dispose,
     }

@@ -1,5 +1,6 @@
 import { object, string, number, vector, list, unique, color, localPath } from './validation'
 import { parseSource, parseStage, parseBehavior } from './presentationV2'
+import { parseMotion, parseProgress, validateMotionBindings } from './motionConfig'
 import type {
   Action,
   GuideStep,
@@ -29,7 +30,11 @@ export function parseProduct(value: unknown): WorkbenchProduct {
   const format =
     p.version === 1 && source.kind === 'procedural'
       ? { version: 1 as const, source }
-      : { version: 2 as const, source, stage: parseStage(p.stage) }
+      : {
+          version: p.version === 3 ? (3 as const) : (2 as const),
+          source,
+          stage: parseStage(p.stage),
+        }
   const presentation: ProductPresentation = {
     ...format,
     camera: {
@@ -49,12 +54,16 @@ export function parseProduct(value: unknown): WorkbenchProduct {
     }),
     hotspots: list(p.hotspots, (v) => {
       const x = object(v)
+      if (x.marker != null && typeof x.marker !== 'boolean') throw new Error('热点标记状态无效')
       return {
         id: string(x.id),
         node: string(x.node),
         name: string(x.name),
         description: string(x.description),
         cameraOffset: vector(x.cameraOffset),
+        ...(x.anchor == null ? {} : { anchor: vector(x.anchor) }),
+        ...(x.group == null ? {} : { group: string(x.group) }),
+        ...(x.marker == null ? {} : { marker: x.marker === true }),
       }
     }),
     finishes: list(p.finishes, (v) => {
@@ -63,16 +72,19 @@ export function parseProduct(value: unknown): WorkbenchProduct {
     }),
     actions: list(p.actions, (v) => {
       const x = object(v)
-      if (x.kind !== 'toggle' && x.kind !== 'pulse') throw new Error('商品动作无效')
+      if (x.kind !== 'toggle' && x.kind !== 'pulse' && x.kind !== 'progress')
+        throw new Error('商品动作无效')
       return {
         id: string(x.id),
         label: string(x.label),
         kind: x.kind,
         node: string(x.node),
         ...(x.behavior == null ? {} : { behavior: parseBehavior(x.behavior) }),
+        ...(x.motion == null ? {} : { motion: parseMotion(x.motion) }),
       } as Action
     }),
     structure: p.structure === true,
+    ...(p.structureActionId == null ? {} : { structureActionId: string(p.structureActionId) }),
     guide: list(p.guide, (v) => {
       const x = object(v),
         step: GuideStep = {
@@ -87,13 +99,16 @@ export function parseProduct(value: unknown): WorkbenchProduct {
           if (typeof x[k] !== 'boolean') throw new Error('导览配置无效')
           step[k] = x[k]
         }
+      if (x.progress != null) step.progress = parseProgress(x.progress)
       return step
     }),
   }
   if (source.kind === 'glb') {
     if (
-      presentation.actions.some((a) => !a.behavior) ||
-      presentation.structure !== source.explode.length > 0
+      presentation.actions.some((a) => a.kind !== 'progress' && !a.behavior) ||
+      presentation.structure !==
+        (source.explode.length > 0 || Boolean(presentation.structureActionId)) ||
+      (presentation.structureActionId && source.explode.length > 0)
     )
       throw new Error('GLB 动作或结构绑定不完整')
     if (presentation.finishes.length > 1 && !source.finishMaterials.length)
@@ -119,6 +134,7 @@ export function parseProduct(value: unknown): WorkbenchProduct {
     )
       throw new Error('导览引用了不存在的内容')
   }
+  validateMotionBindings(cfg)
   return { ...parseSummary(root), presentation }
 }
 async function request(path: string, signal: AbortSignal): Promise<unknown> {
@@ -144,6 +160,9 @@ async function request(path: string, signal: AbortSignal): Promise<unknown> {
 export async function getProducts(signal: AbortSignal, q = '', category = '') {
   const query = new URLSearchParams({ q, category })
   return list(await request('/api/v1/products?' + query, signal), parseSummary)
+}
+export async function getCategories(signal: AbortSignal) {
+  return list(await request('/api/v1/categories', signal), (value) => string(object(value).name))
 }
 export async function getProduct(slug: string, signal: AbortSignal) {
   const product = parseProduct(

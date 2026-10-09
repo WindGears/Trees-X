@@ -1,0 +1,46 @@
+.wb-progress {
+  margin-top: 16px;
+  padding-top: 22px;
+  border-top: 1px solid var(--wb-line);
+}
+.wb-progress-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.wb-progress-heading label {
+  font-weight: 500;
+}
+.wb-progress-heading output {
+  color: var(--wb-accent);
+  font-variant-numeric: tabular-nums;
+}
+.workbench .wb-progress input[type='range'] {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--wb-accent);
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.workbench .wb-progress input:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.wb-panel .wb-progress-state {
+  font-size: 12px;
+  margin: 0 0 14px;
+}
+.wb-progress-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.workbench .wb-progress-buttons button {
+  justify-content: center;
+  min-height: 42px;
+}

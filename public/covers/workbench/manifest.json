@@ -1,0 +1,25 @@
+{
+  "source": "Trees X procedural workflow prototypes; real Three.js canvas captures, not formal GLB assets",
+  "generator": "scripts/create-workbench-covers.mjs",
+  "size": [960, 720],
+  "covers": [
+    {
+      "slug": "form-01",
+      "path": "/covers/workbench/form-01.png",
+      "bytes": 70068,
+      "sha256": "584ab02dc72f9942fe7de7d62f6898944f103b43d442d5955478ca36223a5ec6"
+    },
+    {
+      "slug": "typewriter-study",
+      "path": "/covers/workbench/typewriter-study.png",
+      "bytes": 94449,
+      "sha256": "11c5d37693f3ac104137f337ab15798acd33a1ecde79e5e1db52470dda3de85b"
+    },
+    {
+      "slug": "reventon",
+      "path": "/covers/workbench/reventon.png",
+      "bytes": 79101,
+      "sha256": "03ccee019b3bc5da57e1f97e964785579a92b38bc250901f1894295846b868a2"
+    }
+  ]
+}

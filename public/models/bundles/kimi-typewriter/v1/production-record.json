@@ -1,0 +1,366 @@
+{
+  "source": "I:\\ssr\\NIXUS\\Trees X\\artifacts\\typewriter-migration\\export-v1\\source.glb",
+  "sourceSha256": "b61293acf1eb49f2d7cbcba0ae59214346130b8df0c32685cf954502f37ff0f4",
+  "runtimeEntrySha256": "b61293acf1eb49f2d7cbcba0ae59214346130b8df0c32685cf954502f37ff0f4",
+  "channels": [
+    {
+      "material": "decal-6",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-7",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-8",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-9",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-10",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-11",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-12",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-13",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-14",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-15",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-16",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-17",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-18",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-19",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-20",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-21",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-22",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-23",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-24",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-25",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-26",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-27",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-28",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-29",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-30",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-31",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-32",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-33",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-34",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-35",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-36",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-37",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-38",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-39",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-40",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-41",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-42",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-43",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-44",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-45",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-46",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-47",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-48",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-49",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-50",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-51",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-52",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-53",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-54",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-55",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "decal-62",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    }
+  ],
+  "method": "byte-preserving dependency deduplication; geometry and image bytes unchanged",
+  "qualityApproved": false
+}

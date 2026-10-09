@@ -27,7 +27,40 @@ export async function loadAdapter(
     signal.throwIfAborted()
     decoded = await decodeGlb(bundle, bytes, renderer, signal)
     phase('materials')
-    adapter = bindGlb(product, source, decoded.root, decoded.dispose)
+    if (source.adapter === 'typewriter-v1') {
+      const program = product.presentation.actions.find((a) => a.motion?.program)?.motion?.program
+      if (!program || !bundle.files.some((f) => f.path === program.file && f.role === 'motion'))
+        throw new Error('打字机缺少登记的部件动作资源')
+      const data = bytes.get(program.file)
+      if (!data) throw new Error('打字机动作资源读取失败')
+      const { bindTypewriter } = await import('./typewriterAdapter')
+      signal.throwIfAborted()
+      adapter = bindTypewriter(
+        product,
+        source,
+        decoded.root,
+        JSON.parse(new TextDecoder().decode(data)) as unknown,
+        decoded.dispose,
+      )
+    } else if (source.adapter === 'piano-v1') {
+      const program = product.presentation.actions.find(
+        (a) => a.motion?.program?.type === 'piano-sound-path-v1',
+      )?.motion?.program
+      if (!program || !bundle.files.some((f) => f.path === program.file && f.role === 'motion'))
+        throw new Error('钢琴缺少登记的结构动作资源')
+      const data = bytes.get(program.file)
+      if (!data) throw new Error('钢琴动作资源读取失败')
+      const { bindPiano } = await import('./pianoAdapter')
+      signal.throwIfAborted()
+      adapter = bindPiano(
+        product,
+        source,
+        decoded.root,
+        decoded.animations,
+        JSON.parse(new TextDecoder().decode(data)) as unknown,
+        decoded.dispose,
+      )
+    } else adapter = bindGlb(product, source, decoded.root, decoded.dispose)
     if (
       !adapter.root.userData.triangles ||
       adapter.root.userData.triangles > bundle.budget.maxTriangles
@@ -45,6 +78,14 @@ export async function loadAdapter(
       const { createAssetEnvironment } = await import('./assetEnvironment')
       signal.throwIfAborted()
       environment = createAssetEnvironment(envFile, envBytes, renderer)
+    } else if (source.adapter === 'typewriter-v1') {
+      const { createTypewriterEnvironment } = await import('./typewriterEnvironment')
+      signal.throwIfAborted()
+      environment = createTypewriterEnvironment(renderer)
+    } else if (source.adapter === 'piano-v1') {
+      const { createPianoEnvironment } = await import('./pianoEnvironment')
+      signal.throwIfAborted()
+      environment = createPianoEnvironment(renderer)
     }
     signal.throwIfAborted()
     const current = adapter

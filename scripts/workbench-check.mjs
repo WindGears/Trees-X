@@ -1,8 +1,14 @@
-/* global URL, setTimeout */
+/* global URL, setTimeout, fetch */
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
+const current = await (await fetch(base + '/api/v1/products/typewriter-study')).json()
+if (current.presentation?.source.adapter === 'typewriter-v1') {
+  await import('./typewriter-check.mjs')
+  await import('./typewriter-lifecycle-check.mjs')
+  process.exit(0)
+}
 const output = '.impeccable/review/workbench'
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -80,7 +86,16 @@ try {
       .getByRole('button', { name: new RegExp(name) })
       .click()
   }
-  await page.goto(base)
+  const expand = async () => {
+    const progress = page.locator('.wb-progress')
+    if (await progress.count()) {
+      const slug = await page.locator('.workbench').getAttribute('data-slug')
+      if (slug === 'form-01')
+        await progress.getByRole('button', { name: '展开', exact: true }).click()
+      else await page.getByRole('button', { name: '展开部件', exact: true }).click()
+    } else await page.getByRole('button', { name: '展开部件', exact: true }).click()
+  }
+  await page.goto(base + '/?product=form-01')
   report.identities.push(await ready('form-01'))
   await page.evaluate(() => {
     window.__wbCanvas = document.querySelector('canvas')
@@ -94,14 +109,15 @@ try {
   expect((await state()).camera).toEqual(initial.camera)
   await page.getByRole('button', { name: '结构与动作', exact: true }).click()
   await page.locator('.wb-action-list button').first().click()
-  await page.getByRole('button', { name: '展开部件', exact: true }).click()
+  await expand()
   await page.waitForTimeout(700)
   const exploded = await state()
   expect(exploded.nodes.knob.rotation).not.toEqual(initial.nodes.knob.rotation)
   expect(exploded.nodes.front.position).not.toEqual(initial.nodes.front.position)
   await page.getByRole('button', { name: '复位视角', exact: true }).click()
+  const paused = await state()
   await page.waitForTimeout(700)
-  expect((await state()).nodes.front.position).toEqual(exploded.nodes.front.position)
+  expect((await state()).nodes.front.position).toEqual(paused.nodes.front.position)
   await page.getByRole('button', { name: '还原商品', exact: true }).click()
   await page.waitForTimeout(700)
   expect((await state()).nodes.front).toEqual(initial.nodes.front)
@@ -170,7 +186,7 @@ try {
       await page.waitForTimeout(650)
       expect((await state()).nodes[node].rotation).not.toEqual(before.nodes[node].rotation)
     }
-    await page.getByRole('button', { name: '展开部件', exact: true }).click()
+    await expand()
     await page.waitForTimeout(650)
     await capture(`${slug}-actions-1440`)
     await page.getByRole('button', { name: '导览', exact: true }).click()

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "kimi-piano",
+  "version": 1,
+  "entry": "model.glb",
+  "files": [
+    {
+      "path": "model.glb",
+      "bytes": 122625304,
+      "sha256": "13c191f8144433c90a60899435c07e6a6cdfce52ee5f673337bf5189b8908e1f",
+      "role": "model"
+    },
+    {
+      "path": "rig.json",
+      "bytes": 1869428,
+      "sha256": "de6cbee9f30674985f09b8d94fff4766e0a42bcc215917fafb5d49b289256f0c",
+      "role": "motion"
+    }
+  ],
+  "budget": { "maxBytes": 124494732, "maxTriangles": 1198962 },
+  "provenance": {
+    "author": "User-owned Kimi project",
+    "source": "https://k3-piano-cfx.ok.kimi.link/sound-path.html",
+    "license": "Owner-authorized project reuse and GitHub synchronization (2026-10-09)",
+    "redistribution": "Owner requested synchronization to WindGears/Trees-X on 2026-10-09. Third-party reference photographs excluded; no additional downstream license is inferred."
+  }
+}

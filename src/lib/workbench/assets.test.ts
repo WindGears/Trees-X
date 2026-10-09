@@ -96,6 +96,52 @@ describe('formal asset contracts and ownership', () => {
     expect(spy).toHaveBeenCalledTimes(1)
     expect(spies[0]).toHaveBeenCalledTimes(1)
   })
+  it('runs v3 progress on the real GLB while preserving its geometry and independent dial rotation', async () => {
+    const product = fixture(),
+      p = product.presentation
+    if (p.source.kind !== 'glb' || p.version === 1) throw new Error('fixture')
+    p.version = 3
+    p.structureActionId = 'layers'
+    const tracks = p.source.explode.map((e) => ({
+      node: e.node,
+      type: 'translate' as const,
+      offset: e.offset,
+      range: [0, 1] as [number, number],
+    }))
+    p.source.explode = []
+    p.actions.push({
+      id: 'layers',
+      kind: 'progress',
+      label: '可逆分层',
+      node: 'Chassis',
+      motion: { duration: 2, openLabel: '展开', closeLabel: '合拢', tracks },
+    })
+    p.hotspots[0]!.anchor = [0, 0, 0.05]
+    const validated = parseProduct(product)
+    const gltf = await new GLTFLoader().parseAsync(buffer, '')
+    const resources = ownedResources()
+    resources.track(gltf.scene)
+    const release = vi.fn(() => resources.dispose())
+    const geometry = (gltf.scene.getObjectByName('Chassis') as Mesh).geometry
+    const adapter = bindGlb(validated, p.source, gltf.scene, release)
+    const front = adapter.nodes.get('Front_Baffle')!,
+      initial = front.position.clone()
+    adapter.pose.layers = 0.437
+    adapter.pose[p.actions[0]!.id] = 1
+    adapter.apply()
+    expect(front.position.z - initial.z).toBeCloseTo(
+      tracks.find((t) => t.node === 'Front_Baffle')!.offset[2] * 0.437,
+      12,
+    )
+    expect(adapter.nodes.get('Volume_Dial')!.quaternion.equals(new Group().quaternion)).toBe(false)
+    expect((gltf.scene.getObjectByName('Chassis') as Mesh).geometry).toBe(geometry)
+    adapter.pose.layers = 0
+    adapter.apply()
+    expect(front.position.equals(initial)).toBe(true)
+    adapter.dispose()
+    adapter.dispose()
+    expect(release).toHaveBeenCalledTimes(1)
+  })
 })
 describe('asynchronous selection', () => {
   it('aborts old loads, disposes late results, suppresses late errors, and preserves current ownership', async () => {

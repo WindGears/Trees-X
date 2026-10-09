@@ -82,6 +82,7 @@ export async function decodeGlb(
     if (failedImage) throw new Error('模型纹理解析失败，请重新加载。')
     return {
       root,
+      animations: gltf.animations,
       dispose() {
         root?.removeFromParent()
         resources.dispose()

@@ -43,16 +43,20 @@ export function parseStage(value: unknown): StageConfig {
 }
 export function parseSource(version: unknown, value: unknown): ProductPresentation['source'] {
   const p = object(value)
-  if (version !== 1 && version !== 2) throw new Error('暂不支持此商品展示版本')
+  if (version !== 1 && version !== 2 && version !== 3) throw new Error('暂不支持此商品展示版本')
   if (p.kind === 'procedural' && ['speaker', 'typewriter', 'car'].includes(string(p.key)))
     return { kind: 'procedural', key: p.key as SampleKey }
-  if (version !== 2 || p.kind !== 'glb' || p.adapter !== 'pbr-v1')
+  if (
+    version === 1 ||
+    p.kind !== 'glb' ||
+    !['pbr-v1', 'typewriter-v1', 'piano-v1'].includes(string(p.adapter))
+  )
     throw new Error('未注册的商品适配器')
   const b = object(p.bundle),
     t = object(p.transform)
   const result: GlbSource = {
     kind: 'glb',
-    adapter: 'pbr-v1',
+    adapter: p.adapter as GlbSource['adapter'],
     bundle: {
       manifest: localPath(b.manifest),
       id: string(b.id),
@@ -79,8 +83,20 @@ export function parseSource(version: unknown, value: unknown): ProductPresentati
 }
 export function parseBehavior(value: unknown): Action['behavior'] {
   if (value == null) return undefined
-  const p = object(value),
-    axis = vector(p.axis)
+  const p = object(value)
+  if (p.type === 'typewriter-strike') {
+    const index = number(p.index)
+    if (
+      !Number.isInteger(index) ||
+      index < 0 ||
+      index > 43 ||
+      p.axis != null ||
+      (p.amount != null && p.amount !== 0)
+    )
+      throw new Error('击发按键编号或行为无效')
+    return { type: 'typewriter-strike', index }
+  }
+  const axis = vector(p.axis)
   if (
     !['rotate', 'translate'].includes(string(p.type)) ||
     Math.abs(Math.hypot(...axis) - 1) > 0.001

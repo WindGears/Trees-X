@@ -1,0 +1,268 @@
+{
+  "source": "I:\\ssr\\NIXUS\\Trees X\\artifacts\\piano-migration\\export-v1\\source.glb",
+  "sourceSha256": "fbccac0cf407ae1ad81aa4ae61ed3e91d5497160f5150e4901bff82229f543a3",
+  "runtimeEntrySha256": "fbccac0cf407ae1ad81aa4ae61ed3e91d5497160f5150e4901bff82229f543a3",
+  "channels": [
+    {
+      "material": "piano-material-1764",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1768",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1772",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1774",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1776",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1778",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1780",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1782",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1784",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1786",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1788",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1790",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1792",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1795",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1797",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1799",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1801",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1803",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1805",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1807",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1809",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1811",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1813",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-1815",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3537",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3538",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3539",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3540",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3541",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3542",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3543",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3544",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3545",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3546",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3547",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-3548",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    },
+    {
+      "material": "piano-material-4290",
+      "slot": "baseColorTexture",
+      "image": "embedded",
+      "colorSpace": "sRGB",
+      "channels": "RGB(A)"
+    }
+  ],
+  "method": "byte-preserving dependency deduplication; geometry and image bytes unchanged",
+  "qualityApproved": false
+}

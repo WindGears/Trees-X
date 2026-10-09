@@ -24,7 +24,7 @@ public class ProductController {
         if (q.length()>120 || category.length()>40)
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"搜索内容过长");
         String query=q.strip().toLowerCase(Locale.ROOT);
-        return products.findAllByOrderBySortOrderAsc().stream()
+        return products.findAllByListedTrueOrderBySortOrderAscSlugAsc().stream()
             .filter(p -> p.name.toLowerCase(Locale.ROOT).contains(query))
             .filter(p -> category.isBlank() || p.category.equals(category))
             .map(ProductEntity::summary).toList();
@@ -32,6 +32,7 @@ public class ProductController {
     @GetMapping("/{slug}")
     public ProductDto detail(@PathVariable String slug) {
         ProductEntity product=products.findById(slug)
+            .filter(p -> p.listed)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"未找到该商品"));
         PresentationEntity config=presentations.findById(slug)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,"商品展示配置不可用"));

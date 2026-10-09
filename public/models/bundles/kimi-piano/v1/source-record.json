@@ -1,0 +1,42 @@
+{
+  "source": "https://k3-piano-cfx.ok.kimi.link/sound-path.html",
+  "sourceHtmlSha256": "5e0d1e4610a98fb9a374f0e4ef19cac8ce2ef64458e12bd9fdce780219fb5f7b",
+  "glbSha256": "13c191f8144433c90a60899435c07e6a6cdfce52ee5f673337bf5189b8908e1f",
+  "glbBytes": 122625304,
+  "units": 823,
+  "meshes": 5527,
+  "lines": 21,
+  "triangles": 1198962,
+  "materials": 5548,
+  "tracks": 2461,
+  "curves": 93,
+  "morphs": 34,
+  "flat": {
+    "units": 823,
+    "meshes": 3151,
+    "morphingMeshes": 34,
+    "finalVisibleMeshes": 2173,
+    "layout": {
+      "min": [-4.677767770513892, 0.003999999973922863, -2.6178172719068824],
+      "max": [4.677767770513892, 0.1100000001192093, 2.6178172719068824],
+      "width": 9.355535541027784,
+      "depth": 5.235634543813765,
+      "center": [0, 0.05700000004656608, 0]
+    }
+  },
+  "method": "Offline recovery of source section geometry, full meshes, morph targets and sampled native Three animation. Source camera and renderer excluded.",
+  "reference": "User-created structural study derived from reference outlines; 823 modeled layout units, not a factory BOM. Seven source open section contours remain documented.",
+  "audio": "Source supplies explanatory sound-path chapters, no audio playback assets.",
+  "section": {
+    "sourceUnits": 823,
+    "sourceMeshes": 2001,
+    "outputMeshes": 2376,
+    "triangles": 423182,
+    "caps": 246,
+    "openContours": 7
+  },
+  "metadataNormalization": {
+    "removedEmptyDispersionExtensions": 4164,
+    "binaryUnchanged": true
+  }
+}

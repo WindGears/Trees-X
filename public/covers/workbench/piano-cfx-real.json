@@ -1,0 +1,15 @@
+{
+  "source": "Actual recovered piano GLB / unique Tres renderer, no image generation or DOM overlays",
+  "sourceUrl": "https://k3-piano-cfx.ok.kimi.link/sound-path.html",
+  "slug": "piano-cfx",
+  "bundle": {
+    "id": "kimi-piano",
+    "version": 1,
+    "manifest": "/models/bundles/kimi-piano/v1/manifest.json",
+    "sha256": "7649c04b9154e67df6be9456f33fa20384a76ab1dfb2cee244f3bc59ef327792"
+  },
+  "bytes": 144935,
+  "sha256": "63c129a99d7ebfe87e9d00b6eb645e16fa1b3209ff395dc54003b757d00e2f4e",
+  "width": 960,
+  "height": 720
+}

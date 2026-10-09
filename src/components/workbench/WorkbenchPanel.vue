@@ -2,8 +2,18 @@
 import { computed } from 'vue'
 import { Check, RotateCcw } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
+import { progressActions } from '@/lib/workbench/motionConfig'
+import WorkbenchProgress from './WorkbenchProgress.vue'
+import WorkbenchParts from './WorkbenchParts.vue'
+import WorkbenchLayoutMotion from './WorkbenchLayoutMotion.vue'
+import WorkbenchPianoMotion from './WorkbenchPianoMotion.vue'
+import '@/assets/styles/workbench-parts.css'
 const store = useWorkbenchStore()
 const step = computed(() => store.presentation?.guide[store.guideStep])
+const motions = computed(() => (store.presentation ? progressActions(store.presentation) : []))
+const discrete = computed(
+  () => store.presentation?.actions.filter((a) => a.kind !== 'progress') ?? [],
+)
 </script>
 <template>
   <div v-if="store.presentation" class="wb-panel-content">
@@ -23,35 +33,17 @@ const step = computed(() => store.presentation?.guide[store.guideStep])
           <Check v-if="store.finishId === finish.id" :size="16" />
         </button>
       </div>
-      <p class="wb-note">样板配色用于交互验证，不代表真实可购款式。</p>
+      <p class="wb-note">展示配色用于观察材质，不代表真实可购款式。</p>
     </template>
     <template v-else-if="store.panel === 'details'">
-      <h3>选择值得靠近的地方</h3>
-      <p>点击模型上的名称，也可以在这里选择部位。</p>
-      <div class="wb-part-list">
-        <button
-          v-for="part in store.presentation.hotspots"
-          :key="part.id"
-          type="button"
-          :disabled="!store.available"
-          :aria-pressed="store.selectedPart === part.id"
-          @click="store.focus(part.id)"
-        >
-          {{ part.name }}
-        </button>
-      </div>
-      <div v-if="store.hotspot" class="wb-part-copy" role="status">
-        <h3>{{ store.hotspot.name }}</h3>
-        <p>{{ store.hotspot.description }}</p>
-      </div>
-      <button type="button" :disabled="!store.available" @click="store.overview()">返回全景</button>
+      <WorkbenchParts />
     </template>
     <template v-else-if="store.panel === 'actions'">
       <h3>看看它如何变化</h3>
-      <p>动作与结构使用同一套操作；相机始终可以自由观察。</p>
+      <p>旋转、缩放或选择部件会暂停结构播放，保留当前变化。</p>
       <div class="wb-action-list">
         <button
-          v-for="action in store.presentation.actions"
+          v-for="action in discrete"
           :key="action.id"
           type="button"
           :disabled="!store.available"
@@ -63,8 +55,16 @@ const step = computed(() => store.presentation?.guide[store.guideStep])
             store.actions[action.id] ? '已开启' : '未开启'
           }}</span>
         </button>
+        <template v-for="action in motions" :key="action.id">
+          <WorkbenchPianoMotion
+            v-if="action.motion.program?.type === 'piano-sound-path-v1'"
+            :action="action"
+          />
+          <WorkbenchLayoutMotion v-else-if="action.motion.program" :action="action" />
+          <WorkbenchProgress v-else :action="action" />
+        </template>
         <button
-          v-if="store.presentation.structure"
+          v-if="store.presentation.structure && !store.presentation.structureActionId"
           type="button"
           :disabled="!store.available"
           :aria-pressed="store.exploded"

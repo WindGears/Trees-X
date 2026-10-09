@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-02T04:46:53Z",
+  "generatedAt": "2026-10-08T19:32:36.393Z",
   "title": "Design System: Trees X 三维商品工作台",
   "extensions": {
     "colorMeta": {
@@ -86,6 +86,48 @@
           "oklch(72.14% 0.0205 254.90)",
           "oklch(83.57% 0.0205 254.90)",
           "oklch(95.00% 0.0205 254.90)"
+        ]
+      },
+      "wb-stage-warm": {
+        "role": "neutral",
+        "displayName": "打字机暖纸舞台",
+        "tonalRamp": [
+          "oklch(15.00% 0.0082 91.48)",
+          "oklch(26.43% 0.0082 91.48)",
+          "oklch(37.86% 0.0082 91.48)",
+          "oklch(49.29% 0.0082 91.48)",
+          "oklch(60.71% 0.0082 91.48)",
+          "oklch(72.14% 0.0082 91.48)",
+          "oklch(83.57% 0.0082 91.48)",
+          "oklch(95.00% 0.0082 91.48)"
+        ]
+      },
+      "wb-stage-warm-ink": {
+        "role": "neutral",
+        "displayName": "浅色舞台主字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0203 139.43)",
+          "oklch(26.43% 0.0203 139.43)",
+          "oklch(37.86% 0.0203 139.43)",
+          "oklch(49.29% 0.0203 139.43)",
+          "oklch(60.71% 0.0203 139.43)",
+          "oklch(72.14% 0.0203 139.43)",
+          "oklch(83.57% 0.0203 139.43)",
+          "oklch(95.00% 0.0203 139.43)"
+        ]
+      },
+      "wb-stage-warm-muted": {
+        "role": "neutral",
+        "displayName": "浅色舞台辅助字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0229 135.93)",
+          "oklch(26.43% 0.0229 135.93)",
+          "oklch(37.86% 0.0229 135.93)",
+          "oklch(49.29% 0.0229 135.93)",
+          "oklch(60.71% 0.0229 135.93)",
+          "oklch(72.14% 0.0229 135.93)",
+          "oklch(83.57% 0.0229 135.93)",
+          "oklch(95.00% 0.0229 135.93)"
         ]
       },
       "wb-panel": {
@@ -188,7 +230,7 @@
       },
       "wb-label": {
         "role": "neutral",
-        "displayName": "流程样板文字",
+        "displayName": "资产身份文字",
         "tonalRamp": [
           "oklch(15.00% 0.0330 254.02)",
           "oklch(26.43% 0.0330 254.02)",
@@ -325,6 +367,62 @@
           "oklch(83.57% 0.0497 253.54)",
           "oklch(95.00% 0.0497 253.54)"
         ]
+      },
+      "ad-error-text": {
+        "role": "neutral",
+        "displayName": "管理错误文字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0555 33.40)",
+          "oklch(26.43% 0.0555 33.40)",
+          "oklch(37.86% 0.0555 33.40)",
+          "oklch(49.29% 0.0555 33.40)",
+          "oklch(60.71% 0.0555 33.40)",
+          "oklch(72.14% 0.0555 33.40)",
+          "oklch(83.57% 0.0555 33.40)",
+          "oklch(95.00% 0.0555 33.40)"
+        ]
+      },
+      "ad-error-bg": {
+        "role": "neutral",
+        "displayName": "管理错误底色",
+        "tonalRamp": [
+          "oklch(15.00% 0.0192 34.40)",
+          "oklch(26.43% 0.0192 34.40)",
+          "oklch(37.86% 0.0192 34.40)",
+          "oklch(49.29% 0.0192 34.40)",
+          "oklch(60.71% 0.0192 34.40)",
+          "oklch(72.14% 0.0192 34.40)",
+          "oklch(83.57% 0.0192 34.40)",
+          "oklch(95.00% 0.0192 34.40)"
+        ]
+      },
+      "ad-error-line": {
+        "role": "neutral",
+        "displayName": "管理错误边界",
+        "tonalRamp": [
+          "oklch(15.00% 0.0424 34.91)",
+          "oklch(26.43% 0.0424 34.91)",
+          "oklch(37.86% 0.0424 34.91)",
+          "oklch(49.29% 0.0424 34.91)",
+          "oklch(60.71% 0.0424 34.91)",
+          "oklch(72.14% 0.0424 34.91)",
+          "oklch(83.57% 0.0424 34.91)",
+          "oklch(95.00% 0.0424 34.91)"
+        ]
+      },
+      "ad-listed": {
+        "role": "neutral",
+        "displayName": "已上架文字",
+        "tonalRamp": [
+          "oklch(15.00% 0.0363 164.88)",
+          "oklch(26.43% 0.0363 164.88)",
+          "oklch(37.86% 0.0363 164.88)",
+          "oklch(49.29% 0.0363 164.88)",
+          "oklch(60.71% 0.0363 164.88)",
+          "oklch(72.14% 0.0363 164.88)",
+          "oklch(83.57% 0.0363 164.88)",
+          "oklch(95.00% 0.0363 164.88)"
+        ]
       }
     },
     "typographyMeta": {
@@ -374,7 +472,19 @@
       },
       "wb-label": {
         "displayName": "辅助文字",
-        "purpose": "样板身份、输入提示、动作状态及手机工具。"
+        "purpose": "资产身份、输入提示、动作状态及手机工具。"
+      },
+      "ad-heading": {
+        "displayName": "管理标题",
+        "purpose": "管理页面28px标题，不改变工作台商品标题"
+      },
+      "ad-heading-mobile": {
+        "displayName": "管理移动标题",
+        "purpose": "760px以下管理页面24px标题"
+      },
+      "ad-code": {
+        "displayName": "展示配置代码",
+        "purpose": "13px等宽JSON编辑器，不用于访客说明"
       }
     },
     "shadows": [],
@@ -403,6 +513,16 @@
         "name": "wb-pulse",
         "value": "180ms power1.inOut; repeat 1; yoyo true",
         "purpose": "瞬时按键联动单程与返回；减弱动态不循环并归零。"
+      },
+      {
+        "name": "ad-state",
+        "value": "150ms",
+        "purpose": "管理按钮颜色反馈，减弱动态关闭"
+      },
+      {
+        "name": "wb-typewriter-layout",
+        "value": "4000ms linear (full range)",
+        "purpose": "打字机注册结构程序的完整行程；具名目标为整机0、分层0.6、平铺1，支持暂停、继续与复原，镜头独立，减弱动态直接到目标。"
       }
     ],
     "breakpoints": [
@@ -413,6 +533,14 @@
       {
         "name": "wb-mobile",
         "value": "760px"
+      },
+      {
+        "name": "ad-collapse",
+        "value": "760px"
+      },
+      {
+        "name": "ad-category-stack",
+        "value": "1100px"
       }
     ]
   },
@@ -461,24 +589,24 @@
       "name": "商品目录条目",
       "kind": "custom",
       "refersTo": "wb-catalog-row",
-      "description": "平直文本条目而非图片卡片；名称、可见描述、分类与样板身份分层。",
-      "html": "<button class=\"ds-wb-product\" type=\"button\" aria-pressed=\"false\"><strong>桌面音箱</strong><span>从单元、旋钮到外壳，逐层认识一件商品。</span><small>数码 · 流程样板</small></button>",
+      "description": "平直目录条目；名称、描述、分类与资产身份分层，有真实资源封面时展示。",
+      "html": "<button class=\"ds-wb-product\" type=\"button\" aria-pressed=\"false\"><strong>机械打字机</strong><span>从一次按键，看到内部连接。自由观察整机、分层与部件平铺。</span><small>机械 · 正式展品</small></button>",
       "css": ".ds-wb-product{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;padding:21px 10px;background:transparent;color:#f0f4fa;border:0;border-bottom:1px solid #304052;border-radius:0;text-align:left;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-product strong{font-size:17px;font-weight:500}.ds-wb-product span{font-size:13px;line-height:1.75;opacity:.85}.ds-wb-product small{font-size:12px;opacity:.85}.ds-wb-product:hover:not(:disabled){background:#2b3d51}.ds-wb-product[aria-pressed=true]{background:#bed4ef;color:#101923}.ds-wb-product[aria-pressed=true]:hover{background:#d1e2f5}.ds-wb-product:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-wb-product{transition-duration:.01ms}}"
     },
     {
-      "name": "流程样板标记",
+      "name": "资产身份标记",
       "kind": "chip",
       "refersTo": "wb-sample-label",
-      "description": "非交互事实标记，不是筛选标签。",
+      "description": "按配置显示正式展品或流程样板；非交互事实标记，舞台文字色随背景明暗变化。",
       "html": "<span class=\"ds-wb-sample\">流程样板</span>",
-      "css": ".ds-wb-sample{display:inline-block;margin-top:15px;padding:4px 8px;border:1px solid #405369;border-radius:3px;color:#bccce0;background:transparent;font:12px Manrope,'Noto Sans SC Display',sans-serif}@media(max-width:760px){.ds-wb-sample{margin-top:9px;padding:2px 6px}}"
+      "css": ".ds-wb-sample{display:inline-block;margin-top:15px;padding:4px 8px;border:1px solid #405369;border-radius:3px;color:var(--wb-stage-muted,#bccce0);background:transparent;font:12px Manrope,'Noto Sans SC Display',sans-serif}@media(max-width:760px){.ds-wb-sample{margin-top:9px;padding:2px 6px}}"
     },
     {
       "name": "部件热点",
       "kind": "button",
       "refersTo": "wb-hotspot",
-      "description": "模型上的部件名称；本片段只展示外观，实际位置由场景投影更新。",
-      "html": "<button class=\"ds-wb-hotspot\" type=\"button\" aria-pressed=\"false\"><span aria-hidden=\"true\"></span>顶部旋钮</button>",
+      "description": "模型上的部件名称；打字机默认隐藏，细节未选中时显示八个重点，选中后仅显示当前部件；投影边缘隐藏放不下的名称。",
+      "html": "<button class=\"ds-wb-hotspot\" type=\"button\" aria-pressed=\"false\"><span aria-hidden=\"true\"></span>A 键</button>",
       "css": ".ds-wb-hotspot{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;padding:5px 10px;border:1px solid #7990ac;border-radius:4px;background:#111b28d9;color:#f0f4fa;white-space:nowrap;font:12px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-hotspot span{width:5px;height:5px;border-radius:50%;background:currentColor}.ds-wb-hotspot:hover{background:#2b3d51}.ds-wb-hotspot:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-wb-hotspot{transition-duration:.01ms}}.ds-wb-hotspot[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-hotspot[aria-pressed=true]:hover{background:#d1e2f5;color:#101923}"
     },
     {
@@ -486,18 +614,26 @@
       "kind": "custom",
       "refersTo": "wb-panel",
       "description": "实色滚动面板、清楚标题和透明关闭入口，移动端转到场景下方。",
-      "html": "<aside class=\"ds-wb-panel\"><header><h2>细节</h2><button type=\"button\" aria-label=\"收起面板\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m18 6-12 12M6 6l12 12\"/></svg></button></header><h3>选择值得靠近的地方</h3><p>点击模型上的名称，也可以在这里选择部位。</p></aside>",
+      "html": "<aside class=\"ds-wb-panel\"><header><h2>细节</h2><button type=\"button\" aria-label=\"收起面板\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m18 6-12 12M6 6l12 12\"/></svg></button></header><h3>选择值得靠近的地方</h3><p>点击模型部件，或搜索并选择。聚焦会跟随部件当前的位置。</p></aside>",
       "css": ".ds-wb-panel{padding:26px 23px;background:#131d29;color:#f0f4fa;border-left:1px solid #304052;overflow-y:auto;scrollbar-color:#526a85 #131d29;scrollbar-width:thin;overscroll-behavior:contain;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-panel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px}.ds-wb-panel h2{font-size:22px;font-weight:500;margin:0}.ds-wb-panel h3{font-size:16px;font-weight:500;line-height:1.7;margin:0 0 12px}.ds-wb-panel p{color:#abbacb;font-size:14px;line-height:1.85;margin:0 0 22px}.ds-wb-panel button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px;background:transparent;border:0;border-radius:7px;color:inherit;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-panel button:hover{background:#2b3d51}.ds-wb-panel button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(max-width:760px){.ds-wb-panel{padding:16px 20px;border-left:0;border-top:1px solid #304052}.ds-wb-panel header{margin-bottom:18px}.ds-wb-panel h2{font-size:19px}}@media(prefers-reduced-motion:reduce){.ds-wb-panel button{transition-duration:.01ms}}"
+    },
+    {
+      "name": "打字机结构目标",
+      "kind": "custom",
+      "refersTo": "wb-button",
+      "description": "三个具名结构目标沿用共同按钮；播放控制与相机预设在实际面板中分别提供。",
+      "html": "<section class=\"ds-wb-layout\"><h3>探索部件关系</h3><div class=\"ds-wb-layout-choices\"><button type=\"button\" aria-pressed=\"false\">合拢整机</button><button type=\"button\" aria-pressed=\"true\">分层展开</button><button type=\"button\" aria-pressed=\"false\">平铺部件</button></div><p>已停留，可自由观察</p></section>",
+      "css": ".ds-wb-layout{padding:22px 23px;background:#131d29;color:#f0f4fa;border-top:1px solid #304052;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-layout h3{margin:0 0 10px;font-size:16px;font-weight:500;line-height:1.7}.ds-wb-layout-choices{display:grid;gap:8px;margin-top:18px}.ds-wb-layout button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 13px;background:#1d2b3c;color:#f0f4fa;border:1px solid #304052;border-radius:7px;font:inherit;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-layout button:hover:not(:disabled){background:#2b3d51}.ds-wb-layout button[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-layout button[aria-pressed=true]:hover:not(:disabled){background:#d1e2f5;color:#101923}.ds-wb-layout button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-layout button:disabled{opacity:.4;cursor:default}.ds-wb-layout p{margin:0 0 14px;color:#abbacb;font-size:12px;line-height:1.85}@media(prefers-reduced-motion:reduce){.ds-wb-layout button{transition-duration:.01ms}}"
     }
   ],
   "narrative": {
     "northStar": "先欣赏商品，再自然探索细节",
-    "overview": "Trees X 延续深色、中文身份、银灰模型与冷色重点。深蓝灰界面安静地承托三维对象，信息用清楚的字号、间距与细线组织；工具的亮色状态帮助访客确认自己正在观察和操作什么。\n\n当前系统以一致的操作和可读性服务商品观察。模型通过真实 Three 场景呈现，当前的简化几何明确标为“流程样板”。界面不借助摄影封面、装饰光效或自动演出来掩盖样板范围；颜色、标题和控件不作真实商品规格或可购款式承诺。",
+    "overview": "Trees X 延续深蓝灰框架、中文身份与冷银状态重点。顶栏、工具和面板安静地承托三维对象，信息用清楚的字号、间距与细线组织；工具的亮色状态帮助访客确认自己正在观察和操作什么。机械打字机采用暖纸色舞台，承托黑色漆面与金属部件，保留同一套深色工作台工具。\n\n当前系统以一致的操作和可读性服务商品观察。模型通过真实 Three 场景呈现，资产身份按配置明确显示“正式展品”或“流程样板”。默认机械打字机已接入用户自有 Kimi 模型导出的真实 GLB，汽车仍是流程样板；音箱已从访客目录下架，历史资源与 legacy 入口保留。颜色、标题和控件不作真实商品规格、工厂机械精度或可购款式承诺。\n\n**Key Characteristics:",
     "keyCharacteristics": [
       "模型主导，工具按需出现。",
       "深蓝灰层次、冷银选中态与清晰焦点。",
       "中文信息优先，图标始终服务操作。",
-      "三件流程样板共享组件与状态语言。"
+      "正式资产与流程样板共享组件与状态语言。"
     ],
     "rules": [
       {
@@ -506,8 +642,13 @@
         "section": "colors"
       },
       {
+        "name": "The 舞台文字分域 Rule",
+        "body": "舞台上的商品身份和输入提示跟随舞台明暗选择文字色；深色工具与面板继续使用工作台文字色，商品专属背景不扩展为全站主题。",
+        "section": "colors"
+      },
+      {
         "name": "The 中文身份 Rule",
-        "body": "商品名称和功能名称直接说明内容；英文品牌不替代中文身份，流程样板标记是事实说明。",
+        "body": "商品名称和功能名称直接说明内容；英文品牌不替代中文身份，正式展品与流程样板标记是资产事实说明。",
         "section": "typography"
       },
       {
@@ -517,19 +658,25 @@
       },
       {
         "name": "The 模型承载深度 Rule",
-        "body": "界面保持平实，空间层次交给真实三维几何、光照与阴影；当前样板不追加装饰性光效。",
+        "body": "界面保持平实，空间层次交给真实三维几何、光照与阴影；商品观察不追加装饰性光效。",
         "section": "elevation"
       },
       {
         "name": "The 主动观察 Rule",
         "body": "默认静止呈现商品；拖动或缩放立即接手镜头并退出导览，关闭面板保留观察状态。",
         "section": "components"
+      },
+      {
+        "name": "管理配置反馈",
+        "body": "常用配置使用表单，完整JSON显式应用；分区选中与悬停保持清楚对比，保存条桌面sticky、手机普通文档流。预览取景只改本地镜头，成功回填明确提示尚未保存。",
+        "section": "components"
       }
     ],
     "dos": [
       "Do 让模型保持主要观察面积，沿用单活动面板与共享工具。",
       "Do 使用已记录的深蓝灰层次、冷银选中态和独立键盘焦点。",
-      "Do 清楚标注流程样板，并为操作状态、错误与空结果提供文字。",
+      "Do 按资产事实标注正式展品或流程样板，并为操作状态、错误与空结果提供文字。",
+      "Do 让暖色舞台上的商品身份与底部提示保持深色可读文字，工具和面板沿用既有深色体系。",
       "Do 区分复位视角、返回全景和还原商品，保留各自范围说明。",
       "Do 用真实场景和实机截图验证当前实现，扩展正式模型时复用现有界面。"
     ],

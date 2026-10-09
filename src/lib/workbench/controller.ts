@@ -2,6 +2,7 @@ import { gsap } from 'gsap'
 import {
   Vector2,
   Vector3,
+  Spherical,
   Raycaster,
   type PerspectiveCamera,
   type WebGLRenderer,
@@ -14,6 +15,10 @@ import { ResourceSlot } from './resourceSlot'
 import { parseProduct } from './api'
 import type { LoadPhase } from './assetBundle'
 import type { SceneCommand, Vec3, WorkbenchProduct } from './types'
+import type { MotionCommand, MotionStatus } from './types'
+import { progressActions } from './motionConfig'
+import { createMotionPlayback, type MotionFeedback } from './motionPlayback'
+import { structureReveal, type PlaceCallout } from './calloutProjection'
 
 export function createStageController(
   renderer: WebGLRenderer,
@@ -22,23 +27,29 @@ export function createStageController(
   invalidate: () => void,
   manual: () => void,
   focus: (id: string) => void,
+  feedback: MotionFeedback = () => {},
+  checkpoint: () => Record<string, MotionStatus> = () => ({}),
+  options: { allowPan?: boolean } = {},
 ) {
   const slot = new ResourceSlot<SceneAdapter>()
   const baseEnvironment = scene.environment
   let interactive = false
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enabled = false
-  controls.enablePan = false
+  controls.enablePan = Boolean(options.allowPan)
   controls.enableDamping = false
   controls.maxPolarAngle = Math.PI * 0.49
   let adapter: SceneAdapter | undefined, product: WorkbenchProduct | undefined
   let cameraTween: gsap.core.Tween | undefined
+  let progress: ReturnType<typeof createMotionPlayback> | undefined
+  let focusedPart: string | undefined
   const motion = new Set<gsap.core.Animation>()
   const destination = new Vector3(),
     point = new Vector3(),
     projected = new Vector3()
   const pointer = new Vector2(),
     raycaster = new Raycaster()
+  const orbit = new Spherical()
   let downX = 0,
     downY = 0,
     active = true
@@ -49,6 +60,7 @@ export function createStageController(
   }
   function takeover() {
     stopCamera()
+    progress?.pauseAll()
     manual()
   }
   controls.addEventListener('start', takeover)
@@ -112,11 +124,14 @@ export function createStageController(
   }
   function unload() {
     stopCamera()
+    progress?.dispose()
+    progress = undefined
     motion.forEach((t) => t.kill())
     motion.clear()
     scene.environment = baseEnvironment
     slot.clear()
     interactive = false
+    focusedPart = undefined
     adapter = undefined
     product = undefined
     controls.enabled = false
@@ -129,6 +144,14 @@ export function createStageController(
     product = snapshot
     adapter = loaded
     scene.add(loaded.root)
+    progress = createMotionPlayback(
+      loaded,
+      progressActions(snapshot.presentation),
+      invalidate,
+      feedback,
+      reduced,
+      checkpoint(),
+    )
     scene.environment = loaded.environment ?? baseEnvironment
     controls.minDistance = snapshot.presentation.camera.minDistance
     controls.maxDistance = snapshot.presentation.camera.maxDistance
@@ -138,15 +161,33 @@ export function createStageController(
   function command(value: SceneCommand) {
     if (!adapter || !product) return
     if (value.kind === 'view') {
+      focusedPart = undefined
+      adapter.select?.()
       const view = product.presentation.views.find((v) => v.id === value.id)
       if (view) move(view.position, view.target)
     } else if (value.kind === 'focus') {
       const hotspot = product.presentation.hotspots.find((h) => h.id === value.id)
-      if (hotspot && adapter.point(hotspot.node, point)) {
+      if (hotspot && adapter.point(hotspot.node, point, hotspot.anchor)) {
+        focusedPart = hotspot.id
+        adapter.select?.(hotspot.node)
         destination.copy(point).add(new Vector3(...hotspot.cameraOffset))
         move(destination.toArray() as Vec3, point.toArray() as Vec3)
       }
-    } else {
+    } else if (value.kind === 'orbit') {
+      stopCamera()
+      destination.copy(camera.position).sub(controls.target)
+      orbit.setFromVector3(destination)
+      if (value.axis === 'horizontal') orbit.theta += (value.direction ?? 1) * 0.12
+      else
+        orbit.phi = Math.min(
+          controls.maxPolarAngle,
+          Math.max(0.05, orbit.phi + (value.direction ?? 1) * 0.1),
+        )
+      destination.setFromSpherical(orbit)
+      camera.position.copy(controls.target).add(destination)
+      controls.update()
+      invalidate()
+    } else if (value.kind === 'zoom') {
       stopCamera()
       destination.copy(camera.position).sub(controls.target)
       destination.setLength(
@@ -183,7 +224,7 @@ export function createStageController(
     )
     raycaster.setFromCamera(pointer, camera)
     const hit = raycaster.intersectObject(adapter.root, true)[0]
-    let object = hit?.object
+    let object = hit && (adapter.nodeForHit?.(hit.object, hit.instanceId) ?? hit.object)
     while (object && object !== adapter.root) {
       const hotspot = product.presentation.hotspots.find((h) => h.node === object!.name)
       if (hotspot) {
@@ -204,9 +245,26 @@ export function createStageController(
       controls.enabled = active && Boolean(adapter)
     },
     stopCamera,
+    snapshotCamera() {
+      if (!active || !interactive || !adapter || !product) return
+      takeover()
+      motion.forEach((t) => t.pause())
+      return {
+        position: camera.position.toArray() as Vec3,
+        target: controls.target.toArray() as Vec3,
+      }
+    },
+    pauseObservation() {
+      stopCamera()
+      progress?.pauseAll()
+    },
+    motionCommand(command: MotionCommand) {
+      if (active && interactive) progress?.command(command)
+    },
     resetMotion() {
       motion.forEach((t) => t.kill())
       motion.clear()
+      progress?.reset()
       if (adapter && product) {
         for (const action of product.presentation.actions) adapter.pose[action.id] = 0
         adapter.apply()
@@ -217,7 +275,9 @@ export function createStageController(
       if (!adapter || !product) return
       const color = product.presentation.finishes.find((f) => f.id === finishId)?.color
       if (color) adapter.setFinish(color)
-      const values: Record<string, number> = { explosion: exploded ? 1 : 0 }
+      const values: Record<string, number> = {
+        explosion: product.presentation.structureActionId ? 0 : exploded ? 1 : 0,
+      }
       for (const action of product.presentation.actions)
         if (action.kind === 'toggle') values[action.id] = actions[action.id] ?? 0
       if (instant) {
@@ -230,14 +290,15 @@ export function createStageController(
       if (adapter && product?.presentation.actions.some((a) => a.id === id && a.kind === 'pulse'))
         animate({ [id]: 1 }, true)
     },
-    project(
-      width: number,
-      height: number,
-      place: (id: string, x: number, y: number, visible: boolean) => void,
-    ) {
+    project(width: number, height: number, place: PlaceCallout, selectedPart?: string) {
       if (!adapter || !product) return
+      const reveal = structureReveal(product.presentation, adapter.pose)
       for (const hotspot of product.presentation.hotspots) {
-        if (!adapter.point(hotspot.node, point)) continue
+        if (hotspot.marker === false && hotspot.id !== (selectedPart ?? focusedPart)) continue
+        if (!adapter.point(hotspot.node, point, hotspot.anchor)) {
+          place(hotspot.id, 0, 0, false, reveal)
+          continue
+        }
         projected.copy(point).project(camera)
         const x = (projected.x * 0.5 + 0.5) * width,
           y = (-projected.y * 0.5 + 0.5) * height
@@ -247,10 +308,11 @@ export function createStageController(
           y,
           projected.z > -1 &&
             projected.z < 1 &&
-            x > 20 &&
-            x < width - 110 &&
-            y > 90 &&
-            y < height - 145,
+            x >= 16 &&
+            x <= width - 16 &&
+            y >= 16 &&
+            y <= height - 16,
+          reveal,
         )
       }
     },
@@ -259,6 +321,7 @@ export function createStageController(
       controls.enabled = value && interactive && Boolean(adapter)
       cameraTween?.paused(!value)
       motion.forEach((t) => t.paused(!value))
+      if (!value) progress?.pauseAll()
       if (value) invalidate()
     },
     dispose() {

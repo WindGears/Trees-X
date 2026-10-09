@@ -14,7 +14,9 @@ playwright-report/
 lamborghini-reventon-re-made-1.snapshot.2/
 .claude/
 .tools/
+.workbuddy/
 __pycache__/
 *.pyc
+*.log
 server/target/
 .impeccable/*.log

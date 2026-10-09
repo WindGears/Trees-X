@@ -1,0 +1,45 @@
+.wb-parts-filter {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+.wb-parts-filter label {
+  font-size: 13px;
+  color: var(--wb-label, #bccce0);
+}
+.wb-parts-filter input,
+.wb-parts-filter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--wb-foreground, #f0f4fa);
+  background: var(--wb-field, #172330);
+  border: 1px solid var(--wb-line);
+  border-radius: 4px;
+  caret-color: var(--wb-focus, #d1e5ff);
+}
+.wb-parts-filter input::placeholder {
+  color: var(--wb-placeholder, #aebed0);
+}
+.wb-parts-filter input:focus-visible,
+.wb-parts-filter select:focus-visible {
+  outline: 2px solid var(--wb-focus, #d1e5ff);
+  outline-offset: 3px;
+}
+.wb-parts-filter select {
+  color-scheme: dark;
+}
+.wb-layout-motion h3 {
+  margin: 0 0 10px;
+}
+.wb-layout-choices {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+.wb-layout-choices button {
+  justify-content: center;
+}

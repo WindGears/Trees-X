@@ -1,109 +1,141 @@
+/* global URL */
 import { chromium, expect } from '@playwright/test'
-import { mkdir, writeFile } from 'node:fs/promises'
-const base = process.env.CHECK_URL || 'http://127.0.0.1:4173'
-const output = '.impeccable/review/typewriter'
+import { readFile, mkdir, writeFile } from 'node:fs/promises'
+const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
+const fixture = process.env.TYPEWRITER_FIXTURE === '1'
+const output = process.env.TYPEWRITER_CHECK_OUTPUT || 'artifacts/typewriter-migration/runtime'
 await mkdir(output, { recursive: true })
+const product = JSON.parse(
+  await readFile('server/src/main/resources/presentations/typewriter-kimi-v1.json', 'utf8'),
+)
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
-const report = { errors: [], external: [], states: {} }
+const report = { passed: false, fixture, errors: [], requests: [], checks: [] }
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } })
-  page.on('pageerror', (e) => report.errors.push(e.message))
-  page.on('request', (r) => {
-    if (/^https?:/.test(r.url()) && !r.url().startsWith(base)) report.external.push(r.url())
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
+  if (fixture)
+    await context.route('**/api/v1/products/typewriter-study', (route) =>
+      route.fulfill({ json: product }),
+    )
+  const page = await context.newPage()
+  page.on('pageerror', (error) => report.errors.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') report.errors.push(message.text())
   })
-
-  // 1. 直达链接进入打字机研究
-  await page.goto(`${base}/?legacy=1&product=typewriter-study`)
-  await page.waitForTimeout(4000)
-  await page.screenshot({ path: `${output}/01-assembled.png` })
-  report.states.assembled = await page.locator('.study-host').getAttribute('data-mode')
-
-  // 2. 爆炸中段（进度 0.45）
+  page.on('request', (request) => report.requests.push(request.url()))
+  await page.goto(base + '/?product=typewriter-study')
+  await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
+    timeout: 90000,
+  })
+  await expect(page.locator('canvas')).toHaveCount(1)
   await page.evaluate(() => {
-    const slider = document.querySelector('.tw-progress input[type=range]')
-    slider.value = '0.45'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    let component = document.querySelector('canvas').__vueParentComponent
+    while (component) {
+      const context =
+        component.exposed?.context ??
+        Reflect.ownKeys(component.provides ?? {})
+          .map((k) => component.provides[k])
+          .find((v) => v?.scene?.value?.isScene)
+      if (context) {
+        window.__wb = context
+        window.__canvas = document.querySelector('canvas')
+        return
+      }
+      component = component.parent
+    }
+    throw new Error('Real Three scene is unavailable')
   })
-  await page.waitForTimeout(1600)
-  await page.screenshot({ path: `${output}/02-exploded.png` })
-  report.states.exploded = await page.locator('.study-host').getAttribute('data-mode')
-
-  // 3. 平铺（进度 1）
-  await page.evaluate(() => {
-    const slider = document.querySelector('.tw-progress input[type=range]')
-    slider.value = '1'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
-  })
-  await page.waitForTimeout(1800)
-  await page.screenshot({ path: `${output}/03-flat.png` })
-  report.states.flat = await page.locator('.study-host').getAttribute('data-mode')
-
-  // 4. 回到整机并击发 K
-  await page.evaluate(() => {
-    const slider = document.querySelector('.tw-progress input[type=range]')
-    slider.value = '0'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
-  })
-  await page.waitForTimeout(1400)
-  await page.keyboard.press('k')
-  await page.waitForTimeout(120)
-  await page.screenshot({ path: `${output}/04-strike.png` })
-
-  // 5. 暗色主题
-  await page.keyboard.press('t')
+  const state = () =>
+    page.evaluate(() => {
+      const root = window.__wb.scene.value.children.find((o) => o.userData.workbenchProduct)
+      const parts = []
+      root.traverse((node) => {
+        if (Number.isInteger(node.userData.partId))
+          parts.push({
+            id: node.userData.partId,
+            node: node.name,
+            position: node.position.toArray(),
+            quaternion: node.quaternion.toArray(),
+          })
+      })
+      const meshes = []
+      root.traverse((node) => {
+        if (node.isInstancedMesh) meshes.push({ count: node.count, geometry: node.geometry.uuid })
+      })
+      return {
+        parts,
+        meshes,
+        source: root.userData.sourceKind,
+        adapter: root.userData.adapter,
+        triangles: root.userData.triangles,
+        sameCanvas: document.querySelector('canvas') === window.__canvas,
+        camera: window.__wb.camera.activeCamera.value.position.toArray(),
+      }
+    })
+  const initial = await state()
+  expect(initial.source).toBe('glb')
+  expect(initial.adapter).toBe('typewriter-v1')
+  expect(initial.parts).toHaveLength(572)
+  expect(initial.meshes.length).toBeGreaterThan(0)
+  await writeFile(output + '/initial.json', JSON.stringify(initial, null, 2))
+  report.checks.push('Real GLB, 572 semantic parts, instanced surfaces and one Canvas')
+  await page.getByRole('button', { name: '结构与动作', exact: true }).click()
+  await expect(page.locator('.wb-layout-motion input[type=range]')).toHaveCount(0)
+  await page.getByRole('button', { name: '分层展开', exact: true }).click()
+  await page.waitForTimeout(700)
+  await page.getByRole('button', { name: '暂停', exact: true }).click()
+  const paused = await state()
   await page.waitForTimeout(400)
-  await page.screenshot({ path: `${output}/05-dark.png` })
-  await page.keyboard.press('t')
-
-  // 6. 零件浏览器 + 筛选
-  await page.getByRole('button', { name: '零件浏览', exact: true }).click()
-  await page.waitForTimeout(300)
-  await page.getByRole('button', { name: '键盘', exact: true }).click()
-  await page.waitForTimeout(300)
-  await page.screenshot({ path: `${output}/06-browser.png` })
-  const browserCount = await page.locator('.tw-browser li').count()
-  report.states.browserKeysShown = browserCount
-
-  // 7. 搜索
-  await page.locator('.tw-browser input[type=search]').fill('枢轴销')
-  await page.waitForTimeout(300)
-  report.states.searchPivotPins = await page.locator('.tw-browser li').count()
-
-  // 8. 选中检视
-  await page.locator('.tw-browser li').first().click()
-  await page.waitForTimeout(900)
-  await expect(page.locator('.tw-inspector')).toBeVisible()
-  await page.screenshot({ path: `${output}/07-inspector.png` })
-  await page.getByRole('button', { name: '下一件 →', exact: true }).click()
-  await page.waitForTimeout(400)
-  await page.getByRole('button', { name: '关闭检视', exact: true }).click()
-  await page.waitForTimeout(600)
-
-  // 9. 自动演示
-  await page.keyboard.press('p')
-  await page.waitForTimeout(900)
-  report.states.playing = await page.locator('.tw-toolbar button', { hasText: '暂停' }).count()
-  await page.keyboard.press('p')
-
-  // 10. 目录包含 8 件且可切换回其他商品
-  await page.getByRole('button', { name: /商品目录/ }).click()
-  await expect(page.getByRole('dialog').getByRole('button', { name: /^展示/ })).toHaveCount(8)
-  await page.screenshot({ path: `${output}/08-catalog.png` })
-  await page.getByRole('dialog').getByRole('button', { name: '展示桌面音箱', exact: true }).click()
-  await page.waitForTimeout(2500)
-  await expect(page.locator('.product-viewer')).toHaveAttribute('data-product-id', 'form-01')
-  await page.screenshot({ path: `${output}/09-back-to-speaker.png` })
-
-  // 11. 再切回打字机（Canvas 重建无泄漏错误）
-  await page.goBack()
-  await page.waitForTimeout(3000)
-  await page.screenshot({ path: `${output}/10-study-again.png` })
-  report.states.backToStudy = await page.locator('.study-host').count()
-
+  expect((await state()).parts).toEqual(paused.parts)
+  expect(paused.parts).not.toEqual(initial.parts)
+  await page.getByRole('button', { name: '继续', exact: true }).click()
+  await expect(page.getByRole('button', { name: '分层展开', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+    { timeout: 10000 },
+  )
+  report.checks.push('Button-driven layout, pause/resume, no public percentage slider')
+  await page.getByRole('button', { name: '平铺部件', exact: true }).click()
+  await expect(page.getByRole('button', { name: '平铺部件', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+    { timeout: 10000 },
+  )
+  await page.getByRole('button', { name: '平铺俯视', exact: true }).first().click()
+  await page.waitForTimeout(800)
+  const flat = await state()
+  expect(flat.parts).not.toEqual(initial.parts)
+  await page.getByRole('button', { name: '复原动作', exact: true }).click()
+  await expect.poll(async () => (await state()).parts).toEqual(initial.parts)
+  expect((await state()).camera).toEqual(flat.camera)
+  report.checks.push('Flat layout and exact action reset without camera reset')
+  await page.getByRole('button', { name: '击发 A 键', exact: true }).click()
+  await page.waitForTimeout(80)
+  expect((await state()).parts).not.toEqual(initial.parts)
+  await expect.poll(async () => (await state()).parts).toEqual(initial.parts)
+  report.checks.push('A key / lever / typebar linkage returns to rest')
+  await page.getByRole('button', { name: '细节', exact: true }).click()
+  await page.getByLabel('查找部件', { exact: true }).fill('A')
+  await expect(page.locator('.wb-part-list button')).toHaveCount(2)
+  await expect(page.locator('.wb-part-list')).toContainText('按键 · 24 · A')
+  await expect(page.locator('.wb-part-list')).toContainText('字杆 24 · A')
+  await page.getByLabel('查找部件', { exact: true }).fill('按键')
+  await expect(page.locator('.wb-part-list button').first()).toBeVisible()
+  await page.locator('.wb-part-list button').first().click()
+  await expect(page.locator('.wb-part-copy')).toBeVisible()
+  await page.getByRole('button', { name: '返回全景', exact: true }).click()
+  report.checks.push('Semantic search, focus, world anchors and return to overview')
+  expect((await state()).sameCanvas).toBe(true)
+  expect(
+    report.requests
+      .filter((url) => /^https?:/.test(url))
+      .every((url) => new URL(url).origin === new URL(base).origin),
+  ).toBe(true)
   expect(report.errors).toEqual([])
-  expect(report.external).toEqual([])
-  await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2))
-  console.log(JSON.stringify(report, null, 2))
+  report.passed = true
 } finally {
   await browser.close()
+  await writeFile(output + '/report.json', JSON.stringify(report, null, 2))
 }
+console.log(
+  JSON.stringify({ passed: report.passed, fixture, checks: report.checks, errors: report.errors }),
+)

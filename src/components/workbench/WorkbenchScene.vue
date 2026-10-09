@@ -14,13 +14,22 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { createStageController } from '@/lib/workbench/controller'
 import { defaultStage } from '@/lib/workbench/presentationV2'
 import { useWorkbenchStore } from '@/stores/workbench'
+import { useMotionSession } from '@/lib/workbench/motionSession'
+import { useCameraCaptureSession } from '@/lib/workbench/cameraCapture'
+import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
 
 const props = defineProps<{
   active: boolean
-  place: (id: string, x: number, y: number, visible: boolean) => void
+  place: PlaceCallout
+  commit: () => void
 }>()
 const emit = defineEmits<{ restore: [] }>()
 const store = useWorkbenchStore()
+const motionSession = useMotionSession()
+const captureSession = useCameraCaptureSession()
+let unregisterCapture: (() => void) | undefined
+let motionSlug = '',
+  motionRevision = -1
 const { scene, camera, renderer, sizes, invalidate } = useTres()
 const context = useTresContext()
 const { start, stop, isActive } = useLoop()
@@ -59,6 +68,8 @@ async function load() {
   const product = store.product,
     revision = store.revision
   if (!controller || !product) return
+  motionSlug = product.slug
+  motionRevision = revision
   try {
     const loaded = await controller.load(product, (phase) => {
       if (!disposed && request === generation) store.loading(product.slug, revision, phase)
@@ -126,7 +137,14 @@ onMounted(() => {
       store.focus(id)
       store.panel = 'details'
     },
+    (id, status) => motionSession.report(motionSlug, motionRevision, id, status),
+    motionSession.snapshot,
+    { allowPan: Boolean(captureSession) },
   )
+  unregisterCapture = captureSession?.register(() => {
+    const pose = controller?.snapshotCamera()
+    return pose ? { ...pose, slug: motionSlug, revision: motionRevision } : undefined
+  })
   const loss = (event: Event) => {
     event.preventDefault()
     generation++
@@ -148,7 +166,9 @@ onMounted(() => {
   updateActive()
 })
 watch(
-  () => store.product,
+  // Preview retry may reuse the exact config object; the selection generation
+  // must still trigger a new adapter load after a binding failure.
+  () => [store.product, store.revision] as const,
   () => void load(),
   { flush: 'post' },
 )
@@ -159,7 +179,12 @@ watch(
 )
 watch(
   () => store.manualRequest,
-  () => controller?.stopCamera(),
+  () => controller?.pauseObservation(),
+)
+watch(
+  () => store.motionCommand,
+  (value) => controller?.motionCommand(value),
+  { flush: 'post' },
 )
 watch(
   () => store.resetMotionRequest,
@@ -191,9 +216,11 @@ watch(
   { immediate: true, flush: 'post' },
 )
 const projection = context.renderer.onRender(() => {
-  controller?.project(sizes.width.value, sizes.height.value, props.place)
+  controller?.project(sizes.width.value, sizes.height.value, props.place, store.selectedPart)
+  props.commit()
 })
 onScopeDispose(() => {
+  unregisterCapture?.()
   disposed = true
   generation++
   removeFrame?.()
@@ -217,6 +244,13 @@ onScopeDispose(() => {
       :intensity="stage.key.intensity"
       :color="stage.key.color"
       cast-shadow
+      v-bind="{
+        'shadow-mapSize-width': 2048,
+        'shadow-mapSize-height': 2048,
+        'shadow-normalBias': 0.005,
+        'shadow-bias': -0.00008,
+        'shadow-radius': 3,
+      }"
     />
     <TresDirectionalLight
       :position="rimPosition"

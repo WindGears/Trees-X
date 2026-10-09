@@ -13,6 +13,9 @@ export interface Hotspot {
   name: string
   description: string
   cameraOffset: Vec3
+  anchor?: Vec3
+  group?: string
+  marker?: boolean
 }
 export interface Finish {
   id: string
@@ -22,9 +25,40 @@ export interface Finish {
 export interface Action {
   id: string
   label: string
-  kind: 'toggle' | 'pulse'
+  kind: 'toggle' | 'pulse' | 'progress'
   node: string
-  behavior?: { type: 'rotate' | 'translate'; axis: Vec3; amount: number }
+  behavior?:
+    | { type: 'rotate' | 'translate'; axis: Vec3; amount: number }
+    | { type: 'typewriter-strike'; index: number }
+  motion?: ProgressMotion
+}
+export type MotionTrack = { node: string; range: [number, number] } & (
+  { type: 'translate'; offset: Vec3 } | { type: 'rotate'; axis: Vec3; angle: number }
+)
+interface MotionTiming {
+  duration: number
+  openLabel: string
+  closeLabel: string
+}
+export type ProgressMotion = MotionTiming &
+  (
+    | { tracks: MotionTrack[]; program?: never }
+    | {
+        program: { type: 'typewriter-layout-v1' | 'piano-sound-path-v1'; file: string }
+        tracks?: never
+      }
+  )
+export type ProgressAction = Action & { kind: 'progress'; motion: ProgressMotion }
+export interface MotionStatus {
+  progress: number
+  target: number
+  playing: boolean
+}
+export interface MotionCommand {
+  revision: number
+  operation: 'seek' | 'play' | 'pause' | 'resume' | 'reset'
+  id: string
+  value?: number
 }
 export interface GuideStep {
   id: string
@@ -35,6 +69,7 @@ export interface GuideStep {
   actionId?: string
   explode?: boolean
   overview?: boolean
+  progress?: { actionId: string; value: number }
 }
 export interface StageConfig {
   background: string
@@ -55,7 +90,7 @@ export interface BundleReference {
 }
 export interface GlbSource {
   kind: 'glb'
-  adapter: 'pbr-v1'
+  adapter: 'pbr-v1' | 'typewriter-v1' | 'piano-v1'
   bundle: BundleReference
   transform: { position: Vec3; rotation: Vec3; scale: number }
   finishMaterials: string[]
@@ -68,12 +103,17 @@ interface PresentationFields {
   finishes: Finish[]
   actions: Action[]
   structure: boolean
+  structureActionId?: string
   guide: GuideStep[]
 }
 export type ProductPresentation = PresentationFields &
   (
     | { version: 1; source: { kind: 'procedural'; key: SampleKey }; stage?: never }
-    | { version: 2; source: { kind: 'procedural'; key: SampleKey } | GlbSource; stage: StageConfig }
+    | {
+        version: 2 | 3
+        source: { kind: 'procedural'; key: SampleKey } | GlbSource
+        stage: StageConfig
+      }
   )
 export interface ProductSummary {
   slug: string
@@ -88,7 +128,8 @@ export interface WorkbenchProduct extends ProductSummary {
 }
 export interface SceneCommand {
   revision: number
-  kind: 'view' | 'focus' | 'zoom'
+  kind: 'view' | 'focus' | 'zoom' | 'orbit'
   id?: string
   direction?: 1 | -1
+  axis?: 'horizontal' | 'vertical'
 }

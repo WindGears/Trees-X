@@ -1,12 +1,28 @@
 <script setup lang="ts">
-import { onMounted, onScopeDispose, watch } from 'vue'
+import { onMounted, onScopeDispose, ref, watch } from 'vue'
+import { getCategories } from '@/lib/workbench/api'
 import { ArrowUpRight, Search } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 const store = useWorkbenchStore()
 const emit = defineEmits<{ select: [slug: string] }>()
 let timer: ReturnType<typeof setTimeout> | undefined
+const categories = ref<string[]>([]),
+  categoryError = ref('')
+const request = new AbortController()
+async function loadCategories() {
+  categoryError.value = ''
+  try {
+    categories.value = await getCategories(request.signal)
+  } catch (e) {
+    if (!request.signal.aborted)
+      categoryError.value = e instanceof Error ? e.message : '分类读取失败'
+  }
+}
 // A panel may close before its debounced search fires. Reopen from current filters.
-onMounted(() => void store.loadCatalog())
+onMounted(() => {
+  void store.loadCatalog()
+  void loadCategories()
+})
 watch(
   () => [store.query, store.category],
   () => {
@@ -14,7 +30,10 @@ watch(
     timer = setTimeout(() => void store.loadCatalog(), 200)
   },
 )
-onScopeDispose(() => clearTimeout(timer))
+onScopeDispose(() => {
+  clearTimeout(timer)
+  request.abort()
+})
 </script>
 <template>
   <div class="wb-catalog">
@@ -28,11 +47,12 @@ onScopeDispose(() => clearTimeout(timer))
       >商品分类
       <select v-model="store.category" aria-label="商品分类">
         <option value="">全部商品</option>
-        <option>数码</option>
-        <option>机械</option>
-        <option>交通</option>
+        <option v-for="name in categories" :key="name">{{ name }}</option>
       </select>
     </label>
+    <p v-if="categoryError" role="alert">
+      {{ categoryError }} <button type="button" @click="loadCategories">重试分类</button>
+    </p>
     <p v-if="store.catalogStatus === 'loading'" role="status">正在读取目录…</p>
     <div v-else-if="store.catalogStatus === 'error'" role="alert">
       <p>{{ store.catalogError }}</p>

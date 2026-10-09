@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "kimi-typewriter",
+  "version": 1,
+  "entry": "model.glb",
+  "files": [
+    {
+      "path": "model.glb",
+      "bytes": 25983744,
+      "sha256": "b61293acf1eb49f2d7cbcba0ae59214346130b8df0c32685cf954502f37ff0f4",
+      "role": "model"
+    },
+    {
+      "path": "rig.json",
+      "bytes": 517962,
+      "sha256": "047cddb65994640a25f4fad191131423b1ceafce6b4ab474aa906ac1d4576154",
+      "role": "motion"
+    }
+  ],
+  "budget": { "maxBytes": 26501706, "maxTriangles": 1257132 },
+  "provenance": {
+    "author": "User-owned Kimi project (confirmed by owner on 2026-10-09)",
+    "source": "https://k3-typewriter.ok.kimi.link/",
+    "license": "Owner-authorized project reuse and GitHub synchronization (2026-10-09); reference contours and inferred mechanical study. Three.js MIT.",
+    "redistribution": "Owner requested synchronization to WindGears/Trees-X on 2026-10-09. Third-party reference photographs excluded; no additional downstream license is inferred."
+  }
+}

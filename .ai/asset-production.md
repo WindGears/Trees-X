@@ -2,6 +2,8 @@
 
 2026-10-03。只生成新运行版本；当前正式商品目录仍使用 v1 程序化流程样板。`speaker-engineering@1` 为真实 GLB 工程夹具，没有通过正式展品画质验收。
 
+2026-10-09 更新：正式打字机已从用户自有 Kimi 程序化几何直接导出 GLB，不需要 Blender 往返；采用 kimi-typewriter@1 清单、rig.json 与注册 shader/动作适配器，保留 572 部件和来源说明。音箱退出正式制作，旧工程夹具仍为测试。具体复现、摘要及校验见 [打字机迁移验收](typewriter-migration-validation.md)。以下 Blender/PBR 流程继续用于需要制作母版的后续汽车等资产，不强行对已有 Three 几何重建。
+
 ## 制作目录与 Blender
 
 制作母版、原图和许可保存在独立制作目录，运行资源放 `public/models/bundles/<id>/v<version>/`。临时对照放 Git 忽略的 `artifacts/asset-pipeline/`。源资产与运行资产不能同路径覆盖。

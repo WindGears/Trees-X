@@ -10,6 +10,7 @@ public final class PresentationValidator {
     public static void validate(Presentation p, Validator validator) {
         if (p == null || !validator.validate(p).isEmpty()) fail();
         PresentationV2Validator.validate(p);
+        PresentationV3Validator.validate(p);
         if (p.camera().maxDistance() <= p.camera().minDistance()) fail();
         vector(p.camera().position()); vector(p.camera().target());
         Set<String> views = unique(p.views().stream().map(Presentation.View::id).toList());

@@ -1,7 +1,7 @@
 import type { ModelKit } from './modelKit'
 import type { SampleKey } from './types'
 
-function speaker(k: ModelKit) {
+function speaker(k: ModelKit, enabled: ReadonlySet<string>) {
   const shell = k.node('shell', [0, 1.12, 0], [0, 0, -0.45])
   k.box(shell, [1.55, 2.05, 0.82], [0, 0, 0])
   const front = k.node('front', [0, 1.12, 0.48], [0, 0, 0.65])
@@ -23,10 +23,10 @@ function speaker(k: ModelKit) {
   k.box(knob, [0.025, 0.015, 0.1], [0, 0.09, 0.07], k.dark, 0.004)
   k.box(k.root, [1.45, 0.12, 0.8], [0, 0.08, 0], k.rubber)
   return (values: Record<string, number>) => {
-    knob.rotation.y = (values['turn-knob'] ?? 0) * Math.PI * 1.3
+    if (enabled.has('turn-knob')) knob.rotation.y = (values['turn-knob'] ?? 0) * Math.PI * 1.3
   }
 }
-function typewriter(k: ModelKit) {
+function typewriter(k: ModelKit, enabled: ReadonlySet<string>) {
   const shell = k.node('shell', [0, 0.25, 0], [0, -0.1, 0])
   k.box(shell, [2.75, 0.45, 2.05], [0, 0, 0])
   const keys = k.node('keys', [0, 0.55, 0.5], [0, 0.5, 0.65])
@@ -51,13 +51,14 @@ function typewriter(k: ModelKit) {
   k.box(lever, [0.07, 0.09, 0.86], [0, 0.04, 0.38], k.metal, 0.015)
   k.box(lever, [0.18, 0.14, 0.12], [0, 0.05, 0.82], k.metal, 0.015)
   return (values: Record<string, number>) => {
+    if (!enabled.has('press-key')) return
     const p = values['press-key'] ?? 0
     key.position.y -= p * 0.075
     lever.rotation.x = -p * 0.8
     carriage.position.x += p * 0.12
   }
 }
-function car(k: ModelKit) {
+function car(k: ModelKit, enabled: ReadonlySet<string>) {
   const body = k.node('body', [0, 0.55, 0], [0, 0.1, 0])
   k.box(body, [1.9, 0.4, 3.55], [0, 0, 0], k.finish, 0.12)
   k.box(body, [1.8, 0.28, 1.35], [0, 0.22, 1.03], k.finish, 0.08)
@@ -101,10 +102,10 @@ function car(k: ModelKit) {
     }
   return (values: Record<string, number>) => {
     const p = values['open-doors'] ?? 0
-    for (const door of doors) door.rotation.x = -p * 1.15
+    if (enabled.has('open-doors')) for (const door of doors) door.rotation.x = -p * 1.15
   }
 }
 export const sampleBuilders: Record<
   SampleKey,
-  (kit: ModelKit) => (values: Record<string, number>) => void
+  (kit: ModelKit, enabled: ReadonlySet<string>) => (values: Record<string, number>) => void
 > = { speaker, typewriter, car }

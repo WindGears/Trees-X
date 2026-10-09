@@ -4,13 +4,17 @@ import { Menu, X } from '@lucide/vue'
 import { gsap } from 'gsap'
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { Panel } from '@/lib/workbench/types'
+import { provideMotionSession } from '@/lib/workbench/motionSession'
 import WorkbenchStage from './WorkbenchStage.vue'
 import WorkbenchCatalog from './WorkbenchCatalog.vue'
 import WorkbenchPanel from './WorkbenchPanel.vue'
 import WorkbenchTools from './WorkbenchTools.vue'
 import '@/assets/styles/workbench.css'
+import '@/assets/styles/workbench-accessibility.css'
+import '@/assets/styles/workbench-motion.css'
 
 const store = useWorkbenchStore()
+provideMotionSession(store)
 const host = ref<HTMLElement>()
 const titles = {
   catalog: '商品目录',
@@ -20,6 +24,15 @@ const titles = {
   guide: '商品导览',
 }
 const title = computed(() => (store.panel ? titles[store.panel] : ''))
+const stageInk = computed(() => {
+  const color = store.presentation?.stage?.background ?? '#151c25'
+  const rgb = [1, 3, 5].map((i) => parseInt(color.slice(i, i + 2), 16) / 255)
+  const light = rgb[0]! * 0.2126 + rgb[1]! * 0.7152 + rgb[2]! * 0.0722 > 0.6
+  return {
+    '--wb-stage-ink': light ? '#31392f' : '#f0f4fa',
+    '--wb-stage-muted': light ? '#626b5e' : '#abbacb',
+  }
+})
 watch(
   () => store.product?.name,
   (name) => {
@@ -52,7 +65,7 @@ function select(slug: string) {
   void store.select(slug)
 }
 function read() {
-  void store.select(new URL(location.href).searchParams.get('product') || 'form-01')
+  void store.select(new URL(location.href).searchParams.get('product') || 'typewriter-study')
 }
 function key(event: KeyboardEvent) {
   if (event.key === 'Escape' && store.panel) close()
@@ -121,17 +134,23 @@ onScopeDispose(() => {
           <WorkbenchCatalog @select="select" />
         </aside>
       </Transition>
-      <section class="wb-view" aria-labelledby="wb-product-title">
+      <section class="wb-view" :style="stageInk" aria-labelledby="wb-product-title">
         <WorkbenchStage />
-        <div v-if="store.product" class="wb-intro">
+        <div
+          v-if="store.product && !store.contentOnly"
+          v-show="!store.selectedPart"
+          class="wb-intro"
+        >
           <h1 id="wb-product-title">{{ store.product.name }}</h1>
           <p>{{ store.product.description }}</p>
           <span class="wb-sample-label">{{
             store.product.displayStatus === 'formal' ? '正式展品' : '流程样板'
           }}</span>
         </div>
-        <p class="wb-input-hint">拖动旋转 · 滚轮缩放 · 点击部件查看</p>
-        <WorkbenchTools @panel="openPanel" />
+        <p v-if="!store.contentOnly" class="wb-input-hint">
+          拖动旋转 · 滚轮缩放 · <span class="wb-keyboard-entry">Tab 聚焦后可用方向键</span>
+        </p>
+        <WorkbenchTools v-if="!store.contentOnly" @panel="openPanel" />
       </section>
       <Transition :css="false" @enter="transition" @enter-cancelled="(el) => gsap.killTweensOf(el)">
         <aside

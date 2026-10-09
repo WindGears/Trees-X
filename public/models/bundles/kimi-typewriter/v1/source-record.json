@@ -1,0 +1,14 @@
+{
+  "source": "https://k3-typewriter.ok.kimi.link/",
+  "sourceHtmlSha256": "c9c31847225005785c3384a1b002e9593dd9d06c545cc3657684fc4d6e38df5a",
+  "modelSha256": "b61293acf1eb49f2d7cbcba0ae59214346130b8df0c32685cf954502f37ff0f4",
+  "modelBytes": 25983744,
+  "parts": 572,
+  "meshes": 2257,
+  "uniqueGeometry": 278,
+  "materials": 66,
+  "triangles": 1257132,
+  "production": "Direct Three.js geometry export. No remeshing, vertex reduction, texture resizing or Blender scene changes.",
+  "customShading": "Enamel grain and metallic machining shader hooks must be restored by the registered runtime adapter.",
+  "referenceNotes": "TM 37-305; AMES General Catalog #10 (1960), Underwood p213–235; Smith-Corona portable references; Todd McLellan, Things Come Apart. Not factory service CAD."
+}

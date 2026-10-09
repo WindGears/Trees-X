@@ -9,6 +9,8 @@ import {
 } from 'three'
 import type { SceneAdapter } from './adapter'
 import type { GlbSource, WorkbenchProduct } from './types'
+import { bindMotionPose } from './motionPose'
+import { progressActions } from './motionConfig'
 
 export function bindGlb(
   product: WorkbenchProduct,
@@ -51,20 +53,27 @@ export function bindGlb(
     if (!set) throw new Error('模型缺少可试色材质：' + name)
     return [...set]
   })
-  const actions = product.presentation.actions.map((action) => {
-    if (!action.behavior) throw new Error('模型动作尚未绑定')
-    return {
-      id: action.id,
-      node: requireNode(action.node),
-      ...action.behavior,
-      axis: new Vector3(...action.behavior.axis),
-    }
-  })
+  const actions = product.presentation.actions
+    .filter((a) => a.kind !== 'progress')
+    .map((action) => {
+      if (!action.behavior) throw new Error('模型动作尚未绑定')
+      return {
+        id: action.id,
+        node: requireNode(action.node),
+        behavior: action.behavior,
+        axis: 'axis' in action.behavior ? new Vector3(...action.behavior.axis) : undefined,
+      }
+    })
   const explosion = source.explode.map((item) => ({
     node: requireNode(item.node),
     offset: new Vector3(...item.offset),
   }))
   const moving = new Set([...actions.map((a) => a.node), ...explosion.map((e) => e.node)])
+  for (const a of progressActions(product.presentation)) {
+    requireNode(a.node)
+    for (const t of a.motion.tracks ?? []) requireNode(t.node)
+  }
+  const applyMotion = bindMotionPose(product.presentation, nodes)
   const rest = [...moving].map((node) => ({
     node,
     position: node.position.clone(),
@@ -80,7 +89,7 @@ export function bindGlb(
   root.userData.assetBundle = source.bundle.id + '@' + source.bundle.version
   root.userData.triangles = triangles
   const pose: Record<string, number> = { explosion: 0 }
-  actions.forEach((a) => {
+  product.presentation.actions.forEach((a) => {
     pose[a.id] = 0
   })
   const rotation = new Quaternion()
@@ -92,11 +101,14 @@ export function bindGlb(
     }
     for (const b of explosion) b.node.position.addScaledVector(b.offset, pose.explosion ?? 0)
     for (const action of actions) {
-      const amount = (pose[action.id] ?? 0) * action.amount
-      if (action.type === 'rotate')
+      const b = action.behavior
+      if (b.type === 'typewriter-strike') continue // The registered rig owns this composed action.
+      const amount = (pose[action.id] ?? 0) * b.amount
+      if (b.type === 'rotate' && action.axis)
         action.node.quaternion.multiply(rotation.setFromAxisAngle(action.axis, amount))
-      else action.node.position.addScaledVector(action.axis, amount)
+      else if (action.axis) action.node.position.addScaledVector(action.axis, amount)
     }
+    applyMotion(pose)
     root.updateMatrixWorld(true)
   }
   apply()
@@ -105,8 +117,11 @@ export function bindGlb(
     nodes,
     pose,
     apply,
-    point(node, result) {
-      return nodes.get(node)?.getWorldPosition(result)
+    point(node, result, anchor) {
+      const target = nodes.get(node)
+      return anchor
+        ? target?.localToWorld(result.fromArray(anchor))
+        : target?.getWorldPosition(result)
     },
     setFinish(color) {
       finishes.forEach((material) => material.color.set(color))
