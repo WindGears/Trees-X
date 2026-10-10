@@ -27,6 +27,16 @@ WorkbenchRoot提供局部motionSession，记录数字反馈和上下文恢复检
 
 ## 状态与资源
 
+### 汽车注册适配器（2026-10-10）
+
+`reventon-v1` 复用 `loadBundle/decodeGlb/bindGlb` 与 v3 轨道控制器。源运动采样在制作脚本中提取为两条门旋转轨道和七条分离位移轨道；运行时不请求 motion.json，也不导入旧导演相机。初始局部姿态与四元数为唯一计算基准，旋转与位移通道组合，热点局部锚点跟随当前世界变换。
+
+SceneAdapter 新增可选 attach/beforeRender：控制器把商品灯光与实时接触阴影挂到同一场景，WorkbenchScene 的原时钟仅在真正渲染前调用。汽车适配器拥有两盏 RectAreaLight、两张阴影目标与辅助几何，卸载时先移除并释放；loader 唯一拥有源几何/材质/纹理，loadAdapter 拥有 EXR PMREM。相机、controls 和 renderer 仍由共同工作台拥有。阴影只在部件姿态改变时重绘。
+
+纹理解析采用三任务队列：每张原图解码完成后及时撤销临时 Blob URL 并释放压缩字节引用，避免 1.7 GB 图片同时占用浏览器 Blob 存储。重复源图克隆 Texture 但共用已解码图像，部分失败/迟到结果仍由 ownedResources 去重释放。不改变像素尺寸、格式或几何。进度反馈只拷贝 progress/target/playing 三个数字/布尔字段，防止 GSAP 缓存进入界面与恢复检查点。
+
+资源清单是按字节校验的不可变运行文件，不参与全局格式重写。制作脚本在计算摘要前使用项目格式；管理修复脚本只在全部资源字节核验通过后更新已有清单摘要，保留商品与自定义配置并备份，不放松摘要校验。
+
 ### 统一拆解引线标签（2026-10-09）
 
 WorkbenchStage 按配置选取最多12个重点热点并优先保留当前选中项，统一挂载 WorkbenchCallouts。controller.project 读取实际 adapter.pose 的结构/持续动作状态，按节点当前世界变换提供屏幕锚点和显隐依据；恢复后的非重点选中项由工作台业务选择传入，不依赖已清空的局部聚焦状态。

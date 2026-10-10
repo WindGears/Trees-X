@@ -42,11 +42,11 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 2026-10-08新增双案例可逆探索原型：音箱可按连续进度分层，汽车双门按同一核心开合；支持播放、暂停、指定进度、回退和复原。观察操作暂停播放，热点跟随当前部件姿态。v3契约兼容v1/v2，数据库仅升级默认样板配置。结果仍来自程序化样板及GLB工程夹具，不代表正式模型质量或形成性用户实验。见 [.ai/progress-validation.md](.ai/progress-validation.md)。
 
-基础管理端位于/admin，支持单管理员登录/退出、分类创建/修改/约束删除、商品创建/编辑、上下架与并发冲突恢复。商品和配置事务保存；公开接口只返回上架商品，下架详情404。事实与证据见 [.ai/admin-validation.md](.ai/admin-validation.md)。三件原始流程样板保留作兼容测试，正式汽车迁移及联合验收仍未完成；资产prototype/formal不等于上架状态。
+基础管理端位于/admin，支持单管理员登录/退出、分类创建/修改/约束删除、商品创建/编辑、上下架与并发冲突恢复。商品和配置事务保存；公开接口只返回上架商品，下架详情404。事实与证据见 [.ai/admin-validation.md](.ai/admin-validation.md)。三件原始流程样板保留作兼容测试；正式汽车已迁入共同工作台，联合用户验收仍未完成。资产prototype/formal不等于上架状态或来源许可。
 
 管理端易用性阶段D2：基本信息、热点、外观、镜头、动作与导览采用表单；高级配置保留完整JSON并要求显式应用。各分区共享本地编辑草稿，标识稳定、引用删除受保护，未改动的资源/舞台/动作轨道保留。新建明确选择已有配置起点，默认下架。整页预览复用唯一Canvas，提供仅管理预览可用的右键平移；取景回填到默认或已有预设视角，默认取景同步全景复位，只改镜头且不落库。会话失效关闭场景、保留草稿，保存与预览请求期间禁用编辑。操作说明与本轮证据见 [.ai/admin-operations.md](.ai/admin-operations.md)、[.ai/admin-usability-validation.md](.ai/admin-usability-validation.md)。
 
-旧打字机机构、精细汽车、手势与其他模型保留供评估，不算新版已交付。legacy查询入口是历史访问方式，不能与三件正式目录混淆。汽车固定演示不自动满足自由观察要求，许可和运行预算需核对。
+旧打字机机构、固定汽车演示、手势与其他模型保留为历史入口，不能与三件正式目录混淆。精细汽车的新工作台入口支持自由观察；来源许可边界继续记录在原 provenance 与本轮资源清单中。
 
 ## Brand Commitments
 
@@ -62,6 +62,8 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 ## Product Principles and Next Phase
 
-阶段B共同流程、B2双案例、D基础管理及D2表单/取景工具保留。打字机与钢琴已迁入共同工作台，后续再迁入精细汽车；不继续音箱制作。后台配置维护沿用兼容 v1/v2 的 v3 契约与受控注册动作程序。详见 [.ai/implementation-roadmap.md](.ai/implementation-roadmap.md)。
+阶段B共同流程、B2双案例、D基础管理及D2表单/取景工具保留。打字机、钢琴与精细汽车已迁入共同工作台；不继续音箱制作。后台配置维护沿用兼容 v1/v2 的 v3 契约；汽车使用既有位移/旋转轨道，不新增数据执行代码。详见 [.ai/implementation-roadmap.md](.ai/implementation-roadmap.md)。
+
+2026-10-10 汽车迁移：`/?product=reventon` 使用原 1,500,363 三角形与 75 张 PBR/AO 贴图，提供自由观察、外观方案、十个语义热点、双门开合、七组分离和七步主动导览。开门和分离可组合；用户观察暂停动作，关闭面板保留状态，动作复原保留镜头与配色。固定导演仍可由 `?legacy=1&product=reventon` 访问。七组是现有刚性组件，不宣称 2,998 源对象各自可拆、真实维修顺序或照片级等效。接入与证据见 [.ai/reventon-workbench-validation.md](.ai/reventon-workbench-validation.md)。
 
 手势、在线上传、高级版本管理、影视演出为扩展；暂不实施CI。核心不包含交易、推荐、AI、多用户空间或自动真实机械拆解。拟6—8人形成性测试；测试必须实测，不宣称三维普遍优于图片。

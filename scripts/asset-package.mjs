@@ -1,10 +1,14 @@
 import { readFile, writeFile, mkdir, access, copyFile } from 'node:fs/promises'
 import { dirname, resolve, join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { format } from 'prettier'
+import { format, resolveConfig } from 'prettier'
 
 export const digest = (bytes) => createHash('sha256').update(bytes).digest('hex')
-export const jsonText = (value) => format(JSON.stringify(value), { parser: 'json' })
+export const jsonText = async (value) =>
+  format(JSON.stringify(value), {
+    ...(await resolveConfig(resolve('public/models/bundles/manifest.json'))),
+    parser: 'json',
+  })
 export function readGlb(bytes) {
   if (
     bytes.length < 20 ||

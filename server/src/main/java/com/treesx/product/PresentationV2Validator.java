@@ -21,7 +21,7 @@ final class PresentationV2Validator {
             if (p.stage() != null && p.stage().environmentFile() != null) fail();
             return;
         }
-        if (p.version() < 2 || source.adapter()==null || !List.of("pbr-v1","typewriter-v1","piano-v1").contains(source.adapter()) || source.bundle() == null ||
+        if (p.version() < 2 || source.adapter()==null || !List.of("pbr-v1","typewriter-v1","piano-v1","reventon-v1").contains(source.adapter()) || source.bundle() == null ||
             source.transform() == null || source.finishMaterials() == null || source.explode() == null) fail();
         local(source.bundle().manifest());
         vector(source.transform().position()); vector(source.transform().rotation()); finite(source.transform().scale());

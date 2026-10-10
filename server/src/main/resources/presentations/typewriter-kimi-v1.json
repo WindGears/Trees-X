@@ -14,7 +14,7 @@
         "id": "kimi-typewriter",
         "version": 1,
         "manifest": "/models/bundles/kimi-typewriter/v1/manifest.json",
-        "sha256": "e7892788d2d89a252256809f0f14ccf616356f30caee6302771d669b6e23011b"
+        "sha256": "c216ad6101fabe469f7effa061a237fd3f1ad440550cafb10ff5c5f345a770bd"
       },
       "transform": {
         "position": [0, 0, 0],
@@ -5809,9 +5809,21 @@
       }
     ],
     "finishes": [
-      { "id": "black", "name": "缎黑漆面", "color": "#111413" },
-      { "id": "ivory", "name": "象牙白漆面", "color": "#d8d2bf" },
-      { "id": "forest", "name": "墨绿漆面", "color": "#2d4139" }
+      {
+        "id": "black",
+        "name": "缎黑漆面",
+        "color": "#111413"
+      },
+      {
+        "id": "ivory",
+        "name": "象牙白漆面",
+        "color": "#d8d2bf"
+      },
+      {
+        "id": "forest",
+        "name": "墨绿漆面",
+        "color": "#2d4139"
+      }
     ],
     "actions": [
       {
@@ -5819,7 +5831,10 @@
         "label": "击发 A 键",
         "kind": "pulse",
         "node": "part-070",
-        "behavior": { "type": "typewriter-strike", "index": 23 }
+        "behavior": {
+          "type": "typewriter-strike",
+          "index": 23
+        }
       },
       {
         "id": "explore-layout",
@@ -5830,7 +5845,10 @@
           "duration": 4,
           "openLabel": "平铺部件",
           "closeLabel": "合拢整机",
-          "program": { "type": "typewriter-layout-v1", "file": "rig.json" }
+          "program": {
+            "type": "typewriter-layout-v1",
+            "file": "rig.json"
+          }
         }
       }
     ],
@@ -5842,7 +5860,10 @@
         "title": "先看整机",
         "description": "观察弧形外壳、键盘与后方滚筒的整体关系。",
         "view": "perspective",
-        "progress": { "actionId": "explore-layout", "value": 0 }
+        "progress": {
+          "actionId": "explore-layout",
+          "value": 0
+        }
       },
       {
         "id": "input",
@@ -5850,21 +5871,30 @@
         "description": "点击击发 A 键，观察按键、键杠杆与字杆一起变化。此处展示参考结构的联动演绎。",
         "hotspotId": "part-070",
         "actionId": "press-key",
-        "progress": { "actionId": "explore-layout", "value": 0 }
+        "progress": {
+          "actionId": "explore-layout",
+          "value": 0
+        }
       },
       {
         "id": "layers",
         "title": "分层看机构",
         "description": "外壳与内部部件按组展开。可以暂停导览，选择任意部件靠近观察。",
         "view": "structure",
-        "progress": { "actionId": "explore-layout", "value": 0.6 }
+        "progress": {
+          "actionId": "explore-layout",
+          "value": 0.6
+        }
       },
       {
         "id": "flat",
         "title": "把部件平铺",
         "description": "572 个部件保留独立身份。打开细节面板，可按部件组或名称查找。",
         "view": "knoll",
-        "progress": { "actionId": "explore-layout", "value": 1 }
+        "progress": {
+          "actionId": "explore-layout",
+          "value": 1
+        }
       },
       {
         "id": "return",

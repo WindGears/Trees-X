@@ -8,9 +8,14 @@ await mkdir(output, { recursive: true })
 const fixture = JSON.parse(
   await readFile('server/src/test/resources/fixtures/speaker-glb-v2.json', 'utf8'),
 )
+const samples = JSON.parse(
+  await readFile('server/src/main/resources/samples/products.json', 'utf8'),
+)
+const procedural = samples.find((p) => p.slug === 'typewriter-study')
+const car = samples.find((p) => p.slug === 'reventon')
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
 const report = {
-  scope: 'real GLB + real Three; controlled v2 API response, production catalog stays procedural',
+  scope: 'real GLB + real Three; controlled v1/v2 API fixtures, formal catalog remains unchanged',
   errors: [],
   checks: [],
   captures: [],
@@ -19,6 +24,13 @@ const report = {
 }
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+  await page.route('**/api/v1/products/typewriter-study', (route) =>
+    route.fulfill({ json: procedural }),
+  )
+  await page.route('**/api/v1/products/reventon', (route) => route.fulfill({ json: car }))
+  await page.route('**/api/v1/products?*', (route) =>
+    route.fulfill({ json: [fixture, procedural, car] }),
+  )
   page.on('pageerror', (e) => report.errors.push(e.message))
   page.on('request', (r) => {
     if (/^https?:/.test(r.url()) && new URL(r.url()).origin !== new URL(base).origin)

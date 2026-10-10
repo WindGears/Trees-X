@@ -67,7 +67,10 @@
     "test:asset-production": "node scripts/asset-production-check.mjs",
     "test:asset-performance": "node scripts/asset-performance-check.mjs",
     "test:asset-textures": "node scripts/asset-tools-check.mjs && node scripts/texture-probe-check.mjs",
-    "asset:probe": "node scripts/create-texture-probe.mjs"
+    "asset:probe": "node scripts/create-texture-probe.mjs",
+    "test:reventon-workbench": "node scripts/reventon-workbench-check.mjs",
+    "test:reventon-workbench-visual": "node scripts/reventon-workbench-visual-check.mjs",
+    "asset:reventon-presentation": "node scripts/create-reventon-presentation.mjs"
   },
   "dependencies": {
     "@fontsource/manrope": "5.3.0",

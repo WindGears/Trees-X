@@ -72,6 +72,10 @@ describe('v3 reversible motion', () => {
       }
       expect(feedback.mock.calls.length).toBeLessThanOrEqual(15)
       expect(feedback.mock.calls.length).toBeGreaterThan(10)
+      for (const [, value] of feedback.mock.calls) {
+        expect(Object.keys(value).sort()).toEqual(['playing', 'progress', 'target'])
+        expect(() => JSON.stringify(value)).not.toThrow()
+      }
       playback.command({ revision: 2, operation: 'seek', id, value: 0.437 })
       expect(feedback.mock.calls.at(-1)![1]).toMatchObject({ progress: 0.437, playing: false })
     } finally {

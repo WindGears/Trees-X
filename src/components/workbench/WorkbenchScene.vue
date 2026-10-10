@@ -32,7 +32,7 @@ let motionSlug = '',
   motionRevision = -1
 const { scene, camera, renderer, sizes, invalidate } = useTres()
 const context = useTresContext()
-const { start, stop, isActive } = useLoop()
+const { start, stop, isActive, onBeforeRender } = useLoop()
 const background = new Color('#151c25')
 const fog = new Fog(background, 12, 38)
 scene.value.background = background
@@ -56,6 +56,7 @@ watch(
   { immediate: true },
 )
 let controller: ReturnType<typeof createStageController> | undefined
+onBeforeRender(() => controller?.beforeRender())
 let environment: WebGLRenderTarget | undefined,
   disposed = false,
   generation = 0

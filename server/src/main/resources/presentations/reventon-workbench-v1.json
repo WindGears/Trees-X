@@ -1,0 +1,319 @@
+{
+  "slug": "reventon",
+  "name": "Reventón 汽车",
+  "category": "汽车",
+  "description": "从楔形轮廓到座舱与部件层次，自由观察双门开合和七组组件分离。",
+  "cover": "/covers/workbench/reventon-real.png",
+  "displayStatus": "formal",
+  "presentation": {
+    "version": 3,
+    "source": {
+      "kind": "glb",
+      "adapter": "reventon-v1",
+      "bundle": {
+        "id": "reventon-workbench",
+        "version": 1,
+        "manifest": "/models/reventon/workbench-manifest.json",
+        "sha256": "28031a60c0e0ce12c6f9e6ba5fdb5ba5b9bf0f17ba0cd8890bba3a46d96f739d"
+      },
+      "transform": { "position": [0, 0, 0], "rotation": [0, 0, 0], "scale": 1 },
+      "finishMaterials": [
+        "Reventon / fixed / 15023",
+        "Reventon / door_1 / 15023",
+        "Reventon / door_-1 / 15023",
+        "Reventon / rear_cover_assembly / 15023",
+        "Reventon / wheel_1_1 / 15023",
+        "Reventon / wheel_1_-1 / 15023",
+        "Reventon / wheel_-1_1 / 15023",
+        "Reventon / wheel_-1_-1 / 15023"
+      ],
+      "explode": []
+    },
+    "stage": {
+      "background": "#f7f5ef",
+      "ground": "#f7f5ef",
+      "groundY": -0.01,
+      "exposure": 1,
+      "environmentIntensity": 1.3,
+      "environmentFile": "studio.exr",
+      "ambient": 0.18,
+      "key": { "position": [-3, 6, 4], "color": "#fffaf6", "intensity": 0.25 },
+      "rim": { "position": [4, 3, -2], "color": "#f4f6ff", "intensity": 0.15 }
+    },
+    "camera": {
+      "position": [3.9, 2.05, -5.65],
+      "target": [0, 0.72, -0.2],
+      "minDistance": 0.3,
+      "maxDistance": 24
+    },
+    "views": [
+      {
+        "id": "perspective",
+        "label": "整车全景",
+        "position": [3.9, 2.05, -5.65],
+        "target": [0, 0.72, -0.2]
+      },
+      { "id": "front", "label": "正面轮廓", "position": [0, 1.4, -7.5], "target": [0, 0.55, -0.9] },
+      {
+        "id": "side",
+        "label": "侧面轮廓",
+        "position": [7.4, 1.7, -0.2],
+        "target": [0, 0.72, -0.2]
+      },
+      { "id": "rear", "label": "后部轮廓", "position": [-4.6, 2.2, 6.5], "target": [0, 0.6, 0.6] },
+      {
+        "id": "car-cabin",
+        "label": "座舱观察",
+        "position": [2.6, 1, 0.8],
+        "target": [0.024385005235671997, 0.5337370783090591, -0.5168161503970623]
+      },
+      {
+        "id": "car-structure",
+        "label": "结构全景",
+        "position": [5.1, 3.5, -6.25],
+        "target": [0, 0.85, -0.1]
+      }
+    ],
+    "hotspots": [
+      {
+        "id": "body",
+        "node": "Reventon__Studio_Validation",
+        "name": "楔形车身",
+        "anchor": [-0.0000014901161193847656, 0.5787681043148041, -0.3617742657661438],
+        "description": "沿低矮轮廓观察折面、边缘与表面反射。此处展示现有模型外观，不推断真实尺寸或性能。",
+        "cameraOffset": [3.2, 1.6, -3.8],
+        "group": "外观",
+        "marker": true
+      },
+      {
+        "id": "cabin",
+        "node": "Reventon__Studio_Validation",
+        "name": "座舱",
+        "anchor": [0.024385005235671997, 0.5337370783090591, -0.5168161503970623],
+        "description": "打开双门后，从侧面查看座椅、中控和碳纤维区域。可自由旋转寻找合适的观察角度。",
+        "cameraOffset": [1.8, 0.8, -1.1],
+        "group": "座舱",
+        "marker": true
+      },
+      {
+        "id": "headlights",
+        "node": "Reventon__Studio_Validation",
+        "name": "前灯轮廓",
+        "anchor": [0.00010773539543151855, 0.5478969179093838, -2.221520185470581],
+        "description": "观察前灯轮廓、灯罩与车身折面之间的关系。",
+        "cameraOffset": [1.4, 0.6, -1.8],
+        "group": "外观",
+        "marker": true
+      },
+      {
+        "id": "door_1",
+        "node": "Motion__Door_1",
+        "anchor": [-0.0442686527967453, -0.016205698251724243, 0.7274391390383244],
+        "name": "右侧车门",
+        "description": "车门沿已整理的轴心升起，分离时保持开合姿态。",
+        "cameraOffset": [1.8, 1, -1.2],
+        "group": "车门",
+        "marker": true
+      },
+      {
+        "id": "door_-1",
+        "node": "Motion__Door_-1",
+        "anchor": [0.044271424412727356, -0.016206488013267517, 0.7274383120238781],
+        "name": "左侧车门",
+        "description": "车门沿已整理的轴心升起，分离时保持开合姿态。",
+        "cameraOffset": [-1.8, 1, -1.2],
+        "group": "车门",
+        "marker": true
+      },
+      {
+        "id": "wheel_1_1",
+        "node": "Motion__Wheel_1_1",
+        "anchor": [0.8198703727711847, 0.313049831699798, -1.6455753313187955],
+        "name": "右前轮组件",
+        "description": "轮胎、轮毂与制动部件作为现有刚性组件一起移开，便于对照观察。",
+        "cameraOffset": [1.6, 0.65, -0.6],
+        "group": "车轮",
+        "marker": true
+      },
+      {
+        "id": "wheel_-1_1",
+        "node": "Motion__Wheel_-1_1",
+        "anchor": [-0.8198705842323508, 0.31304980032461965, -1.6464222065518488],
+        "name": "左前轮组件",
+        "description": "轮胎、轮毂与制动部件作为现有刚性组件一起移开，便于对照观察。",
+        "cameraOffset": [-1.6, 0.65, -0.6],
+        "group": "车轮",
+        "marker": true
+      },
+      {
+        "id": "wheel_1_-1",
+        "node": "Motion__Wheel_1_-1",
+        "anchor": [0.8559236526489258, 0.3315162416547537, 1.0274088382720947],
+        "name": "右后轮组件",
+        "description": "轮胎、轮毂与制动部件作为现有刚性组件一起移开，便于对照观察。",
+        "cameraOffset": [1.6, 0.65, -0.6],
+        "group": "车轮",
+        "marker": true
+      },
+      {
+        "id": "wheel_-1_-1",
+        "node": "Motion__Wheel_-1_-1",
+        "anchor": [-0.8559237122535706, 0.3315162416547537, 1.0274088382720947],
+        "name": "左后轮组件",
+        "description": "轮胎、轮毂与制动部件作为现有刚性组件一起移开，便于对照观察。",
+        "cameraOffset": [-1.6, 0.65, -0.6],
+        "group": "车轮",
+        "marker": true
+      },
+      {
+        "id": "rear_cover_assembly",
+        "node": "Motion__Rear_cover_assembly",
+        "anchor": [-4.76837158203125e-7, 0.936438649892807, 0.7345087826251984],
+        "name": "后舱盖",
+        "description": "后舱盖按预设位移移开；未制作真实支撑机构或维修拆卸过程。",
+        "cameraOffset": [2.2, 1.8, 2.4],
+        "group": "后部结构",
+        "marker": true
+      }
+    ],
+    "finishes": [
+      { "id": "original", "name": "原始灰银外观", "color": "#8b8e88" },
+      { "id": "graphite", "name": "深墨展示配色", "color": "#1f2529" },
+      { "id": "ivory", "name": "暖白展示配色", "color": "#d8d2bf" }
+    ],
+    "actions": [
+      {
+        "id": "open-doors",
+        "label": "双门开合",
+        "kind": "progress",
+        "node": "Reventon__Studio_Validation",
+        "motion": {
+          "duration": 2,
+          "openLabel": "打开双门",
+          "closeLabel": "关闭双门",
+          "tracks": [
+            {
+              "node": "Motion__Door_1",
+              "range": [0, 1],
+              "type": "rotate",
+              "axis": [1, 0, 0],
+              "angle": -0.6778531114517786
+            },
+            {
+              "node": "Motion__Door_-1",
+              "range": [0, 1],
+              "type": "rotate",
+              "axis": [1, 0, 0],
+              "angle": -0.6778531114517786
+            }
+          ]
+        }
+      },
+      {
+        "id": "explore-parts",
+        "label": "部件分离",
+        "kind": "progress",
+        "node": "Reventon__Studio_Validation",
+        "motion": {
+          "duration": 3.2,
+          "openLabel": "展开部件",
+          "closeLabel": "合拢部件",
+          "tracks": [
+            {
+              "node": "Motion__Door_1",
+              "range": [0, 0.45],
+              "type": "translate",
+              "offset": [0.5500000715255737, 0.18000000715255737, 0]
+            },
+            {
+              "node": "Motion__Door_-1",
+              "range": [0, 0.45],
+              "type": "translate",
+              "offset": [-0.5500000715255737, 0.18000000715255737, 0]
+            },
+            {
+              "node": "Motion__Wheel_1_1",
+              "range": [0.2, 0.75],
+              "type": "translate",
+              "offset": [0.6499999761581421, 0.03999999538064003, -0.11999999731779099]
+            },
+            {
+              "node": "Motion__Wheel_-1_1",
+              "range": [0.2, 0.75],
+              "type": "translate",
+              "offset": [-0.6499999761581421, 0.03999999538064003, -0.11999999731779099]
+            },
+            {
+              "node": "Motion__Wheel_1_-1",
+              "range": [0.2, 0.75],
+              "type": "translate",
+              "offset": [0.6499999761581421, 0.04000000283122063, 0.11999999731779099]
+            },
+            {
+              "node": "Motion__Wheel_-1_-1",
+              "range": [0.2, 0.75],
+              "type": "translate",
+              "offset": [-0.6499999761581421, 0.04000000283122063, 0.11999999731779099]
+            },
+            {
+              "node": "Motion__Rear_cover_assembly",
+              "range": [0.45, 1],
+              "type": "translate",
+              "offset": [0, 0.699999988079071, 0.1499999761581421]
+            }
+          ]
+        }
+      }
+    ],
+    "structure": true,
+    "structureActionId": "explore-parts",
+    "guide": [
+      {
+        "id": "whole",
+        "title": "从整车开始",
+        "description": "恢复完整姿态，自由观察车身、车门和车轮的整体关系。",
+        "overview": true
+      },
+      {
+        "id": "silhouette",
+        "title": "低矮轮廓与折面",
+        "description": "从正面比较前灯、车身折面与低矮轮廓。",
+        "view": "front"
+      },
+      {
+        "id": "doors",
+        "title": "打开双门",
+        "description": "双门沿同一进度开启。观察中可以暂停，旋转或选择部件。",
+        "view": "perspective",
+        "progress": { "actionId": "open-doors", "value": 1 }
+      },
+      {
+        "id": "cabin",
+        "title": "靠近座舱",
+        "description": "沿已打开的车门观察座椅、中控和碳纤维区域。",
+        "view": "car-cabin",
+        "progress": { "actionId": "open-doors", "value": 1 }
+      },
+      {
+        "id": "wheels",
+        "title": "车轮的相对位置",
+        "description": "对照轮胎、轮毂与车身的空间关系；这些现有组件会在下一阶段整体移开。",
+        "hotspotId": "wheel_1_1",
+        "progress": { "actionId": "explore-parts", "value": 0 }
+      },
+      {
+        "id": "structure",
+        "title": "分开七组组件",
+        "description": "双门、四轮与后舱盖分阶段移开。引线标签跟随当前部件，这是结构观察演绎，不是真实维修顺序。",
+        "view": "car-structure",
+        "progress": { "actionId": "explore-parts", "value": 1 }
+      },
+      {
+        "id": "return",
+        "title": "返回整车",
+        "description": "关闭双门、合拢各组件并恢复全景，保留展示配色。",
+        "overview": true
+      }
+    ]
+  }
+}

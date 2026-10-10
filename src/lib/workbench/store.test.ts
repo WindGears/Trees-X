@@ -174,3 +174,21 @@ it('keeps live progress out of Pinia and issues bounded v3 commands without lega
   store.overview()
   expect(store.resetMotionRequest).toBe(1)
 })
+it('restores actions without resetting appearance or issuing a camera command', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(samples[0]))))
+  const store = useWorkbenchStore()
+  await store.select('form-01')
+  store.ready('form-01', 1)
+  store.finish(store.presentation!.finishes[1]!.id)
+  store.view(store.presentation!.views[1]!.id)
+  store.action(store.presentation!.actions[0]!.id)
+  store.structure(true)
+  const finish = store.finishId,
+    command = { ...store.command }
+  store.resetActions()
+  expect(store.finishId).toBe(finish)
+  expect(store.command).toEqual(command)
+  expect(store.actions).toEqual({})
+  expect(store.exploded).toBe(false)
+  expect(store.resetMotionRequest).toBe(1)
+})

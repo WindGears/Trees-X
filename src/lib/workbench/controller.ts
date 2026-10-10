@@ -144,6 +144,7 @@ export function createStageController(
     product = snapshot
     adapter = loaded
     scene.add(loaded.root)
+    loaded.attach?.(scene, renderer)
     progress = createMotionPlayback(
       loaded,
       progressActions(snapshot.presentation),
@@ -240,6 +241,7 @@ export function createStageController(
     load,
     unload,
     command,
+    beforeRender: () => adapter?.beforeRender?.(),
     enableInteraction() {
       interactive = true
       controls.enabled = active && Boolean(adapter)

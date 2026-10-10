@@ -2,13 +2,14 @@
   "source": "Actual migrated GLB / unique workbench renderer, no DOM overlays or generated imagery",
   "slug": "typewriter-study",
   "bundle": {
+    "manifest": "/models/bundles/kimi-typewriter/v1/manifest.json",
     "id": "kimi-typewriter",
     "version": 1,
-    "manifest": "/models/bundles/kimi-typewriter/v1/manifest.json",
-    "sha256": "e7892788d2d89a252256809f0f14ccf616356f30caee6302771d669b6e23011b"
+    "sha256": "c216ad6101fabe469f7effa061a237fd3f1ad440550cafb10ff5c5f345a770bd"
   },
   "bytes": 229580,
   "sha256": "84c716bd054b2b527d704bf0e647f5c8873a3df87715317e5eb7e9b9b55016b9",
   "width": 960,
-  "height": 720
+  "height": 720,
+  "manifestReferenceRepair": "2026-10-10: manifest formatting reference corrected; model and texture bytes unchanged"
 }

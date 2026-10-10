@@ -3,6 +3,7 @@ public/models/reventon/*.png filter=lfs diff=lfs merge=lfs -text
 public/models/reventon/*.exr filter=lfs diff=lfs merge=lfs -text
 public/models/reventon/*.jpg filter=lfs diff=lfs merge=lfs -text
 public/models/reventon/motion.json -text -diff
+public/models/reventon/workbench-manifest.json -text
 public/models/bundles/** -text
 public/models/bundles/kimi-piano/**/*.glb filter=lfs diff=lfs merge=lfs -text
 public/basis/** -text

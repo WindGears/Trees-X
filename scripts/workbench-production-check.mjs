@@ -19,6 +19,7 @@ try {
     const { presentation } = await (await fetch(base + '/api/v1/products/' + slug)).json()
     const typewriter = presentation.source.adapter === 'typewriter-v1'
     const piano = presentation.source.adapter === 'piano-v1'
+    const reventon = presentation.source.adapter === 'reventon-v1'
     await page.goto(`${base}/?product=${slug}`)
     await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
       timeout: 90000,
@@ -48,7 +49,19 @@ try {
       false,
     )
     if (piano) await page.getByRole('button', { name: '全部平铺', exact: true }).click()
-    else await page.locator('.wb-action-list button').first().click()
+    else if (reventon) {
+      const separated = await pixels()
+      await page.getByRole('button', { name: '打开双门', exact: true }).click()
+      expect((await pixels()).equals(separated), 'doors must change actual car pixels').toBe(false)
+      await page
+        .locator('.wb-car-views')
+        .getByRole('button', { name: '座舱观察', exact: true })
+        .click()
+      expect(
+        (await pixels()).equals(separated),
+        'cabin framing must change actual car pixels',
+      ).toBe(false)
+    } else await page.locator('.wb-action-list button').first().click()
     await page.getByRole('button', { name: '还原商品', exact: true }).click()
     await page.getByRole('button', { name: '导览', exact: true }).click()
     await page.getByRole('button', { name: '开始导览' }).click()

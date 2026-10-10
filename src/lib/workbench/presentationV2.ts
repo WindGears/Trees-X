@@ -49,7 +49,7 @@ export function parseSource(version: unknown, value: unknown): ProductPresentati
   if (
     version === 1 ||
     p.kind !== 'glb' ||
-    !['pbr-v1', 'typewriter-v1', 'piano-v1'].includes(string(p.adapter))
+    !['pbr-v1', 'typewriter-v1', 'piano-v1', 'reventon-v1'].includes(string(p.adapter))
   )
     throw new Error('未注册的商品适配器')
   const b = object(p.bundle),

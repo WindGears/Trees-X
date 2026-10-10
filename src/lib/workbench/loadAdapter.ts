@@ -60,6 +60,10 @@ export async function loadAdapter(
         JSON.parse(new TextDecoder().decode(data)) as unknown,
         decoded.dispose,
       )
+    } else if (source.adapter === 'reventon-v1') {
+      const { bindReventon } = await import('./reventonAdapter')
+      signal.throwIfAborted()
+      adapter = bindReventon(product, source, decoded.root, decoded.dispose)
     } else adapter = bindGlb(product, source, decoded.root, decoded.dispose)
     if (
       !adapter.root.userData.triangles ||

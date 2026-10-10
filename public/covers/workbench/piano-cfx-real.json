@@ -3,13 +3,14 @@
   "sourceUrl": "https://k3-piano-cfx.ok.kimi.link/sound-path.html",
   "slug": "piano-cfx",
   "bundle": {
+    "manifest": "/models/bundles/kimi-piano/v1/manifest.json",
     "id": "kimi-piano",
     "version": 1,
-    "manifest": "/models/bundles/kimi-piano/v1/manifest.json",
-    "sha256": "7649c04b9154e67df6be9456f33fa20384a76ab1dfb2cee244f3bc59ef327792"
+    "sha256": "fdb2cc50cbee9b677c23aa677553742292f087db19a1d7172b3daab04268df06"
   },
   "bytes": 144935,
   "sha256": "63c129a99d7ebfe87e9d00b6eb645e16fa1b3209ff395dc54003b757d00e2f4e",
   "width": 960,
-  "height": 720
+  "height": 720,
+  "manifestReferenceRepair": "2026-10-10: manifest formatting reference corrected; model and texture bytes unchanged"
 }

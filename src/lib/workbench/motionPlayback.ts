@@ -36,7 +36,11 @@ export function createMotionPlayback(
     const now = performance.now()
     if (!disposed && (force || now - channel.lastReport >= 1000 / 15)) {
       channel.lastReport = now
-      feedback(channel.action.id, { ...channel.status })
+      feedback(channel.action.id, {
+        progress: channel.status.progress,
+        target: channel.status.target,
+        playing: channel.status.playing,
+      })
     }
   }
   function apply(channel: Channel, force = false) {

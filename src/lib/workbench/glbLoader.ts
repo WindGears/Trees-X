@@ -1,10 +1,11 @@
-import { LoadingManager, WebGLRenderer, type Group } from 'three'
+import { LoadingManager, Texture, WebGLRenderer, type Group } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js'
 import { checkGlbDocument } from './glbDocument'
 import { ownedResources } from './ownedResources'
+import { decodeQueue } from './decodeQueue'
 import type { AssetBundle } from './assetBundle'
 
 export async function decodeGlb(
@@ -62,6 +63,51 @@ export async function decodeGlb(
     return tracked
   }
   loader.register((parser) => {
+    const imageSource = parser.loadImageSource.bind(parser)
+    const imagePromises = new Map<number, ReturnType<typeof imageSource>>()
+    const decode = decodeQueue(3, signal)
+    parser.loadImageSource = (index, imageLoader) => {
+      const existing = imagePromises.get(index)
+      if (existing) return remember(existing.then((texture) => texture.clone()))
+      const uri: unknown = parser.json.images[index]?.uri
+      const promise = decode(async () => {
+        const source = typeof uri === 'string' ? bytes.get(uri) : undefined
+        if (
+          source &&
+          typeof createImageBitmap === 'function' &&
+          'isImageBitmapLoader' in imageLoader &&
+          imageLoader.isImageBitmapLoader === true &&
+          typeof uri === 'string' &&
+          /\.(png|jpe?g|webp)$/i.test(uri)
+        ) {
+          const bitmap = await createImageBitmap(new Blob([source]), {
+            imageOrientation: 'flipY',
+            premultiplyAlpha: 'none',
+            colorSpaceConversion: 'none',
+          })
+          const texture = new Texture(bitmap)
+          texture.needsUpdate = true
+          const extra: unknown = parser.json.images[index]?.extras
+          if (extra && typeof extra === 'object' && !Array.isArray(extra))
+            Object.assign(texture.userData, extra)
+          texture.userData.mimeType = uri.endsWith('.png')
+            ? 'image/png'
+            : uri.endsWith('.webp')
+              ? 'image/webp'
+              : 'image/jpeg'
+          return texture
+        }
+        return imageSource(index, imageLoader)
+      }).finally(() => {
+        if (typeof uri !== 'string') return
+        const url = urls.get(uri)
+        if (url) URL.revokeObjectURL(url)
+        urls.delete(uri)
+        bytes.delete(uri)
+      })
+      imagePromises.set(index, promise)
+      return remember(promise)
+    }
     const dependency = parser.getDependency.bind(parser)
     parser.getDependency = (type, index) =>
       remember(

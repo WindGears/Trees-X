@@ -92,10 +92,14 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     manual()
     finishId.value = id
   }
-  function overview(fromGuide = false) {
+  function resetActions(fromGuide = false) {
+    if (!fromGuide) manual()
     resetMotionRequest.value++
     actions.value = {}
     exploded.value = false
+  }
+  function overview(fromGuide = false) {
+    resetActions(true)
     view('perspective', fromGuide)
   }
   function restore() {
@@ -271,6 +275,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     structure,
     finish,
     overview,
+    resetActions,
     restore,
     guide,
     zoom,

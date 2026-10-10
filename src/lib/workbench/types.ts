@@ -90,7 +90,7 @@ export interface BundleReference {
 }
 export interface GlbSource {
   kind: 'glb'
-  adapter: 'pbr-v1' | 'typewriter-v1' | 'piano-v1'
+  adapter: 'pbr-v1' | 'typewriter-v1' | 'piano-v1' | 'reventon-v1'
   bundle: BundleReference
   transform: { position: Vec3; rotation: Vec3; scale: number }
   finishMaterials: string[]

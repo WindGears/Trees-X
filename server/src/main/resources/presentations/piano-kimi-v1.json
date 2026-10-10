@@ -14,9 +14,13 @@
         "id": "kimi-piano",
         "version": 1,
         "manifest": "/models/bundles/kimi-piano/v1/manifest.json",
-        "sha256": "7649c04b9154e67df6be9456f33fa20384a76ab1dfb2cee244f3bc59ef327792"
+        "sha256": "fdb2cc50cbee9b677c23aa677553742292f087db19a1d7172b3daab04268df06"
       },
-      "transform": { "position": [0, 0, 0], "rotation": [0, 0, 0], "scale": 1 },
+      "transform": {
+        "position": [0, 0, 0],
+        "rotation": [0, 0, 0],
+        "scale": 1
+      },
       "finishMaterials": [
         "piano-material-6",
         "piano-material-9",
@@ -88,7 +92,11 @@
         "color": "#fff9ed",
         "intensity": 2.4
       },
-      "rim": { "position": [7, 6, 4], "color": "#f0f4ff", "intensity": 1.05 }
+      "rim": {
+        "position": [7, 6, 4],
+        "color": "#f0f4ff",
+        "intensity": 1.05
+      }
     },
     "camera": {
       "position": [-4.05, 3, -5.35],
@@ -7568,8 +7576,16 @@
       }
     ],
     "finishes": [
-      { "id": "black", "name": "原始黑色漆面", "color": "#090b0c" },
-      { "id": "ivory", "name": "象牙白展示配色", "color": "#d8d2bf" }
+      {
+        "id": "black",
+        "name": "原始黑色漆面",
+        "color": "#090b0c"
+      },
+      {
+        "id": "ivory",
+        "name": "象牙白展示配色",
+        "color": "#d8d2bf"
+      }
     ],
     "actions": [
       {
@@ -7581,7 +7597,10 @@
           "duration": 21,
           "openLabel": "全部平铺",
           "closeLabel": "返回整机",
-          "program": { "type": "piano-sound-path-v1", "file": "rig.json" }
+          "program": {
+            "type": "piano-sound-path-v1",
+            "file": "rig.json"
+          }
         }
       }
     ],
@@ -7593,56 +7612,80 @@
         "title": "从整体开始",
         "description": "自由旋转，观察琴盖、键盘、琴壳和支撑之间的关系。",
         "view": "perspective",
-        "progress": { "actionId": "sound-path", "value": 0 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0
+        }
       },
       {
         "id": "chapter-1",
         "title": "看清内外层次",
         "description": "模型沿预设平面分开两侧，便于查看原先遮挡的内部层次。",
         "view": "piano-section",
-        "progress": { "actionId": "sound-path", "value": 0.14285714285714285 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0.14285714285714285
+        }
       },
       {
         "id": "chapter-2",
         "title": "向内部延伸的键杆",
         "description": "键盘移到琴体前方。靠近观察长键杆和键盘框架。",
         "view": "piano-keys",
-        "progress": { "actionId": "sound-path", "value": 0.2857142857142857 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0.2857142857142857
+        }
       },
       {
         "id": "chapter-3",
         "title": "排列在键盘上方的机构",
         "description": "击弦机构移开并抬起，便于观察其部件排列及与键盘的关系。",
         "view": "piano-action",
-        "progress": { "actionId": "sound-path", "value": 0.42857142857142855 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0.42857142857142855
+        }
       },
       {
         "id": "chapter-4",
         "title": "弦列与铁板",
         "description": "铁板与弦列移到琴体外侧。观察轮廓、弦列走向和支撑位置。",
         "view": "piano-strings",
-        "progress": { "actionId": "sound-path", "value": 0.5714285714285714 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0.5714285714285714
+        }
       },
       {
         "id": "chapter-5",
         "title": "音板与弦桥",
         "description": "音板和弦桥逐步分开。观察这两组结构与弦列的位置关系。",
         "view": "piano-soundboard",
-        "progress": { "actionId": "sound-path", "value": 0.7142857142857143 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0.7142857142857143
+        }
       },
       {
         "id": "chapter-6",
         "title": "制音器与踏板",
         "description": "制音器与踏板单独呈现，可从侧面比较它们的对应位置。",
         "view": "piano-dampers",
-        "progress": { "actionId": "sound-path", "value": 0.8571428571428571 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 0.8571428571428571
+        }
       },
       {
         "id": "chapter-7",
         "title": "全部平铺对照",
         "description": "823 个建模单元在更宽的布局中平铺；这是结构研究，不是真实维修拆解顺序。",
         "view": "knoll",
-        "progress": { "actionId": "sound-path", "value": 1 }
+        "progress": {
+          "actionId": "sound-path",
+          "value": 1
+        }
       },
       {
         "id": "return",

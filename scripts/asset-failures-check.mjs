@@ -7,6 +7,9 @@ const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const fixture = JSON.parse(
   await readFile('server/src/test/resources/fixtures/speaker-glb-v2.json', 'utf8'),
 )
+const car = JSON.parse(
+  await readFile('server/src/main/resources/samples/products.json', 'utf8'),
+).find((p) => p.slug === 'reventon')
 const model = await readFile('public/models/bundles/speaker-engineering/v1/model.glb')
 const brokenDocument = readGlb(model)
 brokenDocument.meshes[0].primitives[0].attributes.POSITION = 999999
@@ -22,6 +25,8 @@ const browser = await chromium.launch({ channel: 'msedge', headless: true })
 const report = { checks: [], errors: [] }
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } })
+  await page.route('**/api/v1/products/reventon', (route) => route.fulfill({ json: car }))
+  await page.route('**/api/v1/products?*', (route) => route.fulfill({ json: [fixture, car] }))
   page.on('pageerror', (e) => report.errors.push(e.message))
   let mode = 'network'
   await page.route('**/api/v1/products/form-01', (route) => {

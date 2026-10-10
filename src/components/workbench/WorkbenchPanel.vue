@@ -7,10 +7,16 @@ import WorkbenchProgress from './WorkbenchProgress.vue'
 import WorkbenchParts from './WorkbenchParts.vue'
 import WorkbenchLayoutMotion from './WorkbenchLayoutMotion.vue'
 import WorkbenchPianoMotion from './WorkbenchPianoMotion.vue'
+import WorkbenchCarMotion from './WorkbenchCarMotion.vue'
 import '@/assets/styles/workbench-parts.css'
 const store = useWorkbenchStore()
 const step = computed(() => store.presentation?.guide[store.guideStep])
 const motions = computed(() => (store.presentation ? progressActions(store.presentation) : []))
+const car = computed(
+  () =>
+    store.presentation?.source.kind === 'glb' &&
+    store.presentation.source.adapter === 'reventon-v1',
+)
 const discrete = computed(
   () => store.presentation?.actions.filter((a) => a.kind !== 'progress') ?? [],
 )
@@ -42,36 +48,39 @@ const discrete = computed(
       <h3>看看它如何变化</h3>
       <p>旋转、缩放或选择部件会暂停结构播放，保留当前变化。</p>
       <div class="wb-action-list">
-        <button
-          v-for="action in discrete"
-          :key="action.id"
-          type="button"
-          :disabled="!store.available"
-          :aria-pressed="action.kind === 'toggle' ? Boolean(store.actions[action.id]) : undefined"
-          @click="store.action(action.id)"
-        >
-          {{ action.label
-          }}<span v-if="action.kind === 'toggle'">{{
-            store.actions[action.id] ? '已开启' : '未开启'
-          }}</span>
-        </button>
-        <template v-for="action in motions" :key="action.id">
-          <WorkbenchPianoMotion
-            v-if="action.motion.program?.type === 'piano-sound-path-v1'"
-            :action="action"
-          />
-          <WorkbenchLayoutMotion v-else-if="action.motion.program" :action="action" />
-          <WorkbenchProgress v-else :action="action" />
+        <WorkbenchCarMotion v-if="car" :actions="motions" />
+        <template v-else>
+          <button
+            v-for="action in discrete"
+            :key="action.id"
+            type="button"
+            :disabled="!store.available"
+            :aria-pressed="action.kind === 'toggle' ? Boolean(store.actions[action.id]) : undefined"
+            @click="store.action(action.id)"
+          >
+            {{ action.label
+            }}<span v-if="action.kind === 'toggle'">{{
+              store.actions[action.id] ? '已开启' : '未开启'
+            }}</span>
+          </button>
+          <template v-for="action in motions" :key="action.id">
+            <WorkbenchPianoMotion
+              v-if="action.motion.program?.type === 'piano-sound-path-v1'"
+              :action="action"
+            />
+            <WorkbenchLayoutMotion v-else-if="action.motion.program" :action="action" />
+            <WorkbenchProgress v-else :action="action" />
+          </template>
+          <button
+            v-if="store.presentation.structure && !store.presentation.structureActionId"
+            type="button"
+            :disabled="!store.available"
+            :aria-pressed="store.exploded"
+            @click="store.structure(!store.exploded)"
+          >
+            {{ store.exploded ? '合拢部件' : '展开部件' }}
+          </button>
         </template>
-        <button
-          v-if="store.presentation.structure && !store.presentation.structureActionId"
-          type="button"
-          :disabled="!store.available"
-          :aria-pressed="store.exploded"
-          @click="store.structure(!store.exploded)"
-        >
-          {{ store.exploded ? '合拢部件' : '展开部件' }}
-        </button>
       </div>
       <p class="wb-note">分层只演示现有部件关系，不表示真实维修拆解顺序。</p>
     </template>
