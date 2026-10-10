@@ -1,10 +1,9 @@
 import { RectAreaLight, type Group, type Scene, type WebGLRenderer } from 'three'
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
 import { createContactShadow } from '@/lib/reventon/contactShadow'
+import { acquireRectAreaUniforms } from '@/lib/three/rectAreaUniforms'
 
 /** Local lighting and live ground projection; the workbench keeps its renderer and camera. */
 export function createReventonStage(renderer: WebGLRenderer, scene: Scene, model: Group) {
-  RectAreaLightUniformsLib.init()
   const key = new RectAreaLight('#ffffff', 7, 6, 3)
   const strip = new RectAreaLight('#ffffff', 4, 4, 1.2)
   key.name = 'Reventon / key softbox'
@@ -13,6 +12,7 @@ export function createReventonStage(renderer: WebGLRenderer, scene: Scene, model
   strip.position.set(3, 2, 1)
   key.lookAt(0, 0.5, 0)
   strip.lookAt(0, 0.5, 0)
+  const releaseUniforms = acquireRectAreaUniforms()
   let shadow: ReturnType<typeof createContactShadow> | undefined
   let disposed = false
   const dispose = () => {
@@ -23,6 +23,7 @@ export function createReventonStage(renderer: WebGLRenderer, scene: Scene, model
     shadow?.dispose()
     key.dispose()
     strip.dispose()
+    releaseUniforms()
   }
   try {
     scene.add(key, strip)

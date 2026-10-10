@@ -1,6 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Texture, Vector3 } from 'three'
+import {
+  BoxGeometry,
+  Group,
+  LineSegments,
+  Mesh,
+  MeshStandardMaterial,
+  Points,
+  Texture,
+  Vector3,
+} from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { parseProduct } from './api'
 import { parseBundle, loadBundle, sha256 } from './assetBundle'
@@ -95,6 +104,76 @@ describe('formal asset contracts and ownership', () => {
     resources.track(late)
     expect(spy).toHaveBeenCalledTimes(1)
     expect(spies[0]).toHaveBeenCalledTimes(1)
+  })
+  it('releases final glTF line and point materials, including a scene arriving after disposal', async () => {
+    const vertices = new Float32Array([0, 0, 0, 1, 0, 0]),
+      json = Buffer.from(
+        JSON.stringify({
+          asset: { version: '2.0' },
+          buffers: [{ byteLength: vertices.byteLength }],
+          bufferViews: [{ buffer: 0, byteLength: vertices.byteLength }],
+          accessors: [
+            {
+              bufferView: 0,
+              componentType: 5126,
+              count: 2,
+              type: 'VEC3',
+              min: [0, 0, 0],
+              max: [1, 0, 0],
+            },
+          ],
+          materials: [{ name: 'source-material' }],
+          meshes: [
+            { primitives: [{ attributes: { POSITION: 0 }, material: 0, mode: 1 }] },
+            { primitives: [{ attributes: { POSITION: 0 }, material: 0, mode: 0 }] },
+          ],
+          nodes: [
+            { name: 'outline', mesh: 0 },
+            { name: 'points', mesh: 1 },
+          ],
+          scenes: [{ nodes: [0, 1] }],
+          scene: 0,
+        }),
+      ),
+      jsonChunk = Buffer.alloc(Math.ceil(json.length / 4) * 4, 0x20),
+      glb = Buffer.alloc(12 + 8 + jsonChunk.length + 8 + vertices.byteLength),
+      resources = ownedResources()
+    json.copy(jsonChunk)
+    glb.writeUInt32LE(0x46546c67, 0)
+    glb.writeUInt32LE(2, 4)
+    glb.writeUInt32LE(glb.length, 8)
+    glb.writeUInt32LE(jsonChunk.length, 12)
+    glb.writeUInt32LE(0x4e4f534a, 16)
+    jsonChunk.copy(glb, 20)
+    const binaryOffset = 20 + jsonChunk.length
+    glb.writeUInt32LE(vertices.byteLength, binaryOffset)
+    glb.writeUInt32LE(0x004e4942, binaryOffset + 4)
+    Buffer.from(vertices.buffer).copy(glb, binaryOffset + 8)
+    const bytes = glb.buffer.slice(glb.byteOffset, glb.byteOffset + glb.byteLength)
+    const verify = async () => {
+      const loaded = await new GLTFLoader().parseAsync(bytes, ''),
+        outline = loaded.scene.getObjectByName('outline'),
+        points = loaded.scene.getObjectByName('points')
+      if (!(outline instanceof LineSegments) || !(points instanceof Points))
+        throw new Error('glTF non-mesh surfaces missing')
+      const finalResources = new Set([
+          outline.geometry,
+          outline.material,
+          points.geometry,
+          points.material,
+        ]),
+        spies = [...finalResources].map((item) => {
+          if (Array.isArray(item)) throw new Error('Unexpected material array')
+          return vi.spyOn(item, 'dispose')
+        })
+      resources.track(loaded.scenes)
+      resources.track(loaded.scene)
+      resources.dispose()
+      resources.dispose()
+      spies.forEach((spy) => expect(spy).toHaveBeenCalledTimes(1))
+    }
+    await verify()
+    await verify()
   })
   it('runs v3 progress on the real GLB while preserving its geometry and independent dial rotation', async () => {
     const product = fixture(),

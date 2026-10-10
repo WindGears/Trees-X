@@ -87,6 +87,14 @@ AdminPreview提供局部cameraCaptureSession。WorkbenchScene注册按需数字�
 
 ## 验证
 
+### 本机交付与联合验收（E1）
+
+scripts/demo.mjs 只编排诊断、准备、生产启动和停止；scripts/demo/ 分离配置、资源摘要、进程身份、控制锁和真实就绪检查。Java 直接运行指定 JAR，Node 直接运行本地 Vite 生产预览，固定本机端口。控制状态和日志位于忽略目录，不保存数据库密码；停止依据 PID、启动时间、可执行路径、完整命令和运行标识，拒绝结束外部进程。演示过程不调用 Maven 或安装依赖。
+
+数据库交付脚本只读正式库备份，隔离恢复限定 trees_x_restore_test，拒绝非空目标与会切换数据库的 SQL；恢复后核对全部表、列、结构与行摘要。运行资源另有清单，SQL 不能替代模型文件备份。HTTP API、结构版本与数据库迁移均未增加。
+
+联合与帧间隔采集只存在测试浏览器：实际 Three 节点、变换、热点和资源释放证明身份/生命周期，生产构建另外检查真实画面和操作。生产组件不增加持续遥测。联合预检发现钢琴21个LineSegments最终材质漏释放，loader的唯一资源收集方扩展到Line/Points，实际glTF解析回归覆盖迟到结果和重复释放。
+
 ### 钢琴注册适配器（2026-10-09）
 
 `piano-v1` 沿用 loadBundle/decodeGlb 的清单、摘要、取消与首帧协议，decodeGlb 同时返回动画片段。仅允许 v3 配置绑定一个 `piano-sound-path-v1` 程序，结构 ID 必须一致；不能混入任意轨道、旧动作或 explosion。前后端同时验证，API 与数据库结构不变。

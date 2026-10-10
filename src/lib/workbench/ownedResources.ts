@@ -1,4 +1,14 @@
-import { BufferGeometry, Material, Mesh, Object3D, Skeleton, SkinnedMesh, Texture } from 'three'
+import {
+  BufferGeometry,
+  Line,
+  Material,
+  Mesh,
+  Object3D,
+  Points,
+  Skeleton,
+  SkinnedMesh,
+  Texture,
+} from 'three'
 
 /** Includes partial parse results and resources arriving after a failed parse. */
 export function ownedResources() {
@@ -29,7 +39,9 @@ export function ownedResources() {
     }
     if (value instanceof Object3D) {
       value.traverse((node) => {
-        if (node instanceof Mesh) {
+        // glTF also creates final LineBasicMaterial / PointsMaterial variants.
+        // They are not Mesh instances and must share the loader's unique release owner.
+        if (node instanceof Mesh || node instanceof Line || node instanceof Points) {
           track(node.geometry)
           track(node.material)
         }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onScopeDispose } from 'vue'
 import { Color, RectAreaLight, Vector3 } from 'three'
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
-RectAreaLightUniformsLib.init()
+import { acquireRectAreaUniforms } from '@/lib/three/rectAreaUniforms'
+const releaseUniforms = acquireRectAreaUniforms()
 const key = new RectAreaLight('#ffffff', 7, 6, 3)
 key.position.set(-1, 4, -3)
 key.lookAt(0, 0.5, 0)
@@ -12,6 +12,7 @@ strip.lookAt(0, 0.5, 0)
 onScopeDispose(() => {
   key.dispose()
   strip.dispose()
+  releaseUniforms()
 })
 const lightPosition = new Vector3(-3, 6, 4)
 const cameraPosition = new Vector3(6, 3, 7)

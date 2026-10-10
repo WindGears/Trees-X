@@ -1,6 +1,6 @@
 # Trees X
 
-面向商品观察与理解的三维工作台，Vue/Three.js + Spring Boot/MySQL。2026-10-09 已迁入用户自有 Kimi 打字机与钢琴，音箱撤出正式计划。首页是 572 部件的真实打字机 GLB，目录另有 823 建模单元的钢琴；汽车暂为流程样板，精细汽车仍保留在 legacy。
+面向商品观察与理解的三维工作台，Vue/Three.js + Spring Boot/MySQL。当前正式目录为机械打字机、三角钢琴与精细 Reventón 汽车，三件均在同一真实 Three.js 工作台中运行。打字机保留首页；音箱退出正式计划，程序化样板和旧固定汽车流程保留作历史与测试资源。
 
 新版范围和阶段见 [PRODUCT.md](PRODUCT.md)、[实施路线](.ai/implementation-roadmap.md)、[立项基线](.ai/restart-baseline.md)。阶段A/B/B2、D基础管理及D2常用配置表单/取景工具已验收。打字机本轮已迁入共同工作台，来源、资源、检查与边界见 [迁移验收](.ai/typewriter-migration-validation.md)。在线上传、发布快照、手势为可选扩展，暂不配置 CI。
 
@@ -10,11 +10,11 @@
 
 Node/npm 版本遵循 package.json。另需 Java 17 和 MySQL 8.0。
 
-钢琴 GLB 使用 Git LFS。若克隆时跳过了 LFS 下载，先运行以下命令拉取新工作台需要的钢琴模型；旧精细汽车可在使用 legacy 时单独拉取。
+钢琴与精细汽车资源使用 Git LFS。若克隆时跳过下载，先拉取三件正式展品的运行文件；新的汽车工作台同样需要这批高质量资源。
 
 ```sh
 git lfs install --local
-git lfs pull --include="public/models/bundles/kimi-piano/**" --exclude=""
+git lfs pull --include="public/models/bundles/kimi-typewriter/**,public/models/bundles/kimi-piano/**,public/models/reventon/**" --exclude=""
 ```
 
 1. `npm ci`
@@ -30,9 +30,40 @@ npm run dev -- --strictPort
 
 本地端口可分别用 TREES_PORT 和 Vite 参数调整；若后端端口变动，同步调整 vite.config.ts 的代理。完整配置/API 说明见 [server/README.md](server/README.md)。
 
-全新数据库首次仍是不可变历史样板种子。启动后执行 `node scripts/apply-typewriter.mjs` 先验证；确认要安装当前资产时设置 `$env:TREES_APPLY='1'; node scripts/apply-typewriter.mjs`。它通过现有管理员 API 保存打字机配置、下架音箱，并将修改前配置备份到忽略目录 artifacts/typewriter-migration/backups，不清库、不改旧迁移。当前本机已经安装，正常启动不用重复执行。资源包已在 public/models/bundles/kimi-typewriter/v1，不需要重导出或 Blender。
+全新数据库首次仍是不可变历史样板种子。先在 PowerShell 清除应用开关，再一次性预校验三件资源：
 
-钢琴同样使用管理 API 安装：先 `node scripts/apply-piano.mjs` 校验，再以 `TREES_APPLY=1` 执行同一脚本。创建或复用“乐器”分类，将钢琴排在打字机后，保存已有配置备份，保持打字机内容和首页。当前本机已安装，正常启动不重复执行；源码备份位于 `artifacts/kimi-imports/piano-cfx/`，运行资源在 `public/models/bundles/kimi-piano/v1/`。详见 [钢琴迁移验收](.ai/piano-migration-validation.md)。
+```powershell
+Remove-Item Env:TREES_APPLY -ErrorAction SilentlyContinue
+node scripts/apply-typewriter.mjs
+node scripts/apply-piano.mjs
+node scripts/apply-reventon.mjs
+```
+
+确认预校验通过、要安装当前资产后，在同一终端显式应用，并确保结束时清除开关：
+
+```powershell
+try {
+  $env:TREES_APPLY = '1'
+  node scripts/apply-typewriter.mjs
+  if ($LASTEXITCODE -ne 0) { throw '打字机安装失败' }
+  node scripts/apply-piano.mjs
+  if ($LASTEXITCODE -ne 0) { throw '钢琴安装失败' }
+  node scripts/apply-reventon.mjs
+  if ($LASTEXITCODE -ne 0) { throw '汽车安装失败' }
+} finally {
+  Remove-Item Env:TREES_APPLY -ErrorAction SilentlyContinue
+}
+```
+
+打字机安装通过现有管理员 API 保存配置、下架音箱，并将修改前配置备份到忽略目录 artifacts/typewriter-migration/backups，不清库、不改旧迁移。当前本机已经安装，正常启动不用重复执行。资源包已在 public/models/bundles/kimi-typewriter/v1，不需要重导出或 Blender。
+
+钢琴安装创建或复用“乐器”分类，将钢琴排在打字机后，保存已有配置备份，保持打字机内容和首页。当前本机已安装，正常启动不重复执行；源码备份位于 `artifacts/kimi-imports/piano-cfx/`，运行资源在 `public/models/bundles/kimi-piano/v1/`。详见 [钢琴迁移验收](.ai/piano-migration-validation.md)。
+
+汽车安装使用已有管理员 API 更新当前工作台配置，不是新增数据库种子或清库。当前本机三件均已安装，正常启动无需重新应用。单独安装某件时也要在预校验前、应用结束后清除 `TREES_APPLY`；PowerShell 环境变量会持续存在，不能把再次执行脚本当作自动恢复为只读校验。
+
+## 本机生产演示
+
+统一环境检查、准备、启动、停止及数据库备份恢复见 [.ai/demo-operations.md](.ai/demo-operations.md)。五分钟核心演示和本人走查清单见 [.ai/demo-walkthrough.md](.ai/demo-walkthrough.md)。首次依赖和 LFS 准备需要网络；已准备的生产运行使用本地文件与本机 API。
 
 ## 当前工作台
 
@@ -54,22 +85,22 @@ npm run dev -- --strictPort
 - 单 TresCanvas/renderer 切换；加载/服务失败明确重试；迟到响应隔离；WebGL 上下文恢复。
 - 商品和展示配置来自真实 Spring Boot 4.1.1 + JPA + Flyway + MySQL；无运行时静态假数据回退，无匿名写端点。
 
-当前目录区分正式打字机、正式钢琴和汽车流程样板。打字机与钢琴为参考轮廓及资料重建的结构演绎，不表示工厂 CAD、真实性能或维修顺序。钢琴由真实 Three.js GLB、几何、PBR 材质及形变动画执行，不嵌入原页面或使用影片。首屏不自动演出，不加载旧高精汽车、手势或后处理资源。
+当前目录仅包含正式打字机、正式钢琴与精细汽车，旧样板不混入目录。打字机与钢琴为参考轮廓及资料重建的结构演绎，不表示工厂 CAD、真实性能或维修顺序。钢琴由真实 Three.js GLB、几何、PBR 材质及形变动画执行，不嵌入原页面或使用影片。首屏不自动演出；汽车资源仅在选择汽车后加载，手势与旧后处理不进入当前工作台。
 
 ## 保留旧版
 
 旧版入口：`?legacy=1&product=form-01`、`?legacy=1&product=typewriter-study`、`?legacy=1&product=reventon`。六件非样板旧 ID（如 `?product=potted-plant`）仍自动打开旧体验。
 
-旧精细汽车是 Three.js + Blender 烘焙 PBR/AO 的固定实机流程，仍有播放、暂停、章节定位；现在与新汽车样板分开。其他旧展品、手势、后处理和资源许可记录保留。
+旧汽车入口保留 Three.js + Blender 烘焙 PBR/AO 的固定导演流程与章节定位。当前汽车工作台复用同一高质量资产，提供自由观察、双门开合、七组分离与主动导览；两种入口操作模式分开。其他旧展品、手势、后处理和资源许可记录保留。
 
-旧汽车 LFS 运行资源约 1.75 GB，仅使用旧高精 Demo 时需要拉取：
+汽车 LFS 运行资源约 1.75 GB，当前正式汽车和旧 Demo 都需要：
 
 ```sh
 git lfs install --local
 git lfs pull
 ```
 
-新工作台无需这批模型即可验证完整流程。构建仍保留 public 中的旧资源，以便旧入口继续可用；不要把新工作台零高精模型请求等同于整个发布目录很小。
+未拉取汽车文件时，打字机和钢琴仍可单独使用，但不能宣称三件完整演示可用。构建保留 public 运行资源及历史入口；不要把按需加载等同于发布目录很小。
 
 ## 验证
 
@@ -129,7 +160,7 @@ npm run test:reventon-playback
 - `src/components/workbench`：统一界面与唯一 Canvas。
 - `public/models/collection/manifest.json` / `public/models/reventon/provenance.json`：原资产事实与许可。
 
-当前执行顺序以实施路线为准：共同流程 → 可逆探索 → 基础管理与表单/取景工具 → 打字机 → 汽车 → 联合验收。音箱不再排期，手表只是候选。手势、在线上传与高级版本管理为可选扩展。
+当前执行顺序以实施路线为准：共同流程 → 可逆探索 → 基础管理与表单/取景工具 → 打字机 → 钢琴 → 汽车 → 联合验收。音箱不再排期，手表只是候选。手势、在线上传与高级版本管理为可选扩展。
 
 v3配置见server/src/main/resources/samples/progress-products.json；motionPose/motionPlayback是统一确定性与播放核心，原products.json作为不可变初始种子保留。V5仅升级未定制的默认音箱和汽车，不覆盖封面和基础信息。
 
@@ -139,7 +170,7 @@ v3配置见server/src/main/resources/samples/progress-products.json；motionPose
 
 ## 正式资产通道（2026-10-03 历史验收）
 
-阶段 1 曾增加 v2 配置与 GLB 异步接入，兼容 v1 样板。当时目录保留三件流程样板；工程夹具不会替代画质验收。后端 Flyway V3 只追加封面/展示状态字段，已有配置不被覆盖。以下命令保留作工程通道回归；当前真实打字机与两件目录以本文前述状态和打字机迁移验收为准。
+阶段 1 曾增加 v2 配置与 GLB 异步接入，兼容 v1 样板。当时目录保留三件流程样板；工程夹具不会替代画质验收。后端 Flyway V3 只追加封面/展示状态字段，已有配置不被覆盖。以下命令保留作工程通道回归；当前三件正式 GLB 目录以本文前述状态及各商品迁移验收为准。
 
 - `npm run asset:fixture`：生成旧音箱 GLB 工程夹具和测试配置。
 - `npm run asset:check -- public/models/bundles/speaker-engineering/v1/manifest.json`：资源完整性及 glTF 规范校验。

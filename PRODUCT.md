@@ -38,7 +38,7 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 2026-10-09 钢琴迁移：恢复用户自有 Kimi 网页中的程序化源文件，离线整理剖切封口、分层透明度、完整部件与形变数据，形成同源 GLB 与注册的 `piano-v1` 适配器。`piano-cfx` 已通过管理 API 保存到真实 MySQL 并加入目录，打字机首页保持。823 个建模单元可检索、选择和聚焦；八段结构按钮支持暂停、继续、反向与复原，镜头独立；九步导览由用户主动推进。运行资源约 124.5 MB，未减面或缩纹理。原网页没有音频，本轮不提供弹奏发声；模型是参考轮廓重建的结构教学演绎，不是工厂 CAD。来源、实机对照、资源与测试见 [.ai/piano-migration-validation.md](.ai/piano-migration-validation.md)。
 
-2026-10-09 打字机迁移：从用户自有 Kimi 源模型直接导出 GLB，保留 572 个独立部件、原几何及装配/分层/平铺姿态，恢复漆面和金属 shader。浏览器资源包约 26.5 MB，未减面、未缩纹理；这不是工厂 CAD。`typewriter-study` 已通过管理 API 写入真实 MySQL 并替换首页，`form-01` 下架但资源与 legacy 保留，汽车仍是流程样板。正式打字机的自由观察、三种配色、全零件检索/拾取、A 键联动、具名结构按钮及五步主动导览统一进入原工作台，不嵌入源页面或第二 renderer。证据与限制见 [.ai/typewriter-migration-validation.md](.ai/typewriter-migration-validation.md)。
+2026-10-09 打字机迁移：从用户自有 Kimi 源模型直接导出 GLB，保留 572 个独立部件、原几何及装配/分层/平铺姿态，恢复漆面和金属 shader。浏览器资源包约 26.5 MB，未减面、未缩纹理；这不是工厂 CAD。`typewriter-study` 已通过管理 API 写入真实 MySQL 并替换首页，`form-01` 下架但资源与 legacy 保留，此条是打字机迁移时的历史状态；精细汽车随后已迁入正式目录。正式打字机的自由观察、三种配色、全零件检索/拾取、A 键联动、具名结构按钮及五步主动导览统一进入原工作台，不嵌入源页面或第二 renderer。证据与限制见 [.ai/typewriter-migration-validation.md](.ai/typewriter-migration-validation.md)。
 
 2026-10-08新增双案例可逆探索原型：音箱可按连续进度分层，汽车双门按同一核心开合；支持播放、暂停、指定进度、回退和复原。观察操作暂停播放，热点跟随当前部件姿态。v3契约兼容v1/v2，数据库仅升级默认样板配置。结果仍来自程序化样板及GLB工程夹具，不代表正式模型质量或形成性用户实验。见 [.ai/progress-validation.md](.ai/progress-validation.md)。
 
@@ -56,7 +56,7 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 ## Evidence on Hand
 
-旧成果记录：workbench-validation.md、stage-0-baseline.md、stage-1-acceptance.md。新版阶段A已建立范围/脚本/契约，阶段B的共同流程、内容回退与键盘观察通过真实API/浏览器复核，见 [.ai/restart-validation.md](.ai/restart-validation.md)。无WebGL2或初始化失败时保留实际封面与说明，按图文状态展示；不会宣称3D首帧完成。三件程序化样板封面已补入原先空的数据库字段，迁移不覆盖自定义封面。基础管理现已通过阶段D，正式模型质量仍未完成。
+旧成果记录：workbench-validation.md、stage-0-baseline.md、stage-1-acceptance.md。新版阶段A已建立范围/脚本/契约，阶段B的共同流程、内容回退与键盘观察通过真实API/浏览器复核，见 [.ai/restart-validation.md](.ai/restart-validation.md)。无WebGL2或初始化失败时保留实际封面与说明，按图文状态展示；不会宣称3D首帧完成。三件程序化样板封面已补入原先空的数据库字段，迁移不覆盖自定义封面。此段记录阶段B/D当时证据；当前三件正式资产接入、品质边界与联合验收以各商品迁移记录及demo-validation.md为准。
 
 候选资源：旧音箱GLB、572零件打字机演绎、汽车GLB/PBR/AO/运动/Blender母版。来源与缺口见restart-baseline.md及原manifest/provenance，不虚构品牌、参数、结构或许可。
 
@@ -67,3 +67,7 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 2026-10-10 汽车迁移：`/?product=reventon` 使用原 1,500,363 三角形与 75 张 PBR/AO 贴图，提供自由观察、外观方案、十个语义热点、双门开合、七组分离和七步主动导览。开门和分离可组合；用户观察暂停动作，关闭面板保留状态，动作复原保留镜头与配色。固定导演仍可由 `?legacy=1&product=reventon` 访问。七组是现有刚性组件，不宣称 2,998 源对象各自可拆、真实维修顺序或照片级等效。接入与证据见 [.ai/reventon-workbench-validation.md](.ai/reventon-workbench-validation.md)。
 
 手势、在线上传、高级版本管理、影视演出为扩展；暂不实施CI。核心不包含交易、推荐、AI、多用户空间或自动真实机械拆解。拟6—8人形成性测试；测试必须实测，不宣称三维普遍优于图片。
+
+## 本机演示闭环（阶段 E1）
+
+三件正式 GLB 完成至少30次循环切换及20分钟持续操作，隔离管理闭环、五次冷加载/三轮交互记录、生产两轮停启、禁止外网浏览器回归及MySQL独立恢复均已通过；工程验收未新增展品或降低画质。汽车冷加载中位约30.79秒、钢琴提交返回间隔中位33.0ms是已记录限制，不代表纯GPU耗时。项目本人按演示清单走查仍待反馈，完整阶段不提前宣告完成。6—8人形成性测试另列后续，未执行前不报告成功率或用户结论。事实与运行方法见 .ai/demo-operations.md、验收见 .ai/demo-validation.md。

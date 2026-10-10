@@ -1,18 +1,12 @@
-<script lang="ts">
-const lightingState = { initialized: false }
-</script>
 <script setup lang="ts">
 import { inject, markRaw, onScopeDispose } from 'vue'
 import { useLoop, useTres } from '@tresjs/core'
 import { RectAreaLight, Group } from 'three'
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
+import { acquireRectAreaUniforms } from '@/lib/three/rectAreaUniforms'
 import { gestureKey } from '@/lib/gesture/bridge'
 import { gsap } from 'gsap'
 
-if (!lightingState.initialized) {
-  RectAreaLightUniformsLib.init()
-  lightingState.initialized = true
-}
+const releaseUniforms = acquireRectAreaUniforms()
 const bridge = inject(gestureKey)!
 const { invalidate } = useTres()
 const group = markRaw(new Group())
@@ -49,6 +43,8 @@ onScopeDispose(() => {
   timeline?.kill()
   group.clear()
   group.removeFromParent()
+  for (const light of [key, edge, ceiling]) light.dispose()
+  releaseUniforms()
 })
 </script>
 <template><primitive :object="group" :dispose="null" /></template>

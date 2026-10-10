@@ -85,6 +85,6 @@ onScopeDispose(() => {
         >
       </button>
     </div>
-    <p class="wb-note">先验证观察与操作流程，再逐件接入正式模型。</p>
+    <p class="wb-note">选择展品，自由观察外观、部件与结构。</p>
   </div>
 </template>
