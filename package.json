@@ -70,6 +70,8 @@
     "asset:probe": "node scripts/create-texture-probe.mjs",
     "test:reventon-workbench": "node scripts/reventon-workbench-check.mjs",
     "test:reventon-workbench-visual": "node scripts/reventon-workbench-visual-check.mjs",
+    "test:glb-image-orientation": "node scripts/glb-image-orientation-check.mjs",
+    "test:reventon-material": "node scripts/reventon-workbench-material-check.mjs",
     "asset:reventon-presentation": "node scripts/create-reventon-presentation.mjs"
   },
   "dependencies": {

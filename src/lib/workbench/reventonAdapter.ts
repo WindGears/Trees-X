@@ -3,6 +3,7 @@ import type { Group, Scene, WebGLRenderer } from 'three'
 import { prepareReventonMaterials } from '../reventon/materials'
 import { bindGlb } from './glbAdapter'
 import { createReventonStage } from './reventonStage'
+import { prepareReventonSurfaces } from './reventonSurfaceRepair'
 import type { SceneAdapter } from './adapter'
 import type { GlbSource, WorkbenchProduct } from './types'
 
@@ -15,6 +16,7 @@ export function bindReventon(
 ): SceneAdapter {
   const adapter = bindGlb(product, source, model, release)
   prepareReventonMaterials(model)
+  prepareReventonSurfaces(model)
   const finishes = new Map<MeshStandardMaterial, Color>()
   const emissive = new Map<MeshStandardMaterial, { color: Color; intensity: number }>()
   const textures = new Set<Texture>()

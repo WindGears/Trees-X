@@ -33,7 +33,7 @@ WorkbenchRoot提供局部motionSession，记录数字反馈和上下文恢复检
 
 SceneAdapter 新增可选 attach/beforeRender：控制器把商品灯光与实时接触阴影挂到同一场景，WorkbenchScene 的原时钟仅在真正渲染前调用。汽车适配器拥有两盏 RectAreaLight、两张阴影目标与辅助几何，卸载时先移除并释放；loader 唯一拥有源几何/材质/纹理，loadAdapter 拥有 EXR PMREM。相机、controls 和 renderer 仍由共同工作台拥有。阴影只在部件姿态改变时重绘。
 
-纹理解析采用三任务队列：每张原图解码完成后及时撤销临时 Blob URL 并释放压缩字节引用，避免 1.7 GB 图片同时占用浏览器 Blob 存储。重复源图克隆 Texture 但共用已解码图像，部分失败/迟到结果仍由 ownedResources 去重释放。不改变像素尺寸、格式或几何。进度反馈只拷贝 progress/target/playing 三个数字/布尔字段，防止 GSAP 缓存进入界面与恢复检查点。
+纹理解析采用三任务队列：每张原图解码完成后及时撤销临时 Blob URL 并释放压缩字节引用，避免 1.7 GB 图片同时占用浏览器 Blob 存储。重复源图克隆 Texture 但共用已解码图像，部分失败/迟到结果仍由 ownedResources 去重释放。外部图像按 glTF 约定保留原始行方向；ImageBitmap 中不能预先 flipY，后续 Texture.flipY=false 无法撤销位图内的翻转。汽车专属表面修正只更改已识别绒面底色和透明装饰贴片渲染参数；不复制资源，去掉的底色纹理仍由 loader 的 ownedResources 释放。不改变像素尺寸、格式或几何。进度反馈只拷贝 progress/target/playing 三个数字/布尔字段，防止 GSAP 缓存进入界面与恢复检查点。
 
 资源清单是按字节校验的不可变运行文件，不参与全局格式重写。制作脚本在计算摘要前使用项目格式；管理修复脚本只在全部资源字节核验通过后更新已有清单摘要，保留商品与自定义配置并备份，不放松摘要校验。
 

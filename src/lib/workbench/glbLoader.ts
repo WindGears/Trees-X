@@ -81,7 +81,9 @@ export async function decodeGlb(
           /\.(png|jpe?g|webp)$/i.test(uri)
         ) {
           const bitmap = await createImageBitmap(new Blob([source]), {
-            imageOrientation: 'flipY',
+            // glTF uses unflipped image rows. Texture.flipY=false cannot undo
+            // a flip baked into ImageBitmap; match GLTFLoader's native decode.
+            imageOrientation: 'none',
             premultiplyAlpha: 'none',
             colorSpaceConversion: 'none',
           })
