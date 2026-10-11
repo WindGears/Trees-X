@@ -36,6 +36,7 @@
     "test:typewriter-lifecycle": "node scripts/typewriter-lifecycle-check.mjs",
     "test:typewriter-visual": "node scripts/typewriter-visual-check.mjs",
     "test:typewriter-studio": "node scripts/typewriter-studio-check.mjs",
+    "test:renderlab": "node scripts/renderlab-check.mjs",
     "test:piano": "node scripts/piano-check.mjs",
     "test:piano-lifecycle": "node scripts/piano-lifecycle-check.mjs",
     "test:piano-visual": "node scripts/piano-visual-check.mjs",
@@ -127,9 +128,12 @@
     "prettier": "3.9.6",
     "sharp": "0.35.5",
     "tailwindcss": "4.3.3",
+    "three-gpu-pathtracer": "0.0.27",
+    "three-mesh-bvh": "0.9.16",
     "typescript": "5.9.3",
     "vite": "8.3.0",
     "vitest": "5.0.0",
-    "vue-tsc": "3.3.11"
+    "vue-tsc": "3.3.11",
+    "xatlas-web": "0.1.0"
   }
 }

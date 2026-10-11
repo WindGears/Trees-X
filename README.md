@@ -87,6 +87,28 @@ try {
 
 当前目录仅包含正式打字机、正式钢琴与精细汽车，旧样板不混入目录。打字机与钢琴为参考轮廓及资料重建的结构演绎，不表示工厂 CAD、真实性能或维修顺序。钢琴由真实 Three.js GLB、几何、PBR 材质及形变动画执行，不嵌入原页面或使用影片。首屏不自动演出；汽车资源仅在选择汽车后加载，手势与旧后处理不进入当前工作台。
 
+## 打字机画质与独立比较
+
+正式工作台继续采用增强 WebGL2：标准 PBR 微表面、摄影棚 PMREM、柔化平面反射及姿态接触阴影。漆面/金属和指定部件运动路径完成精修，生产确认通过 35 张截图与 10 组检查；本轮没有把钢琴/汽车认定为同等精修，也未补齐缺失 UV。证据见 [精修验收](.ai/typewriter-quality-validation.md)。
+
+[渲染实验页](http://127.0.0.1:5181/renderlab.html?mode=webgl&view=whole) 独立于生产工作台，需先启动本机前后端。`mode` 可为 `webgl`、`webgpu`、`pathtrace`，`view` 可为 `whole`、`paint`、`metal`、`layers`、`flat`。每页只有一个 renderer；光栅可观察，路径模式为固定取景累计样本，达到目标后停止。真实 WebGPU 不可用时明确报错，不标注 WebGL fallback 为 WebGPU。
+
+实测五取景共 15 图及整机/金属 1024 样本补测完成。路径参考的互反射、暗部遮挡和软影有改善，仍不代表已接入连续交互；两次高样本记录约 129.90/198.13 秒，包含设置、编译和累计，不是帧耗时。基础 WebGPU 光栅没有独立画质跃升。本轮未测试 SSGI/SSR；共同实验统一移除生产专属特效，不能把实验光栅画面当作增强生产管线。输入、原图与正式选择见 [比较记录](.ai/render-pipeline-comparison.md)。
+
+复现比较需本机 Edge；顺序运行，避免与其他 GPU 浏览器测试并行。示例输出保存在忽略目录，不覆盖 B0：
+
+```powershell
+$env:CHECK_URL = 'http://127.0.0.1:5181'
+$env:RENDERLAB_OUTPUT = 'artifacts/renderlab/local-128'
+$env:RENDERLAB_SAMPLES = '128'
+$env:RENDERLAB_VIEWS = 'whole,paint,metal,layers,flat'
+$env:RENDERLAB_MODES = 'webgl,webgpu,pathtrace'
+npm run test:renderlab
+node scripts/renderlab-report.mjs artifacts/renderlab/local-128
+```
+
+`renderlab-report.mjs` 仅接受已通过的完整 15 图报告，生成同目录 `comparison.html`，使用原图、不再运行 renderer。可传第二个已通过的同输入高样本目录，替换对应路径图并保留 128 样本原图链接；本机本轮用法为 `node scripts/renderlab-report.mjs artifacts/renderlab/production-final artifacts/renderlab/convergence`。报告、截图和 B0 冻结文件均为本地验收材料，克隆仓库后需重新采集。
+
 ## 保留旧版
 
 旧版入口：`?legacy=1&product=form-01`、`?legacy=1&product=typewriter-study`、`?legacy=1&product=reventon`。六件非样板旧 ID（如 `?product=potted-plant`）仍自动打开旧体验。

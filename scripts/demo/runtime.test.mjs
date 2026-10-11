@@ -20,6 +20,7 @@ async function fixture() {
     'package.json': '{}',
     'package-lock.json': '{}',
     'index.html': 'source entry',
+    'renderlab.html': 'comparison entry',
     'vite.config.ts': 'source config',
     'tsconfig.json': 'source root TypeScript config',
     'tsconfig.app.json': 'source app TypeScript config',

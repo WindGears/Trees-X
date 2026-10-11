@@ -55,6 +55,7 @@ test('prepared fingerprint detects app, jar inputs and runtime script changes wh
     'package.json': '{"scripts":{}}',
     'package-lock.json': '{}',
     'index.html': 'index',
+    'renderlab.html': 'comparison entry',
     'vite.config.ts': 'config',
     'tsconfig.json': 'root TypeScript config',
     'tsconfig.app.json': 'app TypeScript config',
@@ -83,6 +84,7 @@ test('prepared fingerprint detects app, jar inputs and runtime script changes wh
     }
     const original = await sourceFingerprint(rootDir)
     for (const path of [
+      'renderlab.html',
       'src/main.ts',
       'tsconfig.json',
       'tsconfig.app.json',

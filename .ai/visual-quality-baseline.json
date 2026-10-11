@@ -1,0 +1,357 @@
+{
+  "schemaVersion": 1,
+  "id": "B0-typewriter-20261011",
+  "date": "2026-10-11",
+  "renderSourceCommit": "d5f46f28b5ce5491cfcdb424fbe19a5caa0dd39c",
+  "scope": "Frozen current-version evidence; not a cross-renderer quality score or a completed controlled A/B",
+  "product": "typewriter-study",
+  "localEvidenceDirectory": "artifacts/visual-quality/B0-typewriter-20261011",
+  "sourceReportSha256": "5b040efeee96e6321aa11c8298b968b08d28321511dfd5eedc3026a7a7f472c2",
+  "presentationSha256": "790c783d459a01b674ca36fff334a2bb1d44f904b0e9efe658a920644a5e27de",
+  "presentationHashEncoding": "UTF-8 JSON.stringify of frozen presentation",
+  "assetBundle": {
+    "manifest": "/models/bundles/kimi-typewriter/v1/manifest.json",
+    "id": "kimi-typewriter",
+    "version": 1,
+    "sha256": "c216ad6101fabe469f7effa061a237fd3f1ad440550cafb10ff5c5f345a770bd"
+  },
+  "defaultCamera": {
+    "position": [1.7248, 1.44152, 2.5604],
+    "target": [0, 0.47, -0.15],
+    "minDistance": 0.35,
+    "maxDistance": 14
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 1000,
+    "devicePixelRatio": 1
+  },
+  "device": {
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+    "platform": "Win32",
+    "hardwareConcurrency": 20,
+    "deviceMemoryGiB": 16,
+    "gpu": "ANGLE (NVIDIA, NVIDIA GeForce RTX 5060 Laptop GPU (0x00002D59) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "vendor": "Google Inc. (NVIDIA)",
+    "webglVersion": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "renderer": {
+    "engine": "Three.js WebGLRenderer",
+    "threeVersion": "0.185.1",
+    "toneMapping": "ACESFilmicToneMapping",
+    "outputColorSpace": "SRGBColorSpace",
+    "exposure": 1,
+    "renderMode": "on-demand",
+    "dprLimit": 2
+  },
+  "projection": {
+    "fov": 38,
+    "near": 0.05,
+    "far": 250,
+    "zoom": 0.9375,
+    "wholeViewOffset": {
+      "x": -58,
+      "y": 16
+    },
+    "detailsViewOffset": {
+      "x": 108,
+      "y": 16
+    },
+    "provenance": "Derived from frozen WorkbenchStage and viewportFraming source; not independently recorded in historical capture report"
+  },
+  "sourceFiles": [
+    {
+      "path": "src/components/workbench/WorkbenchStage.vue",
+      "sha256": "f5318b86454c40a6755b41dd6c1086ee7dbf208ab29e7eb69ec8c5a7d804e492"
+    },
+    {
+      "path": "src/components/workbench/WorkbenchLighting.vue",
+      "sha256": "a7829b74762872c522c64a4a8e6561bb0ffb221ed1965a2c56aaa9ddc554bd6f"
+    },
+    {
+      "path": "src/lib/workbench/viewportFraming.ts",
+      "sha256": "4e636e66eec95bb9ccbd445449c07d47a2f68a2ad4621988ecf9be615bae2b06"
+    },
+    {
+      "path": "src/lib/workbench/studioPreset.ts",
+      "sha256": "3c4dd3e1568ef7e00428ad24853206201208e0a313798d3260c1781c550f6abe"
+    },
+    {
+      "path": "src/lib/workbench/studio/design.ts",
+      "sha256": "20369f07f7dd2d943bc7c53e774b06b267d25c672e0be2c0761d882f7b7f6a7e"
+    },
+    {
+      "path": "src/lib/workbench/studio/backdrop.ts",
+      "sha256": "a3625e4fe55b8734d6e432e73f27749c38d78c9b48974058440c7d6042f0a60a"
+    },
+    {
+      "path": "src/lib/workbench/studio/geometry.ts",
+      "sha256": "69cc9509fe1d42fbe5bcaf934a32098a1f2d73527fb0b8a6d40728fcf560078b"
+    },
+    {
+      "path": "src/lib/workbench/studio/reflection.ts",
+      "sha256": "6efc415847f4d656d835583441fd6c642fcd18ce71190b480904e0c0131e56af"
+    },
+    {
+      "path": "src/lib/workbench/studio/contactShadow.ts",
+      "sha256": "97e198dd221002b930057ba307c30ca5b41cd99c2e9477d357be2b1614cc9983"
+    },
+    {
+      "path": "src/lib/workbench/studio/stage.ts",
+      "sha256": "40a3c5fa6c90c25fbfb5cfffa82f0326464199f4f0b6ad91b566d541fddde047"
+    },
+    {
+      "path": "scripts/typewriter-studio-check.mjs",
+      "sha256": "be1e5c67c6cb32d7bd54d07d7ff6f559efd184455556ac117ccd6a5de54b445a"
+    },
+    {
+      "path": "server/src/main/resources/presentations/typewriter-kimi-v1.json",
+      "sha256": "aecc85f1675cf3f9a9bdd0e1e5633720b3daa0e768ffe7dc165163d657f44606"
+    },
+    {
+      "path": "package-lock.json",
+      "sha256": "e51e7c799a9205e357e0c35979420a93432d8262fc141bfe4b5a6250352510e6"
+    }
+  ],
+  "captures": [
+    {
+      "name": "whole-1440",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/whole-1440.png",
+      "sha256": "9cd52d5f410756f1c9f14132dad976fd95b1776769289967a5971113f7e56783",
+      "bytes": 545097,
+      "panel": "whole",
+      "stateKey": "initialProduct",
+      "cameraPosition": [1.7248, 1.44152, 2.5604],
+      "cameraQuaternion": [
+        -0.14046855445521136, 0.27657923778744603, 0.04090453958745447, 0.9497890971554248
+      ],
+      "poseDigest": "e2d8a2c3e21c12e3eb18cb95264b1b93a1f5280706f371d00a1a8ed01d615f5f",
+      "selectedPart": "",
+      "motion": {
+        "explore-layout": {
+          "progress": 0,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    },
+    {
+      "name": "whole-front",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/whole-front.png",
+      "sha256": "cb6ec1b05c14aa09a5c1c0cf411056484fb24c559ab07a4e407e411d8e3afcf4",
+      "bytes": 264462,
+      "panel": "whole",
+      "stateKey": "whole-front",
+      "cameraPosition": [0, 1.1000000000000005, 3.9],
+      "cameraQuaternion": [-0.07708284843309067, 0, 0, 0.9970246910069185],
+      "poseDigest": "e2d8a2c3e21c12e3eb18cb95264b1b93a1f5280706f371d00a1a8ed01d615f5f",
+      "selectedPart": "",
+      "motion": {
+        "explore-layout": {
+          "progress": 0,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    },
+    {
+      "name": "whole-side",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/whole-side.png",
+      "sha256": "2dcaabdd00d4496361e566b0634f676f09f2b22e857c5f225e42f2e9d87ce230",
+      "bytes": 281880,
+      "panel": "whole",
+      "stateKey": "whole-side",
+      "cameraPosition": [3.8999999999999995, 1.4, -0.14999999999999974],
+      "cameraQuaternion": [
+        -0.08257440305659074, 0.7022688003605512, 0.08257440305659074, 0.7022688003605512
+      ],
+      "poseDigest": "e2d8a2c3e21c12e3eb18cb95264b1b93a1f5280706f371d00a1a8ed01d615f5f",
+      "selectedPart": "",
+      "motion": {
+        "explore-layout": {
+          "progress": 0,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    },
+    {
+      "name": "whole-top",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/whole-top.png",
+      "sha256": "0d8114846762317b5428ee677914f0ae111fc8c54ef35933da79af4bcee1e86a",
+      "bytes": 347252,
+      "panel": "whole",
+      "stateKey": "whole-top",
+      "cameraPosition": [0, 4, 0.2000000000000043],
+      "cameraQuaternion": [-0.6713172328948209, 0, 0, 0.7411701375652158],
+      "poseDigest": "e2d8a2c3e21c12e3eb18cb95264b1b93a1f5280706f371d00a1a8ed01d615f5f",
+      "selectedPart": "",
+      "motion": {
+        "explore-layout": {
+          "progress": 0,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    },
+    {
+      "name": "paint-closeup",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/paint-closeup.png",
+      "sha256": "e9652226088db77d1cbc281d1152449a8b820861242c799a3ad2ba226e59ea11",
+      "bytes": 644147,
+      "panel": "details",
+      "stateKey": "paint-closeup",
+      "cameraPosition": [0.48, 0.9300759999999999, 0.13704999999999978],
+      "cameraQuaternion": [
+        -0.16473700745964118, 0.27666011344063257, 0.04820250304974441, 0.9455143672647169
+      ],
+      "poseDigest": "e2d8a2c3e21c12e3eb18cb95264b1b93a1f5280706f371d00a1a8ed01d615f5f",
+      "selectedPart": "part-095",
+      "motion": {
+        "explore-layout": {
+          "progress": 0,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    },
+    {
+      "name": "metal-closeup",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/metal-closeup.png",
+      "sha256": "229182dafdf7548afe411a948d54bf081cf1a94ea0fcf04d048e7ce1c6dbd802",
+      "bytes": 819232,
+      "panel": "details",
+      "stateKey": "metal-closeup",
+      "cameraPosition": [0.252456, 0.64706, 0.43998899999999985],
+      "cameraQuaternion": [
+        -0.16473700745964112, 0.27666011344063257, 0.0482025030497444, 0.9455143672647169
+      ],
+      "poseDigest": "e2d8a2c3e21c12e3eb18cb95264b1b93a1f5280706f371d00a1a8ed01d615f5f",
+      "selectedPart": "part-000",
+      "motion": {
+        "explore-layout": {
+          "progress": 0,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    },
+    {
+      "name": "flat-clear",
+      "file": "artifacts/visual-quality/B0-typewriter-20261011/flat-clear.png",
+      "sha256": "a6a6079f2e22d6715bc7bd6e7cebff784b1283b5a1ddbbf60960856fa8923299",
+      "bytes": 646292,
+      "panel": "whole",
+      "stateKey": "flat",
+      "cameraPosition": [0, 8, 0.010000000000397956],
+      "cameraQuaternion": [-0.7066647016005934, 0, 0, 0.7075485845592119],
+      "poseDigest": "c2a311085ca2c5a9719554f786d92fd8ea90bf5ffa3099aa09817e49f2bdc6d4",
+      "selectedPart": "",
+      "motion": {
+        "explore-layout": {
+          "progress": 1,
+          "target": 1,
+          "playing": false
+        }
+      },
+      "renderer": {
+        "geometries": 284,
+        "textures": 61,
+        "programs": 27,
+        "calls": 306,
+        "triangles": 1258656,
+        "pixelRatio": 1,
+        "drawingBuffer": [1440, 1000],
+        "antialias": true,
+        "shadowEnabled": true,
+        "exposure": 1,
+        "environmentPresent": true
+      }
+    }
+  ],
+  "limitations": [
+    "Local screenshots and full configuration are ignored evidence, not Git-distributed files.",
+    "Historical captures lack directly recorded camera target/zoom/view-offset and full mutable material parameters; exact replay must verify these before accepting A/B.",
+    "GPU driver and OS build are not recorded; byte-identical pixels across different computers are not required.",
+    "Piano and car have not been accepted against this studio quality baseline.",
+    "No path-tracing reference, cross-renderer A/B, current frame-time or GPU-memory measurement."
+  ]
+}

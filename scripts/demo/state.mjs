@@ -58,6 +58,7 @@ export async function sourceFingerprint(rootDir) {
     'package.json',
     'package-lock.json',
     'index.html',
+    'renderlab.html',
     'vite.config.ts',
     'server/pom.xml',
     'scripts/server.mjs',

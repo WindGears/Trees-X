@@ -49,7 +49,7 @@ calloutOverlay 只管理DOM/SVG、ResizeObserver与GSAP：拆开渐显、合拢�
 
 typewriter-v1 继续通过 loadBundle/decodeGlb 下载和验证清单；572 个稳定 part-* 节点留在已解码 GLB。motion.program 只允许注册的 typewriter-layout-v1 + 同包 motion 文件，不能与 tracks 同时存在；typewriter-strike 只接受有效按键索引。前后端同步校验，v1/v2 和原 v3 tracks 不自动升级，公开 API 与数据库结构不变。
 
-typewriterRig 从每个部件记录的初始/展开/平铺姿态确定性计算位置与四元数；GSAP 仍只补间统一 progress 或 strike 变量，相机独立。typewriterInstances 把共享几何/材质重新批处理为 InstancedMesh，但保留逻辑节点、instanceId 到部件的拾取映射及世界锚点；每帧只更新已分配矩阵，不重建几何。适配器拥有实例缓冲，loader 唯一拥有 geometry/material/texture，PMREM 由 loadAdapter 释放。选择使用实例颜色，不破坏用户外壳配色。漆面、金属 shader 只由受版本管理的代码注册。
+typewriterRig 从每个部件记录的初始/展开/平铺姿态确定性计算位置与四元数；GSAP 仍只补间统一 progress 或 strike 变量，相机独立。2026-10-11 修正两盖板的分层 Z 路径和十个大件的平铺空间避让，源几何、初始姿态及最终平铺端点保留，不能再将中间过程描述为完全照搬原路径。typewriterInstances 把共享几何/材质重新批处理为 InstancedMesh，但保留逻辑节点、instanceId 到部件的拾取映射及世界锚点；每帧只更新已分配矩阵，不重建几何。适配器拥有实例缓冲，loader 唯一拥有源 geometry/material/texture，PMREM 由 loadAdapter 释放。选择使用实例颜色，不破坏用户外壳配色。材质微表面现使用标准 PBR 贴图通道，新增贴图另由 typewriterMicroMaps 唯一管理。
 
 WorkbenchParts 维护局部检索/分组/分页；完整 572 标识仍可选，舞台仅展示当前选中或细节面板的八个重点标记。WorkbenchLayoutMotion 采用整机/分层/平铺按钮，访客不常驻百分比滑块；同一控制核心仍支持连续定位、暂停、回退、复原及上下文恢复。源页面的滚动导演、renderer、相机与 DOM 未迁入。
 
@@ -107,7 +107,19 @@ WorkbenchRoot 的 `wb-floating` 只装配访客全幅舞台、WorkbenchRail、�
 
 `createStudioCaptureGeometry` 独立生成临时 PMREM 场景，三块 HDR 软箱沿用面光源布局，但不挂入主场景。临时天空盒/地台/地面/灯板与面光源由环境构建方释放，返回目标由 loadAdapter 唯一释放；主舞台的背景、几何与材质另行唯一释放。实例化、源 geometry/material/texture 的所有权沿用原通道；卸载先移除舞台再释放实例与源资源。默认镜头变化通过真实展示配置及生成器表达，不使用运行时隐式覆盖，管理预览、实际取景回填与前台复位继续使用同一配置。
 
-`typewriterFinishes` 复用已有 Physical 材质的清漆/各向异性与程序微结构，不复制贴图。`typewriterRig` 将过大击发摆角限制为 0.35 rad，保持静止/分层/平铺基准与键帽/杠杆联动，仍是机构演绎而非工厂打印机构。真实 GLB 几何采样、重复复原和分层兼容另有测试。
+`typewriterFinishes` 复用已有 Physical 材质的清漆/各向异性，已移除早期微表面的 onBeforeCompile 噪纹；UV 完整的漆面及金属使用 typewriterMicroMaps 一次生成的确定性 128² normalMap/roughnessMap。源贴图、贴花、材质身份与配色保留；混合 UV 的 enamel/steel 仅调整标准参数，不偷偷生成 UV。每种微表面在同一模型内共用两张线性、可重复、带 mipmap 的 DataTexture；重复 apply 不分配新图。新增图由材质 dispose 监听递减引用，最后一个引用释放一次；loader 的 ownedResources 只继续拥有加载时的源图，不承担这些后加贴图。材质参数和贴图本身可供后续渲染对比复用，不代表所有引擎的 BRDF 特性已经等价。
+
+`studio/contactShadow` 仍用当前姿态深度投影和两次模糊，按 dirty 标志刷新；两个 1024² 目标改 HalfFloat，接收平面与正交投影尺寸一致，收紧模糊并减轻高处部件阴影，不改变地台或相机。这是接触阴影近似，不是实时全局光照。
+
+`typewriterRig` 保留有限 0.35 rad 击发与键帽/杠杆联动。分层对后挡板 part-095 和前罩 part-097 加确定性 Z 避让；平铺对十个大件采用错开的横移、转向及下降区间，仍从源基准姿态计算，不使用逐帧碰撞求解或累积位移。真实 GLB 三角面测试覆盖指定部件与抽样进度；初始及平铺端点保持。未声明全 572 部件连续无碰撞，也未声明工厂机械精度。生产确认通过 10 组检查、35 张截图和零浏览器错误；本轮事实与范围见 typewriter-quality-validation.md。
+
+### 独立渲染比较（2026-10-12）
+
+`renderlab.html` 为独立多页入口，`src/lib/renderlab` 分离共同设置、场景、后端与页面状态。每页仅创建一个真实 WebGL2 或 WebGPU renderer，不使用第二个工作台 Canvas；切换模式卸载旧页面，资源与时钟由该页唯一释放。生产工作台仍由 TresCanvas 创建 renderer，不导入实验渲染后端、追踪器或实验场景。比较读取现有同源资产，不改 API、商品配置、数据库或 Pinia。
+
+三个模式复用同一 GLB、姿态、标准 PBR 输入、相机投影、HDR 与面积灯。实验统一移除生产 Reflector、接触阴影 shader、天空盒/地面渐退及专属 PMREM 捕获，不能把实验光栅截图当作现有增强生产画面。后端校验实际 GPUDevice 并拒绝 fallback；路径模式锁定镜头，实际样本达到目标后停钟。光栅按需渲染；隐藏暂停，关闭释放控制器、目标、几何、材质和纹理，无生产逐帧监测。
+
+五取景三模式的 15 图检查与整机/金属各 1024 样本补测通过。正式交互保留增强 WebGL2，路径追踪仅为静止材质与布光参考，尚未集成运动光栅/静止累积切换。基础 WebGPU、SSGI/SSR、完整 GI 方案不能混为一谈；本轮只比较已实现后端。BRDF、PMREM 与纹理过滤存在差异，缺 UV 的漆面也未补图。输入、原图和结论见 render-pipeline-comparison.md。
 
 OrbitControls 的 change 事件通过无参数回调调用 Tres invalidate，避免事件对象污染按需渲染帧数；卸载注销同一回调。`controller.test.ts` 在空闲帧验证真实控件事件、数字帧数与注销行为。详见 typewriter-studio-validation.md。
 

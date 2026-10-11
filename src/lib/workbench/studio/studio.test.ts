@@ -5,9 +5,11 @@ import {
   BackSide,
   Color,
   Group,
+  HalfFloatType,
   Mesh,
   MeshBasicMaterial,
   MeshPhysicalMaterial,
+  OrthographicCamera,
   PerspectiveCamera,
   Scene,
   ShaderMaterial,
@@ -226,5 +228,56 @@ describe('authored product studio', () => {
     expect(model.position.toArray()).toEqual([0.2, 0.3, -0.1])
     expect(sourceDispose).not.toHaveBeenCalled()
     expect(mesh.layers.mask).toBe(1)
+  })
+
+  it('projects contact shadows at their true world scale, retains faint gradients and releases both targets once', () => {
+    const f = rendererFixture(),
+      scene = new Scene(),
+      model = new Group()
+    const geometry = new BoxGeometry(),
+      material = new MeshBasicMaterial()
+    model.add(new Mesh(geometry, material))
+    scene.add(model)
+    const shadow = createStudioContactShadow(f.webgl, scene, model, studioDesign.groundY)
+    const plane = scene.getObjectByName('Trees X / studio contact shadow') as Mesh
+    const cameraSamples: OrthographicCamera[] = []
+    f.renderer.render.mockImplementation((_scene, camera) => {
+      if (_scene === scene) cameraSamples.push(camera as OrthographicCamera)
+    })
+    shadow.render()
+    const camera = cameraSamples[0]!
+    expect(camera).toBeInstanceOf(OrthographicCamera)
+    plane.updateMatrixWorld(true)
+    camera.updateMatrixWorld(true)
+    const bounds = new Box3().setFromObject(plane)
+    expect(bounds.max.x - bounds.min.x).toBeCloseTo(camera.right - camera.left, 6)
+    expect(bounds.max.z - bounds.min.z).toBeCloseTo(camera.top - camera.bottom, 6)
+    for (const [x, z] of [
+      [bounds.min.x, bounds.min.z],
+      [bounds.max.x, bounds.max.z],
+    ]) {
+      const point = new Vector3(x, studioDesign.groundY + 0.02, z).project(camera)
+      expect(Math.abs(point.x)).toBeCloseTo(1, 6)
+      expect(Math.abs(point.y)).toBeCloseTo(1, 6)
+    }
+    expect((plane.material as MeshBasicMaterial).opacity).toBeLessThan(0.5)
+    const targets = [
+      ...new Set(
+        f.renderer.setRenderTarget.mock.calls
+          .map((call) => call[0])
+          .filter((target) => target && target !== f.previous),
+      ),
+    ]
+    expect(targets).toHaveLength(2)
+    const disposals = targets.map((target) => {
+      expect(target.texture.type).toBe(HalfFloatType)
+      expect(target.texture.generateMipmaps).toBe(false)
+      return vi.spyOn(target, 'dispose')
+    })
+    shadow.dispose()
+    shadow.dispose()
+    for (const disposal of disposals) expect(disposal).toHaveBeenCalledTimes(1)
+    geometry.dispose()
+    material.dispose()
   })
 })

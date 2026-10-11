@@ -34,7 +34,9 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 ### 当前事实
 
-2026-10-11 打字机质量样片：共用工作台中的实体圆角地台、实时柔化倒影、随拆解更新的接触阴影及现有漆面/金属精修保留；按用户反馈将墙窗/可见软箱撤换为包围场景的无缝银灰绿天空盒，软箱只用于反射环境。默认整机取景收近，分层和平铺保留各自宽取景。A 键字杆摆角修正避免原先扫入滚筒，保留键帽/杠杆联动及分层/平铺。真实 GLB、自由观察、配色、热点和管理预览继续原通道；钢琴/汽车未套用新舞台。WebGPU 与路径追踪尚未接入，不宣称概念图或工厂 CAD 级等效。原样片见 [.ai/typewriter-studio-validation.md](.ai/typewriter-studio-validation.md)，本次收束见 [.ai/typewriter-skybox-validation.md](.ai/typewriter-skybox-validation.md)。
+2026-10-12 打字机精修与管线验证：标准 PBR 微表面替换早期专属噪纹，接触阴影随当前姿态刷新，两盖板分层与十个大件平铺路径修正；保持源几何、初始/最终平铺姿态和统一操作。生产确认通过 35 图/10 组检查，指定部件碰撞抽样通过，不宣称 572 部件全连续无碰撞。独立共同输入完成 WebGL2、真实 WebGPU 光栅和静止路径追踪五取景共 15 图比较，并补整机/金属各 1024 样本。正式工作台保留增强 WebGL2，路径追踪仅作独立静止画质参考；未集成自动光栅/追踪切换，未测试 SSGI/SSR。缺 UV 的 enamel/steel 仍需制作整理，钢琴和汽车未作本轮同等精修。证据见 [.ai/typewriter-quality-validation.md](.ai/typewriter-quality-validation.md)、[.ai/render-pipeline-comparison.md](.ai/render-pipeline-comparison.md)。
+
+2026-10-11 打字机质量样片：共用工作台中的实体圆角地台、实时柔化倒影、随拆解更新的接触阴影及现有漆面/金属精修保留；按用户反馈将墙窗/可见软箱撤换为包围场景的无缝银灰绿天空盒，软箱只用于反射环境。默认整机取景收近，分层和平铺保留各自宽取景。A 键字杆摆角修正避免原先扫入滚筒，保留键帽/杠杆联动及分层/平铺。真实 GLB、自由观察、配色、热点和管理预览继续原通道；钢琴/汽车未套用新舞台。当时尚未接入 WebGPU/路径追踪实验，不宣称概念图或工厂 CAD 级等效。原样片见 [.ai/typewriter-studio-validation.md](.ai/typewriter-studio-validation.md)，本次收束见 [.ai/typewriter-skybox-validation.md](.ai/typewriter-skybox-validation.md)。
 
 2026-10-09 统一工作台增加拆解引线标签：所有展示源复用部件投影，拆开时渐显、合拢时淡出，关闭工具面板保留标签。相机变化时平滑避让商品中心、标题和工具；相交路径短暂淡出后重定位，选中部件优先保留。默认最多12个配置重点标记，不把全部零件一次铺满画面；完整部件仍可在细节中查询。标签随舞台明暗调整文字和细线，小屏空间不足抑制低优先项目。验收见 [.ai/callout-validation.md](.ai/callout-validation.md)。
 

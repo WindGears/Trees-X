@@ -1,6 +1,7 @@
 import {
   Color,
   DoubleSide,
+  HalfFloatType,
   Mesh,
   MeshBasicMaterial,
   MeshDepthMaterial,
@@ -39,8 +40,12 @@ export function createStudioContactShadow(
     casters.push({ mesh: node, mask: node.layers.mask })
     node.layers.enable(layer)
   })
-  const target = new WebGLRenderTarget(resolution, resolution)
-  const temporary = new WebGLRenderTarget(resolution, resolution, { depthBuffer: false })
+  // Preserve faint height-faded penumbrae through both blur passes.
+  const target = new WebGLRenderTarget(resolution, resolution, { type: HalfFloatType })
+  const temporary = new WebGLRenderTarget(resolution, resolution, {
+    depthBuffer: false,
+    type: HalfFloatType,
+  })
   target.texture.generateMipmaps = temporary.texture.generateMipmaps = false
   const camera = new OrthographicCamera(
     -studioDesign.width / 2,
@@ -58,11 +63,11 @@ export function createStudioContactShadow(
   depth.onBeforeCompile = (shader) => {
     shader.fragmentShader = shader.fragmentShader.replace(
       'gl_FragColor = vec4( vec3( 1.0 - fragCoordZ ), opacity );',
-      'gl_FragColor = vec4( 0.0, 0.0, 0.0, pow(1.0 - fragCoordZ, 5.0) );',
+      'gl_FragColor = vec4( 0.0, 0.0, 0.0, pow(1.0 - fragCoordZ, 8.0) );',
     )
   }
   const kernel = Array.from({ length: 33 }, (_, index) =>
-    Math.exp(-0.5 * ((index - 16) / 6.8) ** 2),
+    Math.exp(-0.5 * ((index - 16) / 4.2) ** 2),
   )
   const total = kernel.reduce((sum, value) => sum + value, 0)
   const blur = new ShaderMaterial({
@@ -82,14 +87,15 @@ export function createStudioContactShadow(
     quadGeometry = new PlaneGeometry(2, 2)
   blurScene.add(new Mesh(quadGeometry, blur))
   const blurCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
-  const planeGeometry = new PlaneGeometry(
-    studioDesign.width - 0.13,
-    studioDesign.depth - 0.13,
-  ).rotateX(Math.PI / 2)
+  // Match the orthographic bounds exactly: shrinking this receiver also
+  // shrinks and displaces the shadow of every off-centre foot or moving part.
+  const planeGeometry = new PlaneGeometry(studioDesign.width, studioDesign.depth).rotateX(
+    Math.PI / 2,
+  )
   const planeMaterial = new MeshBasicMaterial({
     map: target.texture,
     transparent: true,
-    opacity: 0.56,
+    opacity: 0.46,
     depthWrite: false,
     side: DoubleSide,
     toneMapped: false,

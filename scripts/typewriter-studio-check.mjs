@@ -129,7 +129,7 @@ try {
   const closePanel = async () => {
     const button = page.getByRole('button', { name: '收起面板', exact: true })
     if (await button.isVisible()) await button.click()
-    await expect(page.locator('.wb-panel:not(.wb-panel-catalog)')).toHaveCount(0)
+    await expect(page.locator('#wb-inspector')).toHaveCount(0)
   }
   const openActions = () => openPanel(page, '结构与动作', '.wb-layout-motion')
   const restore = async () => {
@@ -342,9 +342,13 @@ try {
   // Match the prior-build screenshots exactly: same real semantic parts and visitor focus commands.
   const paint = typewriter.product.presentation.hotspots.find((part) => part.id === 'part-095')
   const metal = typewriter.product.presentation.hotspots.find((part) => part.id === 'part-000')
+  const brush = typewriter.product.presentation.hotspots.find((part) => part.id === 'part-094')
+  const gold = typewriter.product.presentation.hotspots.find((part) => part.id === 'part-046')
   for (const [name, part] of [
     ['paint-closeup', paint],
     ['metal-closeup', metal],
+    ['brushed-metal-closeup', brush],
+    ['gold-edge-closeup', gold],
   ]) {
     await openPanel(page, '细节', '.wb-parts-filter')
     await page.locator('#wb-parts-query').fill(part.id)
@@ -475,6 +479,17 @@ try {
   await closePanel()
   await capture('flat-clear')
   report.states.flat = compactSnapshot(await sceneSnapshot(page, typewriter))
+  for (const progress of [0.72, 0.84, 0.94]) {
+    await page.evaluate(
+      (value) => window.__demo.store.motion('seek', 'explore-layout', value),
+      progress,
+    )
+    await page.waitForTimeout(400)
+    const name = `packing-${progress}`
+    await capture(name)
+    report.states[name] = compactSnapshot(await sceneSnapshot(page, typewriter))
+    expect(report.states[name].motion['explore-layout'].progress).toBeCloseTo(progress, 5)
+  }
   report.checks.push(
     'Live reflected content changes with actual structure pose; layers/flat and thin semantic labels remain usable',
   )

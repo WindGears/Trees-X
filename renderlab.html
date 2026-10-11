@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trees X · 渲染验证</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <canvas id="lab-canvas" aria-label="独立三维渲染验证"></canvas>
+    <aside id="lab-ui">
+      <strong>Trees X · 统一 PBR 场景比较</strong>
+      <p id="lab-status" role="status">准备验证场景…</p>
+      <nav aria-label="渲染方案">
+        <a data-mode="webgl">WebGL</a><a data-mode="webgpu">WebGPU</a>
+        <a data-mode="pathtrace">静止路径追踪</a>
+      </nav>
+      <nav aria-label="观察内容">
+        <a data-view="whole">整机</a><a data-view="paint">漆面</a><a data-view="metal">金属</a>
+        <a data-view="layers">分层</a><a data-view="flat">平铺</a>
+      </nav>
+      <button id="lab-export" disabled>导出当前设置</button>
+      <p>独立验证入口；不改变工作台。路径追踪禁用交互，采样完成后停止。</p>
+    </aside>
+    <script type="module" src="/src/lib/renderlab/main.ts"></script>
+  </body>
+</html>
