@@ -38,13 +38,23 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
     disposed = false
   const media = matchMedia('(prefers-reduced-motion: reduce)')
   const view = host.closest('.wb-view') ?? host.parentElement
-  view
-    ?.querySelectorAll<HTMLElement>('.wb-intro,.wb-tools,.wb-input-hint,.wb-keyboard-hint')
-    .forEach((element) => {
-      const rect = { x: 0, y: 0, width: 0, height: 0 }
-      obstacles.push(rect)
-      obstacleElements.push({ element, rect })
-    })
+  const floating = host.closest('.wb-floating')
+  const obstacleHost = floating ?? view
+  function collectObstacles() {
+    for (const { element } of obstacleElements) observer.unobserve(element)
+    obstacleElements.length = 0
+    obstacles.length = 1
+    obstacleHost
+      ?.querySelectorAll<HTMLElement>(
+        '.wb-intro,.wb-tools,.wb-input-hint,.wb-keyboard-hint,.wb-rail,.wb-panel,.wb-header',
+      )
+      .forEach((element) => {
+        const rect = { x: 0, y: 0, width: 0, height: 0 }
+        obstacles.push(rect)
+        obstacleElements.push({ element, rect })
+        observer.observe(element)
+      })
+  }
 
   function paint(entry: Entry) {
     if (Number.isFinite(entry.x) && Number.isFinite(entry.y)) {
@@ -236,7 +246,13 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
     layout()
   })
   observer.observe(host)
-  for (const { element } of obstacleElements) observer.observe(element)
+  collectObstacles()
+  const mutations = new MutationObserver(() => {
+    collectObstacles()
+    measure()
+    layout()
+  })
+  if (obstacleHost) mutations.observe(obstacleHost, { childList: true, subtree: true })
   function refresh() {
     const next: Entry[] = []
     host.querySelectorAll<HTMLButtonElement>('button[data-part]').forEach((button) => {
@@ -294,6 +310,7 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
     entry.frame = frame
   }
   function commit() {
+    if (floating) measure()
     for (const entry of entries) if (entry.frame !== frame) entry.projected = false
     frame++
     layout()
@@ -326,6 +343,7 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
       disposed = true
       stop()
       observer.disconnect()
+      mutations.disconnect()
       media.removeEventListener('change', changed)
       for (const entry of entries) gsap.killTweensOf(entry)
       entries = []

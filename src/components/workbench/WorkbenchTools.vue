@@ -1,9 +1,38 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
+import { gsap } from 'gsap'
 import { Palette, ScanSearch, Layers2, Route, RotateCcw, Minus, Plus } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { Panel } from '@/lib/workbench/types'
 const store = useWorkbenchStore()
+const props = defineProps<{ floating?: boolean }>()
+const navigation = ref<HTMLElement>()
+const indicator = ref<HTMLElement>()
+let animation: gsap.core.Tween | undefined
+function updateIndicator() {
+  const active = navigation.value?.querySelector<HTMLElement>('[aria-pressed="true"]')
+  if (!indicator.value) return
+  animation?.kill()
+  animation = gsap.to(indicator.value, {
+    x: active?.offsetLeft ?? 0,
+    width: active?.offsetWidth ?? 0,
+    opacity: active ? 1 : 0,
+    duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.3,
+    ease: 'power3.out',
+  })
+}
+watch(
+  () => [store.panel, store.presentation],
+  () => void nextTick(updateIndicator),
+)
+onMounted(() => {
+  updateIndicator()
+  window.addEventListener('resize', updateIndicator)
+})
+onScopeDispose(() => {
+  animation?.kill()
+  window.removeEventListener('resize', updateIndicator)
+})
 const emit = defineEmits<{ panel: [value: Panel] }>()
 const tools = computed(() => [
   ...(store.presentation?.finishes.length
@@ -47,7 +76,13 @@ const tools = computed(() => [
         <RotateCcw :size="15" />复位视角
       </button>
     </div>
-    <nav class="wb-feature-tools" aria-label="探索商品">
+    <nav ref="navigation" class="wb-feature-tools" aria-label="探索商品">
+      <span
+        v-if="props.floating"
+        ref="indicator"
+        class="wb-tool-indicator"
+        aria-hidden="true"
+      ></span>
       <button
         v-for="tool in tools"
         :key="tool.id"

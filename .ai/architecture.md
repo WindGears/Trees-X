@@ -85,6 +85,18 @@ AdminPreview提供局部cameraCaptureSession。WorkbenchScene注册按需数字�
 
 默认回填同步camera和perspective视角，其他回填只改命名视角，缩放范围/外观/运动不改。回填仅更新编辑草稿，手动保存才持久化。API及v1/v2/v3契约不变，本阶段无Flyway迁移；详细检查见admin-usability-validation.md。
 
+## 方案 C 访客界面（2026-10-11）
+
+WorkbenchRoot 的 `wb-floating` 只装配访客全幅舞台、WorkbenchRail、单目录/操作面板与 WorkbenchTools。`workbench-floating.css` 限定在该 class，管理端、管理预览和 legacy 保留原布局与基础主题。快速栏通过真实公开 API 独立读取完整目录，不借用目录抽屉的筛选结果；未就绪仍使用现有首帧门禁，不给 UI 补假资源。
+
+`interfaceMotion` 唯一拥有面板/介绍的 Vue Transition 补间；快速切换先取消旧补间，离场立即设置 inert。同一面板内工具切换立即更新内容并执行 0.22 秒进入补间，不设置嵌套 out-in 等待。Root 管理入口与关闭焦点，Tools 只拥有导航指示块补间。两者卸载清理 GSAP 与 resize/键盘监听。滚轮仍由实际命中的场景或面板处理，产品动作与导览继续沿用现有优先级与生命周期。
+
+`viewportFraming` 在现有 PerspectiveCamera 上维护 zoom/viewOffset，只调整可用观察区域的投影构图，不写 camera.position 或 OrbitControls.target。面板改变时用 0.32 秒 GSAP 横向插值并 invalidate，zoom 只随视口尺寸计算，不因为面板开关缩小商品；尺寸变化与减弱动态直接到目标，不创建 renderer、controls 或额外 RAF。Scene 唯一释放构图补间；热点从更新后的真实投影计算。管理预览仍读取实际位置/观察目标，未接入访客浮动面板策略。
+
+引线标签障碍从访客 Root 收集，纳入快速栏、浮动面板和顶栏；MutationObserver 发现相关 DOM 挂载/卸载后重新收集，ResizeObserver 跟随实际尺寸，不把已移除障碍永久保留。观察器只服务 DOM 布局，卸载全部断开；管理预览继续沿用其原布局范围。
+
+访客 stage 只覆盖浅灰背景与地面色；商品曝光、照明、环境强度、几何/PBR、适配器和资源所有权沿用原配置。未增加墙窗、天空贴图、展厅 HDR 或物理地台。本轮 API、v1/v2/v3 和数据库不变，验收范围见 ui-c-validation.md。
+
 ## 验证
 
 ### 本机交付与联合验收（E1）

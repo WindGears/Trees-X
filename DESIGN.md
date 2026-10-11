@@ -1,6 +1,39 @@
 ---
 name: Trees X 三维商品工作台
-description: 以模型为主、工具按需出现的深蓝灰框架与商品专属舞台。
+description: 访客采用方案 C 浅银灰毛玻璃漂浮工作台；管理端与管理预览保留深蓝灰基础主题。
+scope: 下列 colors/typography/rounded 是共享基础样式；visitorColors/visitorTypography/visitorRounded 仅覆盖 wb-floating。
+visitorColors:
+  wb-bg: '#e7e9e5'
+  wb-foreground: '#29332e'
+  wb-panel: 'rgb(248 250 246 / 88%)'
+  wb-line: 'rgb(66 80 70 / 15%)'
+  wb-muted: '#5d675f'
+  wb-accent: '#3e5c4b'
+  wb-label: '#4e5d52'
+  wb-field: 'rgb(255 255 252 / 65%)'
+  wb-placeholder: '#727c74'
+  wb-focus: '#365a43'
+  wb-glass: 'rgb(248 250 246 / 76%)'
+  wb-glass-border: 'rgb(255 255 255 / 80%)'
+  stage-ground: '#d8dcd5'
+  selected-background: '#e1e9df'
+  selected-border: '#aabbab'
+visitorTypography:
+  display-desktop: 'clamp(34px, 2.6vw, 44px) / 1.25 / 500'
+  display-mobile: '29px / 1.25 / 500'
+  brand-desktop: '22px'
+  brand-mobile: '21px'
+  panel-heading-desktop: '20px / 1.4 / 500'
+  panel-heading-mobile: '18px'
+  body: '14px / 1.8'
+  auxiliary: '12px'
+visitorRounded:
+  rail-panel: '24px'
+  primary-dock: '18px'
+  camera-dock: '16px'
+  control: '12px'
+  field: '10px'
+  hotspot: '8px'
 colors:
   wb-accent: '#bed4ef'
   wb-accent-hover: '#d1e2f5'
@@ -166,7 +199,52 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
-## Overview
+## 当前访客规范：方案 C（2026-10-11）
+
+**方向：安静的漂浮式工作台，商品始终占据主要观察区域。**
+
+用户已选择方案 C：浅银灰背景、淡灰绿选中态与克制毛玻璃。默认机械打字机，左侧快速栏呈现打字机、钢琴与精细汽车的真实封面，右側一次只打开一个操作面板，探索入口和镜头工具位于底部。自由观察、部件聚焦、动作、结构与手动导览继续使用同一工作台契约，访客不常驻完整控制台或进度滑条。
+
+实现真值为 `src/assets/styles/workbench-floating.css`、WorkbenchRoot/Rail/Tools/Stage/Scene、`interfaceMotion.ts` 与 `viewportFraming.ts`。选择代次、首帧开放操作、图文回退、动作接管和资源释放沿用既有实现。HTTP API、数据库及 v1/v2/v3 配置不变；管理端、整页管理预览和 legacy 本轮不改布局或主题。
+
+### 颜色与玻璃
+
+访客颜色以 frontmatter 的 visitorColors 为准，仅作用于 `.workbench.wb-floating`。背景为浅银灰，文字为深灰绿，辅助字保持可辨识；选中用淡绿底/边线与 `aria-pressed`，键盘焦点使用 2px 深绿实线、4px 外偏移。按钮最小高度 42px，字段 44px，中文正文 14px，辅助文字不小于 12px。
+
+玻璃集中用于快速商品栏、面板、工具条与少量热点名称：快速栏/底部工具 blur 20px、面板 blur 24px、目录入口 blur 16px、标签 blur 10px。白色细边线、轻微内高光和低强度阴影提供层次，面板正文不再嵌套装饰卡片。缺少 backdrop-filter 时回退为实色 `#f3f6ef`；不依赖模糊才看清操作。
+
+三维舞台只覆盖背景 `#e7e9e5` 与地面 `#d8dcd5`。正式模型、材质、照明参数、曝光与反射环境沿用原配置；没有新增地台、窗墙、天空或展厅 HDR。概念图用于确认界面方向，不作为当前模型品质或实机光照等效结论。
+
+### 桌面布局
+
+访客为全幅 100dvh 舞台，桌面最小高 600px。顶栏浮于顶部 24px、左右 32px，品牌 22px。左侧快速栏宽 108px、左 28px、竖向居中；每件真实封面高 64px，商品名 12px，完整目录通过“商品目录”或“全部商品”打开。
+
+商品身份位于上 112px、左 170px，标题 `clamp(34px, 2.6vw, 44px)`，说明最多 36ch；聚焦部件时收起该介绍，顶栏仍保留身份。右操作面板宽 320px、右 28px、上 112px、下 144px；目录面板宽 300px、左 150px。两者均浮于全幅舞台，标题固定、正文独立滚动，滚轮不传给舞台。
+
+底部居中两行工具：上行外观/细节/结构与动作/导览，下行命名视角/缩放/复位；距底 28px，间隔 8px，不以仅图标代替核心中文操作。高度不超过 800px 的桌面将标题/面板上移至 98px、工具距底 20px；较窄桌面缩小左右边距与快速栏。面板关闭不恢复镜头、配色或结构。
+
+### 操作与动画
+
+- 面板和商品介绍进入为 0.32 秒、`power3.out`、透明度与 12px 垂直偏移；退出为 0.18 秒、`power2.out`、8px 偏移。快速重开/切换先杀旧补间，不堆积动画；退出立即 inert，避免不可见控件仍可点击或 Tab 进入。
+- 同一操作面板内切换工具立即呈现新内容，使用 0.22 秒进入补间；不以嵌套退出动画延迟操作结果。
+- 探索工具的选中指示块由 GSAP 用 0.3 秒 `power3.out` 移动，语义状态始终由 `aria-pressed`/`aria-expanded` 提供；关闭面板后回到触发入口焦点，Escape 沿用关闭当前面板规则。
+- 打开面板时以 0.32 秒调整现有相机 viewOffset 来横向重新构图，**不修改 camera.position、观察目标或因面板开关缩小商品**；zoom 只随视口尺寸适配。画面给面板留空间，当前自由观察姿态保持；尺寸变化直接更新投影，热点继续使用当前真实相机投影。
+- 相机聚焦、结构、按键及汽车动作继续由各自既有控制器管理，UI 动画不改写节点姿态。鼠标/键盘观察立即接管导览与播放；无自动环绕或默认长演出。
+- `prefers-reduced-motion` 下过渡和投影补间直接到目标；卸载取消补间与监听，页面隐藏按既有生命周期停钟。UI 未增加逐帧响应式场景状态或额外 renderer。
+
+### 移动基础兼容与标签
+
+760px 以下最小高 640px：快速栏改为顶部横向三件商品，右面板和目录改为底部单面板，最大高 45%，仍保留底部两行工具。标题 29px，品牌副说明/当前商品缩略名隐藏，面板打开时收起介绍正文及辅助资产标记；320px 进一步压缩图标/边距，保留中文核心操作。实际桌面尺寸为主验收，移动端只承诺基础可用性。
+
+拆解引线标签沿用实际节点锚点、渐显和平滑避让；视觉调整为浅色小玻璃名称与灰绿细线，不增加候选密度，最多 12 个且优先选中项。目录、面板、快速栏、标题与工具都是布局避让依据，面板/介绍动态挂载后重新收集障碍。完整部件仍可在细节列表选择，淡出标签立即退出交互。
+
+加载与错误覆盖继续显示真实阶段/重试，不显示虚假百分比，也不将封面替代模型首帧。无 WebGL 时保留真实图文、目录和可访问说明。检查证据与未完成范围见 [.ai/ui-c-validation.md](.ai/ui-c-validation.md)。
+
+## 基础样式与历史访客规范
+
+**以下深蓝灰、网格分栏和旧动效尺寸为 2026-10-10 及以前的访客记录，不适用于 `wb-floating`。管理端及管理预览继续使用其原有基础主题与布局；其中独立商品、动作、资源与事实表达规范仍有效，只有访客颜色、布局与 UI 过渡由上文覆盖。**
+
+### 原 Overview
 
 **Creative North Star: "先欣赏商品，再自然探索细节"**
 

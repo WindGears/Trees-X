@@ -1,0 +1,915 @@
+/* Visitor workbench C: a full-width stage with quiet floating instruments.
+   Panel and dock movement belong to GSAP; this file owns appearance/layout. */
+.workbench.wb-floating {
+  --wb-bg: #e7e9e5;
+  --wb-foreground: #29332e;
+  --wb-panel: rgb(248 250 246 / 88%);
+  --wb-line: rgb(66 80 70 / 15%);
+  --wb-muted: #5d675f;
+  --wb-accent: #3e5c4b;
+  --wb-label: #4e5d52;
+  --wb-field: rgb(255 255 252 / 65%);
+  --wb-placeholder: #727c74;
+  --wb-focus: #365a43;
+  --wb-glass: rgb(248 250 246 / 76%);
+  --wb-glass-border: rgb(255 255 255 / 80%);
+  --wb-shadow: 0 12px 38px rgb(43 57 47 / 7%), 0 2px 8px rgb(43 57 47 / 4%);
+  position: relative;
+  isolation: isolate;
+  height: 100dvh;
+  min-height: 600px;
+  overflow: hidden;
+  color: var(--wb-foreground);
+  color-scheme: light;
+  background: var(--wb-bg);
+  font-family: Manrope, 'Noto Sans SC Display', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+}
+
+.wb-floating button {
+  min-height: 42px;
+  padding: 10px 13px;
+  color: var(--wb-foreground);
+  background: rgb(255 255 252 / 54%);
+  border: 1px solid var(--wb-line);
+  border-radius: 12px;
+  line-height: 1.45;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
+}
+.wb-floating button:hover:not(:disabled) {
+  color: #263a2d;
+  background: rgb(255 255 252 / 94%);
+  border-color: rgb(66 80 70 / 28%);
+}
+.wb-floating button[aria-pressed='true'] {
+  color: #294434;
+  background: #e1e9df;
+  border-color: #aabbab;
+}
+.wb-floating button[aria-pressed='true']:hover:not(:disabled) {
+  color: #253d2d;
+  background: #d6e2d3;
+}
+.wb-floating button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.wb-floating :focus-visible {
+  outline: 2px solid var(--wb-focus);
+  outline-offset: 4px;
+}
+.wb-floating ::selection {
+  color: #233b2b;
+  background: #cbdcc9;
+}
+.wb-floating select,
+.wb-floating input {
+  min-height: 44px;
+  color: var(--wb-foreground);
+  color-scheme: light;
+  background: var(--wb-field);
+  border: 1px solid var(--wb-line);
+  border-radius: 10px;
+  caret-color: var(--wb-focus);
+}
+.wb-floating input::placeholder {
+  color: var(--wb-placeholder);
+}
+.wb-floating select option {
+  color: var(--wb-foreground);
+  background: #f7f9f5;
+}
+.wb-floating .skip-link {
+  color: #29332e;
+  background: #f8faf6;
+  border: 1px solid var(--wb-line);
+  border-radius: 10px;
+}
+
+/* Full-stage positioning deliberately stays unchanged when panels open. */
+.wb-floating .wb-layout,
+.wb-floating .wb-layout.with-catalog,
+.wb-floating .wb-layout.with-inspector {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  display: block;
+}
+.wb-floating .wb-view {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.wb-floating .wb-stage {
+  background: var(--wb-bg);
+}
+.wb-floating .wb-stage:focus-visible {
+  outline-color: var(--wb-focus);
+}
+.wb-floating .wb-stage:focus-visible::after {
+  border-color: var(--wb-focus);
+}
+
+/* Chrome is separate from the model, with only its tools catching input. */
+.wb-floating .wb-header {
+  position: absolute;
+  z-index: 5;
+  top: 24px;
+  left: 32px;
+  right: 32px;
+  height: 44px;
+  padding: 0;
+  gap: 24px;
+  border: 0;
+  pointer-events: none;
+}
+.wb-floating .wb-header > * {
+  pointer-events: auto;
+}
+.wb-floating .wb-brand {
+  align-items: center;
+  gap: 18px;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--wb-glass);
+  backdrop-filter: blur(16px);
+  white-space: nowrap;
+}
+.wb-floating .wb-brand span {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--wb-muted);
+  letter-spacing: 0.02em;
+}
+.wb-floating .wb-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-left: auto;
+}
+.wb-floating .wb-header button {
+  margin-left: 0;
+}
+.wb-floating .wb-catalog-trigger {
+  padding-inline: 16px;
+  border-color: var(--wb-glass-border);
+  border-radius: 14px;
+  background: var(--wb-glass);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 4px 14px rgb(43 57 47 / 5%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.wb-floating .wb-current {
+  min-width: 0;
+  color: #566259;
+  font-size: 12px;
+  letter-spacing: 0.015em;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: var(--wb-glass);
+}
+
+/* The three real catalog assets form one restrained rail. */
+.wb-floating .wb-rail {
+  position: absolute;
+  z-index: 4;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 108px;
+  padding: 8px;
+  border: 1px solid var(--wb-glass-border);
+  border-radius: 24px;
+  background: rgb(249 251 246 / 66%);
+  box-shadow:
+    var(--wb-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 94%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.wb-floating .wb-rail-list {
+  display: grid;
+  gap: 8px;
+}
+.wb-floating .wb-rail-list button {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 6px 10px;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 16px;
+}
+.wb-floating .wb-rail-list button.is-current,
+.wb-floating .wb-rail-list button[aria-pressed='true'] {
+  color: #294434;
+  background: rgb(255 255 252 / 94%);
+  border-color: #c1cfbf;
+  box-shadow: 0 4px 10px rgb(43 57 47 / 5%);
+}
+.wb-floating .wb-rail-list img {
+  display: block;
+  width: 100%;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #dfe4db;
+}
+.wb-floating .wb-rail-list button > span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+.wb-floating .wb-rail-list strong {
+  display: block;
+  text-wrap: balance;
+  font-size: 12px;
+  font-weight: 500;
+}
+.wb-floating .wb-rail-list small {
+  display: block;
+  font-size: 12px;
+  color: var(--wb-muted);
+}
+.wb-floating .wb-rail-toggle {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 8px;
+  padding: 8px 5px;
+  color: var(--wb-muted);
+  font-size: 12px;
+  border: 0;
+  background: transparent;
+}
+
+/* Product identity stays lighter than the subject itself. */
+.wb-floating .wb-intro {
+  z-index: 2;
+  top: 112px;
+  left: 170px;
+  max-width: 345px;
+  color: var(--wb-foreground);
+}
+.wb-floating .wb-intro h1 {
+  font-size: clamp(34px, 2.6vw, 44px);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.04em;
+  margin: 0 0 12px;
+}
+.wb-floating .wb-intro p {
+  max-width: 36ch;
+  color: var(--wb-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+.wb-floating .wb-sample-label {
+  padding: 0;
+  margin-top: 14px;
+  color: #69756a;
+  font-size: 12px;
+  border: 0;
+}
+.wb-floating .wb-input-hint {
+  z-index: 2;
+  left: 32px;
+  bottom: 30px;
+  width: auto;
+  color: #647166;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* One inspector; a non-scrolling header and independently scrolling content. */
+.wb-floating .wb-panel {
+  position: absolute;
+  z-index: 6;
+  top: 112px;
+  right: 28px;
+  bottom: 144px;
+  width: 320px;
+  max-height: calc(100dvh - 260px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 22px 22px 0;
+  border: 1px solid var(--wb-glass-border);
+  border-radius: 24px;
+  overflow: hidden;
+  color: var(--wb-foreground);
+  background: var(--wb-panel);
+  box-shadow:
+    var(--wb-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 94%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.wb-floating .wb-panel-left {
+  right: auto;
+  left: 150px;
+  width: 300px;
+}
+.wb-floating .wb-panel > header {
+  flex: 0 0 auto;
+  min-height: 42px;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.wb-floating .wb-panel h2 {
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+.wb-floating .wb-panel-close {
+  min-width: 42px;
+  min-height: 42px;
+  padding: 8px;
+  border-radius: 50%;
+  color: #5c6a5f;
+  background: transparent;
+}
+.wb-floating .wb-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-inline: -6px;
+  padding: 0 6px 24px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #bec8ba transparent;
+}
+.wb-floating .wb-panel h3 {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+.wb-floating .wb-panel p {
+  color: var(--wb-muted);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 18px;
+}
+.wb-floating .wb-panel .wb-note,
+.wb-floating .wb-panel .wb-progress-state {
+  color: #677266;
+  font-size: 12px;
+  line-height: 1.85;
+}
+.wb-floating .wb-panel .wb-text-button {
+  color: #4e6354;
+  font-size: 12px;
+}
+.wb-floating .wb-search {
+  color: #607065;
+  border-bottom-color: #b2bfb0;
+}
+.wb-floating .wb-search input {
+  border-radius: 0;
+  background: transparent;
+}
+.wb-floating .wb-filter {
+  color: var(--wb-muted);
+  font-size: 12px;
+}
+.wb-floating .wb-filter select {
+  width: 152px;
+  font-size: 13px;
+}
+.wb-floating .wb-catalog-list {
+  gap: 12px;
+}
+.wb-floating .wb-catalog-list button {
+  padding: 12px;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+}
+.wb-floating .wb-catalog-list button[aria-pressed='true'] {
+  background: rgb(255 255 252 / 84%);
+  border-color: #b5c5b1;
+}
+.wb-floating .wb-catalog-list button > span:not(.wb-product-row) {
+  color: var(--wb-muted);
+  font-size: 13px;
+  opacity: 1;
+}
+.wb-floating .wb-catalog-list small {
+  color: #687668;
+  font-size: 12px;
+  opacity: 1;
+}
+.wb-floating .wb-product-row strong {
+  font-size: 16px;
+}
+.wb-floating .wb-cover {
+  margin-bottom: 5px;
+  border-radius: 12px;
+}
+.wb-floating .wb-finishes,
+.wb-floating .wb-part-list,
+.wb-floating .wb-action-list {
+  gap: 8px;
+  margin-top: 20px;
+}
+.wb-floating .wb-finishes button,
+.wb-floating .wb-part-list button {
+  justify-content: flex-start;
+  text-align: left;
+}
+.wb-floating .wb-swatch {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgb(44 55 43 / 25%);
+  box-shadow: inset 0 0 0 2px rgb(255 255 255 / 25%);
+}
+.wb-floating .wb-part-copy {
+  margin-top: 24px;
+  padding-top: 18px;
+}
+.wb-floating .wb-panel-reset {
+  margin-top: 30px;
+  padding-top: 20px;
+}
+.wb-floating .wb-parts-filter label {
+  color: #566459;
+  font-size: 12px;
+}
+.wb-floating .wb-parts-filter select {
+  color-scheme: light;
+}
+.wb-floating .wb-progress {
+  padding-top: 18px;
+}
+.wb-floating .wb-progress-heading output {
+  color: #36573f;
+}
+.wb-floating .wb-piano-description strong {
+  color: var(--wb-foreground);
+}
+.wb-floating .wb-car-reset-note {
+  color: var(--wb-muted);
+}
+.wb-floating .wb-inline-actions button {
+  flex: 1 1 auto;
+}
+
+/* Two small floating tool rows. The active pill is animated by GSAP. */
+.wb-floating .wb-tools {
+  z-index: 5;
+  bottom: 28px;
+  max-width: calc(100% - 40px);
+  gap: 8px;
+}
+.wb-floating .wb-feature-tools,
+.wb-floating .wb-camera-tools {
+  position: relative;
+  gap: 3px;
+  padding: 5px;
+  border: 1px solid var(--wb-glass-border);
+  border-radius: 18px;
+  color: var(--wb-foreground);
+  background: var(--wb-glass);
+  box-shadow:
+    var(--wb-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 94%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.wb-floating .wb-feature-tools {
+  order: 0;
+}
+.wb-floating .wb-camera-tools {
+  order: 1;
+  padding: 3px 5px;
+  border-radius: 16px;
+  background: rgb(250 251 247 / 67%);
+}
+.wb-floating .wb-feature-tools button,
+.wb-floating .wb-camera-tools button {
+  position: relative;
+  z-index: 1;
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+}
+.wb-floating .wb-feature-tools button {
+  padding-inline: 18px;
+  gap: 8px;
+  font-size: 14px;
+}
+.wb-floating .wb-feature-tools button[aria-pressed='true'],
+.wb-floating .wb-feature-tools button[aria-pressed='true']:hover:not(:disabled) {
+  color: #2e4b37;
+  border-color: transparent;
+  background: transparent;
+}
+.wb-floating .wb-feature-tools button:hover:not(:disabled),
+.wb-floating .wb-camera-tools button:hover:not(:disabled) {
+  background: rgb(255 255 252 / 78%);
+  border-color: transparent;
+}
+.wb-floating .wb-tool-indicator {
+  position: absolute;
+  z-index: 0;
+  top: 5px;
+  left: 0;
+  height: calc(100% - 10px);
+  border: 1px solid rgb(160 183 154 / 45%);
+  border-radius: 13px;
+  background: #e3ebdf;
+  pointer-events: none;
+}
+.wb-floating .wb-camera-tools select {
+  width: 112px;
+  min-height: 42px;
+  color: #4d5b50;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13px;
+}
+.wb-floating .wb-camera-tools button {
+  color: #4d5b50;
+  padding-inline: 12px;
+  font-size: 13px;
+}
+
+/* Scene feedback and projected labels retain their lifecycle/position owners. */
+.wb-floating .wb-stage-status {
+  color: var(--wb-foreground);
+  background: rgb(231 233 229 / 97%);
+}
+.wb-floating .wb-stage-status h2 {
+  position: relative;
+  z-index: 1;
+  font-size: 24px;
+  letter-spacing: -0.025em;
+}
+.wb-floating .wb-stage-status p,
+.wb-floating .wb-stage-status .wb-inline-actions {
+  position: relative;
+  z-index: 1;
+}
+.wb-floating .wb-stage-status p {
+  color: #56635a;
+}
+.wb-floating .wb-loading-cover {
+  position: absolute;
+  inset: 18% 20%;
+  width: 60%;
+  height: 64%;
+  object-fit: contain;
+  opacity: 0.12;
+  pointer-events: none;
+}
+.wb-floating .wb-loading-progress {
+  width: 160px;
+  height: 2px;
+  overflow: hidden;
+  background: #c6d0c1;
+}
+.wb-floating .wb-loading-progress span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: #627d63;
+}
+.wb-floating .wb-hotspot,
+.wb-floating .wb-callouts .wb-hotspot {
+  color: #334239;
+  background: rgb(249 251 246 / 86%);
+  border: 1px solid rgb(255 255 255 / 85%);
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgb(43 57 47 / 6%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.wb-floating .wb-callouts .wb-hotspot:hover,
+.wb-floating .wb-callouts .wb-hotspot[aria-pressed='true'] {
+  color: #294434;
+  background: rgb(249 251 246 / 95%);
+}
+.wb-floating .wb-callouts .wb-hotspot:focus-visible {
+  outline-color: var(--wb-focus);
+}
+.wb-floating .wb-callout-lines {
+  color: #71816f;
+}
+.wb-floating .wb-callout-lines circle {
+  fill: #4d6652;
+}
+.wb-floating .wb-callout-lines .is-selected {
+  color: #3e5c4b;
+}
+.wb-floating .wb-keyboard-hint {
+  top: 80px;
+  right: 28px;
+  color: #3e4e43;
+  border: 1px solid var(--wb-glass-border);
+  border-radius: 12px;
+  background: var(--wb-panel);
+}
+.wb-floating .wb-content-fallback {
+  padding: 110px 170px 150px;
+  background: var(--wb-bg);
+}
+.wb-floating .wb-fallback-cover {
+  border-radius: 18px;
+}
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  .wb-floating .wb-header {
+    left: 24px;
+    right: 24px;
+  }
+  .wb-floating .wb-rail {
+    left: 20px;
+    width: 96px;
+  }
+  .wb-floating .wb-rail-list img {
+    height: 56px;
+  }
+  .wb-floating .wb-intro {
+    left: 140px;
+    max-width: 285px;
+  }
+  .wb-floating .wb-panel {
+    right: 20px;
+    width: 300px;
+  }
+  .wb-floating .wb-panel-left {
+    left: 128px;
+    right: auto;
+  }
+  .wb-floating .wb-input-hint {
+    left: 24px;
+    bottom: 145px;
+  }
+}
+@media (max-height: 800px) and (min-width: 761px) {
+  .wb-floating .wb-intro,
+  .wb-floating .wb-panel {
+    top: 98px;
+  }
+  .wb-floating .wb-panel {
+    bottom: 138px;
+  }
+  .wb-floating .wb-tools {
+    bottom: 20px;
+  }
+  .wb-floating .wb-rail-list img {
+    height: 54px;
+  }
+  .wb-floating .wb-intro h1 {
+    font-size: 34px;
+  }
+}
+
+/* Small screens keep the same flow with a horizontal rail and bottom sheet. */
+@media (max-width: 760px) {
+  .workbench.wb-floating {
+    min-height: 640px;
+  }
+  .wb-floating .wb-header {
+    top: 18px;
+    left: 20px;
+    right: 20px;
+    height: 44px;
+    gap: 12px;
+  }
+  .wb-floating .wb-brand {
+    font-size: 21px;
+  }
+  .wb-floating .wb-brand span,
+  .wb-floating .wb-current {
+    display: none;
+  }
+  .wb-floating .wb-header-actions {
+    gap: 0;
+  }
+  .wb-floating .wb-catalog-trigger {
+    min-height: 42px;
+    padding: 9px 12px;
+    font-size: 12px;
+  }
+  .wb-floating .wb-rail {
+    top: 84px;
+    left: 20px;
+    right: 20px;
+    width: auto;
+    padding: 5px;
+    transform: none;
+    border-radius: 18px;
+  }
+  .wb-floating .wb-rail-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .wb-floating .wb-rail-list button {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    min-height: 48px;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 12px;
+  }
+  .wb-floating .wb-rail-list img {
+    width: 30px;
+    height: 32px;
+    border-radius: 6px;
+    flex: 0 0 auto;
+  }
+  .wb-floating .wb-rail-list button > span {
+    min-width: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+  .wb-floating .wb-rail-list small,
+  .wb-floating .wb-rail-toggle {
+    display: none;
+  }
+  .wb-floating .wb-intro {
+    top: 168px;
+    left: 20px;
+    right: 20px;
+    max-width: none;
+  }
+  .wb-floating .wb-intro h1 {
+    font-size: 29px;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+  .wb-floating .wb-intro p {
+    max-width: 31ch;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .wb-floating .wb-sample-label {
+    margin-top: 8px;
+  }
+  .wb-floating .with-catalog .wb-intro p,
+  .wb-floating .with-inspector .wb-intro p,
+  .wb-floating .with-catalog .wb-sample-label,
+  .wb-floating .with-inspector .wb-sample-label {
+    display: none;
+  }
+  .wb-floating .wb-panel,
+  .wb-floating .wb-panel-left {
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: 148px;
+    width: auto;
+    max-height: 45%;
+    padding: 16px 18px 0;
+    border-radius: 22px;
+  }
+  .wb-floating .wb-panel > header {
+    margin-bottom: 12px;
+  }
+  .wb-floating .wb-panel h2 {
+    font-size: 18px;
+  }
+  .wb-floating .wb-panel-body {
+    padding-bottom: 18px;
+  }
+  .wb-floating .wb-tools {
+    bottom: 20px;
+    width: max-content;
+    max-width: calc(100% - 24px);
+    gap: 6px;
+  }
+  .wb-floating .wb-feature-tools,
+  .wb-floating .wb-camera-tools {
+    max-width: 100%;
+    gap: 0;
+    padding: 4px;
+    border-radius: 16px;
+  }
+  .wb-floating .wb-feature-tools button {
+    min-height: 44px;
+    padding: 7px 9px;
+    font-size: 12px;
+    gap: 4px;
+    border-radius: 11px;
+  }
+  .wb-floating .wb-feature-tools svg {
+    width: 15px;
+    height: 15px;
+  }
+  .wb-floating .wb-tool-indicator {
+    top: 4px;
+    height: calc(100% - 8px);
+    border-radius: 11px;
+  }
+  .wb-floating .wb-camera-tools button {
+    min-height: 42px;
+    padding: 7px 9px;
+    font-size: 12px;
+    gap: 5px;
+  }
+  .wb-floating .wb-camera-tools select {
+    width: 106px;
+    min-height: 42px;
+    padding-inline: 8px;
+    font-size: 12px;
+  }
+  .wb-floating .wb-input-hint {
+    left: 20px;
+    bottom: 140px;
+    color: #647166;
+    text-align: left;
+    font-size: 12px;
+  }
+  .wb-floating .wb-keyboard-hint {
+    top: auto;
+    right: 16px;
+    left: 16px;
+    bottom: 150px;
+  }
+  .wb-floating .wb-content-fallback {
+    padding: 164px 20px 150px;
+  }
+  .wb-floating .wb-loading-cover {
+    inset: 30% 8%;
+    width: 84%;
+    height: 40%;
+  }
+}
+@media (max-width: 360px) {
+  .wb-floating .wb-header,
+  .wb-floating .wb-rail {
+    left: 14px;
+    right: 14px;
+  }
+  .wb-floating .wb-intro {
+    left: 16px;
+    right: 16px;
+  }
+  .wb-floating .wb-rail-list button {
+    gap: 4px;
+    padding: 5px 4px;
+  }
+  .wb-floating .wb-rail-list img {
+    width: 24px;
+    height: 28px;
+  }
+  .wb-floating .wb-feature-tools button {
+    padding-inline: 6px;
+    gap: 3px;
+  }
+  .wb-floating .wb-feature-tools svg {
+    width: 14px;
+    height: 14px;
+  }
+  .wb-floating .wb-panel,
+  .wb-floating .wb-panel-left {
+    left: 12px;
+    right: 12px;
+    padding-inline: 16px;
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .wb-floating .wb-panel,
+  .wb-floating .wb-rail,
+  .wb-floating .wb-feature-tools,
+  .wb-floating .wb-camera-tools,
+  .wb-floating .wb-catalog-trigger,
+  .wb-floating .wb-callouts .wb-hotspot {
+    background: #f3f6ef;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wb-floating button,
+  .wb-floating input,
+  .wb-floating select {
+    transition: none;
+  }
+  .wb-floating .wb-panel-body,
+  .wb-floating .wb-content-fallback {
+    scroll-behavior: auto;
+  }
+}

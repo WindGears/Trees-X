@@ -17,11 +17,15 @@ import { useWorkbenchStore } from '@/stores/workbench'
 import { useMotionSession } from '@/lib/workbench/motionSession'
 import { useCameraCaptureSession } from '@/lib/workbench/cameraCapture'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
+import { createViewportFraming } from '@/lib/workbench/viewportFraming'
 
 const props = defineProps<{
   active: boolean
   place: PlaceCallout
   commit: () => void
+  gallery?: boolean
+  inspector?: boolean
+  catalog?: boolean
 }>()
 const emit = defineEmits<{ restore: [] }>()
 const store = useWorkbenchStore()
@@ -40,7 +44,10 @@ scene.value.fog = fog
 const keyPosition = shallowRef(new Vector3()),
   rimPosition = shallowRef(new Vector3()),
   groundPosition = shallowRef(new Vector3())
-const stage = computed(() => store.presentation?.stage ?? defaultStage)
+const stage = computed(() => {
+  const source = store.presentation?.stage ?? defaultStage
+  return props.gallery ? { ...source, background: '#e7e9e5', ground: '#d8dcd5' } : source
+})
 watch(
   stage,
   (value) => {
@@ -201,18 +208,26 @@ watch(
   (value) => controller?.pulse(value.id),
 )
 watch(() => props.active, updateActive)
+const framing = createViewportFraming(invalidate)
 watch(
-  () => [sizes.width.value, sizes.height.value, camera.value] as const,
-  ([width, height, current]) => {
+  () => props.active,
+  (active) => {
+    if (!active) framing.finish()
+  },
+)
+watch(
+  () =>
+    [
+      sizes.width.value,
+      sizes.height.value,
+      camera.value,
+      props.gallery,
+      props.inspector,
+      props.catalog,
+    ] as const,
+  ([width, height, current, gallery, inspector, catalog]) => {
     if (!(current instanceof PerspectiveCamera) || !width || !height) return
-    // Keep the observation pose. Only fit the projection to the available viewport.
-    current.zoom = Math.max(
-      0.15,
-      Math.min(1, ((height - 250) / height) * 1.25, width / height / 1.4),
-    )
-    current.setViewOffset(width, height, 0, 28, width, height)
-    current.updateProjectionMatrix()
-    invalidate()
+    framing.update(current, width, height, Boolean(gallery), Boolean(inspector), Boolean(catalog))
   },
   { immediate: true, flush: 'post' },
 )
@@ -221,6 +236,7 @@ const projection = context.renderer.onRender(() => {
   props.commit()
 })
 onScopeDispose(() => {
+  framing.dispose()
   unregisterCapture?.()
   disposed = true
   generation++

@@ -24,6 +24,7 @@ await mkdir(output + '/visual', { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+  page.setDefaultTimeout(30000)
   page.on('pageerror', (error) => report.errors.push(error.message))
   page.on('console', (message) => {
     if (message.type() === 'error') report.errors.push(message.text())
@@ -83,7 +84,9 @@ try {
         const value = element.getBoundingClientRect()
         return { x: value.x, y: value.y, width: value.width, height: value.height }
       }
-      const blockers = [...document.querySelectorAll('.wb-tools,.wb-intro')]
+      const blockers = [
+        ...document.querySelectorAll('.wb-tools,.wb-intro,.wb-rail,.wb-panel,.wb-header'),
+      ]
         .filter((element) => getComputedStyle(element).display !== 'none')
         .map((element) => ({ className: element.className, rect: rect(element) }))
       const labels = [...document.querySelectorAll('button.wb-hotspot')].map((element) => {

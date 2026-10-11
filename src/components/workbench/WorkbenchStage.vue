@@ -10,7 +10,15 @@ import WorkbenchScene from './WorkbenchScene.vue'
 import WorkbenchFallback from './WorkbenchFallback.vue'
 import WorkbenchCallouts from './WorkbenchCallouts.vue'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
-defineProps<{ preview?: boolean }>()
+const props = defineProps<{
+  preview?: boolean
+  gallery?: boolean
+  inspector?: boolean
+  catalog?: boolean
+}>()
+const stageBackground = computed(() =>
+  props.gallery ? '#e7e9e5' : (store.presentation?.stage?.background ?? '#151c25'),
+)
 const store = useWorkbenchStore()
 if (!supportsWebGL2()) store.useContent('此设备暂时无法启用三维显示。')
 const revision = ref(0)
@@ -99,7 +107,7 @@ onErrorCaptured(() => {
     <WorkbenchFallback v-if="store.contentOnly && store.status === 'content'" />
     <TresCanvas
       v-if="!store.contentOnly"
-      clear-color="#151c25"
+      :clear-color="stageBackground"
       :antialias="true"
       :dpr="dpr"
       shadows
@@ -116,6 +124,9 @@ onErrorCaptured(() => {
         :active="active"
         :place="place"
         :commit="commit"
+        :gallery="gallery"
+        :inspector="inspector"
+        :catalog="catalog"
         @restore="restore"
       />
     </TresCanvas>
@@ -130,7 +141,7 @@ onErrorCaptured(() => {
       :selected="store.selectedPart"
       :active="active"
       :details="store.panel === 'details'"
-      :background="store.presentation?.stage?.background ?? '#151c25'"
+      :background="stageBackground"
       @focus="focus"
     />
     <div

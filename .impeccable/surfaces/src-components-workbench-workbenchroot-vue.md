@@ -4,6 +4,7 @@ slug: 'src-components-workbench-workbenchroot-vue'
 primary_target: 'src/components/workbench/WorkbenchRoot.vue'
 related_targets:
   - 'src/components/workbench/WorkbenchCatalog.vue'
+  - 'src/components/workbench/WorkbenchRail.vue'
   - 'src/components/workbench/WorkbenchPanel.vue'
   - 'src/components/workbench/WorkbenchTools.vue'
   - 'src/components/workbench/WorkbenchStage.vue'
@@ -11,36 +12,38 @@ related_targets:
   - 'src/components/workbench/WorkbenchLayoutMotion.vue'
   - 'src/components/workbench/WorkbenchScene.vue'
   - 'src/assets/styles/workbench.css'
+  - 'src/assets/styles/workbench-floating.css'
   - 'src/assets/styles/workbench-parts.css'
   - 'server/src/main/resources/presentations/typewriter-kimi-v1.json'
   - 'src/lib/workbench/controller.ts'
+  - 'src/lib/workbench/interfaceMotion.ts'
+  - 'src/lib/workbench/viewportFraming.ts'
+  - 'src/lib/workbench/calloutOverlay.ts'
   - 'src/lib/workbench/adapter.ts'
   - 'src/lib/workbench/samples.ts'
   - 'src/stores/workbench.ts'
 mode: 'Operate'
 ---
 
-# 统一三维工作台：打字机正式资产迁移
+# 统一三维工作台：方案 C 漂浮式访客界面
 
-2026-10-10 局部扩展：Reventón 已迁入本表面，默认首页仍为打字机，钢琴与汽车从同一目录选择。汽车沿用暖白展示区与深蓝灰操作层，仅新增 WorkbenchCarMotion 的双门/分离分组、暂停继续、动作复原及独立整车/座舱/结构取景；七步导览与拆开细引线共用现有组件。没有新增页面、导演相机、palette、第二 Canvas 或常驻进度滑条。细则以 DESIGN.md 的汽车段和 `.ai/reventon-workbench-validation.md` 为准；下方日期为2026-10-09或更早的状态均作为历史。
-
-2026-10-09 文档合并。用户调整为打字机优先，音箱撤出当前正式资产计划及访客目录。默认入口仍为 WorkbenchRoot，首页 typewriter-study 已接入用户自有 Kimi 模型导出的正式 GLB；汽车仍为程序化流程样板，手表只是候选。此表面继续完成自由观察、细节聚焦、配色、动作与主动导览，模式为 Operate，表达沿用 Trees X 模型优先的品牌。2026-10-02 的共同流程记录保留为历史证据，不代表当前默认资产。
+2026-10-11 用户批准方案 C 重设计：浅银灰/淡灰绿的极简毛玻璃，浮动快速栏、单活动面板与底部工具。模式继续为 Operate，主任务是商品自由观察、部件与结构操作；环境氛围服务这项任务，不改成只观看的影片页。默认首页仍为打字机，钢琴与精细汽车同属三件真实 GLB。音箱下架且历史资源保留。管理端、管理预览和 legacy 保持原有主题与布局。
 
 ## 方向与视觉权威
 
-这次在用户固定工作台中接入真实资产，没有新增全局视觉世界或图像合成稿。视觉依据是 [PRODUCT.md](../../PRODUCT.md) 的品牌承诺、[工作台契约](../../.ai/workbench-contract.md)、当前组件/样式、打字机展示配置及 artifacts/typewriter-migration/visual-final 的实机截图。以下记录已实现选择，不追认一张不存在的设计图。
+视觉依据为用户明确选择的方案 C 生成概念、[PRODUCT.md](../../PRODUCT.md)、[工作台契约](../../.ai/workbench-contract.md) 与本轮真实组件/样式及截图。概念只确认 UI 方向，不充当模型精度或实机画质证据；完整展厅墙窗、天空和地台资产另列后续。
 
 - **THESIS**：模型先被看清，工具在需要时展开，同一套界面服务正式资产与流程样板。
-- **OWN-WORLD**：深蓝灰顶栏、工具与面板，冷银选中态、细线和清楚中文；沿用 Manrope / Noto Sans SC 字体。打字机舞台使用暖纸色承托黑色漆面与金属，舞台文字使用深色主字和辅助字，完整 token 仍由根 DESIGN.md 维护。
+- **OWN-WORLD**：浅银灰舞台、深灰绿文字、淡绿选中态、克制毛玻璃与清楚中文，沿用 Manrope / Noto Sans SC 字体；玻璃集中在快速栏、面板和工具，不嵌套装饰卡片。完整 token 由根 DESIGN.md 的 visitorColors 等访客覆盖记录维护。
 - **STORY**：目录选择 → 自由观察 → 外观/细节/结构与动作 → 可选手动导览 → 返回全景或下一件。
-- **FIRST VIEWPORT**：顶栏、中文商品身份与“正式展品”标记、真实打字机 GLB、两行共享工具和简短输入提示。首屏不打开目录或检查面板，不自动运镜，整机默认不覆盖热点标签。
-- **FORM**：单一 Canvas；目录在左或工具面板在右，互斥打开并收窄场景；手机统一转到模型下方。
+- **FIRST VIEWPORT**：轻量顶栏、中文商品身份与“正式展品”标记、真实打字机 GLB、左侧三件真实商品快速栏、底部两行工具及简短输入提示。首屏不打开目录或操作面板，不自动运镜，整机默认不覆盖热点标签。
+- **FORM**：单一全幅 Canvas；目录浮于左或工具面板浮于右，互斥打开。相机投影平滑横移留空间，不重置观察姿态、不因面板缩小商品；手机使用横向快速栏与底部单面板。
 
 ## 实现后的布局与状态
 
-桌面：76px 顶栏；目录 310px，右工具面板 340px。1100px 及以下分别变为 280px / 300px。标题位于场景上 32px、左 38px，场景底部 66px 处是两行工具。完整 token 已记录于根 [DESIGN.md](../../DESIGN.md)，不在此另建视觉真值。
+桌面：全幅舞台，顶栏上 24px/左右 32px；左侧快速栏 108px，目录面板 300px，右操作面板 320px。标题上 112px/左 170px，底部两行工具距底 28px，面板正文独立滚动。短桌面与较窄桌面的调整、完整参数见根 [DESIGN.md](../../DESIGN.md)，不在此另建 token 真值。
 
-760px 及以下：66px 顶栏；场景在上、面板在下，行高使用 minmax(310px, 1fr) minmax(220px, 38%)；下面板滚动，保持相机与探索工具可用。舞台引线标签继续显示并允许长名称换行，容纳不足时抑制次要标签；细节列表继续提供完整部件选择。320px、390px 为基础兼容范围，桌面仍是主要使用环境。
+760px 及以下：顶部横向快速栏、底部单面板，面板最大高 45%，完整核心工具仍在底部；介绍正文在面板打开时收起。舞台引线标签继续显示并允许长名称换行，容纳不足时抑制次要标签；细节列表提供完整部件选择。320px、390px 为基础兼容范围，桌面仍是主要使用环境。
 
 - **目录**：搜索、分类、当前商品、真实资源封面、读取中、错误重试与空结果；按配置区分“正式展品”与“流程样板”，音箱下架后不出现在访客目录。
 - **外观**：色样、名称和选中勾；打字机有缎黑、象牙白、墨绿三种展示漆面，说明不代表真实可购款式。
@@ -48,19 +51,25 @@ mode: 'Operate'
 - **结构与动作**：A 键演绎按键、键杠杆与字杆联动；“合拢整机”“分层展开”“平铺部件”为具名结构按钮，保留暂停、继续和复原动作。访客不常驻百分比滑条；结构变化保留镜头，“展开全景”“平铺俯视”为独立相机预设。分层关系不声称真实维修顺序。
 - **导览**：五步手动推进：整机、一次按键的连接、分层、平铺、返回整机。开始、上一步、下一步、完成和退出沿用共同控件，手动输入立即接手。
 - **加载/错误**：同一舞台空间中的状态覆盖层；配置读取后仍等待首帧。失败显示可恢复操作，不使用静态样例兜底。
-- **焦点/动态**：焦点环、Escape 关闭、导航入口打开后的焦点管理；能力缺失不显示入口，减弱动态直接到达静态结果。
+- **焦点/动态**：2px 深绿焦点环、Escape 关闭、关闭后恢复入口；面板进入 0.32 秒/退出 0.18 秒、导航指示块 0.3 秒，GSAP 唯一拥有且可取消旧补间，退出立即 inert。能力缺失不显示入口，减弱动态直接到达静态结果。
 
 “复位视角”只改相机，“返回全景”恢复动作和结构并保留配色，“还原商品”恢复配色、动作、结构与镜头。开合面板保留状态，切换商品进入新商品默认状态。三个词的区别是操作契约，不可为了缩短文案合并。
 
 ## 场景、资产与范围
 
-当前 typewriter-study 是 572 部件的真实 GLB，保留来源模型的装配、分层、平铺姿态与独立部件身份；暖纸舞台采用配置背景与地面、专属环境、漆面与金属 shader。源页面的 DOM、滚动导演、相机和 renderer 未迁入。reventon 仍是程序化流程样板；form-01 已下架但兼容资源保留。正式展品标记不表示工厂 CAD、照片级画质或整项目已经完成。
+当前 typewriter-study 是 572 部件的真实 GLB，piano-cfx 与 reventon 也均接入真实 GLB。打字机保留装配/分层/平铺及击发联动，钢琴保留八段结构与平铺，汽车保留双门/分离、座舱与原材质反射。访客本轮只统一浅灰背景与地面色，曝光、光照、环境及材质保持原通道。源页面 DOM、滚动导演、相机和 renderer 未迁入；form-01 已下架但兼容资源保留。正式展品标记不表示工厂 CAD、照片级画质或整项目已经完成。
 
-配置来自真实 Spring Boot/MySQL API，通过既有管理接口保存，当前展示仍只有一个 TresCanvas/renderer。打字机通过受控注册 typewriter-v1 适配器和 v3 结构程序接入；界面、状态意图与 Three 所有权边界见 [架构](../../.ai/architecture.md)。未来正式汽车继续复用共同工作台与适配接口，不复制独立页面。
+配置来自真实 Spring Boot/MySQL API，通过既有管理接口保存，当前展示仍只有一个 TresCanvas/renderer。三件分别由受控注册适配器接入，界面、状态意图与 Three 所有权边界见 [架构](../../.ai/architecture.md)。快速栏独立读取完整目录，不借用目录检索/分类的临时结果；当前 API、配置版本和数据库保持。
 
-旧影片、旧完整控制台、独立 Reventón 固定流程与摄影棚规则均为 **legacy-only**。旧版由 legacy=1 或已保留的旧商品 ID 路由进入；精细汽车为 ?legacy=1&product=reventon，当前 ?product=reventon 为汽车流程样板。历史 surface 中的旧默认路由和待验收项只在旧版范围解释，当前规范见根 DESIGN.md。旧设计及旧侧车完整保存在 [设计历史](../../.ai/history/2026-09-design.md)。
+旧影片、旧完整控制台、独立 Reventón 固定流程与摄影棚规则均为 **legacy-only**。旧版由 legacy=1 或已保留旧商品 ID 进入；?legacy=1&product=reventon 为旧固定演示，?product=reventon 为统一工作台的精细汽车。此前深蓝灰访客布局与旧默认路由归入历史，当前规范见根 DESIGN.md；管理端与管理预览仍使用其原有基础主题。旧设计及旧侧车完整保存在 [设计历史](../../.ai/history/2026-09-design.md)。
 
 ## 验证证据与交付边界
+
+本轮实际执行与最终补充项见 [.ai/ui-c-validation.md](../../.ai/ui-c-validation.md)。集中修正前 check 为 221 项 Vitest、48 项 Node，99 个 Vue ≤300 行；UI flow 在 5183 使用真实 API 与 572 部件打字机，覆盖五个尺寸、12 张截图、快速面板、焦点、状态保持、导览/鼠标接管、滚轮隔离、筛选独立、无 WebGL/迟到选择及减弱动态。最终构图测试、三件标签与生产浏览器结果由执行者补充，未用历史 ship 代替本轮验收。
+
+## 历史记录（不作为方案 C 完成证据）
+
+以下保留原打字机迁移、标签与共同流程证据。当时“汽车为样板”“深蓝灰操作层”和旧布局的描述只适用于记录日期，不覆盖当前三件真实 GLB 与浅色访客 UI。
 
 本轮文档依据完成修正后的 [visual-final/report.json](../../artifacts/typewriter-migration/visual-final/report.json)，passed: true、errors: []。截图包括 whole-1280、whole-1440、whole-1920、whole-390、whole-320、key-closeup、layers-panel、flat-panel、catalog、guide-return。本次文档核对抽查整机 1440 与分层面板，与源码吻合；未重新捕获或运行浏览器、detector。底部输入提示采用舞台辅助字色，本轮实机对比度抽样约（4.73:1）；具体检查与持久化证据由 [.ai/typewriter-migration-validation.md](../../.ai/typewriter-migration-validation.md) 维护。
 
@@ -83,4 +92,4 @@ mode: 'Operate'
 - 桌面概览覆盖三件样板在 1280×720、1440×1000、1920×1080 的截图；另有目录、细节、三件动作状态，以及 390px / 320px 的默认和下面板截图。finish review 已逐张核查所需截图；本次文档另抽查音箱 1440、汽车动作 1440、320px 下面板，与源码吻合。
 - [detector.json](../review/workbench/detector.json) 的 31 项均是相对旧系统的颜色、字号或圆角文档差异。本轮已按实际实现写入 wb-* token，并保存旧规范。没有再次运行 detector，也不把文档化描述为新一轮测试或性能通过。
 
-上述 ship 仅对应当时的共同流程。基础管理与管理易用性已有后续独立阶段记录；本轮完成打字机迁移的视觉记录，正式汽车与联合验收仍待进行。手势、在线上传与高级版本管理为扩展；照片级外观、量化性能或工厂机械精度不由这些截图推断。
+上述 ship 仅对应当时的共同流程。基础管理、管理易用性、正式汽车迁入及 E1 已有后续独立阶段记录；E1 本人走查仍待反馈，方案 C 另有本轮记录。手势、在线上传与高级版本管理为扩展；照片级外观、量化性能或工厂机械精度不由这些截图推断。
