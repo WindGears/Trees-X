@@ -35,6 +35,7 @@
     "test:typewriter": "node scripts/typewriter-check.mjs",
     "test:typewriter-lifecycle": "node scripts/typewriter-lifecycle-check.mjs",
     "test:typewriter-visual": "node scripts/typewriter-visual-check.mjs",
+    "test:typewriter-studio": "node scripts/typewriter-studio-check.mjs",
     "test:piano": "node scripts/piano-check.mjs",
     "test:piano-lifecycle": "node scripts/piano-lifecycle-check.mjs",
     "test:piano-visual": "node scripts/piano-visual-check.mjs",

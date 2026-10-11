@@ -1,15 +1,31 @@
-/* global setTimeout */
+/* global setTimeout, fetch, URL, AbortSignal */
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = process.env.TYPEWRITER_LIFECYCLE_OUTPUT || 'artifacts/typewriter-migration/lifecycle'
 await mkdir(output, { recursive: true })
+const catalogResponse = await fetch(new URL('/api/v1/products', base), {
+  signal: AbortSignal.timeout(60000),
+})
+expect(catalogResponse.ok, 'Real product catalog is available').toBe(true)
+const catalog = await catalogResponse.json()
+const productNames = new Map(catalog.map((product) => [product.slug, product.name]))
+for (const slug of ['typewriter-study', 'piano-cfx', 'reventon'])
+  expect(productNames.get(slug), `Published catalog includes ${slug}`).toBeTruthy()
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
-const report = { passed: false, checks: [], memory: [], errors: [], picking: null }
+const report = {
+  passed: false,
+  checks: [],
+  memory: [],
+  pianoMemory: [],
+  errors: [],
+  picking: null,
+}
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
   page.on('pageerror', (error) => report.errors.push(error.message))
   const ready = async (slug) => {
+    console.log(`Waiting for actual ${slug}`)
     await expect(page.locator('.workbench')).toHaveAttribute('data-slug', slug)
     await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
       timeout: 90000,
@@ -29,6 +45,29 @@ try {
         }
         component = component.parent
       }
+      // Production Vue omits the DOM component backlink, but retains the real VNode tree.
+      // Inspect that tree without enabling devtools or creating a replacement scene.
+      const seen = new Set()
+      const visit = (vnode) => {
+        if (!vnode || typeof vnode !== 'object' || seen.has(vnode)) return false
+        seen.add(vnode)
+        const current = vnode.component
+        if (current) {
+          const context =
+            current.exposed?.context ??
+            Reflect.ownKeys(current.provides ?? {})
+              .map((key) => current.provides[key])
+              .find((value) => value?.scene?.value?.isScene)
+          if (context?.scene?.value?.isScene) {
+            window.__wb = context
+            return true
+          }
+          if (visit(current.subTree)) return true
+        }
+        if (Array.isArray(vnode.children) && vnode.children.some(visit)) return true
+        return visit(vnode.suspense?.activeBranch)
+      }
+      if (visit(document.querySelector('#app')?._vnode)) return
       throw new Error('No actual Three scene')
     })
     const identity = await page.evaluate(() =>
@@ -37,6 +76,7 @@ try {
         .map((n) => n.userData.workbenchProduct),
     )
     expect(identity).toEqual([slug])
+    console.log(`Ready: ${slug}`)
   }
   const pose = () =>
     page.evaluate(() => {
@@ -55,13 +95,34 @@ try {
     expect(await pose()).toEqual(value)
     return value
   }
-  const choose = async (name) => {
+  const choose = async (slug) => {
+    const name = productNames.get(slug)
+    expect(name, `Catalog name for ${slug}`).toBeTruthy()
     await page.getByRole('button', { name: '商品目录', exact: true }).click()
     await page
       .locator('.wb-catalog-list')
-      .getByRole('button', { name: new RegExp(name) })
+      .getByRole('button', { name: new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })
       .click()
   }
+  const studioMemory = () =>
+    page.evaluate(() => {
+      const scene = window.__wb.scene.value,
+        renderer = window.__wb.renderer.instance,
+        studios = [],
+        reflections = []
+      scene.traverse((node) => {
+        if (node.name === 'Trees X / product studio') studios.push(node.uuid)
+        if (node.name === 'Trees X / studio reflection') reflections.push(node.uuid)
+      })
+      return {
+        ...renderer.info.memory,
+        programs: renderer.info.programs.length,
+        studios: studios.length,
+        reflections: reflections.length,
+        sameCanvas: document.querySelector('canvas') === window.__initialCanvas,
+        sameRenderer: renderer === window.__initialRenderer,
+      }
+    })
   await page.goto(base)
   await ready('typewriter-study')
   await page.evaluate(() => {
@@ -182,10 +243,31 @@ try {
   report.checks.push(
     'Real finish changes material; restore returns finish; user observation exits guide',
   )
+  report.beforePiano = await studioMemory()
   for (let i = 0; i < 3; i++) {
-    await choose('汽车样板')
+    await choose('piano-cfx')
+    await ready('piano-cfx')
+    const piano = await studioMemory()
+    expect(piano.studios).toBe(0)
+    expect(piano.reflections).toBe(0)
+    expect(piano.sameCanvas && piano.sameRenderer).toBe(true)
+    await choose('typewriter-study')
+    await ready('typewriter-study')
+    expect(await pose()).toEqual(initial)
+    const memory = await studioMemory()
+    expect(memory.studios).toBe(1)
+    expect(memory.reflections).toBe(1)
+    expect(memory.sameCanvas && memory.sameRenderer).toBe(true)
+    report.pianoMemory.push(memory)
+  }
+  expect(report.pianoMemory[2]).toEqual(report.pianoMemory[1])
+  report.checks.push(
+    'Three actual piano/typewriter cycles remove and recreate one studio; memory stable after warmup',
+  )
+  for (let i = 0; i < 3; i++) {
+    await choose('reventon')
     await ready('reventon')
-    await choose('机械打字机')
+    await choose('typewriter-study')
     await ready('typewriter-study')
     expect(await pose()).toEqual(initial)
     report.memory.push(
@@ -205,8 +287,8 @@ try {
     await new Promise((resolve) => setTimeout(resolve, 700))
     await route.fulfill({ response }).catch(() => {})
   })
-  await choose('汽车样板')
-  await choose('机械打字机')
+  await choose('reventon')
+  await choose('typewriter-study')
   await ready('typewriter-study')
   await page.waitForTimeout(800)
   await ready('typewriter-study')
@@ -214,12 +296,12 @@ try {
   report.checks.push(
     'Three real car/typewriter cycles, late selection, browser back/forward; memory stable after warmup',
   )
-  await choose('汽车样板')
+  await choose('reventon')
   await ready('reventon')
   await page.route('**/models/bundles/kimi-typewriter/v1/model.glb', (route) =>
     route.abort('failed'),
   )
-  await choose('机械打字机')
+  await choose('typewriter-study')
   await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'error', {
     timeout: 30000,
   })

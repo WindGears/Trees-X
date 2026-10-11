@@ -63,8 +63,11 @@ export function createStageController(
     progress?.pauseAll()
     manual()
   }
+  // OrbitControls sends an event; Tres invalidate accepts a frame count. Forward
+  // no arguments so a change at an idle frame cannot poison that count with NaN.
+  const changed = () => invalidate()
   controls.addEventListener('start', takeover)
-  controls.addEventListener('change', invalidate)
+  controls.addEventListener('change', changed)
   function move(position: Vec3, target: Vec3, instant = false) {
     stopCamera()
     const state = {
@@ -329,7 +332,7 @@ export function createStageController(
     dispose() {
       unload()
       controls.removeEventListener('start', takeover)
-      controls.removeEventListener('change', invalidate)
+      controls.removeEventListener('change', changed)
       controls.dispose()
       renderer.domElement.removeEventListener('pointerdown', down)
       renderer.domElement.removeEventListener('pointerup', up)

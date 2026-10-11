@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onScopeDispose, shallowRef, watch } from 'vue'
+import { computed, nextTick, onMounted, onScopeDispose, watch } from 'vue'
 import { useLoop, useTres, useTresContext } from '@tresjs/core'
 import {
   PerspectiveCamera,
   Color,
   Fog,
   PMREMGenerator,
-  Vector3,
   WebGLRenderer,
   type WebGLRenderTarget,
 } from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { createStageController } from '@/lib/workbench/controller'
-import { defaultStage } from '@/lib/workbench/presentationV2'
+import { hasTypewriterStudio, resolveWorkbenchStage } from '@/lib/workbench/studioPreset'
+import WorkbenchLighting from './WorkbenchLighting.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import { useMotionSession } from '@/lib/workbench/motionSession'
 import { useCameraCaptureSession } from '@/lib/workbench/cameraCapture'
@@ -41,19 +41,11 @@ const background = new Color('#151c25')
 const fog = new Fog(background, 12, 38)
 scene.value.background = background
 scene.value.fog = fog
-const keyPosition = shallowRef(new Vector3()),
-  rimPosition = shallowRef(new Vector3()),
-  groundPosition = shallowRef(new Vector3())
-const stage = computed(() => {
-  const source = store.presentation?.stage ?? defaultStage
-  return props.gallery ? { ...source, background: '#e7e9e5', ground: '#d8dcd5' } : source
-})
+const studio = computed(() => hasTypewriterStudio(store.presentation))
+const stage = computed(() => resolveWorkbenchStage(store.presentation, Boolean(props.gallery)))
 watch(
   stage,
   (value) => {
-    keyPosition.value = new Vector3().fromArray(value.key.position)
-    rimPosition.value = new Vector3().fromArray(value.rim.position)
-    groundPosition.value = new Vector3(0, value.groundY, 0)
     background.set(value.background)
     fog.color.copy(background)
     scene.value.environmentIntensity = value.environmentIntensity
@@ -254,34 +246,5 @@ onScopeDispose(() => {
 </script>
 
 <template>
-  <TresGroup name="workbench-lighting">
-    <TresAmbientLight :intensity="stage.ambient" />
-    <TresDirectionalLight
-      :position="keyPosition"
-      :intensity="stage.key.intensity"
-      :color="stage.key.color"
-      cast-shadow
-      v-bind="{
-        'shadow-mapSize-width': 2048,
-        'shadow-mapSize-height': 2048,
-        'shadow-normalBias': 0.005,
-        'shadow-bias': -0.00008,
-        'shadow-radius': 3,
-      }"
-    />
-    <TresDirectionalLight
-      :position="rimPosition"
-      :intensity="stage.rim.intensity"
-      :color="stage.rim.color"
-    />
-    <TresMesh :rotation="[-Math.PI / 2, 0, 0]" :position="groundPosition" receive-shadow>
-      <TresPlaneGeometry :args="[200, 200]" />
-      <TresMeshStandardMaterial
-        :color="stage.ground"
-        :roughness="1"
-        :metalness="0"
-        :env-map-intensity="0.1"
-      />
-    </TresMesh>
-  </TresGroup>
+  <WorkbenchLighting :stage="stage" :studio="studio" />
 </template>

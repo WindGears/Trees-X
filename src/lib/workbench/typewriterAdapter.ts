@@ -1,9 +1,10 @@
-import { MeshStandardMaterial, type Group } from 'three'
+import { MeshStandardMaterial, type Group, type Scene, type WebGLRenderer } from 'three'
 import { bindGlb } from './glbAdapter'
 import { bindTypewriterRig, parseTypewriterRig } from './typewriterRig'
 import { instanceTypewriter } from './typewriterInstances'
 import { applyTypewriterFinishes } from './typewriterFinishes'
 import type { GlbSource, WorkbenchProduct } from './types'
+import { createTypewriterStudio } from './studio/stage'
 
 export function bindTypewriter(
   product: WorkbenchProduct,
@@ -31,10 +32,12 @@ export function bindTypewriter(
   )
   adapter.root.userData.parts = parts.length
   adapter.root.userData.adapter = source.adapter
+  let studio: ReturnType<typeof createTypewriterStudio> | undefined
   const apply = () => {
     adapter.apply()
     applyRig(adapter.pose)
     instances.update()
+    studio?.markDirty()
   }
   apply()
   let disposed = false
@@ -43,9 +46,21 @@ export function bindTypewriter(
     apply,
     select: instances.select,
     nodeForHit: instances.nodeForHit,
+    attach(scene: Scene, renderer: WebGLRenderer) {
+      if (disposed || studio) return
+      studio = createTypewriterStudio(
+        renderer,
+        scene,
+        adapter.root,
+        product.presentation.stage?.groundY,
+      )
+    },
+    beforeRender: () => studio?.render(),
     dispose() {
       if (disposed) return
       disposed = true
+      studio?.dispose()
+      studio = undefined
       instances.dispose()
       adapter.dispose()
     },

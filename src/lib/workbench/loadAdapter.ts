@@ -83,9 +83,9 @@ export async function loadAdapter(
       signal.throwIfAborted()
       environment = createAssetEnvironment(envFile, envBytes, renderer)
     } else if (source.adapter === 'typewriter-v1') {
-      const { createTypewriterEnvironment } = await import('./typewriterEnvironment')
+      const { createStudioEnvironment } = await import('./studio/geometry')
       signal.throwIfAborted()
-      environment = createTypewriterEnvironment(renderer)
+      environment = createStudioEnvironment(renderer, product.presentation.stage?.groundY)
     } else if (source.adapter === 'piano-v1') {
       const { createPianoEnvironment } = await import('./pianoEnvironment')
       signal.throwIfAborted()

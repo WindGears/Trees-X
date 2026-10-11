@@ -75,8 +75,12 @@ const ease = (v: number) => {
 }
 const segment = (a: number, b: number, v: number) => ease((v - a) / (b - a))
 
-// Ported from the owner's source pose function. Every update starts from rest;
-// camera state and rendering are deliberately outside this controller.
+// Structure poses preserve the owner's source. The strike is a bounded mechanism
+// illustration: the source's 1.15 rad swing crossed the platen mid-stroke. A 0.35
+// rad excursion keeps the source's 41 fully bound strike chains outside its
+// rubber sleeve while retaining a visible rise. This is not a factory-calibrated
+// printing mechanism. The other three typebars have no valid lever binding.
+// Every update starts from rest; camera and rendering stay outside the controller.
 export function bindTypewriterRig(
   parts: TypewriterPart[],
   nodes: Map<string, Object3D>,
@@ -136,7 +140,7 @@ export function bindTypewriterRig(
       else if (part.group === 'levers')
         node.quaternion.multiply(delta.setFromAxisAngle(axis, 0.08 * hit))
       else if (part.group === 'typebars')
-        node.quaternion.multiply(delta.setFromAxisAngle(axis, -1.15 * hit * (1 - flat)))
+        node.quaternion.multiply(delta.setFromAxisAngle(axis, -0.35 * hit * (1 - flat)))
     }
   }
 }

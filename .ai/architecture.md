@@ -99,6 +99,16 @@ WorkbenchRoot 的 `wb-floating` 只装配访客全幅舞台、WorkbenchRail、�
 
 ## 验证
 
+### 打字机摄影棚与有限击发（2026-10-11）
+
+`studioPreset` 根据已注册的 `typewriter-v1` 展示源选择摄影棚照明，不按商品名称复制场景。`WorkbenchLighting` 保持共用光源装配，打字机隐藏旧平面地面，其他商品保持原灯光/地面。`studio/` 分为设计、几何、反射、接触阴影和装配；模型、相机与 v3 动作核心不迁入其中。管理预览使用同一舞台，取景回填仍只保存相机数字。
+
+适配器拥有实体圆角地台、墙窗与软箱、面光源库引用、一个反射目标和两个阴影目标。反射复用唯一 renderer 的离屏渲染；接触阴影仅在姿态变化后刷新。临时摄影棚按相同布局生成 PMREM，临时几何/材质/面光源由环境构建方释放，返回目标由 loadAdapter 唯一释放。实例化、源 geometry/material/texture 的所有权沿用原通道；卸载先移除舞台再释放实例与源资源。
+
+`typewriterFinishes` 复用已有 Physical 材质的清漆/各向异性与程序微结构，不复制贴图。`typewriterRig` 将过大击发摆角限制为 0.35 rad，保持静止/分层/平铺基准与键帽/杠杆联动，仍是机构演绎而非工厂打印机构。真实 GLB 几何采样、重复复原和分层兼容另有测试。
+
+OrbitControls 的 change 事件通过无参数回调调用 Tres invalidate，避免事件对象污染按需渲染帧数；卸载注销同一回调。`controller.test.ts` 在空闲帧验证真实控件事件、数字帧数与注销行为。详见 typewriter-studio-validation.md。
+
 ### 本机交付与联合验收（E1）
 
 scripts/demo.mjs 只编排诊断、准备、生产启动和停止；scripts/demo/ 分离配置、资源摘要、进程身份、控制锁和真实就绪检查。Java 直接运行指定 JAR，Node 直接运行本地 Vite 生产预览，固定本机端口。控制状态和日志位于忽略目录，不保存数据库密码；停止依据 PID、启动时间、可执行路径、完整命令和运行标识，拒绝结束外部进程。演示过程不调用 Maven 或安装依赖。
