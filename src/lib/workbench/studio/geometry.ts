@@ -1,5 +1,4 @@
 import {
-  BoxGeometry,
   Color,
   DoubleSide,
   Group,
@@ -17,12 +16,15 @@ import {
 } from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { createStudioLights, studioDesign } from './design'
+import { createStudioBackdrop } from './backdrop'
 
-/** Only authored studio resources are owned here; product geometry is never traversed. */
-export function createStudioGeometry(groundY: number = studioDesign.groundY) {
+function buildStudioGeometry(groundY: number, capture: boolean) {
   const group = new Group()
-  group.name = 'Trees X / product studio'
+  group.name = capture ? 'Trees X / studio capture' : 'Trees X / product studio'
   group.userData.studio = true
+  group.userData.capture = capture
+  const backdrop = createStudioBackdrop(capture ? studioDesign.captureFill : 1)
+  group.add(backdrop.mesh)
   const geometries = new Set<BufferGeometry>()
   const materials = new Set<Material>()
   function add(
@@ -59,39 +61,37 @@ export function createStudioGeometry(groundY: number = studioDesign.groundY) {
     surface,
     [0, groundY - studioDesign.height / 2, 0],
   )
-  const floor = add(
-    'floor',
-    new PlaneGeometry(50, 50),
-    new MeshStandardMaterial({ color: studioDesign.floor, roughness: 0.74 }),
-    [0, groundY - studioDesign.height - 0.005, 0],
-  )
-  floor.rotation.x = -Math.PI / 2
-  add(
-    'back wall',
-    new BoxGeometry(38, 15, 0.18),
-    new MeshStandardMaterial({ color: studioDesign.wall, roughness: 0.9 }),
-    [0, 7.25, -10],
-  )
-  const frame = new MeshStandardMaterial({
-    color: studioDesign.frame,
-    roughness: 0.42,
-    metalness: 0.25,
+  const floorMaterial = new MeshStandardMaterial({
+    color: studioDesign.floor,
+    roughness: 0.74,
+    transparent: true,
+    depthWrite: false,
   })
-  const window = studioDesign.panels[0]
-  const [x, y, z] = window.position
-  for (const dx of [-window.width / 2, 0, window.width / 2])
-    add('window mullion', new BoxGeometry(0.07, window.height + 0.12, 0.1), frame, [
-      x + dx,
-      y,
-      z + 0.022,
-    ])
-  for (const dy of [-window.height / 2, 0, window.height / 2])
-    add('window transom', new BoxGeometry(window.width + 0.12, 0.07, 0.1), frame, [
-      x,
-      y + dy,
-      z + 0.022,
-    ])
-  for (const panel of studioDesign.panels) {
+  // A physical nearby floor recedes into the infinite sky instead of exposing
+  // an edge, hard horizon, or a tone-mapped seam during wide-angle observation.
+  floorMaterial.onBeforeCompile = (shader) => {
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vStudioFloorWorld;')
+      .replace(
+        '#include <worldpos_vertex>',
+        '#include <worldpos_vertex>\nvStudioFloorWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      )
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying vec3 vStudioFloorWorld;')
+      .replace(
+        '#include <dithering_fragment>',
+        '#include <dithering_fragment>\ngl_FragColor.a *= 1.0 - smoothstep(14.0, 30.0, length(vStudioFloorWorld.xz - cameraPosition.xz));',
+      )
+  }
+  floorMaterial.customProgramCacheKey = () => 'trees-studio-floor-fade-v1'
+  const floor = add('floor', new PlaneGeometry(200, 200), floorMaterial, [
+    0,
+    groundY - studioDesign.height - 0.005,
+    0,
+  ])
+  floor.rotation.x = -Math.PI / 2
+  floor.renderOrder = -900
+  for (const panel of capture ? studioDesign.panels : []) {
     const emissive = new MeshBasicMaterial({
       color: new Color().setRGB(panel.power, panel.power * 0.985, panel.power * 0.95),
       side: DoubleSide,
@@ -102,7 +102,7 @@ export function createStudioGeometry(groundY: number = studioDesign.groundY) {
       emissive,
       panel.position,
     )
-    if (panel.name !== 'window') board.lookAt(new Vector3().fromArray(panel.target))
+    board.lookAt(new Vector3().fromArray(panel.target))
   }
   group.updateMatrixWorld(true)
   let disposed = false
@@ -112,11 +112,22 @@ export function createStudioGeometry(groundY: number = studioDesign.groundY) {
       if (disposed) return
       disposed = true
       group.removeFromParent()
+      backdrop.dispose()
       for (const resource of geometries) resource.dispose()
       for (const resource of materials) resource.dispose()
       group.clear()
     },
   }
+}
+
+/** The live scene owns its pedestal, floor, and seamless background; no softbox boards. */
+export function createStudioGeometry(groundY: number = studioDesign.groundY) {
+  return buildStudioGeometry(groundY, false)
+}
+
+/** Softbox geometry exists only while deriving the reflective HDR environment. */
+export function createStudioCaptureGeometry(groundY: number = studioDesign.groundY) {
+  return buildStudioGeometry(groundY, true)
 }
 
 /** Caller owns the returned PMREM target; temporary authored scene is released here. */
@@ -125,8 +136,10 @@ export function createStudioEnvironment(
   groundY: number = studioDesign.groundY,
 ) {
   const environment = new Scene()
-  environment.background = new Color(studioDesign.background)
-  const geometry = createStudioGeometry(groundY)
+  environment.background = new Color(studioDesign.background).multiplyScalar(
+    studioDesign.captureFill,
+  )
+  const geometry = createStudioCaptureGeometry(groundY)
   const lighting = createStudioLights()
   environment.add(geometry.group, ...lighting.lights)
   const generator = new PMREMGenerator(renderer)

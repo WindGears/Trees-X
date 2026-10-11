@@ -121,19 +121,39 @@ export async function bridge(page, remember = false) {
   await page.evaluate((remember) => {
     let component = document.querySelector('canvas')?.__vueParentComponent
     let scene, motion, store
-    while (component) {
-      const values = Reflect.ownKeys(component.provides ?? {}).map((key) => component.provides[key])
-      const appValues = Reflect.ownKeys(component.appContext.provides).map(
-        (key) => component.appContext.provides[key],
+    const inspect = (current) => {
+      const values = Reflect.ownKeys(current.provides ?? {}).map((key) => current.provides[key])
+      const appValues = Reflect.ownKeys(current.appContext.provides).map(
+        (key) => current.appContext.provides[key],
       )
-      scene ??= component.exposed?.context ?? values.find((value) => value?.scene?.value?.isScene)
+      scene ??= current.exposed?.context ?? values.find((value) => value?.scene?.value?.isScene)
       motion ??= values.find(
         (value) => value?.states?.value && typeof value.snapshot === 'function',
       )
-      store ??= component.setupState?.store
+      store ??= current.setupState?.store
       if (typeof store?.motion !== 'function')
         store = appValues.find((value) => value?._s?.get('workbench'))?._s.get('workbench')
+    }
+    while (component) {
+      inspect(component)
       component = component.parent
+    }
+    // Production Vue omits DOM backlinks; its real VNode/component tree remains.
+    // This is a disposable test-window read, with no app debug API or alternate renderer.
+    if (!scene || !motion || !store) {
+      const seen = new Set()
+      const visit = (vnode) => {
+        if (!vnode || typeof vnode !== 'object' || seen.has(vnode)) return
+        seen.add(vnode)
+        const current = vnode.component
+        if (current) {
+          inspect(current)
+          visit(current.subTree)
+        }
+        if (Array.isArray(vnode.children)) vnode.children.forEach(visit)
+        visit(vnode.suspense?.activeBranch)
+      }
+      visit(document.querySelector('#app')?._vnode)
     }
     if (!scene || !motion || !store) throw new Error('Real Three/motion/Pinia bridge unavailable')
     const existing = window.__demo

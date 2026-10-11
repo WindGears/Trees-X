@@ -34,7 +34,7 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 ### 当前事实
 
-2026-10-11 打字机质量样片：在共用工作台中加入实体圆角地台、灰绿墙窗/软箱、同布局反射环境、实时柔化倒影和随拆解更新的接触阴影；精修现有漆面清漆与金属表面。A 键字杆摆角修正避免原先扫入滚筒，保留键帽/杠杆联动及分层/平铺。真实 GLB、自由观察、配色、热点和管理预览继续原通道；钢琴/汽车未套用新舞台。WebGPU 与路径追踪尚未接入，本轮不宣称概念图或工厂 CAD 级等效。证据与限制见 [.ai/typewriter-studio-validation.md](.ai/typewriter-studio-validation.md)。
+2026-10-11 打字机质量样片：共用工作台中的实体圆角地台、实时柔化倒影、随拆解更新的接触阴影及现有漆面/金属精修保留；按用户反馈将墙窗/可见软箱撤换为包围场景的无缝银灰绿天空盒，软箱只用于反射环境。默认整机取景收近，分层和平铺保留各自宽取景。A 键字杆摆角修正避免原先扫入滚筒，保留键帽/杠杆联动及分层/平铺。真实 GLB、自由观察、配色、热点和管理预览继续原通道；钢琴/汽车未套用新舞台。WebGPU 与路径追踪尚未接入，不宣称概念图或工厂 CAD 级等效。原样片见 [.ai/typewriter-studio-validation.md](.ai/typewriter-studio-validation.md)，本次收束见 [.ai/typewriter-skybox-validation.md](.ai/typewriter-skybox-validation.md)。
 
 2026-10-09 统一工作台增加拆解引线标签：所有展示源复用部件投影，拆开时渐显、合拢时淡出，关闭工具面板保留标签。相机变化时平滑避让商品中心、标题和工具；相交路径短暂淡出后重定位，选中部件优先保留。默认最多12个配置重点标记，不把全部零件一次铺满画面；完整部件仍可在细节中查询。标签随舞台明暗调整文字和细线，小屏空间不足抑制低优先项目。验收见 [.ai/callout-validation.md](.ai/callout-validation.md)。
 

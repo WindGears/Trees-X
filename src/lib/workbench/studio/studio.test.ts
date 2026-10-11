@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   Box3,
   BoxGeometry,
+  BackSide,
   Color,
   Group,
   Mesh,
@@ -14,7 +15,7 @@ import {
   Vector4,
   type WebGLRenderer,
 } from 'three'
-import { createStudioGeometry } from './geometry'
+import { createStudioCaptureGeometry, createStudioGeometry } from './geometry'
 import { createStudioReflection } from './reflection'
 import { createStudioContactShadow } from './contactShadow'
 import { createTypewriterStudio } from './stage'
@@ -47,7 +48,7 @@ function rendererFixture() {
 }
 
 describe('authored product studio', () => {
-  it('shares the visible emitter layout and preserves the chosen model ground height', () => {
+  it('keeps a seamless enclosing skybox and preserves the chosen model ground height', () => {
     const studio = createStudioGeometry(-0.15)
     expect(studio.group.name).toBe('Trees X / product studio')
     expect(studio.group.userData.studio).toBe(true)
@@ -57,13 +58,22 @@ describe('authored product studio', () => {
     expect(size.x).toBeCloseTo(studioDesign.width, 6)
     expect(size.y).toBeCloseTo(studioDesign.height, 6)
     expect(size.z).toBeCloseTo(studioDesign.depth, 6)
-    for (const panel of studioDesign.panels) {
-      const mesh = studio.group.getObjectByName(`Trees X / studio ${panel.name} lightboard`) as Mesh
-      expect(mesh.position.toArray()).toEqual([...panel.position])
-      expect((mesh.material as MeshBasicMaterial).color.r).toBeGreaterThan(1)
-    }
-    const frame = studio.group.getObjectByName('Trees X / studio window mullion') as Mesh
-    const materialDispose = vi.spyOn(frame.material as MeshPhysicalMaterial, 'dispose')
+    expect(studio.group.getObjectByName('Trees X / studio back wall')).toBeUndefined()
+    expect(studio.group.getObjectByName('Trees X / studio window mullion')).toBeUndefined()
+    for (const panel of studioDesign.panels)
+      expect(
+        studio.group.getObjectByName(`Trees X / studio ${panel.name} lightboard`),
+      ).toBeUndefined()
+    const skybox = studio.group.getObjectByName('Trees X / studio skybox') as Mesh
+    const skyMaterial = skybox.material as ShaderMaterial
+    expect(skyMaterial.side).toBe(BackSide)
+    expect(skyMaterial.depthWrite).toBe(false)
+    expect(skyMaterial.toneMapped).toBe(false)
+    expect(skyMaterial.fog).toBe(false)
+    expect(skybox.frustumCulled).toBe(false)
+    expect(skybox.geometry.groups).toHaveLength(6)
+    const materialDispose = vi.spyOn(skyMaterial, 'dispose')
+    const backdropDispose = vi.spyOn(skybox.geometry, 'dispose')
     const geometryDispose = vi.spyOn(pedestal.geometry, 'dispose')
     const scene = new Scene()
     scene.add(studio.group)
@@ -71,7 +81,46 @@ describe('authored product studio', () => {
     studio.dispose()
     expect(studio.group.parent).toBeNull()
     expect(materialDispose).toHaveBeenCalledTimes(1)
+    expect(backdropDispose).toHaveBeenCalledTimes(1)
     expect(geometryDispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('isolates HDR softbox geometry in the temporary capture scene with separate ownership', () => {
+    const live = createStudioGeometry(),
+      capture = createStudioCaptureGeometry()
+    const livePedestal = live.group.getObjectByName('Trees X / studio pedestal') as Mesh
+    const capturePedestal = capture.group.getObjectByName('Trees X / studio pedestal') as Mesh
+    expect(capture.group.userData.capture).toBe(true)
+    expect(live.group.userData.capture).toBe(false)
+    expect(capturePedestal.geometry).not.toBe(livePedestal.geometry)
+    expect(capturePedestal.material).not.toBe(livePedestal.material)
+    const liveSky = live.group.getObjectByName('Trees X / studio skybox') as Mesh
+    const captureSky = capture.group.getObjectByName('Trees X / studio skybox') as Mesh
+    const liveSkyMaterial = liveSky.material as ShaderMaterial
+    const captureSkyMaterial = captureSky.material as ShaderMaterial
+    for (const uniform of ['topColor', 'middleColor', 'bottomColor']) {
+      const visibleColor = liveSkyMaterial.uniforms[uniform]!.value as Color
+      const capturedColor = captureSkyMaterial.uniforms[uniform]!.value as Color
+      expect(capturedColor).not.toBe(visibleColor)
+      expect(
+        capturedColor.equals(visibleColor.clone().multiplyScalar(studioDesign.captureFill)),
+      ).toBe(true)
+    }
+    for (const panel of studioDesign.panels) {
+      const mesh = capture.group.getObjectByName(
+        `Trees X / studio ${panel.name} lightboard`,
+      ) as Mesh
+      expect(mesh.position.toArray()).toEqual([...panel.position])
+      expect((mesh.material as MeshBasicMaterial).color.r).toBeGreaterThan(1)
+    }
+    const liveDispose = vi.spyOn(livePedestal.geometry, 'dispose')
+    const captureDispose = vi.spyOn(capturePedestal.geometry, 'dispose')
+    capture.dispose()
+    capture.dispose()
+    expect(captureDispose).toHaveBeenCalledTimes(1)
+    expect(liveDispose).not.toHaveBeenCalled()
+    live.dispose()
+    expect(liveDispose).toHaveBeenCalledTimes(1)
   })
 
   it('restores reflection state on interrupted rendering and disposes its own target once', () => {
@@ -170,6 +219,7 @@ describe('authored product studio', () => {
     const sourceDispose = vi.spyOn(geometry, 'dispose')
     const studio = createTypewriterStudio(f.webgl, scene, model)
     expect(scene.getObjectByName('Trees X / studio reflection')).toBeDefined()
+    expect(scene.getObjectByName('Trees X / studio skybox')?.layers.mask).toBe(1)
     studio.dispose()
     studio.dispose()
     expect(scene.children).toEqual([model])

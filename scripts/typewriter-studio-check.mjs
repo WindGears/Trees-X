@@ -48,19 +48,41 @@ try {
         const scene = window.__demo.scene.scene.value,
           root = scene.getObjectByName(studioName),
           reflections = [],
-          studios = []
+          studios = [],
+          forbiddenMeshes = []
         scene.traverse((node) => {
           if (node.name === studioName) studios.push(node.uuid)
           if (node.name === reflectionName) reflections.push(node.uuid)
+          if (
+            node.isMesh &&
+            /^Trees X \/ studio /.test(node.name) &&
+            /lightboard|back wall|window mullion|window frame/.test(node.name)
+          )
+            forbiddenMeshes.push(node.name)
         })
         const reflection = scene.getObjectByName(reflectionName),
-          target = reflection?.getRenderTarget?.()
+          target = reflection?.getRenderTarget?.(),
+          skybox = root?.getObjectByName('Trees X / studio skybox'),
+          material = skybox?.material
         return {
           studios,
           reflections,
           parent: root?.parent?.type,
           flagged: root?.userData.studio,
           meshes: root ? root.children.filter((node) => node.isMesh).length : 0,
+          forbiddenMeshes,
+          skybox: skybox
+            ? {
+                geometry: skybox.geometry.type,
+                faces: skybox.geometry.groups.length,
+                material: material.type,
+                side: material.side,
+                depthWrite: material.depthWrite,
+                toneMapped: material.toneMapped,
+                fog: material.fog,
+                frustumCulled: skybox.frustumCulled,
+              }
+            : null,
           hasTarget: Boolean(target?.isWebGLRenderTarget),
           target: target
             ? { width: target.width, height: target.height, type: target.texture.type }
@@ -77,7 +99,18 @@ try {
     expect(value.studios).toHaveLength(1)
     expect(value.reflections).toHaveLength(1)
     expect(value.flagged).toBe(true)
-    expect(value.meshes).toBeGreaterThan(0)
+    expect(value.meshes).toBe(3)
+    expect(value.forbiddenMeshes).toEqual([])
+    expect(value.skybox).toEqual({
+      geometry: 'BoxGeometry',
+      faces: 6,
+      material: 'ShaderMaterial',
+      side: 1,
+      depthWrite: false,
+      toneMapped: false,
+      fog: false,
+      frustumCulled: false,
+    })
     expect(value.hasTarget).toBe(true)
     expect(value.environment).toBe(true)
     expect(value.target.width).toBeGreaterThan(0)
@@ -281,6 +314,31 @@ try {
     'Real 572-part GLB, one Canvas/renderer, one physical studio and non-uniform live reflection target',
   )
 
+  // Observe only camera positions reachable through the visitor's real controls.
+  // The rear and low-angle checks expose backdrop boundaries and visible lightboards.
+  for (const [name, view, keys] of [
+    ['whole-front', 'front', []],
+    ['whole-side', 'side', []],
+    ['whole-rear', 'perspective', Array(27).fill('ArrowRight')],
+    ['whole-low', 'front', Array(12).fill('ArrowDown')],
+    ['whole-top', 'top', []],
+  ]) {
+    await page.getByLabel('观察视角', { exact: true }).selectOption(view)
+    await page.waitForTimeout(700)
+    if (keys.length) {
+      await page.getByRole('group', { name: '商品展示区', exact: true }).focus()
+      for (const key of keys) await page.keyboard.press(key)
+    }
+    await capture(name)
+    report.states[name] = compactSnapshot(await sceneSnapshot(page, typewriter))
+    await checkStudio(`${name}-studio`)
+  }
+  await restore()
+  expect((await reflectionPixels('angles-restored')).digest).toBe(wholeTarget.digest)
+  report.checks.push(
+    'Named front/side/top and user-reachable rear/low camera views keep one studio; reset restores actual initial reflection pixels',
+  )
+
   // Match the prior-build screenshots exactly: same real semantic parts and visitor focus commands.
   const paint = typewriter.product.presentation.hotspots.find((part) => part.id === 'part-095')
   const metal = typewriter.product.presentation.hotspots.find((part) => part.id === 'part-000')
@@ -318,12 +376,21 @@ try {
     'A key linkage changes real part poses and returns to rest; intermediate screenshot records actual geometry',
   )
   await page.evaluate(async () => {
+    // Reuse a global instance or the exact module URL already fetched by this app.
+    // Production exports are minified; do not import a second library copy.
+    if (window.gsap?.globalTimeline) {
+      window.__studioGsap = window.gsap
+      return
+    }
     const url = performance
       .getEntriesByType('resource')
-      .find((entry) => /\/gsap\.js(?:\?|$)/.test(entry.name))?.name
+      .find((entry) => /\/gsap(?:-[^/]+)?\.js(?:\?|$)/.test(entry.name))?.name
     if (!url) throw new Error('Already loaded GSAP module URL unavailable')
     const loaded = await import(url)
-    window.__studioGsap = loaded.gsap ?? loaded.default
+    window.__studioGsap = Object.values(loaded).find(
+      (value) => value?.globalTimeline && typeof value.to === 'function',
+    )
+    if (!window.__studioGsap) throw new Error('Running GSAP export unavailable')
   })
   await page.getByRole('button', { name: '击发 A 键', exact: true }).click()
   await page.evaluate(() => {

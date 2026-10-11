@@ -79,7 +79,7 @@ const hotspots = rig.parts.map((p) => ({
   cameraOffset: [0.48, 0.32, 0.75],
 }))
 const camera = {
-  position: [1.96, 1.574, 2.93],
+  position: [1.7248, 1.44152, 2.5604],
   target: [0, 0.47, -0.15],
   minDistance: 0.35,
   maxDistance: 14,

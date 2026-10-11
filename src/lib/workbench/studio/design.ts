@@ -8,10 +8,10 @@ export const studioDesign = {
   height: 0.22,
   radius: 0.065,
   background: '#dfe4df',
+  captureFill: 0.35,
+  backdrop: { top: '#f0f3ef', middle: '#e7e9e5', bottom: '#cbd4c8' },
   floor: '#bfc8bd',
-  wall: '#d8dfd7',
   pedestal: '#d7dcd5',
-  frame: '#abb6a8',
   panels: [
     {
       name: 'window',
@@ -40,7 +40,7 @@ export const studioDesign = {
   ],
 } as const
 
-/** Capture and visible studio use the same emitters, not an unrelated HDR layout. */
+/** Visible area lights and capture-only softboxes use one authored layout. */
 export function createStudioLights() {
   const releaseUniforms = acquireRectAreaUniforms()
   const lights = studioDesign.panels.map((panel) => {
