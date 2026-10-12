@@ -5,6 +5,7 @@ import { RectAreaLightTexturesLib } from 'three/addons/lights/RectAreaLightTextu
 import type { SampleCounts, WebGPUPathTracer } from 'three-gpu-pathtracer/webgpu'
 import { labSettings, type LabMode, type LabPhase, type LabRequest } from './settings'
 import type { LabScene } from './scene'
+import { createLabDenoise, type LabDenoise } from './denoise'
 
 interface ActualDevice {
   queue: { onSubmittedWorkDone(): Promise<void> }
@@ -79,6 +80,7 @@ export async function runLabRenderer(
 ) {
   const { renderer, device } = driver
   let tracer: WebGPUPathTracer | undefined,
+    denoising: LabDenoise | undefined,
     disposed = false,
     raf = 0,
     renderCalls = 0,
@@ -92,6 +94,7 @@ export async function runLabRenderer(
     rasterDirty = false,
     presentationCalls = 0
   const started = performance.now()
+  let targetSamples = request.samples
   const finishSubmission = async () => device?.queue.onSubmittedWorkDone()
   const stop = () => {
     cancelAnimationFrame(raf)
@@ -119,11 +122,11 @@ export async function runLabRenderer(
       controls: controls ? 'OrbitControls, demand rendering' : 'disabled; static accumulation',
       elapsedMs: performance.now() - started,
       samples: counts ? { ...counts } : null,
-      requestedSamples: request.mode === 'pathtrace' ? request.samples : null,
+      requestedSamples: request.mode === 'pathtrace' ? targetSamples : null,
       memory: { ...renderer.info.memory },
       pathtrace:
         request.mode === 'pathtrace'
-          ? { ...labSettings.pathtrace, maxSamples: request.samples }
+          ? { ...labSettings.pathtrace, maxSamples: targetSamples }
           : null,
     }
   }
@@ -203,7 +206,7 @@ export async function runLabRenderer(
       )
     return { png: copy.toDataURL('image/png'), pixels }
   }
-  function presentAndCapture() {
+  function presentAndCapture(denoised = false) {
     return new Promise<ReturnType<typeof canvasPixels>>((resolve, reject) => {
       requestAnimationFrame(() => {
         if (disposed) {
@@ -211,7 +214,8 @@ export async function runLabRenderer(
           return
         }
         try {
-          if (tracer) tracer.renderSample()
+          if (denoised) denoising!.present()
+          else if (tracer) tracer.renderSample()
           else renderer.render(shared.scene, shared.camera)
           presentationCalls++
           const capture = canvasPixels()
@@ -241,7 +245,7 @@ export async function runLabRenderer(
         lastMeasurement = now
         counts = await tracer.getSampleCountsAsync()
         if (disposed) return
-        if (counts.min >= request.samples) {
+        if (counts.min >= targetSamples) {
           stop()
           status(
             'ready',
@@ -341,6 +345,59 @@ export async function runLabRenderer(
           scheduleFrame()
         }
       },
+      async denoiseCheckpoint(minimum: number) {
+        if (!(renderer instanceof WebGPURenderer) || !tracer || disposed || checkpointing)
+          throw new Error('Guided path-trace checkpoint unavailable')
+        checkpointing = true
+        cancelAnimationFrame(raf)
+        raf = 0
+        const wasPaused = tracer.pause
+        try {
+          await inFlight
+          await finishSubmission()
+          counts = await tracer.getSampleCountsAsync()
+          if (disposed || counts.min < minimum)
+            throw new Error('Checkpoint sample minimum not reached')
+          tracer.pause = true
+          const raw = await presentAndCapture()
+          if (!denoising) {
+            const prepared = await createLabDenoise(renderer, shared)
+            if (disposed) {
+              prepared.dispose()
+              throw new Error('Comparison disposed during OIDN preparation')
+            }
+            denoising = prepared
+          }
+          if (!tracer.target) throw new Error('Actual accumulation target absent')
+          const denoise = await denoising.execute(tracer.target)
+          const result = await presentAndCapture(true)
+          return { snapshot: snapshot(), denoise, raw, ...result }
+        } finally {
+          tracer.pause = wasPaused
+          checkpointing = false
+          scheduleFrame()
+        }
+      },
+      resumeTo(samples: number) {
+        if (
+          !tracer ||
+          disposed ||
+          checkpointing ||
+          !counts ||
+          counts.min < targetSamples ||
+          !Number.isInteger(samples) ||
+          samples <= targetSamples ||
+          samples > 1024
+        )
+          throw new Error(
+            'Resume requires a completed valid accumulation and a larger target up to 1024',
+          )
+        targetSamples = samples
+        tracer.maxSamples = samples
+        tracer.pause = false
+        status('rendering', `保留已有累积，继续到 ${samples} spp。`)
+        scheduleFrame()
+      },
       dispose() {
         if (disposed) return
         disposed = true
@@ -349,6 +406,7 @@ export async function runLabRenderer(
         window.removeEventListener('resize', resize)
         controls?.removeEventListener('change', changed)
         controls?.dispose()
+        denoising?.dispose()
         tracer?.dispose()
       },
     }
@@ -356,6 +414,7 @@ export async function runLabRenderer(
     stop()
     controls?.removeEventListener('change', changed)
     controls?.dispose()
+    denoising?.dispose()
     tracer?.dispose()
     throw error
   }

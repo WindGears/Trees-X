@@ -1,10 +1,12 @@
-import { MeshStandardMaterial, type Group, type Scene, type WebGLRenderer } from 'three'
+import { MeshStandardMaterial, type Group, type Scene } from 'three'
 import { bindGlb } from './glbAdapter'
 import { bindTypewriterRig, parseTypewriterRig } from './typewriterRig'
 import { instanceTypewriter } from './typewriterInstances'
 import { applyTypewriterFinishes } from './typewriterFinishes'
 import type { GlbSource, WorkbenchProduct } from './types'
 import { createTypewriterStudio } from './studio/stage'
+import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
+import type { WorkbenchStudioFactory } from './rendering/studio'
 
 export function bindTypewriter(
   product: WorkbenchProduct,
@@ -12,6 +14,7 @@ export function bindTypewriter(
   model: Group,
   data: unknown,
   release: () => void,
+  studioFactory?: WorkbenchStudioFactory,
 ) {
   const parts = parseTypewriterRig(data)
   const adapter = bindGlb(product, source, model, release)
@@ -46,14 +49,18 @@ export function bindTypewriter(
     apply,
     select: instances.select,
     nodeForHit: instances.nodeForHit,
-    attach(scene: Scene, renderer: WebGLRenderer) {
+    attach(scene: Scene, renderer: WorkbenchRenderer) {
       if (disposed || studio) return
-      studio = createTypewriterStudio(
-        renderer,
-        scene,
-        adapter.root,
-        product.presentation.stage?.groundY,
-      )
+      if (studioFactory)
+        studio = studioFactory(renderer, scene, adapter.root, product.presentation.stage?.groundY)
+      else if (!isWebGpuRenderer(renderer))
+        studio = createTypewriterStudio(
+          renderer,
+          scene,
+          adapter.root,
+          product.presentation.stage?.groundY,
+        )
+      else throw new Error('WebGPU 打字机舞台尚未准备完成')
     },
     beforeRender: () => studio?.render(),
     dispose() {

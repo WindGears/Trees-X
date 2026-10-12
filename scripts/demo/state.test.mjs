@@ -76,6 +76,7 @@ test('prepared fingerprint detects app, jar inputs and runtime script changes wh
     'scripts/demo/runtime.mjs': 'runtime',
     'public/draco/draco_wasm_wrapper.js': 'decoder',
     'public/covers/product.png': 'cover',
+    'public/models/denoise/rt_hdr_alb_nrm.tza': 'guided denoise weights',
   }
   try {
     for (const [path, text] of Object.entries(files)) {
@@ -102,6 +103,7 @@ test('prepared fingerprint detects app, jar inputs and runtime script changes wh
       'scripts/demo/config.mjs',
       'public/draco/draco_wasm_wrapper.js',
       'public/covers/product.png',
+      'public/models/denoise/rt_hdr_alb_nrm.tza',
     ]) {
       await writeFile(join(rootDir, path), files[path] + ' changed')
       assert.notEqual(await sourceFingerprint(rootDir), original, path)

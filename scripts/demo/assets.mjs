@@ -141,7 +141,8 @@ export async function inspectSupportAssets(directory) {
       }
     }
   }
-  for (const path of ['draco', 'covers']) await collect(join(directory, path))
+  await inspectManifest(join(directory, 'models', 'denoise', 'manifest.json'))
+  for (const path of ['draco', 'covers', 'models/denoise']) await collect(join(directory, path))
   for (const required of ['draco/draco_wasm_wrapper.js', 'draco/draco_decoder.wasm'])
     if (!files.some((file) => file.path === required))
       throw new Error('缺少必要的本地解码器：' + required)

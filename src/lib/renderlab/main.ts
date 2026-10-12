@@ -11,6 +11,14 @@ interface LabBridge {
     png: string
     pixels: Awaited<ReturnType<LabRun['png']>>['pixels']
   }>
+  denoiseCheckpoint(minimum: number): Promise<{
+    evidence: unknown
+    png: string
+    pixels: Awaited<ReturnType<LabRun['png']>>['pixels']
+    denoise: Awaited<ReturnType<LabRun['denoiseCheckpoint']>>['denoise']
+    raw: Awaited<ReturnType<LabRun['png']>>
+  }>
+  resumeTo(samples: number): void
   dispose(): void
 }
 declare global {
@@ -87,6 +95,21 @@ window.__treesRenderLab = {
     if (!run || !['rendering', 'ready'].includes(phase)) throw new Error('采样检查点尚未开放')
     const result = await run.checkpoint(minimum)
     return { evidence: snapshot(), png: result.png, pixels: result.pixels }
+  },
+  denoiseCheckpoint: async (minimum: number) => {
+    if (!run || !['rendering', 'ready'].includes(phase)) throw new Error('采样检查点尚未开放')
+    const result = await run.denoiseCheckpoint(minimum)
+    return {
+      evidence: snapshot(),
+      png: result.png,
+      pixels: result.pixels,
+      denoise: result.denoise,
+      raw: result.raw,
+    }
+  },
+  resumeTo: (samples: number) => {
+    if (!run || phase !== 'ready') throw new Error('完成当前采样后才能继续')
+    run.resumeTo(samples)
   },
   dispose,
 }

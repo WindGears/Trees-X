@@ -1,15 +1,9 @@
 import { gsap } from 'gsap'
-import {
-  Vector2,
-  Vector3,
-  Spherical,
-  Raycaster,
-  type PerspectiveCamera,
-  type WebGLRenderer,
-  type Scene,
-} from 'three'
+import { Vector2, Vector3, Spherical, Raycaster, type PerspectiveCamera, type Scene } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { SceneAdapter } from './adapter'
+import type { WorkbenchRenderer } from './rendering/rendererTypes'
+import type { RefinementChange } from './rendering/refinementTypes'
 import { loadAdapter } from './loadAdapter'
 import { ResourceSlot } from './resourceSlot'
 import { parseProduct } from './api'
@@ -21,7 +15,7 @@ import { createMotionPlayback, type MotionFeedback } from './motionPlayback'
 import { structureReveal, type PlaceCallout } from './calloutProjection'
 
 export function createStageController(
-  renderer: WebGLRenderer,
+  renderer: WorkbenchRenderer,
   scene: Scene,
   camera: PerspectiveCamera,
   invalidate: () => void,
@@ -29,8 +23,16 @@ export function createStageController(
   focus: (id: string) => void,
   feedback: MotionFeedback = () => {},
   checkpoint: () => Record<string, MotionStatus> = () => ({}),
-  options: { allowPan?: boolean } = {},
+  options: {
+    allowPan?: boolean
+    changed?: (kind: RefinementChange) => void
+    interaction?: (active: boolean) => void
+  } = {},
 ) {
+  const dirty = (kind: RefinementChange) => {
+    options.changed?.(kind)
+    invalidate()
+  }
   const slot = new ResourceSlot<SceneAdapter>()
   const baseEnvironment = scene.environment
   let interactive = false
@@ -53,20 +55,46 @@ export function createStageController(
   let downX = 0,
     downY = 0,
     active = true
+  let interacting = false
+  const heldPointers = new Map<number, string>()
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
   function stopCamera() {
     cameraTween?.kill()
     cameraTween = undefined
   }
   function takeover() {
+    if (!active || !controls.enabled) return
+    interacting = true
+    options.interaction?.(true)
+    dirty('camera')
     stopCamera()
     progress?.pauseAll()
     manual()
   }
   // OrbitControls sends an event; Tres invalidate accepts a frame count. Forward
   // no arguments so a change at an idle frame cannot poison that count with NaN.
-  const changed = () => invalidate()
+  const changed = () => dirty('camera')
+  function endInteraction() {
+    if (!interacting) return
+    interacting = false
+    options.interaction?.(false)
+  }
+  function cancelInteraction() {
+    // Disabling OrbitControls does not clear its captured pointer IDs. Send the
+    // normal cancellation event so a new product cannot inherit an old drag.
+    for (const [pointerId, pointerType] of heldPointers)
+      renderer.domElement.dispatchEvent(
+        new PointerEvent('pointercancel', { pointerId, pointerType }),
+      )
+    heldPointers.clear()
+    endInteraction()
+  }
+  function forgetPointer(event: PointerEvent) {
+    heldPointers.delete(event.pointerId)
+    if (heldPointers.size === 0) endInteraction()
+  }
   controls.addEventListener('start', takeover)
+  controls.addEventListener('end', endInteraction)
   controls.addEventListener('change', changed)
   function move(position: Vec3, target: Vec3, instant = false) {
     stopCamera()
@@ -82,7 +110,7 @@ export function createStageController(
       camera.position.set(state.x, state.y, state.z)
       controls.target.set(state.tx, state.ty, state.tz)
       controls.update()
-      invalidate()
+      dirty('camera')
     }
     cameraTween = gsap.to(state, {
       x: position[0],
@@ -110,14 +138,14 @@ export function createStageController(
       ease: pulse ? 'power1.inOut' : 'power3.out',
       onUpdate: () => {
         current.apply()
-        invalidate()
+        dirty('pose')
       },
       onComplete: () => {
         motion.delete(tween)
         if (pulse) {
           for (const id of Object.keys(values)) current.pose[id] = 0
           current.apply()
-          invalidate()
+          dirty('pose')
         }
       },
       onInterrupt: () => motion.delete(tween),
@@ -126,12 +154,15 @@ export function createStageController(
     if (active) tween.play()
   }
   function unload() {
+    controls.enabled = false
+    cancelInteraction()
     stopCamera()
     progress?.dispose()
     progress = undefined
     motion.forEach((t) => t.kill())
     motion.clear()
     scene.environment = baseEnvironment
+    delete scene.userData.traceBackground
     slot.clear()
     interactive = false
     focusedPart = undefined
@@ -151,12 +182,14 @@ export function createStageController(
     progress = createMotionPlayback(
       loaded,
       progressActions(snapshot.presentation),
-      invalidate,
+      () => dirty('pose'),
       feedback,
       reduced,
       checkpoint(),
     )
     scene.environment = loaded.environment ?? baseEnvironment
+    scene.userData.traceBackground = loaded.traceBackground
+    dirty('all')
     controls.minDistance = snapshot.presentation.camera.minDistance
     controls.maxDistance = snapshot.presentation.camera.maxDistance
     move(snapshot.presentation.camera.position, snapshot.presentation.camera.target, true)
@@ -167,6 +200,7 @@ export function createStageController(
     if (value.kind === 'view') {
       focusedPart = undefined
       adapter.select?.()
+      dirty('materials')
       const view = product.presentation.views.find((v) => v.id === value.id)
       if (view) move(view.position, view.target)
     } else if (value.kind === 'focus') {
@@ -174,6 +208,7 @@ export function createStageController(
       if (hotspot && adapter.point(hotspot.node, point, hotspot.anchor)) {
         focusedPart = hotspot.id
         adapter.select?.(hotspot.node)
+        dirty('materials')
         destination.copy(point).add(new Vector3(...hotspot.cameraOffset))
         move(destination.toArray() as Vec3, point.toArray() as Vec3)
       }
@@ -190,7 +225,7 @@ export function createStageController(
       destination.setFromSpherical(orbit)
       camera.position.copy(controls.target).add(destination)
       controls.update()
-      invalidate()
+      dirty('camera')
     } else if (value.kind === 'zoom') {
       stopCamera()
       destination.copy(camera.position).sub(controls.target)
@@ -205,10 +240,12 @@ export function createStageController(
       )
       camera.position.copy(controls.target).add(destination)
       controls.update()
-      invalidate()
+      dirty('camera')
     }
   }
   function down(event: PointerEvent) {
+    if (controls.enabled) heldPointers.set(event.pointerId, event.pointerType)
+    if (interactive) dirty('camera')
     downX = event.clientX
     downY = event.clientY
   }
@@ -240,6 +277,8 @@ export function createStageController(
   }
   renderer.domElement.addEventListener('pointerdown', down)
   renderer.domElement.addEventListener('pointerup', up)
+  renderer.domElement.ownerDocument.addEventListener('pointerup', forgetPointer)
+  renderer.domElement.addEventListener('pointercancel', forgetPointer)
   return {
     load,
     unload,
@@ -250,14 +289,25 @@ export function createStageController(
       controls.enabled = active && Boolean(adapter)
     },
     stopCamera,
-    snapshotCamera() {
-      if (!active || !interactive || !adapter || !product) return
-      takeover()
+    restoreCamera: (pose: { position: Vec3; target: Vec3 }) =>
+      move(pose.position, pose.target, true),
+    snapshotCamera(allowInactive = false) {
+      if ((!active && !allowInactive) || !interactive || !adapter || !product) return
+      stopCamera()
+      progress?.pauseAll()
+      manual()
       motion.forEach((t) => t.pause())
       return {
         position: camera.position.toArray() as Vec3,
         target: controls.target.toArray() as Vec3,
       }
+    },
+    restoreSelection(id?: string) {
+      if (!adapter || !product) return
+      const hotspot = product.presentation.hotspots.find((item) => item.id === id)
+      focusedPart = hotspot?.id
+      adapter.select?.(hotspot?.node)
+      dirty('materials')
     },
     pauseObservation() {
       stopCamera()
@@ -273,13 +323,16 @@ export function createStageController(
       if (adapter && product) {
         for (const action of product.presentation.actions) adapter.pose[action.id] = 0
         adapter.apply()
-        invalidate()
+        dirty('pose')
       }
     },
     sync(finishId: string, exploded: boolean, actions: Record<string, number>, instant = false) {
       if (!adapter || !product) return
       const color = product.presentation.finishes.find((f) => f.id === finishId)?.color
-      if (color) adapter.setFinish(color)
+      if (color) {
+        adapter.setFinish(color)
+        dirty('materials')
+      }
       const values: Record<string, number> = {
         explosion: product.presentation.structureActionId ? 0 : exploded ? 1 : 0,
       }
@@ -288,7 +341,7 @@ export function createStageController(
       if (instant) {
         Object.assign(adapter.pose, values)
         adapter.apply()
-        invalidate()
+        dirty('pose')
       } else animate(values)
     },
     pulse(id: string) {
@@ -322,20 +375,29 @@ export function createStageController(
       }
     },
     setActive(value: boolean) {
+      if (!value) {
+        controls.enabled = false
+        cancelInteraction()
+      }
       active = value
       controls.enabled = value && interactive && Boolean(adapter)
-      cameraTween?.paused(!value)
-      motion.forEach((t) => t.paused(!value))
-      if (!value) progress?.pauseAll()
+      if (!value) {
+        stopCamera()
+        motion.forEach((t) => t.pause())
+        progress?.pauseAll()
+      }
       if (value) invalidate()
     },
     dispose() {
       unload()
       controls.removeEventListener('start', takeover)
+      controls.removeEventListener('end', endInteraction)
       controls.removeEventListener('change', changed)
       controls.dispose()
       renderer.domElement.removeEventListener('pointerdown', down)
       renderer.domElement.removeEventListener('pointerup', up)
+      renderer.domElement.ownerDocument.removeEventListener('pointerup', forgetPointer)
+      renderer.domElement.removeEventListener('pointercancel', forgetPointer)
     },
   }
 }

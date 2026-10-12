@@ -1,4 +1,4 @@
-import { LoadingManager, Texture, WebGLRenderer, type Group } from 'three'
+import { LoadingManager, Texture, type Group } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
@@ -7,11 +7,12 @@ import { checkGlbDocument } from './glbDocument'
 import { ownedResources } from './ownedResources'
 import { decodeQueue } from './decodeQueue'
 import type { AssetBundle } from './assetBundle'
+import type { WorkbenchRenderer } from './rendering/rendererTypes'
 
 export async function decodeGlb(
   bundle: AssetBundle,
   bytes: Map<string, ArrayBuffer>,
-  renderer: WebGLRenderer,
+  renderer: WorkbenchRenderer,
   signal: AbortSignal,
 ) {
   const data = bytes.get(bundle.entry)

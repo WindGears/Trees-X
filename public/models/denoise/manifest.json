@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "id": "trees-x-oidn-guided-hdr",
+  "version": "1.0.0",
+  "entry": "rt_hdr_alb_nrm.tza",
+  "model": {
+    "hdr": true,
+    "auxiliary": ["albedo", "normal"],
+    "inputChannels": 9,
+    "outputChannels": 3,
+    "tensors": 32,
+    "archiveVersion": "2.0",
+    "tensorDataType": "Float16",
+    "topology": "oidn-unet-small-v1"
+  },
+  "source": {
+    "repository": "https://github.com/RenderKit/oidn-weights",
+    "revision": "28883d1769d5930e13cf7f1676dd852bd81ed9e7",
+    "file": "rt_hdr_alb_nrm.tza",
+    "download": "https://media.githubusercontent.com/media/RenderKit/oidn-weights/28883d1769d5930e13cf7f1676dd852bd81ed9e7/rt_hdr_alb_nrm.tza",
+    "license": "Apache-2.0",
+    "licensor": "Intel Corporation / RenderKit",
+    "modified": false
+  },
+  "runtime": {
+    "name": "oidn-web",
+    "version": "0.5.0",
+    "license": "MIT",
+    "source": "https://github.com/pissang/oidn-web",
+    "resolved": "https://registry.npmjs.org/oidn-web/-/oidn-web-0.5.0.tgz",
+    "integrity": "sha512-IlX6RxLgFj88fGUDgztpm3hNhpHoSYufZQeHIqxP5zmE9BobKyqDAqlEQCSXd8cbY06Rf+R3q1sHkGOmh45wnQ==",
+    "engine": "native-wgsl",
+    "sharedDevice": true,
+    "bundledByVite": true
+  },
+  "files": [
+    {
+      "path": "rt_hdr_alb_nrm.tza",
+      "role": "guided-hdr-weights",
+      "bytes": 1841160,
+      "sha256": "e586ef2ff48d7fbb7611986405220ed8fc5c13ca79bfc40be4dc742fbf959e1a",
+      "license": "Apache-2.0"
+    },
+    {
+      "path": "LICENSE-OIDN-weights.txt",
+      "role": "weights-license",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "license": "Apache-2.0"
+    },
+    {
+      "path": "LICENSE-oidn-web.txt",
+      "role": "runtime-license",
+      "bytes": 1064,
+      "sha256": "796fc206ee19a2765298a5ab41e43f3edd1479c9e3a76efd79a99f719ce87498",
+      "license": "MIT"
+    }
+  ]
+}

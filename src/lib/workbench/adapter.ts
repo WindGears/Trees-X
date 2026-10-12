@@ -1,26 +1,21 @@
-import {
-  Vector3,
-  type Group,
-  type Object3D,
-  type Texture,
-  type Scene,
-  type WebGLRenderer,
-} from 'three'
+import { Vector3, type Group, type Object3D, type Texture, type Scene } from 'three'
 import { modelKit } from './modelKit'
 import { sampleBuilders } from './samples'
 import type { Vec3, WorkbenchProduct } from './types'
 import { bindMotionPose } from './motionPose'
+import type { WorkbenchRenderer } from './rendering/rendererTypes'
 
 export interface SceneAdapter {
   root: Group
   nodes: Map<string, Object3D>
   pose: Record<string, number>
   environment?: Texture
+  traceBackground?: Texture
   apply(): void
   setFinish(color: string): void
   point(node: string, result: Vector3, anchor?: Vec3): Vector3 | undefined
   dispose(): void
-  attach?(scene: Scene, renderer: WebGLRenderer): void
+  attach?(scene: Scene, renderer: WorkbenchRenderer): void
   beforeRender?(): void
   select?(node?: string): void
   nodeForHit?(object: Object3D, instanceId?: number): Object3D | undefined

@@ -36,7 +36,21 @@ async function fixture() {
     'public/draco/draco_wasm_wrapper.js': 'decoder wrapper',
     'public/draco/draco_decoder.wasm': 'decoder wasm',
     'public/covers/product.png': 'cover',
+    'public/models/denoise/rt_hdr_alb_nrm.tza': 'guided denoise weights',
   }
+  files['public/models/denoise/manifest.json'] = JSON.stringify({
+    schemaVersion: 1,
+    entry: 'rt_hdr_alb_nrm.tza',
+    files: [
+      {
+        path: 'rt_hdr_alb_nrm.tza',
+        bytes: Buffer.byteLength(files['public/models/denoise/rt_hdr_alb_nrm.tza']),
+        sha256: createHash('sha256')
+          .update(files['public/models/denoise/rt_hdr_alb_nrm.tza'])
+          .digest('hex'),
+      },
+    ],
+  })
   for (const [path, content] of Object.entries(files)) {
     await mkdir(dirname(join(rootDir, path)), { recursive: true })
     await writeFile(join(rootDir, path), content)
@@ -87,7 +101,13 @@ test('stable preparation records complete production support digests and rejects
     assert.deepEqual(await readState(join(config.artifactsDir, 'prepared.json')), receipt)
     assert.deepEqual(
       receipt.support.map((file) => file.path),
-      ['covers/product.png', 'draco/draco_decoder.wasm', 'draco/draco_wasm_wrapper.js'],
+      [
+        'covers/product.png',
+        'draco/draco_decoder.wasm',
+        'draco/draco_wasm_wrapper.js',
+        'models/denoise/manifest.json',
+        'models/denoise/rt_hdr_alb_nrm.tza',
+      ],
     )
     assert.deepEqual(
       (await verifyPrepared(config)).products,
@@ -182,7 +202,7 @@ test('a dist support mismatch refuses preparation before any receipt is written'
         if (script === 'build')
           await writeFile(join(config.distDir, 'draco', 'draco_decoder.wasm'), 'mismatched decoder')
       }),
-      /解码器或封面摘要不一致/,
+      /解码器、封面或降噪资源摘要不一致/,
     )
     assert.equal(await readState(join(config.artifactsDir, 'prepared.json')), null)
   } finally {

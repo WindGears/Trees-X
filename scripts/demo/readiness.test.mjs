@@ -27,10 +27,15 @@ test('readiness requires listed real API bindings, manifest digest and real prod
     '/covers/test.png': Buffer.from('cover-test'),
     '/draco/draco_wasm_wrapper.js': Buffer.from('decoder-test'),
     '/draco/draco_decoder.wasm': Buffer.from('wasm-test'),
+    '/models/denoise/rt_hdr_alb_nrm.tza': Buffer.from('guided denoise weights'),
+    '/models/denoise/LICENSE.txt': Buffer.from('Apache-2.0'),
     '/index.html': Buffer.from('<script src="/assets/app.js"></script>'),
   }
   const manifest = Buffer.from(JSON.stringify({ files: [{ path: 'model.glb' }] }))
   resources['/models/test/manifest.json'] = manifest
+  resources['/models/denoise/manifest.json'] = Buffer.from(
+    JSON.stringify({ files: [{ path: 'rt_hdr_alb_nrm.tza' }, { path: 'LICENSE.txt' }] }),
+  )
   const detail = {
     slug: 'test',
     cover: '/covers/test.png',
@@ -79,7 +84,7 @@ test('readiness requires listed real API bindings, manifest digest and real prod
     const products = [{ slug: 'test', manifest: '/models/test/manifest.json' }]
     const result = await inspectApi(config, products)
     assert.deepEqual(result.products, ['test'])
-    assert.equal(result.staticUrls.length, 5)
+    assert.equal(result.staticUrls.length, 8)
     listed = false
     await assert.rejects(inspectApi(config, products), /未上架/)
     listed = true

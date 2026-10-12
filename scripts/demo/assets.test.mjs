@@ -58,7 +58,7 @@ test('manifest bytes, hashes, duplicate records and unresolved LFS are verified 
   }
 })
 
-test('support receipts include every decoder and cover file and reject unresolved LFS in either directory', async () => {
+test('support receipts include decoders, covers and validated denoiser files; reject LFS and altered weights', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'trees-demo-support-'))
   const files = {
     'draco/draco_wasm_wrapper.js': 'decoder wrapper',
@@ -66,10 +66,24 @@ test('support receipts include every decoder and cover file and reject unresolve
     'draco/draco_decoder.js': 'decoder fallback',
     'covers/product.png': 'product cover',
     'covers/nested/product.svg': '<svg/>',
+    'models/denoise/rt_hdr_alb_nrm.tza': 'guided denoise weights',
+    'models/denoise/LICENSE.txt': 'Apache-2.0',
   }
+  files['models/denoise/manifest.json'] = JSON.stringify({
+    schemaVersion: 1,
+    entry: 'rt_hdr_alb_nrm.tza',
+    files: ['rt_hdr_alb_nrm.tza', 'LICENSE.txt'].map((path) => ({
+      path,
+      bytes: Buffer.byteLength(files['models/denoise/' + path]),
+      sha256: createHash('sha256')
+        .update(files['models/denoise/' + path])
+        .digest('hex'),
+    })),
+  })
   try {
     await mkdir(join(directory, 'draco'))
     await mkdir(join(directory, 'covers', 'nested'), { recursive: true })
+    await mkdir(join(directory, 'models', 'denoise'), { recursive: true })
     for (const [path, content] of Object.entries(files))
       await writeFile(join(directory, path), content)
     const receipt = await inspectSupportAssets(directory)
@@ -84,7 +98,11 @@ test('support receipts include every decoder and cover file and reject unresolve
       )
     await writeFile(join(directory, 'covers/product.png'), 'changed cover')
     assert.notDeepEqual(await inspectSupportAssets(directory), receipt)
-    for (const path of ['draco/draco_decoder.wasm', 'covers/nested/product.svg']) {
+    for (const path of [
+      'draco/draco_decoder.wasm',
+      'covers/nested/product.svg',
+      'models/denoise/rt_hdr_alb_nrm.tza',
+    ]) {
       await writeFile(
         join(directory, path),
         'version https://git-lfs.github.com/spec/v1\noid sha256:123\nsize 100000\n',
@@ -92,6 +110,12 @@ test('support receipts include every decoder and cover file and reject unresolve
       await assert.rejects(inspectSupportAssets(directory), /Git LFS/)
       await writeFile(join(directory, path), files[path])
     }
+    await writeFile(join(directory, 'models/denoise/rt_hdr_alb_nrm.tza'), 'altered weights')
+    await assert.rejects(inspectSupportAssets(directory), /SHA-256/)
+    await writeFile(
+      join(directory, 'models/denoise/rt_hdr_alb_nrm.tza'),
+      files['models/denoise/rt_hdr_alb_nrm.tza'],
+    )
     await rm(join(directory, 'draco/draco_decoder.wasm'))
     await assert.rejects(inspectSupportAssets(directory), /必要的本地解码器/)
   } finally {

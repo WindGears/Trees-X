@@ -1,5 +1,7 @@
 2026-10-02 当前正式资产阶段优先遵循 [完整路线](implementation-roadmap.md)，下面历史演出说明仅适用于 legacy。
 
+2026-10-12 新正式管线约束：单 Tres renderer，WebGPU 光栅与路径追踪通过协调器切换，不叠加场景 Canvas；追踪代理独立拥有派生几何/BVH，原 loader 不受修改。128 实际最低样本＋完整 OIDN 为固定默认，1024 仅主动续算。三件验收前默认 WebGL；实验入口与验收见 [混合管线验收](hybrid-pipeline-validation.md)。
+
 # Three 规则
 
 - 2026-10-12 管线选择：正式交互保持增强 WebGL2；独立 `renderlab.html` 已验证真实 WebGPU 光栅和静止路径追踪，不进入生产工作台。实验页是下方 Tres renderer 规则的明确例外，每页仍只允许一个 Canvas/renderer，切换先卸载，资源/controls/时钟由实验页唯一释放。比较须记录同资产、姿态、材质、灯光及完整投影；共同移除的生产特效、BRDF/纹理过滤差异与缺失 UV 必须注明，不能由基础 WebGPU 对照推导未测试的 SSGI/SSR 结论。样本使用追踪器实际计数，不凭运行时间估计；路径参考图不能冒充连续实机交互。见 [渲染比较](render-pipeline-comparison.md)。

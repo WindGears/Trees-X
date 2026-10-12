@@ -1,5 +1,7 @@
 # 新版目标架构与当前实现
 
+2026-10-12 混合管线实施：WorkbenchStage 按需注入 Tres renderer 工厂，useWorkbenchScene 承担共享宿主生命周期，rendering/coordinator 管理同一 WebGPURenderer 的光栅、采样与完整 OIDN 融合。Pinia、HTTP 与配置版本不变；WebGL 默认保留，设备重建需先卸载旧宿主。资源所有权与阶段状态见 [混合管线验收](hybrid-pipeline-validation.md)。
+
 2026-10-08。目标以官方模板终稿及 workbench-contract.md 为准。本文明确区分已有候选与待实现设计；旧说明见 history/2026-10-08-before-restart/architecture.md。
 
 ## 分层

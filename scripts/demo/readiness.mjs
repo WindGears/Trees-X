@@ -71,6 +71,14 @@ export async function inspectApi(config, products = demoProducts) {
   // All formal adapters use the locally shipped Draco decoder; no CDN is needed.
   for (const path of ['/draco/draco_wasm_wrapper.js', '/draco/draco_decoder.wasm'])
     await checkStatic(config, path, checked)
+  const denoiseManifest = '/models/denoise/manifest.json'
+  const denoiseResponse = await request(config.baseUrl + denoiseManifest)
+  const denoiseBytes = Buffer.from(await denoiseResponse.arrayBuffer())
+  const denoiseLocal = await readFile(resourcePath(config.distDir, denoiseManifest.slice(1)))
+  if (!denoiseBytes.equals(denoiseLocal)) throw new Error('降噪资源清单与生产 dist 不一致。')
+  checked.add(denoiseManifest)
+  for (const file of JSON.parse(denoiseBytes.toString('utf8')).files)
+    await checkStatic(config, '/models/denoise/' + file.path, checked)
   const index = await request(config.baseUrl + '/')
   const html = await index.text()
   if (!html.includes('/assets/') || html.includes('/src/main.ts'))

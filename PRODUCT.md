@@ -1,5 +1,7 @@
 # Trees X
 
+2026-10-12 新正式目标：操作时实时光栅，静止时路径追踪与 OIDN 精修，保留商品观察与动作流程。当前仅打字机真实工作台实验接入，仍处画质验收；访客默认保持已验收 WebGL。不得把自动化通过等同三件正式管线完成。详见 [.ai/hybrid-pipeline-validation.md](.ai/hybrid-pipeline-validation.md)。
+
 <!-- impeccable:product-schema 1 -->
 
 ## Platform

@@ -86,7 +86,10 @@
     "test:reventon-workbench-visual": "node scripts/reventon-workbench-visual-check.mjs",
     "test:glb-image-orientation": "node scripts/glb-image-orientation-check.mjs",
     "test:reventon-material": "node scripts/reventon-workbench-material-check.mjs",
-    "asset:reventon-presentation": "node scripts/create-reventon-presentation.mjs"
+    "asset:reventon-presentation": "node scripts/create-reventon-presentation.mjs",
+    "test:hybrid": "node scripts/hybrid-workbench-check.mjs",
+    "test:hybrid-layout": "node scripts/hybrid-layout-check.mjs",
+    "asset:denoise-check": "node scripts/denoise-resource-check.mjs"
   },
   "dependencies": {
     "@fontsource/manrope": "5.3.0",
@@ -125,6 +128,7 @@
     "eslint-plugin-vue": "10.11.0",
     "gltf-validator": "2.0.0-dev.3.10",
     "happy-dom": "20.14.5",
+    "oidn-web": "0.5.0",
     "prettier": "3.9.6",
     "sharp": "0.35.5",
     "tailwindcss": "4.3.3",

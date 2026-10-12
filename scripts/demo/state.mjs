@@ -91,7 +91,8 @@ export async function sourceFingerprint(rootDir) {
     'scripts/demo',
     (name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs') && name !== 'browser-check.mjs',
   )
-  for (const directory of ['public/draco', 'public/covers']) await collect(directory)
+  for (const directory of ['public/draco', 'public/covers', 'public/models/denoise'])
+    await collect(directory)
   const hash = createHash('sha256')
   for (const path of paths.sort()) {
     hash.update(relative(rootDir, join(rootDir, path)).replaceAll('\\', '/') + '\0')

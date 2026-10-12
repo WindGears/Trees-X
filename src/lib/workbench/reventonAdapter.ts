@@ -1,11 +1,12 @@
 import { Color, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Texture } from 'three'
-import type { Group, Scene, WebGLRenderer } from 'three'
+import type { Group, Scene } from 'three'
 import { prepareReventonMaterials } from '../reventon/materials'
 import { bindGlb } from './glbAdapter'
 import { createReventonStage } from './reventonStage'
 import { prepareReventonSurfaces } from './reventonSurfaceRepair'
 import type { SceneAdapter } from './adapter'
 import type { GlbSource, WorkbenchProduct } from './types'
+import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 
 /** Reuse authored PBR surfaces; the shared v3 controller owns both motion channels. */
 export function bindReventon(
@@ -52,8 +53,9 @@ export function bindReventon(
   }
   return {
     ...adapter,
-    attach(scene: Scene, renderer: WebGLRenderer) {
+    attach(scene: Scene, renderer: WorkbenchRenderer) {
       if (disposed || studio) return
+      if (isWebGpuRenderer(renderer)) throw new Error('汽车尚未通过 WebGPU 舞台与玻璃迁移验收')
       studio = createReventonStage(renderer, scene, adapter.root)
       for (const texture of textures) {
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy()

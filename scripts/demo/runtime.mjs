@@ -71,10 +71,10 @@ export async function doctor(config) {
   )
   await check('public 三件清单与 LFS', () => inspectAssets(join(config.rootDir, 'public')))
   await check('dist 三件清单与 LFS', () => inspectAssets(config.distDir))
-  await check('public 本地解码器与封面摘要', () =>
+  await check('public 解码器、封面与降噪资源摘要', () =>
     inspectSupportAssets(join(config.rootDir, 'public')),
   )
-  await check('dist 本地解码器与封面摘要', () => inspectSupportAssets(config.distDir))
+  await check('dist 解码器、封面与降噪资源摘要', () => inspectSupportAssets(config.distDir))
   await check('后端可执行 JAR', () => inspectJar(config.jarPath))
   await check('已准备产物', () => verifyPrepared(config))
   const ports = []
@@ -132,7 +132,7 @@ export async function prepareArtifacts(config, javaVersion, build = runNpm) {
   if (JSON.stringify(source) !== JSON.stringify(manifests))
     throw new Error('public 与 dist 的三件清单不一致。')
   if (JSON.stringify(sourceSupport) !== JSON.stringify(support))
-    throw new Error('public 与 dist 的本地解码器或封面摘要不一致。')
+    throw new Error('public 与 dist 的本地解码器、封面或降噪资源摘要不一致。')
   const prepared = {
     schemaVersion: 1,
     preparedAt: new Date().toISOString(),
@@ -171,7 +171,7 @@ export async function verifyPrepared(config) {
     throw new Error('生产资源与 public 不一致；请重新准备。')
   const sourceSupport = await inspectSupportAssets(join(config.rootDir, 'public'))
   if (JSON.stringify(sourceSupport) !== JSON.stringify(actual.support))
-    throw new Error('生产解码器或封面与 public 摘要不一致；请重新准备。')
+    throw new Error('生产解码器、封面或降噪资源与 public 摘要不一致；请重新准备。')
   return { preparedAt: prepared.preparedAt, products: demoProducts.map((item) => item.slug) }
 }
 

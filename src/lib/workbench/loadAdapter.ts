@@ -1,11 +1,12 @@
-import type { WebGLRenderer, WebGLRenderTarget } from 'three'
 import { createSampleAdapter, type SceneAdapter } from './adapter'
 import { loadBundle, type LoadPhase } from './assetBundle'
 import type { WorkbenchProduct } from './types'
+import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
+import { createProductEnvironment, type OwnedEnvironment } from './rendering/environment'
 
 export async function loadAdapter(
   product: WorkbenchProduct,
-  renderer: WebGLRenderer,
+  renderer: WorkbenchRenderer,
   signal: AbortSignal,
   phase: (p: LoadPhase) => void,
 ): Promise<SceneAdapter> {
@@ -17,7 +18,7 @@ export async function loadAdapter(
   const source = product.presentation.source
   const { bundle, bytes } = await loadBundle(source.bundle, signal, phase)
   let decoded: Awaited<ReturnType<(typeof import('./glbLoader'))['decodeGlb']>> | undefined
-  let adapter: SceneAdapter | undefined, environment: WebGLRenderTarget | undefined
+  let adapter: SceneAdapter | undefined, environment: OwnedEnvironment | undefined
   try {
     phase('parse')
     const [{ decodeGlb }, { bindGlb }] = await Promise.all([
@@ -34,6 +35,9 @@ export async function loadAdapter(
       const data = bytes.get(program.file)
       if (!data) throw new Error('打字机动作资源读取失败')
       const { bindTypewriter } = await import('./typewriterAdapter')
+      const studio = isWebGpuRenderer(renderer)
+        ? (await import('./rendering/studio')).createWorkbenchStudio
+        : undefined
       signal.throwIfAborted()
       adapter = bindTypewriter(
         product,
@@ -41,6 +45,7 @@ export async function loadAdapter(
         decoded.root,
         JSON.parse(new TextDecoder().decode(data)) as unknown,
         decoded.dispose,
+        studio,
       )
     } else if (source.adapter === 'piano-v1') {
       const program = product.presentation.actions.find(
@@ -79,24 +84,31 @@ export async function loadAdapter(
         !/\.(hdr|exr)$/.test(envFile)
       )
         throw new Error('商品光照资源未正确登记')
-      const { createAssetEnvironment } = await import('./assetEnvironment')
       signal.throwIfAborted()
-      environment = createAssetEnvironment(envFile, envBytes, renderer)
-    } else if (source.adapter === 'typewriter-v1') {
-      const { createStudioEnvironment } = await import('./studio/geometry')
-      signal.throwIfAborted()
-      environment = createStudioEnvironment(renderer, product.presentation.stage?.groundY)
-    } else if (source.adapter === 'piano-v1') {
-      const { createPianoEnvironment } = await import('./pianoEnvironment')
-      signal.throwIfAborted()
-      environment = createPianoEnvironment(renderer)
-    }
+      environment = await createProductEnvironment(
+        renderer,
+        source.adapter,
+        product.presentation.stage?.groundY,
+        envFile,
+        envBytes,
+        signal,
+      )
+    } else
+      environment = await createProductEnvironment(
+        renderer,
+        source.adapter,
+        product.presentation.stage?.groundY,
+        undefined,
+        undefined,
+        signal,
+      )
     signal.throwIfAborted()
     const current = adapter
     let disposed = false
     return {
       ...current,
       environment: environment?.texture,
+      traceBackground: environment?.background,
       dispose() {
         if (disposed) return
         disposed = true
