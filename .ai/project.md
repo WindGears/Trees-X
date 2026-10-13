@@ -49,6 +49,8 @@
 
 ## 工程约束
 
+2026-10-14：本地 Cline MCP 升至监督式子代理 v2。仅授权快照与暂存文件，Codex 审查摘要后显式合入并运行测试；不授予模型 shell、Git、数据库或实时主仓库写入能力。默认请求 max，上游未确认实际强度；使用与证据见 [Cline 协作](cline-delegation.md)。本轮不改变渲染阶段或画质晋级条件。
+
 2026-10-09 用户新增同步要求：每个功能节点验收后提交并推送到 `WindGears/Trees-X`。这是持续授权，后续无需重复询问；同步规则见根目录 `AGENTS.md`。保留本地凭据、日志、备份和临时材料，公开运行资产核查来源，大模型使用 Git LFS；同步失败须如实报告。仍不新增 CI。
 
 Vue 3 Composition API、TypeScript strict、npm 锁文件；Vue ≤300 行，App 仅组装。单 Canvas/renderer，UI/配置/场景分层，Three 实例不进入 Pinia。GSAP 管理复杂动画，遵循减弱动态。每种资源、控制器、动画和监听器都有唯一释放方。禁止运行数据库脚本，禁止静默假数据回退。
