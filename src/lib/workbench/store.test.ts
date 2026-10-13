@@ -192,3 +192,56 @@ it('restores actions without resetting appearance or issuing a camera command', 
   expect(store.exploded).toBe(false)
   expect(store.resetMotionRequest).toBe(1)
 })
+it('ignores a late first-round response after reselecting the same product', async () => {
+  const firstPayload = { ...parseProduct(samples[0]), name: 'form-01 first' }
+  const currentPayload = { ...parseProduct(samples[0]), name: 'form-01 current' }
+  let resolveFirst!: (response: Response) => void
+  vi.stubGlobal(
+    'fetch',
+    vi
+      .fn()
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => (resolveFirst = resolve)))
+      .mockResolvedValueOnce(new Response(JSON.stringify(samples[2])))
+      .mockResolvedValueOnce(new Response(JSON.stringify(currentPayload))),
+  )
+  const store = useWorkbenchStore()
+  const first = store.select('form-01')
+  await store.select('reventon')
+  expect(store.product).toEqual(parseProduct(samples[2]))
+  const revisionAfterReselect = store.revision
+  await store.select('form-01')
+  expect(store.revision).toBe(revisionAfterReselect + 1)
+  expect(store.product).toEqual(currentPayload)
+  expect(store.slug).toBe('form-01')
+  resolveFirst(new Response(JSON.stringify(firstPayload)))
+  await first
+  expect(store.revision).toBe(revisionAfterReselect + 1)
+  expect(store.product).toEqual(currentPayload)
+  expect(store.product).not.toEqual(firstPayload)
+  expect(store.slug).toBe('form-01')
+})
+it.each(['loading', 'ready'] as const)(
+  'keeps the newest %s state when an older request fails late',
+  async (settled) => {
+    let rejectFirst!: (error: Error) => void
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockImplementationOnce(() => new Promise<Response>((_, reject) => (rejectFirst = reject)))
+        .mockResolvedValueOnce(new Response(JSON.stringify(samples[0]))),
+    )
+    const store = useWorkbenchStore()
+    const old = store.select('reventon')
+    await store.select('form-01')
+    if (settled === 'ready') store.ready('form-01', store.revision)
+    expect(store.status).toBe(settled)
+    rejectFirst(new Error('stale offline'))
+    await old
+    expect(store.status).toBe(settled)
+    expect(store.error).toBe('')
+    expect(store.product).toEqual(parseProduct(samples[0]))
+    expect(store.slug).toBe('form-01')
+    expect(store.revision).toBe(2)
+  },
+)
