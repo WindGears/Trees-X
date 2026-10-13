@@ -42,6 +42,10 @@ export function createGpuStudioGeometry(groundY: number = studioDesign.groundY, 
     toneMapped: false,
     fog: false,
   })
+  // This is a linear scene input, including inside planar captures. Realtime
+  // postprocessing applies ACES/sRGB exactly once to the full HDR beauty.
+  // toneMapped:false only prevents an independent material-local transform;
+  // it is not a promise to bypass the final realtime output transform.
   skyMaterial.name = 'TreesXStudioSkyboxTSL'
   const elevation = positionLocal.normalize().y
   const upper = mix(

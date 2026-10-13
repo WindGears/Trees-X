@@ -4,16 +4,20 @@
 - 固定 Three 0.185.1，唯一 TresCanvas／renderer／实际绘制时钟。WebGPU 受检桥接集中在 `realtime/clock`，检查版本及私有形状；隐藏、离屏停钟，设备恢复卸载旧宿主后重建。
 - 完整帧拥有相机完整投影、世界矩阵与实例历史；MRT 用 `motion`，最终呈现成功后才提交 previous。不能让阴影／反射辅助 draw 的原生 velocity 更新提前消费历史。刚体之外的 morph／skinning 不直接套用此实现。
 - 整体画质是最高优先级。保留已有摄影棚完成度，用同资产、同取景、同曝光比较；技术更新、像素变化和低耗时不能单独作为晋级依据。画面退步时先修正或保留原效果，不因算法名称更先进而替换已验收入口。
-- 共享六信号 G-buffer：HalfFloat normal／原生导数调整后 roughness，baseDiffuse 使用 RGBA HalfFloat 并以 alpha 保存清漆透过权重；存储 40 字节／像素、WebGPU 对齐验证成本 44 字节／采样点，明确请求 `maxColorAttachmentBytesPerSample: 64`。原输出比例和源纹理尺寸保持，不自动降画质掩盖失败。当前 SSR quality 1、thickness 0.035，参数收益必须实机核对。
+- `sceneInputs` 在同一 renderer 中分离不透明六 MRT 与完整透明 beauty 两 MRT，各自拥有独立深度。surface 的 HalfFloat normal／原生导数 roughness、baseDiffuse 的清漆 alpha 等语义保持；六附件存储 40 字节／像素、对齐成本 44 字节／采样点，明确请求 `maxColorAttachmentBytesPerSample: 64`。完整 beauty 额外增加一次不透明绘制与约 16 字节／像素目标成本，必须测量，不宣称所有信号共享单 pass。输出比例与源纹理尺寸不变，SSR quality 1、thickness 0.035 的收益仍需实机核对。
 - 地台平面反射沿用唯一 renderer 的离屏绘制，Basic 材质捕获权重为零，排除 SSR 替换；不能把它与商品完整 IBL 再重复相加。保留屏幕外舞台反射不等于已经接入世界空间射线追踪。
-- 支持的基础 Physical 支路用自有运行 NodeMaterial、受检 r185 DFGLUT 捕获环境辐射单次散射项与 AO／清漆透过权重。SSR 只给命中辐射；`reflectionResolve` 在过滤前逐射线组合：命中=`rawSSR × AOcoat`，未命中=`nativeSingle`，再统一过滤 RGB＋ray length，最终为 `beauty + filteredReplacement − nativeSingle`。保留 native miss、多次散射和清漆，未支持像素不应用修正。非默认 IOR／specular 参数或贴图、独立 envMap 等支路不参与替换。不得全局改 PhysicalLightingModel 原型，不直接叠加完整 SSR 与完整原生 IBL，不回馈完整替换到已含 IBL 的 beauty 冒充多跳追踪。
-- 命中必须在过滤前由原始 SSR alpha 的 ray length 判定；时域／空间过滤后的 alpha 不保证仍是原始 ray length，不能拿它当 hit/miss。此前反射颜色与 coverage 独立过滤的非线性权重不一致，radius 5 后仍有明显噪点；该支路已移除并保留历史结果，当前不能继续描述为独立 coverage 合成。统一 resolve 自有 RTT／历史／过滤器由局部 owner 释放；四项生产核心与六组契约通过，不由公式或工程 PASS 推断画质通过。
+- 支持的基础 Physical 支路用自有运行 NodeMaterial、受检 r185 DFGLUT 捕获环境辐射单次散射项与 AO／清漆透过权重。SSR 只给命中辐射；`reflectionResolve` 在过滤前逐射线组合：命中=`rawSSR × AOcoat`，未命中=`nativeSingle`，再统一过滤 RGB＋ray length。最终将 `filteredReplacement − nativeSingle` 与漫反射修正乘完整 beauty 的 `correctionWeight` 后合成；该权重是透明材质 opacity 混合后的 transmittance，不是 roughness 或捕获附件 alpha。保留 native miss、多次散射与清漆，未支持像素不应用修正。非默认 IOR／specular 参数或贴图、独立 envMap 等支路不参与替换。不得全局改 PhysicalLightingModel 原型，不直接叠加完整 SSR 与完整原生 IBL，不回馈完整替换到已含 IBL 的 beauty 冒充多跳追踪。
+- 命中必须在过滤前由原始 SSR alpha 的 ray length 判定；时域／空间过滤后的 alpha 不保证仍是原始 ray length，不能拿它当 hit/miss。此前反射颜色与 coverage 独立过滤的非线性权重不一致，radius 5 后仍有明显噪点；该支路已移除并保留历史结果，当前不能继续描述为独立 coverage 合成。统一 resolve 自有 RTT／历史／过滤器由局部 owner 释放；节点一之前的四项生产核心与六组契约通过仅为历史证据，不由公式或工程 PASS 推断本次画质通过。
+- 2026-10-13 CPU 审计确认：当前未支持像素写零但仍带普通 ray length，过滤器没有独立 support mask，最终目标像素判断不能阻止邻域黑样本参与；全 miss 的原生值经空间过滤也不保证与未过滤 nativeSingle 完全抵消。这些是过滤契约的待验证缺口，尚无 GPU 证据证明它们造成漆面内部颗粒。不得将“过滤前 miss 使用 nativeSingle”写成“过滤后完全稳定”；不得重复乘 SSR 已包含的 GGX 权重／DFG。
 - 当前统一替换信号过滤半径为 5。实时舞台 HDR 合成权重 0.5／0.68 属于反射／接触阴影视觉校准，旧 hybrid／WebGL 保持 0.28／0.46；不得称为 BRDF 等效或普适物理参数，需新截图核对。旧 coverage flickerSuppression=0 仅为历史试验参数，当前已无独立 coverage 支路。
 - SSGI 是屏幕空间经验贡献，官方实现含亮度 7 的限制；不得称为完整物理 irradiance、严格无截断或路径追踪等效。字符／铭牌透明贴片、微表面与细边需单独近景核对；当前键帽本体不透明，不能把贴片计数误称玻璃材质数。
+- 51 个源字符／铭牌贴片保留 loader 原材质身份、原 alpha 与 alphaTest=0；不再用运行克隆或 cutoff 修补 G-buffer。surface pass 排除透明绘制，完整 beauty 原生混合；源贴片统计与整个 scene 含三种舞台透明材质的统计分开，细节见 [资产核验](typewriter-asset-audit.md)。
+- 实时参考 HDR 固定 Studio Small 05、1,723,695 字节、SHA-256 `358d532ee8233f17499830eb512591c1e308ce16ed181e0efc938cb7f0f0e11f`、强度 0.35、曝光 1；三个软箱与 ambient 0.16 保留，两盏 Directional 强度为 0。WebGL 保持原环境强度 0.9 与 Directional 0.75／0.35。商品、舞台与天空在线性 HDR 合成后统一一次 ACES／sRGB，不为单个技术对照私下调灯，不宣称两入口灯光完全相同。
 - 源 geometry／material／原尺寸纹理由 loader 唯一释放；运行材质只借纹理，卸载恢复源身份，不得 dispose 源材质做重编译。历史、环境辅助图、过滤目标与监听各自唯一拥有。
 - r185 将表达式隐式转为 RTT 的调用必须有显式目标／quad 材质释放方；不能假定效果节点 dispose 会递归释放输入。EnvironmentNode 的 PMREM 节点生成器亦由受检局部桥接释放，不能仅释放源 HDR 后保留 LOD／ping-pong 资源。保护 loader 资源，固定版本与形状检查，真实重载验证后再声明无增长。
 - r185 的共享 geometry 多 RenderObject 附加 GPU attribute 由 `realtime/geometryOwnership` 受检桥接补齐释放。汇总真实绘制使用的 attribute，交错 view 按共享 backing 引用记录；loader 继续唯一拥有源 geometry，桥接只处理遗漏的 GPU 数据释放，不提前 dispose 源数据。释放顺序为协调器→controller／环境→桥接，卸载恢复原生方法，不留全局原型补丁。8 项真实模块机制测试不能替代完整重载实测。
-- 阶段 1 尚未完整验收：当前核心、六组公平对照契约、管理取景、故障、尺寸兼容及实际 20 分钟操作通过；52 正式循环的固定预热资源无增长，不代替 30 次卸载重载。六组静图仍有前罩噪点、字母颗粒和地台倒影不足，画质未通过。503 取消按严格窗口及真实恢复分类，不全局忽略 ERR_ABORTED；回调接入与实际设备销毁证据区分。三轮 JS 提交计时不代表 GPU 或实际呈现预算。当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 版重载不替代新链，默认保持 WebGL。DDGI／FFX／BVH 不扩展，证据见 [实时渲染验收](realtime-rendering-validation.md)。
+- 当前节点一 check（385 单测＋48 工具测试）、build 与生产准备通过；新生产六取景工程契约 2 项、核心 4 项、管理预览 2 项、故障恢复 4 项通过。确认图中的地台白块已消除，漆面颗粒与整体质感仍未通过；真实隐藏、呈现预算、当前实现的 30 次重载／20 分钟与本人验收仍待完成。真实 GPU 原始地台反射峰值由约 16376 降至 9.414，支持方向补光白点诊断，不代表整体质量达到目标。默认保持 WebGL，DDGI／FFX／BVH 不扩展，证据见 [节点一验收](typewriter-quality-node1-validation.md)。
+- 2026-10-13 节点一修改前的历史基线：核心、六组契约、管理、故障、尺寸、30 次真实重载及 20 分钟 52 循环通过，预热资源无增长；当时静图画质仍未通过。503 取消按严格窗口及真实恢复分类，不全局忽略 ERR_ABORTED；回调与真实设备销毁区分。三轮 JS 提交计时不是 GPU／呈现预算；真实隐藏与本人走查待验收。旧成绩不替代本次双 pass、HDR、补光后的联合回归，保留于 [实时渲染验收](realtime-rendering-validation.md)。
 
 下方为保留的历史约束。涉及 hybrid／OIDN 的“新正式管线”表述仅记录当时阶段，以本页当前实时规则为准。
 

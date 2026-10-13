@@ -68,7 +68,13 @@ export function useWorkbenchScene(
   scene.value.background = background
   scene.value.fog = fog
   const studio = computed(() => hasTypewriterStudio(store.presentation))
-  const stage = computed(() => resolveWorkbenchStage(store.presentation, Boolean(props.gallery)))
+  const stage = computed(() =>
+    resolveWorkbenchStage(
+      store.presentation,
+      Boolean(props.gallery),
+      gpu && Boolean(props.realtimePipeline),
+    ),
+  )
   watch(
     stage,
     (value) => {

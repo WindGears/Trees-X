@@ -106,7 +106,7 @@ describe('realtime Physical signal bridge', () => {
     geometry.dispose()
   })
 
-  it('protects known transparent decal holes without changing native BRDF or source assets', () => {
+  it('keeps known transparent decals native without clipping any low-alpha edge', () => {
     const texture = new Texture(),
       alphaMap = new Texture(),
       source = new MeshPhysicalMaterial({
@@ -133,42 +133,35 @@ describe('realtime Physical signal bridge', () => {
     geometry.addEventListener('dispose', geometryDispose)
     root.add(first, second)
     const bridge = createRealtimeMaterials(root)
-    const runtime = first.material as unknown as MeshPhysicalNodeMaterial
-    const runtimeDispose = vi.fn()
-    runtime.addEventListener('dispose', runtimeDispose)
-    expect(second.material).toBe(runtime)
-    expect(runtime).not.toBe(source)
-    expect(runtime.map).toBe(texture)
-    expect(runtime.alphaMap).toBe(alphaMap)
-    expect(runtime.transparent).toBe(true)
-    expect(runtime.depthWrite).toBe(false)
-    expect(runtime.alphaTest).toBe(1 / 255)
+    expect(first.material).toBe(source)
+    expect(second.material).toBe(source)
+    expect(source.map).toBe(texture)
+    expect(source.alphaMap).toBe(alphaMap)
+    expect(source.transparent).toBe(true)
+    expect(source.depthWrite).toBe(false)
     expect(source.alphaTest).toBe(0)
     expect(source.version).toBe(sourceVersion)
-    expect(runtime.setupLightingModel().constructor).toBe(PhysicalLightingModel)
-    expect(runtime.useClearcoat).toBe(true)
+    expect(source.clearcoat).toBe(0.28)
     expect(realtimeMaterialSupported(source)).toBe(false)
     expect(bridge.stats()).toMatchObject({
       supported: 0,
-      runtime: 1,
+      runtime: 0,
       nativeTransparent: 1,
-      protectedDecals: 1,
+      protectedDecals: 0,
     })
     expect(bridge.sync()).toBe(false)
     source.alphaTest = 0.15
-    expect(bridge.sync()).toBe(true)
-    expect(runtime.alphaTest).toBe(0.15)
+    expect(bridge.sync()).toBe(false)
+    expect((first.material as MeshPhysicalMaterial).alphaTest).toBe(0.15)
     source.alphaTest = 0
     source.opacity = 0.7
-    expect(bridge.sync()).toBe(true)
-    expect(runtime.alphaTest).toBe(1 / 255)
-    expect(runtime.opacity).toBe(0.7)
+    expect(bridge.sync()).toBe(false)
+    expect((first.material as MeshPhysicalMaterial).opacity).toBe(0.7)
     expect(source.alphaTest).toBe(0)
     bridge.restore()
     bridge.dispose()
     expect(first.material).toBe(source)
     expect(second.material).toBe(source)
-    expect(runtimeDispose).toHaveBeenCalledTimes(1)
     expect(sourceDispose).not.toHaveBeenCalled()
     expect(textureDispose).not.toHaveBeenCalled()
     expect(alphaDispose).not.toHaveBeenCalled()
@@ -179,19 +172,26 @@ describe('realtime Physical signal bridge', () => {
     geometry.dispose()
   })
 
-  it('does not add an alpha cutoff to unknown glass or unnamed transparent assets', () => {
+  it('never treats known names, unknown glass or unnamed transparent assets as alpha masks', () => {
     const texture = new Texture(),
       geometry = new BoxGeometry(),
       root = new Group()
-    const sources = ['glass', 'decal-999', 'decal-6'].map(
+    const recovered = [
+      ...Array.from({ length: 50 }, (_, index) => `decal-${index + 6}`),
+      'decal-62',
+    ]
+    const sources = ['glass', 'decal-999', '', ...recovered].map(
       (name) => new MeshPhysicalMaterial({ name, map: texture, transparent: true }),
     )
-    // A known name without its textured alpha channel is not a recovered decal.
-    sources[2]!.map = null
     const meshes = sources.map((source) => new Mesh(geometry, source))
     root.add(...meshes)
     const bridge = createRealtimeMaterials(root)
     expect(bridge.count).toBe(0)
+    expect(bridge.stats()).toMatchObject({
+      runtime: 0,
+      nativeTransparent: 54,
+      protectedDecals: 0,
+    })
     meshes.forEach((mesh, index) => expect(mesh.material).toBe(sources[index]))
     sources.forEach((source) => expect(source.alphaTest).toBe(0))
     bridge.dispose()

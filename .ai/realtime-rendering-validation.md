@@ -1,5 +1,13 @@
 # 打字机实时组合渲染：阶段 1 证据与技术归因
 
+## 最新批次入口（2026-10-13）
+
+当前节点一已改为不透明六 MRT／完整透明 beauty 两 MRT，保留原生字符贴片；实时打字机加载冻结的 Studio Small 05 HDR，并关闭造成地台极亮点的两盏方向补光。修正后的六取景、核心操作及管理取景生产回归通过工程检查，地台白块在确认图中消失，但漆面 SSR 颗粒与整体质感仍未通过画质门槛。当前证据与待验收项统一见 [节点一验收](typewriter-quality-node1-validation.md)。默认 WebGL 保持。
+
+下文是节点一之前的统一 resolve 历史批次。其 30 次重载、20 分钟、尺寸和性能记录只适用于对应旧实现，不作为本次双 pass、HDR 与补光修正的成绩。
+
+## 统一 resolve 历史记录
+
 更新于 2026-10-13。当前只实施 **打字机实时基线**：Three.js WebGPU 光栅、随机 SSR、SSGI、内置重投影与降噪。统一 resolve 的核心、六组公平对照契约、管理取景、故障恢复、尺寸兼容、实际 20 分钟操作及 30 次真实重载通过。新生产截图仍有前罩噪点、文字颗粒和地台倒影不足，**画质未通过**；三轮提交计时不是实际 GPU／屏幕呈现帧间隔。真实隐藏因当前环境未暴露 hidden 仍待验收，本人走查待完成；不称全部生命周期通过，旧 coverage 版记录保留历史，默认保持 WebGL，DDGI／FFX／BVH 不扩展。
 
 当前源码采用 `reflectionResolve`：在每条射线进入过滤前，命中使用 `rawSSR × AOcoat`、未命中使用捕获的 `nativeSingle`，将同一 RGB＋ray length 替换信号统一重投影和过滤，再以 `beauty + filteredReplacement − nativeSingle` 合成，保留原生多次散射、清漆和未支持支路。六附件仍为 40 字节存储，当前四项生产核心与六组公平对照契约已通过，仍未证明整体画质超过 WebGL。`core-hit-preserved-final`／`quality-hit-preserved`／`long-hit-preserved-final` 是此前独立 coverage 机制，不替代当前结果。
@@ -49,7 +57,7 @@ WebGPU 摄影棚地台恢复原有平面反射，复用同一 renderer 的离屏
 - **过滤前逐射线 resolve：**原始 r185 SSR alpha 是 ray length，环境 miss 采用 10000；当前在原始输入中仅把 `0 < rayLength < 9999` 判为命中。命中使用 `rawSSR × AOcoat`，miss 使用 `nativeSingle`，未支持像素为零；颜色与原始 ray length 装入同一个有 owner 的 RTT，整体进入同一时域／空间过滤链，半径为 5。最终 `beauty + filteredReplacement − nativeSingle` 只应用于受支持像素，原生多次散射与清漆保留。过滤后的 alpha 不再用于判断命中；关闭降噪的研究对照直接使用统一 resolve 的 raw RGB，不混用过滤阶段。此前独立颜色／coverage 滤波在不同非线性权重下不能抵消匹配原生项，已移除；新的统一策略仍需验证噪声、边缘和运动表现，不能由公式推出质量通过。
 - SSGI 当前 sliceCount 4、stepCount 12、radius 1.3、thickness 0.12；关闭要求 TRAA 的内置时域采样路径，使用独立空间过滤。SSGI AO 只影响捕获的漫反射间接光，不统一压暗直接光、清漆或所有镜面层。
 - **SSGI 输出不是经严格物理标定的 irradiance**：官方实现从已着色 beauty 估算屏幕空间贡献，并内置亮度 7 的限制。当前根据 albedo、metalness 和基础层权重组合，属于需要经验标定与实机对照的近似，不能据此宣称严格能量守恒、无任何能量截断或与路径追踪等效。
-- r185 原生 WebGPU 的 MRT 默认只有 `output` 使用材质混合，其他附件默认 `NoBlending`；不能把 normal／roughness 等附件的 alpha 当成 opacity 来解释当前绘制。该打字机的 54 种 BLEND 材质均为 `decal-*` 字符／铭牌贴片，键帽本体不透明，并不是 54 种玻璃。GLTFLoader 为这些贴片关闭 depthWrite，因此贴片直接覆盖 normal／albedo／motion，而深度保留后方不透明面；未丢弃的 alpha=0 贴片区域也可能写入零捕获权重，抹掉底层的增强资格。须检查键面字符、铭牌软边、整片边界及运动历史；完整通用透明方案未验收，不以原生材质保留证明所有 G-buffer 语义正确。
+- r185 原生 WebGPU 的 MRT 默认只有 `output` 使用材质混合，其他附件默认 `NoBlending`；不能把 normal／roughness 等附件的 alpha 当成 opacity 来解释绘制。源 GLB 实测为 51 个 BLEND `decal-*` 字符／铭牌贴片，键帽本体不透明。历史报告 `nativeTransparent: 54` 统计整个场景：除 51 个源贴片，还包含远地面、平面反射、接触阴影三个舞台透明材质，并不是 54 种商品玻璃。GLTFLoader 为 BLEND 关闭 depthWrite，不设置 MASK 专用的 alphaTest=0.5；历史单 MRT 支路中贴片直接覆盖 normal／albedo／motion，而深度保留后方不透明面，未丢弃的 alpha=0 区域也可能写入零捕获权重，抹掉底层的增强资格。须检查键面字符、铭牌软边、整片边界及运动历史；完整通用透明方案未验收，不以原生材质保留证明所有 G-buffer 语义正确。此次 [资产核验](typewriter-asset-audit.md) 仅纠正源材质与场景统计范围，不改写历史测试成绩。
 
 针对已知贴片，随后加入独立运行 NodeMaterial：仅 `decal-6..55` 与 `decal-62` 的透明、有贴图源材质使用不小于原 alphaTest 的 `1/255` 低阈值，丢弃透明孔，保留原生 Physical 支路与零增强捕获权重。源材质、source alphaTest、贴图、几何和旧 WebGL 入口不改。相关 7 项材质测试已检查共享运行克隆、原生 lighting model、借图／释放、源身份恢复与未知透明材质排除；这只是工程防护，不是字符软边或完整透明画质通过。当前报告包含 51 种受控贴片克隆，不能再把旧 core 的 12 种 runtime 数当成最新实测。
 

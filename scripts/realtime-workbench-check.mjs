@@ -68,7 +68,7 @@ const report = {
   deferredJointChecks: [
     '20-minute continuous joint demonstration',
     'Real device-loss recovery and failure injection',
-    'Five fixed-view quality acceptance and desktop/mobile layout batch',
+    'Six fixed-view quality acceptance and desktop/mobile layout batch',
     'User visual and interaction acceptance',
   ],
 }
@@ -479,6 +479,9 @@ async function actual() {
               colorSpace: scene.environment.colorSpace,
               width: scene.environment.image?.width ?? null,
               height: scene.environment.image?.height ?? null,
+              reference: scene.environment.userData?.reference
+                ? { ...scene.environment.userData.reference }
+                : null,
             }
           : null,
         stageInput: window.__demo.store.presentation.stage ?? null,
@@ -1334,7 +1337,7 @@ async function visualBatch(metadata, actionId) {
 }
 
 async function qualityComparison(metadata, actionId) {
-  progress('Fixed-pose enhanced WebGL and realtime quality comparison')
+  progress('Fixed-pose WebGL/realtime visual-direction comparison (different environment/fill)')
   const cases = [
     { id: 'whole', title: '整机', progress: 0, view: 'perspective' },
     { id: 'paint', title: '漆面 · part-095', progress: 0, part: 'part-095' },
@@ -1356,7 +1359,33 @@ async function qualityComparison(metadata, actionId) {
   }
   report.quality = {
     definition:
-      'Enhanced production WebGL and realtime workbench use the same published GLB/rig, source texture dimensions, configured stage, exposure, semantic pose and physical camera including view offset. Lateral projection must match; native WebGL [-1,1] and WebGPU [0,1] depth terms are validated by their clip-space conversion rather than full matrix equality. Backend-specific environment prefilter, reflection implementation and BRDF branches are recorded, not assumed equivalent. Pixel differences are evidence, not automatic quality scores.',
+      'Enhanced production WebGL and corrected realtime use the same published GLB/rig, source PBR inputs and texture dimensions, published stage configuration, three RectAreaLight softboxes, exposure, semantic pose and physical camera including view offset. Lighting intentionally differs: WebGL retains its authored environment at intensity 0.9 and directional fills 0.75/0.35; realtime uses frozen Studio Small 05 HDR at intensity 0.35 and disables those two delta-light fills after raw-reflection isolation isolated their extreme planar-capture highlights. Ambient fill remains 0.16; all light fields except the two directional intensities match. This is a visual-direction comparison, not a matched-lighting algorithm ablation. Lateral projection must match; native WebGL [-1,1] and WebGPU [0,1] depth terms are validated by clip-space conversion rather than full matrix equality. Backend output, BRDF and reflection branches remain separately recorded. Pixel differences are diagnostics, not matched-lighting error or quality scores.',
+    matchedLighting: false,
+    supplementalLightingContract: {
+      sharedSoftboxes: true,
+      localLights: false,
+      webglDirectionalIntensities: [0.75, 0.35],
+      realtimeDirectionalIntensities: [0, 0],
+      ambientIntensity: 0.16,
+      otherLightFields: 'identical',
+      reason:
+        'Real native planar reflection A/B removes only directional fills: HDR maximum falls from 16376 to 9.414. Candidate realtime disables these fills rather than clamping radiance or broadening blur; original WebGL lighting remains unchanged.',
+    },
+    environmentContract: {
+      webgl: { kind: 'authored studio environment', intensity: 0.9 },
+      realtime: {
+        name: 'Trees X / Studio Small 05 reference HDR',
+        width: 1024,
+        height: 512,
+        reference: {
+          url: '/textures/studio_small_05_1k.hdr',
+          bytes: 1723695,
+          sha256: '358d532ee8233f17499830eb512591c1e308ce16ed181e0efc938cb7f0f0e11f',
+          intensity: 0.35,
+          source: 'Poly Haven / Studio Small 05 / Greg Zaal / CC0',
+        },
+      },
+    },
     visualAcceptance:
       'Pending visual inspection of whole, three detail views, layers and flat poses; successful contract checks alone do not establish higher image quality.',
     cases,
@@ -1367,7 +1396,7 @@ async function qualityComparison(metadata, actionId) {
       files: [],
       fairReference: false,
       reason:
-        'Existing independent renderlab output uses Studio Small 05 at environmentIntensity 0.35 and omits production reflection/contact-shadow approximations. Its stage differs from the live workbench; these old path-tracing images are labelled qualitative references only. No path-tracing render or matched-error score is produced in this run.',
+        'Existing independent renderlab output also uses Studio Small 05 at environmentIntensity 0.35, but its stage, material preparation and lighting set differ from the live workbench and it omits production reflection/contact-shadow approximations. Matching the HDR alone does not make these images fair references. They remain qualitative direction references; new matched-input path tracing is deferred until the runtime material/UV copy is complete. No path-tracing render or matched-error score is produced in this run.',
     },
   }
   const referenceFiles = await readdir(report.quality.previousPathTracing.directory).catch(
@@ -1484,10 +1513,52 @@ async function qualityComparison(metadata, actionId) {
     ).toBe(webglCompact.sourceMaterialDigest)
     expect(realtime.renderSettings.stageInput).toEqual(webgl.renderSettings.stageInput)
     expect(realtime.renderSettings.exposure).toBe(webgl.renderSettings.exposure)
-    expect(realtime.renderSettings.environmentIntensity).toBe(
+    expect(
       webgl.renderSettings.environmentIntensity,
+      `${item.id}: preserved WebGL environment`,
+    ).toBe(report.quality.environmentContract.webgl.intensity)
+    expect(
+      webgl.renderSettings.environment?.reference,
+      `${item.id}: authored WebGL environment`,
+    ).toBeNull()
+    expect(
+      realtime.renderSettings.environment,
+      `${item.id}: frozen realtime reference HDR`,
+    ).toMatchObject(report.quality.environmentContract.realtime)
+    expect(
+      realtime.renderSettings.environmentIntensity,
+      `${item.id}: realtime reference intensity`,
+    ).toBe(report.quality.environmentContract.realtime.reference.intensity)
+    expect(realtime.renderSettings.exposure, `${item.id}: frozen realtime exposure`).toBe(1)
+    const lights = (snapshot, type) =>
+        snapshot.renderSettings.lights.filter((light) => light.type === type),
+      sharedSoftboxes = lights(realtime, 'RectAreaLight'),
+      directionalWithoutIntensity = (snapshot) =>
+        lights(snapshot, 'DirectionalLight').map((light) => {
+          const fields = { ...light }
+          delete fields.intensity
+          return fields
+        })
+    expect(sharedSoftboxes, `${item.id}: three actual softboxes`).toHaveLength(3)
+    expect(sharedSoftboxes, `${item.id}: unchanged shared softboxes`).toEqual(
+      lights(webgl, 'RectAreaLight'),
     )
-    expect(realtime.renderSettings.lights).toEqual(webgl.renderSettings.lights)
+    expect(
+      lights(webgl, 'DirectionalLight').map((light) => light.intensity),
+      `${item.id}: original WebGL directional fill`,
+    ).toEqual(report.quality.supplementalLightingContract.webglDirectionalIntensities)
+    expect(
+      lights(realtime, 'DirectionalLight').map((light) => light.intensity),
+      `${item.id}: disabled realtime delta-light fill`,
+    ).toEqual(report.quality.supplementalLightingContract.realtimeDirectionalIntensities)
+    expect(directionalWithoutIntensity(realtime)).toEqual(directionalWithoutIntensity(webgl))
+    expect(
+      realtime.renderSettings.lights.filter((light) => light.type !== 'DirectionalLight'),
+      `${item.id}: other lights retain all fields`,
+    ).toEqual(webgl.renderSettings.lights.filter((light) => light.type !== 'DirectionalLight'))
+    expect(lights(realtime, 'AmbientLight').map((light) => light.intensity)).toEqual([
+      report.quality.supplementalLightingContract.ambientIntensity,
+    ])
     report.quality.pairs.push({
       case: item.id,
       title: item.title,
@@ -1510,7 +1581,20 @@ async function qualityComparison(metadata, actionId) {
       webglSettings: webgl.renderSettings,
       realtimeSettings: realtime.renderSettings,
       pixels: await compare(`quality-webgl-${item.id}`, `quality-realtime-${item.id}`),
-      matchedContract: true,
+      pixelInterpretation:
+        'Different environment and directional-fill illumination: numerical differences are diagnostics only, not matched-lighting image error or evidence of algorithmic improvement.',
+      matchedContract: {
+        modelIdentity: true,
+        semanticAndInstancePose: true,
+        physicalCameraAndProjection: true,
+        sourcePbrInputs: true,
+        publishedStageConfiguration: true,
+        localLights: false,
+        sharedSoftboxes: true,
+        exposure: true,
+        environment: false,
+      },
+      matchedLighting: false,
     })
   }
   const uniqueInputs = (values) => [
@@ -1542,7 +1626,7 @@ async function qualityComparison(metadata, actionId) {
     webgl: uniqueInputs(snapshots.get('webgl:whole').materials),
     realtime: uniqueInputs(snapshots.get('realtime:whole').materials),
     interpretation:
-      'Source input equality does not claim runtime shader equivalence. Realtime decal alpha-test routing and supported Physical-lighting branches remain explicitly visible here.',
+      'Source input equality does not claim runtime shader equivalence. Realtime opaque surface/complete transparent beauty routing and supported Physical-lighting branches remain explicitly visible here.',
   }
   const escape = (value) =>
     String(value)
@@ -1553,7 +1637,7 @@ async function qualityComparison(metadata, actionId) {
   const rows = report.quality.pairs
     .map(
       (pair) =>
-        `<section><h2>${escape(pair.title)}</h2><div class="pair"><figure><img src="${escape(pair.webglImage)}" alt="增强 WebGL：${escape(pair.title)}"><figcaption>增强 WebGL</figcaption></figure><figure><img src="${escape(pair.realtimeImage)}" alt="实时组合：${escape(pair.title)}"><figcaption>WebGPU 实时组合</figcaption></figure></div></section>`,
+        `<section><h2>${escape(pair.title)}</h2><div class="pair"><figure><img src="${escape(pair.webglImage)}" alt="增强 WebGL：${escape(pair.title)}"><figcaption>增强 WebGL · 原摄影棚环境 0.9，方向补光 0.75／0.35</figcaption></figure><figure><img src="${escape(pair.realtimeImage)}" alt="实时组合：${escape(pair.title)}"><figcaption>WebGPU 实时组合 · Studio Small 05 HDR 0.35，方向补光关闭</figcaption></figure></div></section>`,
     )
     .join('\n')
   const diagnostics = report.quality.ssrDiagnostics
@@ -1573,10 +1657,10 @@ async function qualityComparison(metadata, actionId) {
     .join('\n')
   await writeFile(
     `${output}/quality-comparison.html`,
-    `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trees X 固定取景画质对照</title><style>body{margin:0;padding:32px;background:#ecefea;color:#202821;font:15px/1.65 system-ui,sans-serif}main{max-width:1800px;margin:auto}h1{font-size:28px}h2{font-size:20px;margin:28px 0 10px}.pair,.triple{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.triple{grid-template-columns:repeat(3,minmax(0,1fr))}figure{margin:0}img{display:block;width:100%;height:auto;background:#dce1dc}figcaption{padding:8px 0}p{max-width:1000px}@media(max-width:800px){.pair,.triple{grid-template-columns:1fr}}</style><main><h1>Trees X · 同商品、同取景实机画质对照</h1><p>比较当前生产增强 WebGL 与 WebGPU 实时组合。已核对模型、材质输入、结构姿态、实际镜头及曝光；环境预过滤与反射支路保持各自后端实现，细节记录在 report.json。图像差异不等于质量提高，需检查文字、漆面、细边、反射与噪声。</p><p>旧路径追踪图使用不同环境及舞台，仅作非公平参考；本轮未新渲染路径追踪，也未以旧图计算误差。</p>${rows}<h1>近景 SSR 噪声与稳定性诊断</h1><p>近景保持 SSGI 开启、模型和镜头不变。重复开启图用于观察时域波动，不能将差异直接当作噪声得分。</p>${diagnostics}</main></html>\n`,
+    `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Trees X 固定取景画质对照</title><style>body{margin:0;padding:32px;background:#ecefea;color:#202821;font:15px/1.65 system-ui,sans-serif}main{max-width:1800px;margin:auto}h1{font-size:28px}h2{font-size:20px;margin:28px 0 10px}.pair,.triple{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}.triple{grid-template-columns:repeat(3,minmax(0,1fr))}figure{margin:0}img{display:block;width:100%;height:auto;background:#dce1dc}figcaption{padding:8px 0}p{max-width:1000px}@media(max-width:800px){.pair,.triple{grid-template-columns:1fr}}</style><main><h1>Trees X · 同商品、同取景，环境与补光不同的画质方向对照</h1><p>增强 WebGL 保留原摄影棚环境（强度 0.9）及两盏方向补光（0.75／0.35）；WebGPU 实时入口采用 Studio Small 05 HDR（强度 0.35）并关闭方向补光。真实原始反射测试确认异常高亮反射峰值来自方向补光支路，修正未截断亮度或扩大模糊。共同模型、源 PBR 输入、结构姿态、实际镜头、公开舞台配置、曝光及三块软箱保持一致；环境和方向补光刻意不同，localLights=false、sharedSoftboxes=true、matchedLighting=false。因此这些图像不能作为同光照算法消融或误差分数。实际环境来源、摘要和后端支路记入 report.json；仍需检查文字、漆面、细边、反射与噪声。</p><p>旧路径追踪图虽同用 Studio Small 05，舞台、材质准备与灯光集合仍不同，只作视觉方向参考。候选运行材质／UV 副本完成后再生成同条件路径参考；本轮未新渲染路径追踪，也未以旧图计算误差。</p>${rows}<h1>近景 SSR 噪声与稳定性诊断</h1><p>近景保持同一实时 HDR、SSGI、模型和镜头不变。重复开启图用于观察时域波动，不能将差异直接当作噪声得分。</p>${diagnostics}</main></html>\n`,
   )
   report.checks.push(
-    'Six fixed physical poses compare production WebGL and realtime with verified common model, PBR source inputs, structure, camera projection, stage and exposure; three close-ups additionally record SSR-off/on temporal diagnostics',
+    'Six fixed physical poses verify common model, source PBR, structure, camera projection, published stage configuration, three shared softboxes and exposure. Authored WebGL (0.9 environment, 0.75/0.35 directional fills) and corrected realtime (Studio Small 05 HDR 0.35, zero directional fills) intentionally differ; all other light fields remain equal. This is not a matched-lighting ablation. Three close-ups additionally record same-realtime-input SSR-off/on temporal diagnostics',
   )
 }
 

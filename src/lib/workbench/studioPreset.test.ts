@@ -23,6 +23,7 @@ describe('registered photography studio lighting', () => {
     )
     expect(hasTypewriterStudio(source)).toBe(false)
     expect(resolveWorkbenchStage(source, false)).toBe(source.stage)
+    expect(resolveWorkbenchStage(source, false, true)).toBe(source.stage)
     expect(resolveWorkbenchStage(source, true)).toEqual({
       ...source.stage,
       background: '#e7e9e5',
@@ -30,5 +31,21 @@ describe('registered photography studio lighting', () => {
     })
     expect(hasTypewriterStudio()).toBe(false)
     expect(resolveWorkbenchStage(undefined, false)).toBe(defaultStage)
+  })
+  it('removes delta fills only from the realtime typewriter reference without changing source configuration', () => {
+    const source = presentation('server/src/main/resources/presentations/typewriter-kimi-v1.json'),
+      snapshot = JSON.stringify(source),
+      webgl = resolveWorkbenchStage(source, false),
+      realtime = resolveWorkbenchStage(source, false, true)
+    expect(realtime.environmentIntensity).toBe(0.35)
+    expect(realtime.key.intensity).toBe(0)
+    expect(realtime.rim.intensity).toBe(0)
+    expect(realtime.ambient).toBe(webgl.ambient)
+    expect(realtime.key.position).toEqual(webgl.key.position)
+    expect(realtime.rim.position).toEqual(webgl.rim.position)
+    expect(webgl.key.intensity).toBe(0.75)
+    expect(webgl.rim.intensity).toBe(0.35)
+    expect(webgl.environmentIntensity).toBe(0.9)
+    expect(JSON.stringify(source)).toBe(snapshot)
   })
 })

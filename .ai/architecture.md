@@ -2,6 +2,20 @@
 
 ## 当前实时基线（2026-10-13）
 
+节点一改动后，`WorkbenchStage` 仍唯一拥有 TresCanvas／renderer，`realtime/coordinator` 与受检时钟拥有唯一实际绘制调度；`sceneInputs` 使用同一 renderer 的两个 pass：不透明 surface 六 MRT（output、normal／roughness、albedo／metalness、motion、baseSpecular、baseDiffuse），完整 HDR beauty 两 MRT（output、correctionThroughput）。两 pass 深度目标独立，不能描述为所有信号共享同一个 G-buffer pass。不透明六附件存储为 40 字节／像素、对齐成本 44 字节／采样点，请求 64 上限不变；完整 beauty 增加一次不透明绘制及约 16 字节／像素（HDR 色、RGBA8 transmittance 与深度），需实测其成本，不改输出尺寸或源贴图。
+
+源 GLB 的 51 个字符／铭牌贴片直接沿用 loader 材质身份、原贴图 alpha 与 alphaTest=0，不再克隆低阈值裁剪。surface pass 排除透明绘制；完整 beauty 保留透明层与舞台叠层。`correctionThroughput` 的 alpha 使用实际 opacity，通过材质混合累计剩余 transmittance；其 RGB／R 成为 `correctionWeight`，最终为 `beauty + (specularCorrection + diffuseCorrection) × correctionWeight`。这样底层照明增强按前方透明遮挡衰减，不能把 roughness／清漆捕获 alpha 误当 opacity。两 pass／深度由 sceneInputs 唯一释放，runtime Physical 材质仅用于支持的源支路，不释放 loader 源材质与纹理。
+
+实时参考环境通过可中止同源请求加载 Studio Small 05，校验 1,723,695 字节与 SHA-256 `358d532ee8233f17499830eb512591c1e308ce16ed181e0efc938cb7f0f0e11f`；环境强度 0.35、曝光 1。三个既有 RectAreaLight 软箱保持，ambient=0.16，两盏 Directional=0；WebGL 原环境强度 0.9、两盏 Directional=0.75／0.35 不变。商品、地台和线性天空在 HDR beauty 中合成，最终仅一次 ACES／sRGB 后进入 SMAA。WebGL 的天空／叠层顺序不同，不以相同曝光冒充全管线像素等效。
+
+真实 GPU 原始地台反射 probe 的高亮峰值从 16376 降至 9.4140625；隐藏接触阴影或已知字符贴片时仍为 16376，只有隐藏两盏 Directional 的对照降低峰值，支持方向补光是地台极亮点来源的诊断。未借用扩大模糊、能量 clamp 或降低各向异性掩盖问题。校准后六取景已无原先极亮白块，漆面 SSR 颗粒仍明显，分层／平铺没有明确整体画质收益；该结果不证明文字细边、整体质感或呈现预算通过。
+
+当前节点一 check（385 单测＋48 工具测试）、build、`demo:prepare` 与 `demo:start` 通过；生产六取景的 2 项契约、核心 4 项、管理取景 2 项、故障恢复 4 项检查通过，均使用真实 API、原 GLB 与原生 WebGPU。六组图保留相同资产、源 PBR、姿态、物理相机及三个软箱，但两后端环境与 Directional 强度有意不同，不作为匹配布光的算法消融。故障批次覆盖真实模型 503、受控 renderer.onError 的暂停／同 renderer 重试，以及实际 GPUDevice.destroy 后先释放旧宿主再恢复唯一 Canvas 和检查点；受控回调仅证明集成，不冒充原生 GPU 校验故障。核心真实隐藏未观察到 hidden，未替换合成可见性；本轮 30 次重载与 20 分钟操作未重跑。`fullJointAcceptance=false`、`frameBudgetValidated=false`；完整画质与本人走查未通过，默认 WebGL 保持，不进入 DDGI／FFX／BVH 或候选 v2。详见 [节点一验收](typewriter-quality-node1-validation.md)。
+
+### 2026-10-13 节点一之前的统一 resolve 记录（历史）
+
+以下为本次双 pass／参考 HDR／补光改动之前的实现与测试；保留来源，但其中“当前”只指该历史批次。30 次重载、20 分钟操作、管理及生产图不能替代节点一新实现的验收。
+
 `?renderPipeline=realtime` 仅为 `typewriter-v1` 装配 WebGPU 实验宿主，钢琴／汽车继续原 WebGL。`WorkbenchStage` 的唯一 TresCanvas 仍拥有 renderer；`useWorkbenchScene` 处理商品代次、加载、首帧就绪与管理预览，`rendering/realtime/coordinator` 统一调度舞台辅助 draw、共享 G-buffer、SSR、SSGI、内置过滤和最终呈现。renderer 工厂为该 G-buffer 的 44 字节对齐附件成本明确请求 64 字节上限；不支持设备通过完整宿主卸载进入兼容后端，不叠加 Canvas。
 
 `realtime/clock` 是固定 Three 0.185.1 的受检时钟桥接，Tres 拥有唯一实际绘制时钟；`realtime/motion` 记录完整投影、世界和实例矩阵，最终呈现成功后才提交一次 previous，辅助 draw 不提前更新运动历史。`realtime/materials` 借用源贴图并拥有运行 Physical NodeMaterial，通过 r185 DFGLUT 捕获原生环境辐射的单次散射项，乘原生镜面 AO 和清漆透过权重；不再捕获后直接减掉完整间接镜面。非默认 IOR／specular 参数或贴图、独立 envMap、各向异性／透射等未支持支路保留原生。

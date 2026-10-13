@@ -139,20 +139,6 @@ export function realtimeMaterialSupported(material: Material): material is PbrSo
   )
 }
 
-// This is the known typewriter's character/nameplate decal branch, not a generic
-// glass substitute. Native MRT auxiliary attachments use NoBlending: an alpha=0
-// decal otherwise writes its G-buffer across the whole rectangle.
-const decalAlphaFloor = 1 / 255
-
-function isTypewriterDecal(material: Material): material is PbrSource {
-  return (
-    material instanceof MeshStandardMaterial &&
-    material.transparent &&
-    material.map !== null &&
-    /^decal-(?:[6-9]|[1-4]\d|5[0-5]|62)$/.test(material.name)
-  )
-}
-
 const scalarFields = [
   'name',
   'roughness',
@@ -215,7 +201,6 @@ interface Binding {
   runtime: RealtimePhysicalMaterial
   version: number
   supported: boolean
-  protectedDecal: boolean
 }
 
 function syncBinding(binding: Binding) {
@@ -230,9 +215,7 @@ function syncBinding(binding: Binding) {
     output[key] = input[key]
     changed = true
   }
-  const alphaTest = binding.protectedDecal
-    ? Math.max(source.alphaTest, decalAlphaFloor)
-    : source.alphaTest
+  const alphaTest = source.alphaTest
   if (runtime.alphaTest !== alphaTest) {
     recompile = recompile || runtime.alphaTest > 0 !== alphaTest > 0
     runtime.alphaTest = alphaTest
@@ -273,17 +256,18 @@ export function createRealtimeMaterials(root?: Object3D) {
 
   function convert(source: Material): Material {
     const supported = realtimeMaterialSupported(source)
-    const protectedDecal = isTypewriterDecal(source)
     if (!supported) {
       native.add(source)
-      if (!protectedDecal) return source
+      // Transparent characters/nameplates never enter the opaque lighting
+      // pass. Preserve native source identity and every low-alpha edge; the
+      // former MRT workaround's runtime clone/alpha cutoff is unnecessary.
+      return source
     }
     let binding = bindings.get(source)
     if (!binding) {
       const runtime = new RealtimePhysicalMaterial(source, captures)
       runtime.copy(source)
-      if (protectedDecal) runtime.alphaTest = Math.max(source.alphaTest, decalAlphaFloor)
-      binding = { source, runtime, version: source.version, supported, protectedDecal }
+      binding = { source, runtime, version: source.version, supported }
       bindings.set(source, binding)
     }
     return binding.runtime
@@ -339,9 +323,10 @@ export function createRealtimeMaterials(root?: Object3D) {
         nativeAnisotropic: 0,
         nativeTransmission: 0,
         nativeOther: 0,
+        // Retain the old diagnostic key for snapshot/report compatibility.
+        // No decals are cloned or alpha-clipped by the split-pass pipeline.
         protectedDecals: 0,
       }
-      for (const binding of bindings.values()) if (binding.protectedDecal) counts.protectedDecals++
       for (const material of native) {
         const values = material as unknown as Record<string, unknown>
         if (material.transparent || material.opacity < 1) counts.nativeTransparent++

@@ -7,6 +7,7 @@ import { createStudioEnvironment } from '../studio/geometry'
 import { createPianoEnvironment } from '../pianoEnvironment'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendererTypes'
 import { ownEnvironmentPmrem } from './environmentPMREM'
+import { isRealtimeRenderer } from './realtimeMode'
 
 export interface OwnedEnvironment {
   texture: Texture
@@ -58,6 +59,11 @@ export async function createProductEnvironment(
     }
   }
   if (isWebGpuRenderer(renderer)) {
+    if (adapterId === 'typewriter-v1' && isRealtimeRenderer(renderer)) {
+      const { createRealtimeReferenceEnvironment } = await import('./realtime/referenceEnvironment')
+      signal?.throwIfAborted()
+      return createRealtimeReferenceEnvironment(renderer, signal)
+    }
     const { createGpuStudioEnvironment, createGpuRoomEnvironment } =
       await import('./studioEnvironment')
     signal?.throwIfAborted()

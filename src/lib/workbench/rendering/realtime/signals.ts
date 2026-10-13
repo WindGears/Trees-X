@@ -1,4 +1,4 @@
-import { HalfFloatType, RGFormat, UnsignedByteType, type Texture } from 'three'
+import type { Texture } from 'three'
 import {
   RenderPipeline,
   RendererUtils,
@@ -7,59 +7,26 @@ import {
   type Scene,
   type WebGPURenderer,
 } from 'three/webgpu'
-import {
-  diffuseColor,
-  materialMetalness,
-  mrt,
-  normalView,
-  output,
-  packNormalToRGB,
-  pass,
-  renderOutput,
-  sample,
-  unpackRGBToNormal,
-  vec2,
-  vec4,
-} from 'three/tsl'
+import { renderOutput, sample, unpackRGBToNormal, vec2, vec4 } from 'three/tsl'
 import { ssr } from 'three/addons/tsl/display/SSRNode.js'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { recurrentDenoise } from 'three/addons/tsl/display/RecurrentDenoiseNode.js'
 import { smaa } from 'three/addons/tsl/display/SMAANode.js'
-import { specularCaptureNode, diffuseCaptureNode, physicalRoughnessNode } from './materials'
 import { createOwnedRtt } from './ownedRtt'
 import { createReflectionResolve } from './reflectionResolve'
+import { createRealtimeSceneInputs } from './sceneInputs'
 
-/** One shared full-resolution G-buffer. All inputs and composition are linear HDR. */
+/** Opaque lighting geometry and complete beauty share one renderer and clock.
+ * All inputs and composition are full-resolution linear HDR.
+ */
 export function createRealtimeSignals(
   renderer: WebGPURenderer,
   scene: Scene,
   camera: PerspectiveCamera,
   motion: Node,
 ) {
-  const scenePass = pass(scene, camera, { samples: 0 })
-  scenePass.setMRT(
-    mrt({
-      output,
-      normal: vec4(packNormalToRGB(normalView), physicalRoughnessNode),
-      albedo: vec4(diffuseColor.rgb, materialMetalness),
-      motion,
-      baseSpecular: specularCaptureNode,
-      baseDiffuse: diffuseCaptureNode,
-    }),
-  )
-  // Preserve curved normals and micro-roughness for close-range specular rays.
-  // Storage 40 bytes/sample; aligned device cost remains 44, within 64.
-  scenePass.getTexture('normal').type = HalfFloatType
-  scenePass.getTexture('albedo').type = UnsignedByteType
-  scenePass.getTexture('motion').type = HalfFloatType
-  scenePass.getTexture('motion').format = RGFormat
-  const beauty = scenePass.getTextureNode('output'),
-    depth = scenePass.getTextureNode('depth'),
-    normal = scenePass.getTextureNode('normal'),
-    albedo = scenePass.getTextureNode('albedo'),
-    velocity = scenePass.getTextureNode('motion'),
-    baseSpecular = scenePass.getTextureNode('baseSpecular'),
-    baseDiffuse = scenePass.getTextureNode('baseDiffuse')
+  const inputs = createRealtimeSceneInputs(scene, camera, motion)
+  const { color: beauty, depth, normal, albedo, velocity, baseSpecular, baseDiffuse } = inputs
   const signedNormal = sample((uv) => unpackRGBToNormal(normal.sample(uv).rgb))
   const reflection = ssr(beauty, depth, signedNormal, {
     stochastic: true,
@@ -138,7 +105,13 @@ export function createRealtimeSignals(
       : vec4(0).rgb
     antialias?.dispose()
     composite?.dispose()
-    composite = createOwnedRtt(renderOutput(vec4(beauty.rgb.add(specular).add(diffuse).max(0), 1)))
+    // Native transparent beauty is already alpha-composited. Only the opaque
+    // surface lighting correction passes through its retained transmittance.
+    composite = createOwnedRtt(
+      renderOutput(
+        vec4(beauty.rgb.add(specular.add(diffuse).mul(inputs.correctionWeight)).max(0), 1),
+      ),
+    )
     antialias = smaa(composite.node)
     pipeline.outputNode = antialias
     pipeline.needsUpdate = true
@@ -211,7 +184,7 @@ export function createRealtimeSignals(
       giInput.dispose()
       reflection.dispose()
       gi.dispose()
-      scenePass.dispose()
+      inputs.dispose()
       pipeline.dispose()
     },
   }
