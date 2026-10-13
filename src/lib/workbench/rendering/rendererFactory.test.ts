@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { TresRendererSetupContext } from '@tresjs/core'
 import type { WebGPURenderer } from 'three/webgpu'
 import { gpuRendererFactory } from './rendererFactory'
+import { isRealtimeRenderer } from './realtimeMode'
 
 interface DeviceLoss {
   reason: 'destroyed' | 'unknown'
@@ -55,6 +56,36 @@ beforeEach(() => {
 })
 
 describe('Tres-owned GPU host cancellation', () => {
+  it('marks only realtime hosts and clears the mark before a late initialization finishes', async () => {
+    const realtime = gpuRendererFactory(vi.fn(), true)(context()) as WebGPURenderer
+    const reference = gpuRendererFactory(vi.fn())(context()) as WebGPURenderer
+    expect(isRealtimeRenderer(realtime)).toBe(true)
+    expect(isRealtimeRenderer(reference)).toBe(false)
+    const pending = realtime.init()
+    realtime.dispose()
+    expect(isRealtimeRenderer(realtime)).toBe(false)
+    state.resolve!()
+    await pending
+    expect(isRealtimeRenderer(realtime)).toBe(false)
+    expect(state.releases).toBe(1)
+    reference.dispose()
+  })
+
+  it.each(['init-failure', 'fallback'] as const)(
+    'clears realtime registration after %s',
+    async (reason) => {
+      state.gpu = reason !== 'fallback'
+      const renderer = gpuRendererFactory(vi.fn(), true)(context()) as WebGPURenderer
+      const pending = renderer.init()
+      const rejection = expect(pending).rejects.toThrow()
+      if (reason === 'init-failure') state.reject!(new Error('init failure'))
+      else state.resolve!()
+      await rejection
+      expect(isRealtimeRenderer(renderer)).toBe(false)
+      renderer.dispose()
+    },
+  )
+
   it('releases a device whose init finishes after the host was unmounted', async () => {
     const lost = vi.fn(),
       renderer = gpuRendererFactory(lost)(context()) as WebGPURenderer

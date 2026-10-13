@@ -1,6 +1,7 @@
 /* global URL */
 import { chromium, expect } from '@playwright/test'
 import { readFile, mkdir, writeFile } from 'node:fs/promises'
+import { bridge } from './demo/browser-check.mjs'
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const fixture = process.env.TYPEWRITER_FIXTURE === '1'
 const output = process.env.TYPEWRITER_CHECK_OUTPUT || 'artifacts/typewriter-migration/runtime'
@@ -27,22 +28,11 @@ try {
     timeout: 90000,
   })
   await expect(page.locator('canvas')).toHaveCount(1)
+  await bridge(page, true)
   await page.evaluate(() => {
-    let component = document.querySelector('canvas').__vueParentComponent
-    while (component) {
-      const context =
-        component.exposed?.context ??
-        Reflect.ownKeys(component.provides ?? {})
-          .map((k) => component.provides[k])
-          .find((v) => v?.scene?.value?.isScene)
-      if (context) {
-        window.__wb = context
-        window.__canvas = document.querySelector('canvas')
-        return
-      }
-      component = component.parent
-    }
-    throw new Error('Real Three scene is unavailable')
+    window.__wb = window.__demo.scene
+    window.__canvas = window.__demo.canvas
+    window.__renderer = window.__demo.renderer
   })
   const state = () =>
     page.evaluate(() => {
@@ -68,6 +58,7 @@ try {
         adapter: root.userData.adapter,
         triangles: root.userData.triangles,
         sameCanvas: document.querySelector('canvas') === window.__canvas,
+        sameRenderer: window.__wb.renderer.instance === window.__renderer,
         camera: window.__wb.camera.activeCamera.value.position.toArray(),
       }
     })
@@ -100,7 +91,7 @@ try {
     'true',
     { timeout: 10000 },
   )
-  await page.getByRole('button', { name: '平铺俯视', exact: true }).first().click()
+  await page.getByLabel('观察视角', { exact: true }).selectOption('knoll')
   await page.waitForTimeout(800)
   const flat = await state()
   expect(flat.parts).not.toEqual(initial.parts)
@@ -125,6 +116,7 @@ try {
   await page.getByRole('button', { name: '返回全景', exact: true }).click()
   report.checks.push('Semantic search, focus, world anchors and return to overview')
   expect((await state()).sameCanvas).toBe(true)
+  expect((await state()).sameRenderer).toBe(true)
   expect(
     report.requests
       .filter((url) => /^https?:/.test(url))

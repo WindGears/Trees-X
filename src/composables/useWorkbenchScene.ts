@@ -5,6 +5,9 @@ import { createBaseEnvironment, type OwnedEnvironment } from '@/lib/workbench/re
 import { isWebGpuRenderer, type WorkbenchRenderer } from '@/lib/workbench/rendering/rendererTypes'
 import type { HybridCoordinator } from '@/lib/workbench/rendering/coordinator'
 import type { RefinementStatus, RefinementChange } from '@/lib/workbench/rendering/refinementTypes'
+import type { RealtimeCoordinator } from '@/lib/workbench/rendering/realtime/coordinator'
+import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
+import type { ownGeometryAttributes } from '@/lib/workbench/rendering/realtime/geometryOwnership'
 import { createStageController } from '@/lib/workbench/controller'
 import { hasTypewriterStudio, resolveWorkbenchStage } from '@/lib/workbench/studioPreset'
 import { useWorkbenchStore } from '@/stores/workbench'
@@ -21,12 +24,14 @@ export interface WorkbenchSceneProps {
   inspector?: boolean
   catalog?: boolean
   checkpoint?: CameraSnapshot
+  realtimePipeline?: boolean
 }
 /** Scene owns all resources except the Tres-owned renderer. */
 export function useWorkbenchScene(
   props: WorkbenchSceneProps,
   restore: (snapshot?: CameraSnapshot) => void,
   report: (status: RefinementStatus) => void,
+  reportRealtime: (status: RealtimeStatus) => void = () => {},
 ) {
   const store = useWorkbenchStore()
   const motionSession = useMotionSession()
@@ -40,13 +45,21 @@ export function useWorkbenchScene(
   const gpu = isWebGpuRenderer(renderer)
   let currentRefinement: RefinementStatus['phase'] = 'raster'
   let hybrid: HybridCoordinator | undefined
+  let realLighting: RealtimeCoordinator | undefined
   const setupAbort = new AbortController()
   const requestFrame = () => {
-    if (props.active && context.renderer.isInitialized.value && !isActive.value) start()
+    if (
+      props.active &&
+      !realLighting?.snapshot().error &&
+      context.renderer.isInitialized.value &&
+      !isActive.value
+    )
+      start()
     invalidate()
   }
   const dirty = (kind: RefinementChange = 'all') => {
     hybrid?.invalidate(kind)
+    realLighting?.invalidate(kind)
     invalidate()
   }
   const { start, stop, isActive, onBeforeRender } = useLoop()
@@ -71,6 +84,7 @@ export function useWorkbenchScene(
   onBeforeRender(() => {
     if (!gpu) controller?.beforeRender()
   })
+  let geometryOwnership: ReturnType<typeof ownGeometryAttributes> | undefined
   let environment: OwnedEnvironment | undefined,
     disposed = false,
     generation = 0
@@ -80,10 +94,14 @@ export function useWorkbenchScene(
     removeFrame?.()
     removeFrame = undefined
     hybrid?.unload()
+    realLighting?.unload()
     controller?.unload()
     const product = store.product,
       revision = store.revision
     if (!controller || !product) return
+    // A failed frame pauses both clocks. Explicit retry clears that error above
+    // and must restore current visibility before waiting for its new first frame.
+    updateActive()
     motionSlug = product.slug
     motionRevision = revision
     try {
@@ -98,9 +116,15 @@ export function useWorkbenchScene(
       }
       if (!camera.value) return
       store.loading(product.slug, revision, 'first-frame')
+      realLighting?.prepare()
       await renderer.compileAsync(scene.value, camera.value)
       if (disposed || request !== generation) return
       const frame = context.renderer.onRender(() => {
+        if (
+          realLighting &&
+          (realLighting.snapshot().firstRasterMs === null || realLighting.snapshot().error)
+        )
+          return
         if (hybrid) {
           const status = hybrid.snapshot()
           if (status.firstRasterMs === null || status.phase === 'error') return
@@ -110,6 +134,7 @@ export function useWorkbenchScene(
           controller?.enableInteraction()
           store.ready(product.slug, revision)
           hybrid?.ready(product.slug, revision)
+          realLighting?.ready(product.slug, revision)
           void nextTick(() => {
             if (!disposed && request === generation) invalidate()
           })
@@ -120,6 +145,7 @@ export function useWorkbenchScene(
     } catch (cause) {
       if (!disposed && request === generation) {
         hybrid?.unload()
+        realLighting?.unload()
         controller?.unload()
         store.failed(
           product.slug,
@@ -130,10 +156,12 @@ export function useWorkbenchScene(
     }
   }
   function updateActive() {
-    controller?.setActive(props.active)
-    hybrid?.setActive(props.active)
+    const active = props.active && !realLighting?.snapshot().error
+    controller?.setActive(active)
+    hybrid?.setActive(active)
+    realLighting?.setActive(active)
     if (!context.renderer.isInitialized.value) return
-    if (props.active) {
+    if (active) {
       if (!isActive.value) start()
       invalidate()
     } else if (isActive.value) stop()
@@ -157,24 +185,53 @@ export function useWorkbenchScene(
       scene.value.environment = environment.texture
       scene.value.environmentIntensity = stage.value.environmentIntensity
       if (isWebGpuRenderer(renderer)) {
-        const { createHybridCoordinator } = await import('@/lib/workbench/rendering/coordinator')
-        if (disposed) return
-        hybrid = createHybridCoordinator({
-          renderer,
-          scene: scene.value,
-          camera: camera.value,
-          invalidate: requestFrame,
-          beforeRaster: () => controller?.beforeRender(),
-          report: (status) => {
-            currentRefinement = status.phase
-            report(status)
-            if (status.phase === 'error' && hybrid?.snapshot().firstRasterMs === null)
-              store.failed(store.slug, store.revision, status.error ?? '三维首帧绘制失败，请重试。')
-          },
-          reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
-        })
-        context.renderer.replaceRenderFunction((notify) => hybrid?.render(notify))
-        hybrid.setActive(props.active)
+        if (props.realtimePipeline) {
+          const { createRealtimeCoordinator } =
+            await import('@/lib/workbench/rendering/realtime/coordinator')
+          const { ownGeometryAttributes } =
+            await import('@/lib/workbench/rendering/realtime/geometryOwnership')
+          if (disposed) return
+          geometryOwnership ??= ownGeometryAttributes(renderer)
+          realLighting = createRealtimeCoordinator({
+            renderer,
+            scene: scene.value,
+            camera: camera.value,
+            invalidate: requestFrame,
+            beforeRaster: () => controller?.beforeRender(),
+            report: (status) => {
+              reportRealtime(status)
+              if (status.error) {
+                store.failed(store.slug, store.revision, status.error)
+                updateActive()
+              }
+            },
+          })
+          context.renderer.replaceRenderFunction((notify) => realLighting?.render(notify))
+          realLighting.setActive(props.active)
+        } else {
+          const { createHybridCoordinator } = await import('@/lib/workbench/rendering/coordinator')
+          if (disposed) return
+          hybrid = createHybridCoordinator({
+            renderer,
+            scene: scene.value,
+            camera: camera.value,
+            invalidate: requestFrame,
+            beforeRaster: () => controller?.beforeRender(),
+            report: (status) => {
+              currentRefinement = status.phase
+              report(status)
+              if (status.phase === 'error' && hybrid?.snapshot().firstRasterMs === null)
+                store.failed(
+                  store.slug,
+                  store.revision,
+                  status.error ?? '三维首帧绘制失败，请重试。',
+                )
+            },
+            reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
+          })
+          context.renderer.replaceRenderFunction((notify) => hybrid?.render(notify))
+          hybrid.setActive(props.active)
+        }
       }
       controller = createStageController(
         renderer,
@@ -190,8 +247,14 @@ export function useWorkbenchScene(
         motionSession.snapshot,
         {
           allowPan: Boolean(captureSession),
-          changed: (kind) => hybrid?.invalidate(kind),
-          interaction: (value) => hybrid?.setInteracting(value),
+          changed: (kind) => {
+            hybrid?.invalidate(kind)
+            realLighting?.invalidate(kind)
+          },
+          interaction: (value) => {
+            hybrid?.setInteracting(value)
+            realLighting?.setInteracting(value)
+          },
         },
       )
       unregisterCapture = captureSession?.register(() => {
@@ -232,11 +295,15 @@ export function useWorkbenchScene(
       removeListeners = undefined
       hybrid?.dispose()
       hybrid = undefined
+      realLighting?.dispose()
+      realLighting = undefined
       controller?.dispose()
       controller = undefined
       scene.value.environment = null
       environment?.dispose()
       environment = undefined
+      geometryOwnership?.dispose()
+      geometryOwnership = undefined
       // An error after installing the coordinator must not leave a render
       // closure pointing to a disposed instance. A retry installs a new one.
       if (gpu)
@@ -320,6 +387,7 @@ export function useWorkbenchScene(
     ([width, height, current, gallery, inspector, catalog]) => {
       if (!(current instanceof PerspectiveCamera) || !width || !height) return
       hybrid?.invalidate('size')
+      realLighting?.invalidate('size')
       framing.update(current, width, height, Boolean(gallery), Boolean(inspector), Boolean(catalog))
     },
     { immediate: true, flush: 'post' },
@@ -341,18 +409,27 @@ export function useWorkbenchScene(
     removeListeners?.()
     hybrid?.dispose()
     hybrid = undefined
+    realLighting?.dispose()
+    realLighting = undefined
     controller?.dispose()
     stop()
     if (scene.value.environment === environment?.texture) scene.value.environment = null
     if (scene.value.background === background) scene.value.background = null
     if (scene.value.fog === fog) scene.value.fog = null
     environment?.dispose()
+    geometryOwnership?.dispose()
+    geometryOwnership = undefined
   })
 
   return {
     studio,
     stage,
     hybrid: { snapshot: () => hybrid?.snapshot() },
+    realLighting: {
+      snapshot: () => realLighting?.snapshot(),
+      setSignals: (ssr: boolean, ssgi: boolean, denoise: boolean) =>
+        realLighting?.setSignals(ssr, ssgi, denoise),
+    },
     refine: () => hybrid?.refine(),
     realtime: (value: boolean) => hybrid?.setRealtime(value),
     retry: () => hybrid?.retry(),

@@ -1,10 +1,29 @@
+# 当前实时渲染约束（2026-10-13）
+
+- 打字机实时入口为 `?product=typewriter-study&renderPipeline=realtime`；默认 WebGL 与钢琴／汽车原管线保持。旧 hybrid 的 128／1024 样本与 OIDN 只属于历史静止精修入口，不是此阶段要求。
+- 固定 Three 0.185.1，唯一 TresCanvas／renderer／实际绘制时钟。WebGPU 受检桥接集中在 `realtime/clock`，检查版本及私有形状；隐藏、离屏停钟，设备恢复卸载旧宿主后重建。
+- 完整帧拥有相机完整投影、世界矩阵与实例历史；MRT 用 `motion`，最终呈现成功后才提交 previous。不能让阴影／反射辅助 draw 的原生 velocity 更新提前消费历史。刚体之外的 morph／skinning 不直接套用此实现。
+- 整体画质是最高优先级。保留已有摄影棚完成度，用同资产、同取景、同曝光比较；技术更新、像素变化和低耗时不能单独作为晋级依据。画面退步时先修正或保留原效果，不因算法名称更先进而替换已验收入口。
+- 共享六信号 G-buffer：HalfFloat normal／原生导数调整后 roughness，baseDiffuse 使用 RGBA HalfFloat 并以 alpha 保存清漆透过权重；存储 40 字节／像素、WebGPU 对齐验证成本 44 字节／采样点，明确请求 `maxColorAttachmentBytesPerSample: 64`。原输出比例和源纹理尺寸保持，不自动降画质掩盖失败。当前 SSR quality 1、thickness 0.035，参数收益必须实机核对。
+- 地台平面反射沿用唯一 renderer 的离屏绘制，Basic 材质捕获权重为零，排除 SSR 替换；不能把它与商品完整 IBL 再重复相加。保留屏幕外舞台反射不等于已经接入世界空间射线追踪。
+- 支持的基础 Physical 支路用自有运行 NodeMaterial、受检 r185 DFGLUT 捕获环境辐射单次散射项与 AO／清漆透过权重。SSR 只给命中辐射；`reflectionResolve` 在过滤前逐射线组合：命中=`rawSSR × AOcoat`，未命中=`nativeSingle`，再统一过滤 RGB＋ray length，最终为 `beauty + filteredReplacement − nativeSingle`。保留 native miss、多次散射和清漆，未支持像素不应用修正。非默认 IOR／specular 参数或贴图、独立 envMap 等支路不参与替换。不得全局改 PhysicalLightingModel 原型，不直接叠加完整 SSR 与完整原生 IBL，不回馈完整替换到已含 IBL 的 beauty 冒充多跳追踪。
+- 命中必须在过滤前由原始 SSR alpha 的 ray length 判定；时域／空间过滤后的 alpha 不保证仍是原始 ray length，不能拿它当 hit/miss。此前反射颜色与 coverage 独立过滤的非线性权重不一致，radius 5 后仍有明显噪点；该支路已移除并保留历史结果，当前不能继续描述为独立 coverage 合成。统一 resolve 自有 RTT／历史／过滤器由局部 owner 释放；四项生产核心与六组契约通过，不由公式或工程 PASS 推断画质通过。
+- 当前统一替换信号过滤半径为 5。实时舞台 HDR 合成权重 0.5／0.68 属于反射／接触阴影视觉校准，旧 hybrid／WebGL 保持 0.28／0.46；不得称为 BRDF 等效或普适物理参数，需新截图核对。旧 coverage flickerSuppression=0 仅为历史试验参数，当前已无独立 coverage 支路。
+- SSGI 是屏幕空间经验贡献，官方实现含亮度 7 的限制；不得称为完整物理 irradiance、严格无截断或路径追踪等效。字符／铭牌透明贴片、微表面与细边需单独近景核对；当前键帽本体不透明，不能把贴片计数误称玻璃材质数。
+- 源 geometry／material／原尺寸纹理由 loader 唯一释放；运行材质只借纹理，卸载恢复源身份，不得 dispose 源材质做重编译。历史、环境辅助图、过滤目标与监听各自唯一拥有。
+- r185 将表达式隐式转为 RTT 的调用必须有显式目标／quad 材质释放方；不能假定效果节点 dispose 会递归释放输入。EnvironmentNode 的 PMREM 节点生成器亦由受检局部桥接释放，不能仅释放源 HDR 后保留 LOD／ping-pong 资源。保护 loader 资源，固定版本与形状检查，真实重载验证后再声明无增长。
+- r185 的共享 geometry 多 RenderObject 附加 GPU attribute 由 `realtime/geometryOwnership` 受检桥接补齐释放。汇总真实绘制使用的 attribute，交错 view 按共享 backing 引用记录；loader 继续唯一拥有源 geometry，桥接只处理遗漏的 GPU 数据释放，不提前 dispose 源数据。释放顺序为协调器→controller／环境→桥接，卸载恢复原生方法，不留全局原型补丁。8 项真实模块机制测试不能替代完整重载实测。
+- 阶段 1 尚未完整验收：当前核心、六组公平对照契约、管理取景、故障、尺寸兼容及实际 20 分钟操作通过；52 正式循环的固定预热资源无增长，不代替 30 次卸载重载。六组静图仍有前罩噪点、字母颗粒和地台倒影不足，画质未通过。503 取消按严格窗口及真实恢复分类，不全局忽略 ERR_ABORTED；回调接入与实际设备销毁证据区分。三轮 JS 提交计时不代表 GPU 或实际呈现预算。当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 版重载不替代新链，默认保持 WebGL。DDGI／FFX／BVH 不扩展，证据见 [实时渲染验收](realtime-rendering-validation.md)。
+
+下方为保留的历史约束。涉及 hybrid／OIDN 的“新正式管线”表述仅记录当时阶段，以本页当前实时规则为准。
+
 2026-10-02 当前正式资产阶段优先遵循 [完整路线](implementation-roadmap.md)，下面历史演出说明仅适用于 legacy。
 
-2026-10-12 新正式管线约束：单 Tres renderer，WebGPU 光栅与路径追踪通过协调器切换，不叠加场景 Canvas；追踪代理独立拥有派生几何/BVH，原 loader 不受修改。128 实际最低样本＋完整 OIDN 为固定默认，1024 仅主动续算。三件验收前默认 WebGL；实验入口与验收见 [混合管线验收](hybrid-pipeline-validation.md)。
+2026-10-12 新正式管线约束：单 Tres renderer，WebGPU 光栅与路径追踪通过协调器切换，不叠加场景 Canvas；追踪代理独立拥有派生几何/BVH，原 loader 不受修改。128 实际最低样本＋完整 OIDN 为固定默认，1024 仅主动续算并呈现真实累积原图。引导 RenderTarget 的附件名称必须匹配 MRT 输出，MRT 节点按宿主复用，不能每轮降噪重新创建。当前只交付打字机供用户验收，默认保留 WebGL；钢琴／汽车新管线另行规划。实验入口与验收见 [混合管线验收](hybrid-pipeline-validation.md)。
 
 # Three 规则
 
-- 2026-10-12 管线选择：正式交互保持增强 WebGL2；独立 `renderlab.html` 已验证真实 WebGPU 光栅和静止路径追踪，不进入生产工作台。实验页是下方 Tres renderer 规则的明确例外，每页仍只允许一个 Canvas/renderer，切换先卸载，资源/controls/时钟由实验页唯一释放。比较须记录同资产、姿态、材质、灯光及完整投影；共同移除的生产特效、BRDF/纹理过滤差异与缺失 UV 必须注明，不能由基础 WebGPU 对照推导未测试的 SSGI/SSR 结论。样本使用追踪器实际计数，不凭运行时间估计；路径参考图不能冒充连续实机交互。见 [渲染比较](render-pipeline-comparison.md)。
+- 2026-10-12 混合接入前的比较：独立 `renderlab.html` 验证真实 WebGPU 光栅和静止路径追踪，该实验场景不进入生产工作台。后续打字机通过独立协调器接入混合工作台，默认仍 WebGL；当前阶段以上方约束及混合验收为准。实验页是下方 Tres renderer 规则的明确例外，每页仍只允许一个 Canvas/renderer，切换先卸载，资源/controls/时钟由实验页唯一释放。比较须记录同资产、姿态、材质、灯光及完整投影；共同移除的生产特效、BRDF/纹理过滤差异与缺失 UV 必须注明，不能由基础 WebGPU 对照推导未测试的 SSGI/SSR 结论。样本使用追踪器实际计数，不凭运行时间估计；路径参考图不能冒充连续实机交互。见 [渲染比较](render-pipeline-comparison.md)。
 
 - 2026-10-11 打字机精修：typewriterFinishes 的微表面改用标准 PBR normalMap/roughnessMap，不再为漆面和金属注入专属 onBeforeCompile 噪纹。源图/贴花由 loader 继续拥有；新增确定性 128² DataTexture 按模型内类别共享，材质 dispose 监听由最后一个引用唯一释放，不得再次交给源 loader 重复释放。enamel/steel 存在无 UV primitive，只保留标准参数，不偷偷补 UV；需要完整微表面时再通过明确的制作流程整理 UV。
 - 本轮接触阴影保持 dirty 驱动的深度投影与两次模糊，1024² HalfFloat 目标由舞台释放；接收平面与正交相机覆盖范围必须一致，不能缩接收平面造成阴影错位。该近似不宣称多次反射或全局光照。

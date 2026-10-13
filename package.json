@@ -88,7 +88,9 @@
     "test:reventon-material": "node scripts/reventon-workbench-material-check.mjs",
     "asset:reventon-presentation": "node scripts/create-reventon-presentation.mjs",
     "test:hybrid": "node scripts/hybrid-workbench-check.mjs",
+    "test:hybrid-visual": "node scripts/hybrid-visual-check.mjs",
     "test:hybrid-layout": "node scripts/hybrid-layout-check.mjs",
+    "test:realtime": "node scripts/realtime-workbench-check.mjs",
     "asset:denoise-check": "node scripts/denoise-resource-check.mjs"
   },
   "dependencies": {

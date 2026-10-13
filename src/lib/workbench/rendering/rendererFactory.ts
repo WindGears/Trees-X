@@ -1,11 +1,23 @@
 import { unref } from 'vue'
 import type { RendererOptions } from '@tresjs/core'
 import { WebGPURenderer } from 'three/webgpu'
+import { registerRealtimeRenderer } from './realtimeMode'
 
 /** Tres owns construction/init/disposal. Never create a second renderer probe. */
-export function gpuRendererFactory(onLost: () => void): NonNullable<RendererOptions['renderer']> {
+export function gpuRendererFactory(
+  onLost: () => void,
+  realtime = false,
+): NonNullable<RendererOptions['renderer']> {
   return ({ canvas }) => {
-    const renderer = new WebGPURenderer({ canvas: unref(canvas), antialias: true })
+    const renderer = new WebGPURenderer({
+      canvas: unref(canvas),
+      antialias: true,
+      powerPreference: 'high-performance',
+      // WebGPU charges aligned attachment costs, not texture storage bytes.
+      // The six-signal G-buffer costs 44; unsupported adapters fail explicitly.
+      requiredLimits: realtime ? { maxColorAttachmentBytesPerSample: 64 } : undefined,
+    })
+    const releaseRealtimeMode = realtime ? registerRealtimeRenderer(renderer) : undefined
     const init = renderer.init.bind(renderer),
       dispose = renderer.dispose.bind(renderer)
     let disposed = false,
@@ -26,6 +38,7 @@ export function gpuRendererFactory(onLost: () => void): NonNullable<RendererOpti
     }
     renderer.dispose = () => {
       disposed = true
+      releaseRealtimeMode?.()
       release()
     }
     renderer.init = async () => {
@@ -33,6 +46,7 @@ export function gpuRendererFactory(onLost: () => void): NonNullable<RendererOpti
         await init()
       } catch (cause) {
         disposed = true
+        releaseRealtimeMode?.()
         if (!released) {
           released = true
           if ('dispose' in renderer.backend && typeof renderer.backend.dispose === 'function')
@@ -45,8 +59,10 @@ export function gpuRendererFactory(onLost: () => void): NonNullable<RendererOpti
         release()
         return renderer
       }
-      if (!('isWebGPUBackend' in renderer.backend) || !renderer.backend.isWebGPUBackend)
+      if (!('isWebGPUBackend' in renderer.backend) || !renderer.backend.isWebGPUBackend) {
+        releaseRealtimeMode?.()
         throw new Error('WebGPU 设备不可用，请使用兼容模式。')
+      }
       // Three intentionally ignores reason="destroyed". Observe the native loss
       // too: a live device destroyed externally still needs host recovery.
       const device: unknown = Reflect.get(renderer.backend, 'device')

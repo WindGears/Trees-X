@@ -1,5 +1,11 @@
 # Trees X
 
+当前开发节点（2026-10-13）：打字机**实时组合渲染基线**，在自由观察、敲键、分层／平铺过程中连续绘制，采用 Three 0.185.1 WebGPU、随机 SSR、SSGI、内置时域重投影／降噪及完整帧拥有的实例运动历史。**整体渲染质量是最高优先级**，新方案画面未通过前不替换原入口；技术名称、像素差和提交计时不能代替画质收益。
+
+启动现有前后端后，通过 [打字机实时实验入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) 检查；[原 WebGL 对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=webgl) 和普通首页保持原版本。仅打字机进入该实验，钢琴／汽车继续原管线。一个显示区域仍只有一个 TresCanvas／renderer，源模型与原尺寸贴图保持；新 G-buffer 需要 WebGPU 64 字节附件上限支持，实际不足时明确进入兼容模式。
+
+当前保留源资产与摄影棚，采用逐射线先组合命中反射／稳定原生环境，再统一过滤替换信号。check（375 单测＋48 工具测试）、生产准备、核心与六组公平对照契约、管理取景、故障恢复、尺寸兼容及实际 20 分钟操作通过，固定预热资源无增长。三轮 JS 提交计时不代表 GPU 或实际呈现预算。新生产截图仍有前罩噪点、文字颗粒与地台倒影不足，**画质未通过，默认保持 WebGL**。当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 重载不替代新链。DDGI／FFX／BVH 未接入。证据与具体缺口见 [实时渲染验收](.ai/realtime-rendering-validation.md)。旧 hybrid／OIDN 为历史静止实验，实时入口不等待它们。
+
 面向商品观察与理解的三维工作台，Vue/Three.js + Spring Boot/MySQL。当前正式目录为机械打字机、三角钢琴与精细 Reventón 汽车，三件均在同一真实 Three.js 工作台中运行。打字机保留首页；音箱退出正式计划，程序化样板和旧固定汽车流程保留作历史与测试资源。
 
 新版范围和阶段见 [PRODUCT.md](PRODUCT.md)、[实施路线](.ai/implementation-roadmap.md)、[立项基线](.ai/restart-baseline.md)。阶段A/B/B2、D基础管理及D2常用配置表单/取景工具已验收。打字机本轮已迁入共同工作台，来源、资源、检查与边界见 [迁移验收](.ai/typewriter-migration-validation.md)。在线上传、发布快照、手势为可选扩展，暂不配置 CI。
@@ -89,11 +95,11 @@ try {
 
 ## 打字机画质与独立比较
 
-正式工作台继续采用增强 WebGL2：标准 PBR 微表面、摄影棚 PMREM、柔化平面反射及姿态接触阴影。漆面/金属和指定部件运动路径完成精修，生产确认通过 35 张截图与 10 组检查；本轮没有把钢琴/汽车认定为同等精修，也未补齐缺失 UV。证据见 [精修验收](.ai/typewriter-quality-validation.md)。
+默认工作台继续采用增强 WebGL2：标准 PBR 微表面、摄影棚 PMREM、柔化平面反射及姿态接触阴影。打字机另有[混合管线验收入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=hybrid)：操作时真实 WebGPU 光栅，静止后路径追踪与完整 OIDN 降噪；主动继续精修展示 1024 样本累积原图。五取景、续算、输入接管、资源稳定及设备恢复工程检查通过，待本人验收。钢琴／汽车新管线另行规划，未补齐源资产缺失 UV。启动方法沿用 `npm run demo:start`，检查顺序见 [打字机验收清单](.ai/typewriter-hybrid-handoff.md)，证据见 [混合管线验收](.ai/hybrid-pipeline-validation.md)、[之前的材质精修](.ai/typewriter-quality-validation.md)。
 
 [渲染实验页](http://127.0.0.1:5181/renderlab.html?mode=webgl&view=whole) 独立于生产工作台，需先启动本机前后端。`mode` 可为 `webgl`、`webgpu`、`pathtrace`，`view` 可为 `whole`、`paint`、`metal`、`layers`、`flat`。每页只有一个 renderer；光栅可观察，路径模式为固定取景累计样本，达到目标后停止。真实 WebGPU 不可用时明确报错，不标注 WebGL fallback 为 WebGPU。
 
-实测五取景共 15 图及整机/金属 1024 样本补测完成。路径参考的互反射、暗部遮挡和软影有改善，仍不代表已接入连续交互；两次高样本记录约 129.90/198.13 秒，包含设置、编译和累计，不是帧耗时。基础 WebGPU 光栅没有独立画质跃升。本轮未测试 SSGI/SSR；共同实验统一移除生产专属特效，不能把实验光栅画面当作增强生产管线。输入、原图与正式选择见 [比较记录](.ai/render-pipeline-comparison.md)。
+混合接入前的独立比较完成五取景共 15 图及整机/金属 1024 样本补测。路径参考的互反射、暗部遮挡和软影有改善；当时尚未接入连续交互，随后打字机工作台已完成上方混合入口。该历史比较的两次高样本记录约 129.90/198.13 秒，包含设置、编译和累计，不是帧耗时。基础 WebGPU 光栅没有独立画质跃升，未测试 SSGI/SSR；共同实验统一移除生产专属特效，不能把实验光栅画面当作增强生产管线。历史输入、原图与结论见 [比较记录](.ai/render-pipeline-comparison.md)。
 
 复现比较需本机 Edge；顺序运行，避免与其他 GPU 浏览器测试并行。示例输出保存在忽略目录，不覆盖 B0：
 

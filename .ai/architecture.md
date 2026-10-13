@@ -1,6 +1,32 @@
 # 新版目标架构与当前实现
 
-2026-10-12 混合管线实施：WorkbenchStage 按需注入 Tres renderer 工厂，useWorkbenchScene 承担共享宿主生命周期，rendering/coordinator 管理同一 WebGPURenderer 的光栅、采样与完整 OIDN 融合。Pinia、HTTP 与配置版本不变；WebGL 默认保留，设备重建需先卸载旧宿主。资源所有权与阶段状态见 [混合管线验收](hybrid-pipeline-validation.md)。
+## 当前实时基线（2026-10-13）
+
+`?renderPipeline=realtime` 仅为 `typewriter-v1` 装配 WebGPU 实验宿主，钢琴／汽车继续原 WebGL。`WorkbenchStage` 的唯一 TresCanvas 仍拥有 renderer；`useWorkbenchScene` 处理商品代次、加载、首帧就绪与管理预览，`rendering/realtime/coordinator` 统一调度舞台辅助 draw、共享 G-buffer、SSR、SSGI、内置过滤和最终呈现。renderer 工厂为该 G-buffer 的 44 字节对齐附件成本明确请求 64 字节上限；不支持设备通过完整宿主卸载进入兼容后端，不叠加 Canvas。
+
+`realtime/clock` 是固定 Three 0.185.1 的受检时钟桥接，Tres 拥有唯一实际绘制时钟；`realtime/motion` 记录完整投影、世界和实例矩阵，最终呈现成功后才提交一次 previous，辅助 draw 不提前更新运动历史。`realtime/materials` 借用源贴图并拥有运行 Physical NodeMaterial，通过 r185 DFGLUT 捕获原生环境辐射的单次散射项，乘原生镜面 AO 和清漆透过权重；不再捕获后直接减掉完整间接镜面。非默认 IOR／specular 参数或贴图、独立 envMap、各向异性／透射等未支持支路保留原生。
+
+`realtime/signals` 的 SSR 只提供屏幕空间命中辐射，环境强度设为零，但保留上游所需 HDR 节点依赖；未命中不再用随机 HDR 采样覆盖稳定原生 PMREM。当前 `realtime/reflectionResolve` 根据原始 SSR ray length，在过滤前逐射线组合：命中为 `rawSSR × AOcoat`，未命中为捕获的 `nativeSingle`，未支持像素为零；同一个 RGB＋ray length 信号统一进入时域重投影与 RecurrentDenoise。最终为 `beauty + filteredReplacement − nativeSingle`，未支持像素不应用修正，保留原生多次散射与清漆，不回馈完整替换到已有 IBL 的 beauty。
+
+此前 `reflectionCoverage` 分别过滤反射颜色与覆盖概率，但两个信号受不同的亮度相关非线性权重影响，不能确保互相抵消匹配的原生环境贡献；半径 5 的校准后仍有明显点噪，画质未通过，已移除这条独立 coverage 支路。它及相应生产图是历史试验，不描述当前实现；当前统一 resolve 已通过四项生产核心与六组公平对照契约，仍未证明全面优于 WebGL。过滤后的 alpha 仍不能当作原始 ray length 判断命中。
+
+`realtime/signals` 的 packed normal／roughness 为 RGBA HalfFloat，roughness 读取原生导数调整后的值；albedo／metalness 保留 RGBA8，base diffuse 改为 RGBA HalfFloat、alpha 保存独立清漆透过权重。六附件存储合计 40 字节／像素，对齐验证成本仍为 44 字节／采样点。SSR 固定 quality 1、thickness 0.035、完整输出比例 1；这些是待画质验证的当前参数，不是已经证明的改善结论。
+
+原摄影棚地台平面反射继续复用唯一 renderer 的离屏目标；它采用原生 Basic 材质、增强捕获权重为零，排除 SSR 基础镜面替换，保留屏幕外整机反射。SSR 负责受支持商品表面的局部反射。不能为了“只用 SSR”删除已有舞台效果而降低整体完成度；画质优先于技术支路数量。
+
+当前两个后端的呈现顺序并不等效：实时 WebGPU 全幅 ACES 包括原 `toneMapped: false` 天空盒，WebGL 天空盒只做输出颜色空间转换；原 WebGL 地台先色调映射后叠层，实时支路先 HDR 混合后 ACES。只读核查确认这些差异，但没有证明白点或完整倒影缺失的根因。当前代码冻结，后续先分离检查固定取景的原始反射纹理与最终合成，不盲调强度或修改 Three。
+
+SSGI 是已着色 beauty 的屏幕空间估计，含官方亮度 7 的限制，不是已物理标定的 irradiance。当前打字机透明材质为字符／铭牌贴片，键帽本体不透明；受控贴片的运行克隆采用低 alphaTest 丢弃透明孔，未宣称完整通用透明 G-buffer 已验收。源几何与原尺寸贴图继续由 loader 拥有。API／配置版本保持不变。
+
+`realtime/ownedRtt` 显式拥有表达式转换所需的 RTT 目标与 quad 材质，替换和卸载时释放；不释放上游 pass、借用纹理或模块共享 QuadMesh geometry。`rendering/environmentPMREM` 固定核查 r185 的 EnvironmentNode 缓存／PMREMNode 所有权：源环境纹理 dispose 触发原生输出目标释放，随后只释放节点生成器的 LOD 几何／材质与 ping-pong 目标并移除缓存。两处桥接均须版本与形状检查，不作为 Three 稳定公开 API；释放修复仍需实际重复加载验证。
+
+`realtime/geometryOwnership` 固定核查 r185 原生 geometry／attribute 管理器，补齐共享 geometry 在多个 RenderObject 中使用时，原生只清理首个 RenderObject attribute 的缺口。桥接汇总实际绘制使用的 GPU attribute，包括节点生成的实例 attribute；按底层 backing 引用记录处理交错 view，最后一个活跃 geometry 释放后才销毁 GPU backing。loader 仍唯一决定源 geometry 的 dispose，桥接不提前释放或改写源数据。`useWorkbenchScene` 局部持有桥接，先销毁协调器，再释放 controller／环境，最后卸载桥接并恢复原生方法；它不改变整个 Three 原型。8 项真实模块机制测试与 radius 1.25 版本的 30 次实机重载已通过，不替代新画质参数检查。
+
+当前统一替换信号的 RecurrentDenoise 半径为 5，不再维护独立 coverage 过滤器或该支路的 flickerSuppression=0 参数。实时舞台叠层在 HDR 中先混合再经 ACES，与原 WebGL 的显示空间混合不同，因此仅实时支路的反射 strength／接触阴影 opacity 保留 0.5／0.68；旧 hybrid／WebGL 保持 0.28／0.46。此为舞台视觉校准，不假定 BRDF 或两个后端像素等效。统一 resolve 的 check（70 文件／375 单测＋48 工具测试）与生产准备通过，已采集六组图，完整质量和最新生命周期联合检查仍待验收。
+
+当前统一 resolve 的核心、六组公平对照契约、管理取景、故障恢复、尺寸兼容及实际 20 分钟操作通过，后者同根节点／宿主完成 52 正式循环，固定预热资源差异为零。check 与 demo:prepare 通过；503 并行取消只在严格窗口且真实同宿主恢复后分类，受控回调与实际 GPUDevice.destroy 分别记录。三轮 JS 提交测量不代表 GPU／实际呈现帧预算。新生产静图仍有前罩噪点、文字颗粒、地台倒影不足，画质未通过；当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 版重载不替代新链。不以工程成功或提交计时代替图像质量，不扩 DDGI／动作调度／FFX／BVH。详见 [实时渲染验收](realtime-rendering-validation.md)。下方自动光栅／静止追踪与 OIDN 是 hybrid 历史实现，不适用于实时入口。
+
+2026-10-12 混合管线实施：WorkbenchStage 按需注入 Tres renderer 工厂，useWorkbenchScene 承担共享宿主生命周期，rendering/coordinator 管理同一 WebGPURenderer 的光栅、采样与完整 OIDN 融合。协调器与独立比较器各在生命周期内复用一个引导 MRT 节点，避免 Three 按 MRT 身份不断保留渲染程序。主动 1024 续算将实际累积原图写入呈现目标，覆盖此前完整降噪图；128 仍只呈现完整降噪结果。Pinia、HTTP 与配置版本不变；WebGL 默认保留，设备重建需先卸载旧宿主。当前只完成打字机，钢琴／汽车另行规划。资源所有权与阶段状态见 [混合管线验收](hybrid-pipeline-validation.md)。
 
 2026-10-08。目标以官方模板终稿及 workbench-contract.md 为准。本文明确区分已有候选与待实现设计；旧说明见 history/2026-10-08-before-restart/architecture.md。
 
@@ -115,13 +141,13 @@ WorkbenchRoot 的 `wb-floating` 只装配访客全幅舞台、WorkbenchRail、�
 
 `typewriterRig` 保留有限 0.35 rad 击发与键帽/杠杆联动。分层对后挡板 part-095 和前罩 part-097 加确定性 Z 避让；平铺对十个大件采用错开的横移、转向及下降区间，仍从源基准姿态计算，不使用逐帧碰撞求解或累积位移。真实 GLB 三角面测试覆盖指定部件与抽样进度；初始及平铺端点保持。未声明全 572 部件连续无碰撞，也未声明工厂机械精度。生产确认通过 10 组检查、35 张截图和零浏览器错误；本轮事实与范围见 typewriter-quality-validation.md。
 
-### 独立渲染比较（2026-10-12）
+### 独立渲染比较（2026-10-12，混合管线接入前的对照）
 
-`renderlab.html` 为独立多页入口，`src/lib/renderlab` 分离共同设置、场景、后端与页面状态。每页仅创建一个真实 WebGL2 或 WebGPU renderer，不使用第二个工作台 Canvas；切换模式卸载旧页面，资源与时钟由该页唯一释放。生产工作台仍由 TresCanvas 创建 renderer，不导入实验渲染后端、追踪器或实验场景。比较读取现有同源资产，不改 API、商品配置、数据库或 Pinia。
+`renderlab.html` 为独立多页入口，`src/lib/renderlab` 分离共同设置、场景、后端与页面状态。每页仅创建一个真实 WebGL2 或 WebGPU renderer，不使用第二个工作台 Canvas；切换模式卸载旧页面，资源与时钟由该页唯一释放。工作台仍由 TresCanvas 创建 renderer，不导入实验场景；后续混合入口使用独立的共享渲染协调器按需载入追踪器。比较读取现有同源资产，不改 API、商品配置、数据库或 Pinia。
 
 三个模式复用同一 GLB、姿态、标准 PBR 输入、相机投影、HDR 与面积灯。实验统一移除生产 Reflector、接触阴影 shader、天空盒/地面渐退及专属 PMREM 捕获，不能把实验光栅截图当作现有增强生产画面。后端校验实际 GPUDevice 并拒绝 fallback；路径模式锁定镜头，实际样本达到目标后停钟。光栅按需渲染；隐藏暂停，关闭释放控制器、目标、几何、材质和纹理，无生产逐帧监测。
 
-五取景三模式的 15 图检查与整机/金属各 1024 样本补测通过。正式交互保留增强 WebGL2，路径追踪仅为静止材质与布光参考，尚未集成运动光栅/静止累积切换。基础 WebGPU、SSGI/SSR、完整 GI 方案不能混为一谈；本轮只比较已实现后端。BRDF、PMREM 与纹理过滤存在差异，缺 UV 的漆面也未补图。输入、原图和结论见 render-pipeline-comparison.md。
+当时五取景三模式的 15 图检查与整机/金属各 1024 样本补测通过，路径追踪仅为静止材质与布光参考。随后打字机已接入工作台混合入口，默认仍保持增强 WebGL2；接入与当前验收以 hybrid-pipeline-validation.md 为准。基础 WebGPU、SSGI/SSR、完整 GI 方案不能混为一谈；该次比较仅覆盖已实现后端。BRDF、PMREM 与纹理过滤存在差异，缺 UV 的漆面也未补图。历史输入、原图和结论见 render-pipeline-comparison.md。
 
 OrbitControls 的 change 事件通过无参数回调调用 Tres invalidate，避免事件对象污染按需渲染帧数；卸载注销同一回调。`controller.test.ts` 在空闲帧验证真实控件事件、数字帧数与注销行为。详见 typewriter-studio-validation.md。
 

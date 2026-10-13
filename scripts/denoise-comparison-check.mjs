@@ -44,6 +44,7 @@ try {
         let evidence,
           lastLog = 0
         while (true) {
+          if (errors.length) throw new Error(errors.join('\n'))
           evidence = await page.evaluate(() => window.__treesRenderLab?.snapshot())
           if (evidence?.phase === 'ready') break
           if (evidence && ['error', 'disposed', 'paused'].includes(evidence.phase))
@@ -78,6 +79,7 @@ try {
             (minimum) => window.__treesRenderLab.denoiseCheckpoint(minimum),
             target,
           )
+          expect(errors, 'Guided images require valid GPU guide draws').toEqual([])
           expect(checkpoint.evidence.runtime.samples.min).toBe(target)
           expect(checkpoint.denoise.complete).toBe(true)
           expect(checkpoint.denoise.hdr).toBe(true)

@@ -1,22 +1,15 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onErrorCaptured,
-  onMounted,
-  onScopeDispose,
-  ref,
-  shallowRef,
-} from 'vue'
-import { TresCanvas, type RendererOptions } from '@tresjs/core'
+import { computed, onErrorCaptured, ref, shallowRef } from 'vue'
+import { TresCanvas } from '@tresjs/core'
 import { ACESFilmicToneMapping, PCFShadowMap, SRGBColorSpace, Vector3 } from 'three'
 import { useDocumentVisibility, useElementVisibility } from '@vueuse/core'
-import { requestedBackend, recoveryBackend } from '@/lib/workbench/rendering/hostPolicy'
+import { useWorkbenchRenderHost } from '@/composables/useWorkbenchRenderHost'
+import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
+import WorkbenchRealtimeStatus from './WorkbenchRealtimeStatus.vue'
 import type { RefinementStatus } from '@/lib/workbench/rendering/refinementTypes'
 import WorkbenchRefinement from './WorkbenchRefinement.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import { phaseLabels } from '@/lib/workbench/assetBundle'
-import { supportsWebGL2 } from '@/lib/workbench/renderSupport'
 import WorkbenchScene from './WorkbenchScene.vue'
 import WorkbenchFallback from './WorkbenchFallback.vue'
 import WorkbenchCallouts from './WorkbenchCallouts.vue'
@@ -33,81 +26,37 @@ const stageBackground = computed(() =>
 )
 const store = useWorkbenchStore()
 const revision = ref(0),
-  hostRevision = ref(0),
   stageElement = ref<HTMLElement>()
 const sceneHost = ref<InstanceType<typeof WorkbenchScene>>()
-const backend = ref(
-  requestedBackend(
-    window.location.search,
-    'gpu' in navigator,
-    matchMedia('(pointer: fine)').matches && window.innerWidth >= 1024,
-  ),
-)
-if (backend.value === 'webgl' && !supportsWebGL2()) store.useContent('此设备暂时无法启用三维显示。')
-const rendererFactory = shallowRef<RendererOptions['renderer']>()
-const hostPrepared = ref(backend.value === 'webgl')
-const refinement = shallowRef<RefinementStatus>()
-const checkpoint = shallowRef<CameraSnapshot>()
 const onScreen = useElementVisibility(stageElement)
-let deviceRetries = 0,
-  replacing = false,
-  hostGeneration = 0,
-  disposed = false
-onScopeDispose(() => {
-  disposed = true
-  hostGeneration++
+const {
+  backend,
+  rendererFactory,
+  hostPrepared,
+  hostRevision,
+  checkpoint,
+  notice,
+  rendererFailed,
+  realtimeRequest,
+} = useWorkbenchRenderHost(() => sceneHost.value?.checkpoint())
+const refinement = shallowRef<RefinementStatus>()
+const lighting = shallowRef<RealtimeStatus>()
+defineExpose({
+  hybrid: { snapshot: () => sceneHost.value?.hybrid.snapshot() },
+  realLighting: {
+    snapshot: () => sceneHost.value?.realLighting.snapshot(),
+    setSignals: (ssr: boolean, ssgi: boolean, denoise: boolean) =>
+      sceneHost.value?.realLighting.setSignals(ssr, ssgi, denoise),
+  },
 })
-const notice = ref(
-  new URLSearchParams(window.location.search).get('renderPipeline') === 'hybrid' &&
-    backend.value === 'webgl'
-    ? 'WebGL 兼容模式 · 此设备未启用 WebGPU'
-    : '',
-)
-async function prepareHost(token = hostGeneration) {
-  if (disposed || token !== hostGeneration) return
-  if (backend.value === 'webgpu') {
-    const { gpuRendererFactory } = await import('@/lib/workbench/rendering/rendererFactory')
-    if (disposed || token !== hostGeneration) return
-    rendererFactory.value = gpuRendererFactory(() => {
-      if (!disposed && token === hostGeneration) void recoverDevice()
-    })
-  } else rendererFactory.value = undefined
-  hostPrepared.value = true
-}
-async function replaceHost(next: 'webgpu' | 'webgl') {
-  if (replacing || disposed) return
-  replacing = true
-  const token = ++hostGeneration
-  hostPrepared.value = false
-  await nextTick()
-  if (disposed || token !== hostGeneration) return
-  backend.value = next
-  hostRevision.value++
-  refinement.value = undefined
-  if (store.product) {
-    store.status = 'loading'
-    store.error = ''
-  }
-  try {
-    await prepareHost(token)
-  } finally {
-    replacing = false
-  }
-}
-async function recoverDevice() {
-  checkpoint.value = sceneHost.value?.checkpoint()
-  const next = recoveryBackend(backend.value, deviceRetries++)
-  if (next === 'webgl') notice.value = 'WebGL 兼容模式 · WebGPU 设备未能恢复'
-  await replaceHost(next)
-}
-defineExpose({ hybrid: { snapshot: () => sceneHost.value?.hybrid.snapshot() } })
 function reportRefinement(status: RefinementStatus) {
   if (!status.slug || (status.slug === store.slug && status.revision === store.revision))
     refinement.value = status
 }
-onMounted(() => {
-  void prepareHost().catch(rendererFailed)
-})
+function reportLighting(status: RealtimeStatus) {
+  if (!status.slug || (status.slug === store.slug && status.revision === store.revision))
+    lighting.value = status
+}
 const visibility = useDocumentVisibility()
 const active = computed(() => visibility.value === 'visible' && onScreen.value)
 const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -171,15 +120,6 @@ function key(event: KeyboardEvent) {
   }
   event.preventDefault()
 }
-function rendererFailed() {
-  if (disposed) return
-  if (backend.value === 'webgpu') {
-    notice.value = 'WebGL 兼容模式 · WebGPU 启动失败'
-    void replaceHost('webgl')
-    return
-  }
-  store.useContent('三维显示启动失败，已保留商品图文。')
-}
 onErrorCaptured(() => {
   rendererFailed()
   return false
@@ -191,6 +131,7 @@ onErrorCaptured(() => {
     ref="stageElement"
     class="wb-stage"
     :data-render-backend="backend"
+    :data-lighting-phase="lighting?.phase"
     :data-refinement-phase="refinement?.phase ?? 'raster'"
     :data-scene-status="store.status"
     :data-product="store.product?.slug ?? ''"
@@ -227,12 +168,19 @@ onErrorCaptured(() => {
         :inspector="inspector"
         :catalog="catalog"
         :checkpoint="checkpoint"
+        :realtime-pipeline="realtimeRequest"
         @restore="restore"
         @refinement="reportRefinement"
+        @lighting="reportLighting"
       />
     </TresCanvas>
+    <WorkbenchRealtimeStatus
+      v-if="store.available && realtimeRequest"
+      :status="backend === 'webgpu' ? lighting : undefined"
+      :notice="notice"
+    />
     <WorkbenchRefinement
-      v-if="store.available"
+      v-if="store.available && !realtimeRequest"
       :status="backend === 'webgpu' ? refinement : undefined"
       :notice="notice"
       @retry="sceneHost?.retry()"

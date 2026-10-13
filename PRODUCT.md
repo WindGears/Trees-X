@@ -1,6 +1,12 @@
 # Trees X
 
-2026-10-12 新正式目标：操作时实时光栅，静止时路径追踪与 OIDN 精修，保留商品观察与动作流程。当前仅打字机真实工作台实验接入，仍处画质验收；访客默认保持已验收 WebGL。不得把自动化通过等同三件正式管线完成。详见 [.ai/hybrid-pipeline-validation.md](.ai/hybrid-pipeline-validation.md)。
+2026-10-13 当前推进打字机实时组合渲染：自由观察、敲键、分层和平铺持续使用真实 Three.js WebGPU 光栅，结合随机 SSR、SSGI、内置运动重投影与降噪。实验入口为 `?product=typewriter-study&renderPipeline=realtime`；普通首页仍使用增强 WebGL，钢琴／汽车保持原管线。源模型、原尺寸贴图、界面、管理/API 与配置版本沿用，不等待静止路径追踪或 OIDN。
+
+用户明确**整体渲染质量最优先**：新管线必须保留已有材质、地台反射与照明完成度，并通过同资产、同取景、同曝光的全景、近景、分层和运动对照证明收益。前版恢复地台、消除黑地台／异常宽亮带，但独立反射颜色与覆盖概率过滤在校准后仍有明显点噪，画质未通过。当前统一 resolve 在每条射线过滤前选择命中反射或稳定原生环境单次贡献，再使用同一过滤信号，保留多次散射和清漆；四项核心与六组公平对照契约已通过，仍未证明整体画质超过 WebGL。
+
+统一 resolve 的 check（375 单测＋48 工具测试）、生产准备、核心与六组公平对照契约、管理取景、故障恢复、尺寸兼容及实际 20 分钟持续操作通过，持续段固定预热资源无增长。当前三轮提交计时仅为 JS 口径，实际 GPU／屏幕呈现预算未验证。新生产图仍有前罩噪点、文字颗粒和地台倒影不足，画质未通过；当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 重载不替代新链。默认保持 WebGL，DDGI／FFX／BVH 与完整动作调度不扩展，不宣称整套计划完成或原创已有算法。研究定位为“面向可逆结构探索的状态感知混合渲染与调度策略”，证据见 [.ai/realtime-rendering-validation.md](.ai/realtime-rendering-validation.md)。下段 hybrid 为历史静止精修成果。
+
+2026-10-12 当前交付为打字机混合管线：操作时实时光栅，静止时路径追踪与 OIDN 精修，保留商品观察与动作流程。五取景、128 引导降噪、1024 原图续算、输入接管与资源稳定通过工程检查，待用户本人验收；访客默认保持已验收 WebGL，使用 `?product=typewriter-study&renderPipeline=hybrid` 体验新版本。钢琴和汽车保留现状，新管线随后重新规划，不把打字机检查等同三件完成。详见 [.ai/hybrid-pipeline-validation.md](.ai/hybrid-pipeline-validation.md)、[验收清单](.ai/typewriter-hybrid-handoff.md)。
 
 <!-- impeccable:product-schema 1 -->
 
@@ -36,7 +42,7 @@ Vue3、TypeScript、Vite、Pinia、Three.js、TresJS、GSAP；现有Tailwind/组
 
 ### 当前事实
 
-2026-10-12 打字机精修与管线验证：标准 PBR 微表面替换早期专属噪纹，接触阴影随当前姿态刷新，两盖板分层与十个大件平铺路径修正；保持源几何、初始/最终平铺姿态和统一操作。生产确认通过 35 图/10 组检查，指定部件碰撞抽样通过，不宣称 572 部件全连续无碰撞。独立共同输入完成 WebGL2、真实 WebGPU 光栅和静止路径追踪五取景共 15 图比较，并补整机/金属各 1024 样本。正式工作台保留增强 WebGL2，路径追踪仅作独立静止画质参考；未集成自动光栅/追踪切换，未测试 SSGI/SSR。缺 UV 的 enamel/steel 仍需制作整理，钢琴和汽车未作本轮同等精修。证据见 [.ai/typewriter-quality-validation.md](.ai/typewriter-quality-validation.md)、[.ai/render-pipeline-comparison.md](.ai/render-pipeline-comparison.md)。
+2026-10-12 打字机精修与管线验证（混合管线接入前的阶段记录）：标准 PBR 微表面替换早期专属噪纹，接触阴影随当前姿态刷新，两盖板分层与十个大件平铺路径修正；保持源几何、初始/最终平铺姿态和统一操作。生产确认通过 35 图/10 组检查，指定部件碰撞抽样通过，不宣称 572 部件全连续无碰撞。独立共同输入完成 WebGL2、真实 WebGPU 光栅和静止路径追踪五取景共 15 图比较，并补整机/金属各 1024 样本。当时工作台保留增强 WebGL2，路径追踪仅作独立静止画质参考；随后打字机实验入口已接入自动光栅/追踪切换，默认仍 WebGL，最新状态见本页开头与混合管线验收。该次比较未测试 SSGI/SSR。缺 UV 的 enamel/steel 仍需制作整理，钢琴和汽车未作本轮同等精修。证据见 [.ai/typewriter-quality-validation.md](.ai/typewriter-quality-validation.md)、[.ai/render-pipeline-comparison.md](.ai/render-pipeline-comparison.md)。
 
 2026-10-11 打字机质量样片：共用工作台中的实体圆角地台、实时柔化倒影、随拆解更新的接触阴影及现有漆面/金属精修保留；按用户反馈将墙窗/可见软箱撤换为包围场景的无缝银灰绿天空盒，软箱只用于反射环境。默认整机取景收近，分层和平铺保留各自宽取景。A 键字杆摆角修正避免原先扫入滚筒，保留键帽/杠杆联动及分层/平铺。真实 GLB、自由观察、配色、热点和管理预览继续原通道；钢琴/汽车未套用新舞台。当时尚未接入 WebGPU/路径追踪实验，不宣称概念图或工厂 CAD 级等效。原样片见 [.ai/typewriter-studio-validation.md](.ai/typewriter-studio-validation.md)，本次收束见 [.ai/typewriter-skybox-validation.md](.ai/typewriter-skybox-validation.md)。
 

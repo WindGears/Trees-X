@@ -202,6 +202,7 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
       minFilter: NearestFilter,
       magFilter: NearestFilter,
     }),
+    guideMRT = mrt({ output: diffuseColor, normal: vec4(normalView.mul(0.5).add(0.5), 1) }),
     material = new MeshBasicNodeMaterial(),
     quad = new QuadMesh(material)
   guideTarget.textures[0]!.name = 'output'
@@ -412,6 +413,14 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
       if (!current(token) || !tracer) return
       tracer.maxSamples = state.target
       tracer.pause = false
+      if (state.target === 1024 && state.samples && tracer.target && copyMaterial && copyQuad) {
+        // tracedTarget may still contain the previous OIDN image. Show the
+        // actual retained accumulation before the first resumed sample draws.
+        copyMaterial.texture = tracer.target
+        copyMaterial.fromTexture = tracer.target
+        targetRender(tracedTarget, () => copyQuad!.render(renderer))
+        blend.value = 1
+      }
       phase('sampling')
       requestFrame()
     } catch (error) {
@@ -531,9 +540,9 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
       if (!current(token) || !denoiser || !tracer?.target || !tracing) return
       denoiser.setScene(tracing.scene, camera)
       targetRender(guideTarget, () => {
-        renderer.setMRT(
-          mrt({ output: diffuseColor, normal: vec4(normalView.mul(0.5).add(0.5), 1) }),
-        )
+        // RenderContexts includes MRT node identity in its cache key. Reusing
+        // this node prevents every new denoise pass retaining another pipeline.
+        renderer.setMRT(guideMRT)
         renderer.render(tracing!.scene, camera)
       })
       await denoiser.denoise(tracer.target, guideTarget.textures[0]!, guideTarget.textures[1]!)
@@ -544,7 +553,7 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
   }
   function beginBlend() {
     blendStart = performance.now()
-    blend.value = options.reducedMotion?.() ? 1 : 0
+    blend.value = state.target === 1024 || options.reducedMotion?.() ? 1 : 0
     if (state.target === 128) denoiseMs = blendStart - denoiseStart
     phase('blending')
     requestFrame()
@@ -596,6 +605,10 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
         if (rasterDirty) presentRaster()
         if (state.phase === 'sampling' && tracer) {
           targetRender(tracedTarget, () => tracer!.renderSample())
+          // renderSample blits its raw accumulation into the bound target.
+          // Only explicit refinement exposes this progressive image; the
+          // default 128 pass keeps raster visible until full guided output.
+          if (state.target === 1024) blend.value = 1
           sampleFrames++
           measure(state.generation)
           requestFrame()
@@ -611,9 +624,10 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
           } else requestFrame()
         }
         if (state.phase === 'blending') {
-          blend.value = options.reducedMotion?.()
-            ? 1
-            : Math.min(1, (performance.now() - blendStart) / 240)
+          blend.value =
+            state.target === 1024 || options.reducedMotion?.()
+              ? 1
+              : Math.min(1, (performance.now() - blendStart) / 240)
           if (blend.value >= 1) {
             firstRefinedMs ??= performance.now() - started
             phase('ready')

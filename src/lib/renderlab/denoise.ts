@@ -77,7 +77,8 @@ export async function createLabDenoise(renderer: WebGPURenderer, shared: LabScen
   })
   denoiser.init(renderer)
   denoiser.setScene(shared.scene, shared.camera)
-  const material = new RenderToScreenNodeMaterial(),
+  const guideMRT = mrt({ output: diffuseColor, normal: vec4(normalView.mul(0.5).add(0.5), 1) }),
+    material = new RenderToScreenNodeMaterial(),
     quad = new QuadMesh(material),
     guides = new RenderTarget(renderer.domElement.width, renderer.domElement.height, {
       count: 2,
@@ -85,6 +86,8 @@ export async function createLabDenoise(renderer: WebGPURenderer, shared: LabScen
       minFilter: NearestFilter,
       magFilter: NearestFilter,
     })
+  guides.textures[0]!.name = 'output'
+  guides.textures[1]!.name = 'normal'
   material.toneMapping = renderer.toneMapping
   material.exposure = renderer.toneMappingExposure
   // This adapter expects the legacy FullScreenQuad UV orientation. Flip only
@@ -101,9 +104,7 @@ export async function createLabDenoise(renderer: WebGPURenderer, shared: LabScen
         originalToneMapping = renderer.toneMapping
       try {
         renderer.setRenderTarget(guides)
-        renderer.setMRT(
-          mrt({ output: diffuseColor, normal: vec4(normalView.mul(0.5).add(0.5), 1) }),
-        )
+        renderer.setMRT(guideMRT)
         renderer.toneMapping = NoToneMapping
         renderer.render(shared.scene, shared.camera)
       } finally {

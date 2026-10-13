@@ -18,12 +18,15 @@ import { createGpuStudioReflection } from './studioReflection'
 import { createGpuStudioShadow } from './studioShadow'
 import { createStudioSkyTexture } from './studioEnvironment'
 import { studioDesign } from '../studio/design'
+import { createWorkbenchStudio } from './studio'
+import { registerRealtimeRenderer } from './realtimeMode'
 
 function rendererFixture() {
   const retained = { previous: true },
     renderFunction = vi.fn(),
     mrt = { prior: true }
   const renderer = {
+    isWebGPURenderer: true,
     toneMapping: 4,
     toneMappingExposure: 1.3,
     outputColorSpace: 'srgb',
@@ -54,6 +57,44 @@ function rendererFixture() {
 }
 
 describe('WebGPU authored studio', () => {
+  it.each([false, true])(
+    'retains stage, lighting and dirty shadows while planar reflection follows realtime mode %s',
+    (realtime) => {
+      const f = rendererFixture(),
+        scene = new Scene(),
+        model = new Group()
+      const sourceGeometry = new BoxGeometry(),
+        sourceMaterial = new MeshBasicMaterial()
+      model.add(new Mesh(sourceGeometry, sourceMaterial))
+      scene.add(model)
+      const sourceDispose = vi.spyOn(sourceGeometry, 'dispose')
+      const releaseMode = realtime ? registerRealtimeRenderer(f.gpu) : undefined
+      const studio = createWorkbenchStudio(f.gpu, scene, model)
+      const reflection = scene.getObjectByName('Trees X / studio reflection')
+      expect(Boolean(reflection)).toBe(true)
+      const pedestal = scene.getObjectByName('Trees X / studio pedestal') as Mesh
+      expect(pedestal.material).toBeInstanceOf(MeshPhysicalMaterial)
+      expect(scene.getObjectByName('Trees X / studio skybox')).toBeDefined()
+      expect(scene.getObjectByName('Trees X / studio contact shadow')).toBeDefined()
+      expect(scene.children.filter((object) => 'isRectAreaLight' in object)).toHaveLength(3)
+      studio.render()
+      studio.render()
+      expect(f.renderer.render).toHaveBeenCalledTimes(3)
+      studio.markDirty()
+      studio.render()
+      expect(f.renderer.render).toHaveBeenCalledTimes(6)
+      const pedestalDispose = vi.spyOn(pedestal.geometry, 'dispose')
+      studio.dispose()
+      studio.dispose()
+      expect(pedestalDispose).toHaveBeenCalledOnce()
+      expect(sourceDispose).not.toHaveBeenCalled()
+      expect(scene.children).toEqual([model])
+      releaseMode?.()
+      sourceGeometry.dispose()
+      sourceMaterial.dispose()
+    },
+  )
+
   it('retains its physical stage and background while excluding raster approximations from tracing', () => {
     const geometry = createGpuStudioGeometry(-0.15)
     const sky = geometry.group.getObjectByName('Trees X / studio skybox') as Mesh

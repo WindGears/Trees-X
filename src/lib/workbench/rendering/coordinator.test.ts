@@ -20,11 +20,15 @@ import {
   UnsignedByteType,
 } from 'three'
 import {
+  MathNode,
   MeshBasicNodeMaterial,
   QuadMesh,
-  type RenderTarget,
+  RenderTarget,
+  TextureNode,
+  UniformNode,
   type WebGPURenderer,
 } from 'three/webgpu'
+import { mrt } from 'three/tsl'
 import { createHybridCoordinator, createTracingScene } from './coordinator'
 
 interface NetworkInitialization {
@@ -121,6 +125,7 @@ vi.mock('three-gpu-pathtracer/webgpu', () => {
 })
 
 interface MockDriver {
+  target: Texture
   pause: boolean
   maxSamples: number
   minSamples: number
@@ -140,7 +145,7 @@ interface MockDenoiser {
   denoise: ReturnType<typeof vi.fn>
   dispose: ReturnType<typeof vi.fn>
 }
-function fixture() {
+function fixture(reducedMotion = false) {
   const scene = new Scene(),
     camera = new PerspectiveCamera(),
     root = new Group(),
@@ -149,17 +154,30 @@ function fixture() {
   root.add(new Mesh(geometry, material))
   root.userData.workbenchProduct = 'typewriter-study'
   scene.add(root)
-  let target: RenderTarget | null = null
+  let target: RenderTarget | null = null,
+    currentMRT: ReturnType<typeof mrt> | null = null
+  const copies: { target: RenderTarget | null; texture: Texture | null; from: Texture | null }[] =
+    []
   const renderer = {
     toneMapping: 4,
     getRenderTarget: () => target,
     setRenderTarget: vi.fn((value: RenderTarget | null) => {
       target = value
     }),
-    getMRT: () => null,
-    setMRT: vi.fn(),
+    getMRT: () => currentMRT,
+    setMRT: vi.fn((value: ReturnType<typeof mrt> | null) => {
+      currentMRT = value
+    }),
     getDrawingBufferSize: (size: Vector3) => size.set(1440, 1000, 0),
-    render: vi.fn(),
+    render: vi.fn((node: Scene | QuadMesh) => {
+      if (node instanceof QuadMesh && 'texture' in node.material) {
+        const material = node.material as MeshBasicNodeMaterial & {
+          texture: Texture | null
+          fromTexture: Texture | null
+        }
+        copies.push({ target, texture: material.texture, from: material.fromTexture })
+      }
+    }),
   }
   const request = vi.fn(),
     before = vi.fn(),
@@ -172,14 +190,47 @@ function fixture() {
     invalidate: request,
     beforeRaster: before,
     report,
+    reducedMotion: () => reducedMotion,
   })
-  return { scene, root, geometry, material, renderer, request, before, report, notify, coordinator }
+  return {
+    scene,
+    root,
+    geometry,
+    material,
+    renderer,
+    copies,
+    request,
+    before,
+    report,
+    notify,
+    coordinator,
+  }
 }
 function driver() {
   return mocks.drivers.at(-1) as MockDriver
 }
 function denoiser() {
   return mocks.denoisers.at(-1) as MockDenoiser
+}
+function presentation(item: ReturnType<typeof fixture>) {
+  const quad = item.renderer.render.mock.calls
+    .map(([node]) => node)
+    .filter((node): node is QuadMesh => node instanceof QuadMesh)
+    .at(-1)!
+  const colorNode = (quad.material as MeshBasicNodeMaterial).colorNode!
+  let mixNode: MathNode | undefined
+  colorNode.traverse((node) => {
+    if (node instanceof MathNode && node.method === MathNode.MIX) mixNode = node
+  })
+  expect(mixNode).toBeDefined()
+  expect(mixNode!.aNode).toBeInstanceOf(TextureNode)
+  expect(mixNode!.bNode).toBeInstanceOf(TextureNode)
+  expect(mixNode!.cNode).toBeInstanceOf(UniformNode)
+  return {
+    raster: (mixNode!.aNode as TextureNode).value,
+    traced: (mixNode!.bNode as TextureNode).value,
+    blend: (mixNode!.cNode as UniformNode<'float', number>).value,
+  }
 }
 async function prepare(item: ReturnType<typeof fixture>) {
   item.coordinator.ready('typewriter-study', 2)
@@ -337,12 +388,16 @@ describe('hybrid renderer control and cancellation', () => {
   it('does not show partial denoise tiles and only settles after a complete 240ms blend', async () => {
     const item = fixture()
     await prepare(item)
+    expect(presentation(item).blend).toBe(0)
     await finish128(item)
     expect(item.coordinator.snapshot().phase).toBe('denoising')
+    expect(presentation(item).blend).toBe(0)
     const filter = denoiser()
     filter.texture = new Texture()
     item.coordinator.render(item.notify)
     expect(item.coordinator.snapshot().phase).toBe('denoising')
+    expect(presentation(item).blend).toBe(0)
+    expect(item.copies).toEqual([])
     filter.complete = true
     item.coordinator.render(item.notify)
     expect(item.coordinator.snapshot().phase).toBe('blending')
@@ -352,6 +407,10 @@ describe('hybrid renderer control and cancellation', () => {
     await vi.advanceTimersByTimeAsync(1)
     item.coordinator.render(item.notify)
     expect(item.coordinator.snapshot().phase).toBe('ready')
+    expect(presentation(item).blend).toBe(1)
+    expect(item.copies.at(-1)!.texture).toBe(filter.texture)
+    expect(item.copies.at(-1)!.from).toBe(filter.texture)
+    expect(presentation(item).traced).toBe(item.copies.at(-1)!.target!.texture)
     const samples = item.coordinator.snapshot().sampleFrames,
       requested = item.request.mock.calls.length
     item.coordinator.render(item.notify)
@@ -360,34 +419,87 @@ describe('hybrid renderer control and cancellation', () => {
     item.coordinator.dispose()
   })
 
-  it('continues valid 128 sample accumulation toward 1024 without resetting or reusing denoise pixels', async () => {
-    const item = fixture()
-    await prepare(item)
-    await finish128(item)
-    const oldDriver = driver(),
-      oldFilter = denoiser()
-    oldFilter.texture = new Texture()
-    oldFilter.complete = true
-    item.coordinator.render(item.notify)
-    await vi.advanceTimersByTimeAsync(240)
-    item.coordinator.render(item.notify)
-    oldDriver.reset.mockClear()
-    item.coordinator.refine()
-    expect(oldFilter.reset).toHaveBeenCalled()
-    expect(item.coordinator.snapshot()).toMatchObject({ target: 1024, samples: { min: 128 } })
-    await vi.advanceTimersByTimeAsync(500)
-    await vi.dynamicImportSettled()
-    expect(driver()).toBe(oldDriver)
-    expect(oldDriver.reset).not.toHaveBeenCalled()
-    expect(oldDriver.maxSamples).toBe(1024)
-    await vi.advanceTimersByTimeAsync(500)
-    oldDriver.counts = { min: 1024, max: 1024, avg: 1024 }
-    item.coordinator.render(item.notify)
-    await vi.dynamicImportSettled()
-    expect(item.coordinator.snapshot().phase).toBe('blending')
-    expect(oldFilter.denoise).toHaveBeenCalledTimes(1)
-    item.coordinator.dispose()
-  })
+  it.each([false, true])(
+    'presents raw continued accumulation without stale OIDN or reset (reduced motion=%s)',
+    async (reducedMotion) => {
+      const item = fixture(reducedMotion)
+      await prepare(item)
+      await finish128(item)
+      const oldDriver = driver(),
+        oldFilter = denoiser()
+      const filtered = new Texture()
+      oldFilter.texture = filtered
+      oldFilter.complete = true
+      item.coordinator.render(item.notify)
+      await vi.advanceTimersByTimeAsync(240)
+      item.coordinator.render(item.notify)
+      expect(presentation(item).blend).toBe(1)
+      expect(item.copies.at(-1)!.texture).toBe(filtered)
+      const accumulationOutput = item.copies.at(-1)!.target!
+      oldDriver.reset.mockClear()
+      item.coordinator.refine()
+      expect(oldFilter.reset).toHaveBeenCalled()
+      expect(item.coordinator.snapshot()).toMatchObject({ target: 1024, samples: { min: 128 } })
+      item.coordinator.render(item.notify)
+      expect(presentation(item).blend).toBe(0)
+      await vi.advanceTimersByTimeAsync(500)
+      await vi.dynamicImportSettled()
+      expect(driver()).toBe(oldDriver)
+      expect(oldDriver.reset).not.toHaveBeenCalled()
+      expect(oldDriver.maxSamples).toBe(1024)
+      expect(item.copies.at(-1)).toEqual({
+        target: accumulationOutput,
+        texture: oldDriver.target,
+        from: oldDriver.target,
+      })
+      expect(item.copies.at(-1)!.texture).not.toBe(filtered)
+      // Emulate the verified upstream renderSample blit: its real raw target is
+      // drawn into the renderer target bound by the coordinator, never OIDN.
+      const rawMaterial = new MeshBasicNodeMaterial({ map: oldDriver.target }),
+        rawQuad = new QuadMesh(rawMaterial)
+      oldDriver.renderSample.mockImplementation(() => {
+        expect(item.renderer.getRenderTarget()).toBe(accumulationOutput)
+        expect(rawMaterial.map).toBe(oldDriver.target)
+        rawQuad.render(item.renderer as unknown as WebGPURenderer)
+      })
+      item.coordinator.render(item.notify)
+      expect(presentation(item).blend).toBe(1)
+      expect(presentation(item).traced).toBe(accumulationOutput.texture)
+      expect(oldDriver.renderSample).toHaveBeenCalled()
+      expect(oldFilter.denoise).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(1000)
+      oldDriver.counts = { min: 1024, max: 1024, avg: 1024 }
+      item.coordinator.render(item.notify)
+      await vi.dynamicImportSettled()
+      expect(item.coordinator.snapshot().phase).toBe('blending')
+      expect(presentation(item).blend).toBe(1)
+      item.coordinator.render(item.notify)
+      expect(item.coordinator.snapshot().phase).toBe('ready')
+      expect(presentation(item).blend).toBe(1)
+      expect(oldDriver.pause).toBe(true)
+      expect(oldFilter.denoise).toHaveBeenCalledTimes(1)
+      const samples = item.coordinator.snapshot().sampleFrames,
+        requests = item.request.mock.calls.length
+      await vi.advanceTimersByTimeAsync(1200)
+      expect(item.coordinator.snapshot().sampleFrames).toBe(samples)
+      expect(item.request).toHaveBeenCalledTimes(requests)
+      item.coordinator.setInteracting(true)
+      item.coordinator.invalidate('camera')
+      oldFilter.texture = filtered
+      oldFilter.complete = true
+      item.coordinator.render(item.notify)
+      expect(presentation(item).blend).toBe(0)
+      expect(item.coordinator.snapshot()).toMatchObject({
+        phase: 'raster',
+        target: 128,
+        samples: null,
+      })
+      expect(item.copies.at(-1)!.texture).toBe(oldDriver.target)
+      expect(oldFilter.denoise).toHaveBeenCalledTimes(1)
+      rawMaterial.dispose()
+      item.coordinator.dispose()
+    },
+  )
 
   it('cancels preparation that finishes after a product switch and releases only that stale result', async () => {
     const item = fixture(),
@@ -517,6 +629,47 @@ describe('hybrid renderer control and cancellation', () => {
     expect(item.coordinator.snapshot()).toMatchObject({ phase: 'error', error: 'raster failure' })
     expect(item.coordinator.snapshot().firstRasterMs).toBeNull()
     item.coordinator.dispose()
+  })
+
+  it('reuses the actual guide MRT through repeated pose and denoise passes and restores borrowed render state', async () => {
+    const item = fixture(),
+      previousTarget = new RenderTarget(640, 480),
+      previousMRT = mrt({})
+    await prepare(item)
+    item.renderer.setRenderTarget(previousTarget)
+    item.renderer.setMRT(previousMRT)
+    item.renderer.setMRT.mockClear()
+    for (let cycle = 0; cycle < 5; cycle++) {
+      if (cycle > 0) {
+        item.root.position.x = cycle * 0.25
+        item.coordinator.invalidate('pose')
+        item.coordinator.render(item.notify)
+        await vi.advanceTimersByTimeAsync(1000)
+        await vi.dynamicImportSettled()
+      }
+      await finish128(item)
+      expect(item.coordinator.snapshot().phase).toBe('denoising')
+      expect(item.renderer.getRenderTarget()).toBe(previousTarget)
+      expect(item.renderer.getMRT()).toBe(previousMRT)
+      expect(item.renderer.toneMapping).toBe(4)
+      denoiser().texture = new Texture()
+      denoiser().complete = true
+      item.coordinator.render(item.notify)
+      await vi.advanceTimersByTimeAsync(240)
+      item.coordinator.render(item.notify)
+      expect(item.coordinator.snapshot().phase).toBe('ready')
+    }
+    const guideNodes = item.renderer.setMRT.mock.calls
+      .map(([node]) => node)
+      .filter((node) => node !== null && node !== previousMRT)
+    expect(guideNodes).toHaveLength(5)
+    expect(new Set(guideNodes).size).toBe(1)
+    expect(Object.keys(guideNodes[0]!.outputNodes)).toEqual(['output', 'normal'])
+    expect(guideNodes[0]!.outputNodes.normal).toBe(guideNodes[4]!.outputNodes.normal)
+    expect(item.renderer.getRenderTarget()).toBe(previousTarget)
+    expect(item.renderer.getMRT()).toBe(previousMRT)
+    item.coordinator.dispose()
+    previousTarget.dispose()
   })
 
   it('only marks a successfully presented product frame and resets timing at unload', async () => {

@@ -28,6 +28,7 @@ import { createStudioLights, studioDesign } from '../studio/design'
 import { acquireRectAreaUniforms } from '@/lib/three/rectAreaUniforms'
 import { createGpuStudioGeometry } from './studioGeometry'
 import type { OwnedEnvironment } from './environment'
+import { ownEnvironmentPmrem } from './environmentPMREM'
 
 /** All live and capture studios acquire the shared LTC owner before using this bridge. */
 export function bindGpuAreaLights() {
@@ -153,7 +154,8 @@ export async function createGpuStudioEnvironment(
     texture.name = 'Trees X / authored studio HDR'
     background = createStudioSkyTexture()
     const env = texture,
-      sky = background
+      sky = background,
+      environment = ownEnvironmentPmrem(renderer, env)
     let disposed = false
     return {
       texture: env,
@@ -161,8 +163,11 @@ export async function createGpuStudioEnvironment(
       dispose() {
         if (disposed) return
         disposed = true
-        env.dispose()
-        sky.dispose()
+        try {
+          environment.dispose()
+        } finally {
+          sky.dispose()
+        }
       },
     }
   } catch (error) {
@@ -183,19 +188,15 @@ export async function createGpuRoomEnvironment(
 ): Promise<OwnedEnvironment> {
   const scene = new RoomEnvironment(),
     releaseAreaLights = acquireRectAreaUniforms()
+  let texture: DataTexture | undefined
   try {
     bindGpuAreaLights()
-    const texture = await captureEquirect(renderer, scene, [0, 0, 0], signal)
+    texture = await captureEquirect(renderer, scene, [0, 0, 0], signal)
     texture.name = 'Trees X / fallback room HDR'
-    let disposed = false
-    return {
-      texture,
-      dispose() {
-        if (disposed) return
-        disposed = true
-        texture.dispose()
-      },
-    }
+    return ownEnvironmentPmrem(renderer, texture)
+  } catch (error) {
+    texture?.dispose()
+    throw error
   } finally {
     releaseAreaLights()
     scene.dispose()

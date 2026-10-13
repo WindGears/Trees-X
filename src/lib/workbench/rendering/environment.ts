@@ -6,23 +6,12 @@ import { createAssetEnvironment } from '../assetEnvironment'
 import { createStudioEnvironment } from '../studio/geometry'
 import { createPianoEnvironment } from '../pianoEnvironment'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendererTypes'
+import { ownEnvironmentPmrem } from './environmentPMREM'
 
 export interface OwnedEnvironment {
   texture: Texture
   background?: Texture
   dispose(): void
-}
-
-function ownedTexture(texture: Texture): OwnedEnvironment {
-  let disposed = false
-  return {
-    texture,
-    dispose() {
-      if (disposed) return
-      disposed = true
-      texture.dispose()
-    },
-  }
 }
 
 /** The scene owns its fallback; a loaded adapter only owns its replacement. */
@@ -61,7 +50,12 @@ export async function createProductEnvironment(
     const loader = file.endsWith('.exr') ? new EXRLoader() : new HDRLoader()
     const texture = loader.createDataTexture(data)
     texture.mapping = EquirectangularReflectionMapping
-    return ownedTexture(texture)
+    try {
+      return ownEnvironmentPmrem(renderer, texture)
+    } catch (error) {
+      texture.dispose()
+      throw error
+    }
   }
   if (isWebGpuRenderer(renderer)) {
     const { createGpuStudioEnvironment, createGpuRoomEnvironment } =

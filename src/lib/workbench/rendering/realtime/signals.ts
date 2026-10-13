@@ -1,0 +1,218 @@
+import { HalfFloatType, RGFormat, UnsignedByteType, type Texture } from 'three'
+import {
+  RenderPipeline,
+  RendererUtils,
+  type Node,
+  type PerspectiveCamera,
+  type Scene,
+  type WebGPURenderer,
+} from 'three/webgpu'
+import {
+  diffuseColor,
+  materialMetalness,
+  mrt,
+  normalView,
+  output,
+  packNormalToRGB,
+  pass,
+  renderOutput,
+  sample,
+  unpackRGBToNormal,
+  vec2,
+  vec4,
+} from 'three/tsl'
+import { ssr } from 'three/addons/tsl/display/SSRNode.js'
+import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
+import { recurrentDenoise } from 'three/addons/tsl/display/RecurrentDenoiseNode.js'
+import { smaa } from 'three/addons/tsl/display/SMAANode.js'
+import { specularCaptureNode, diffuseCaptureNode, physicalRoughnessNode } from './materials'
+import { createOwnedRtt } from './ownedRtt'
+import { createReflectionResolve } from './reflectionResolve'
+
+/** One shared full-resolution G-buffer. All inputs and composition are linear HDR. */
+export function createRealtimeSignals(
+  renderer: WebGPURenderer,
+  scene: Scene,
+  camera: PerspectiveCamera,
+  motion: Node,
+) {
+  const scenePass = pass(scene, camera, { samples: 0 })
+  scenePass.setMRT(
+    mrt({
+      output,
+      normal: vec4(packNormalToRGB(normalView), physicalRoughnessNode),
+      albedo: vec4(diffuseColor.rgb, materialMetalness),
+      motion,
+      baseSpecular: specularCaptureNode,
+      baseDiffuse: diffuseCaptureNode,
+    }),
+  )
+  // Preserve curved normals and micro-roughness for close-range specular rays.
+  // Storage 40 bytes/sample; aligned device cost remains 44, within 64.
+  scenePass.getTexture('normal').type = HalfFloatType
+  scenePass.getTexture('albedo').type = UnsignedByteType
+  scenePass.getTexture('motion').type = HalfFloatType
+  scenePass.getTexture('motion').format = RGFormat
+  const beauty = scenePass.getTextureNode('output'),
+    depth = scenePass.getTextureNode('depth'),
+    normal = scenePass.getTextureNode('normal'),
+    albedo = scenePass.getTextureNode('albedo'),
+    velocity = scenePass.getTextureNode('motion'),
+    baseSpecular = scenePass.getTextureNode('baseSpecular'),
+    baseDiffuse = scenePass.getTextureNode('baseDiffuse')
+  const signedNormal = sample((uv) => unpackRGBToNormal(normal.sample(uv).rgb))
+  const reflection = ssr(beauty, depth, signedNormal, {
+    stochastic: true,
+    diffuseNode: albedo,
+    metalnessNode: albedo.a,
+    roughnessNode: normal.a,
+    binaryRefine: true,
+    camera,
+  })
+  reflection.resolutionScale = 1
+  reflection.quality.value = 1
+  reflection.maxDistance.value = 8
+  reflection.thickness.value = 0.035
+  reflection.maxLuminance.value = Infinity
+  reflection.intensity.value = 1
+  // A screen-space miss must retain the stable native PMREM, not replace it
+  // with one stochastic HDR sample. r185 still requires the loaded HDR node.
+  reflection.environmentIntensity.value = 0
+  reflection.screenEdgeFadeBlack = true
+  // Resolve owns hit/miss blending. Native edge fade changes only RGB, so
+  // leave it disabled to keep raywise replacement and native IBL consistent.
+  reflection.screenEdgeFade.value = 0
+  const gi = ssgi(beauty, depth, signedNormal, camera)
+  gi.useTemporalFiltering = false
+  gi.sliceCount.value = 4
+  gi.stepCount.value = 12
+  gi.radius.value = 1.3
+  gi.thickness.value = 0.12
+  gi.aoIntensity.value = 1
+  gi.giIntensity.value = 1
+  // Pass expressions explicitly as texture nodes: effect helpers otherwise
+  // allocate implicit RTTs with no recursive dispose path in r185.
+  const giInput = createOwnedRtt(vec4(gi.getGINode().rgb, gi.getAONode().r))
+  const rawGi = giInput.node
+  const spatialGi = recurrentDenoise(rawGi, camera, {
+    depth,
+    normal,
+    raw: rawGi,
+    mode: 'diffuse',
+    accumulate: false,
+  })
+  spatialGi.alphaSource = 'ao'
+  spatialGi.radius.value = 1
+  const pipeline = new RenderPipeline(renderer)
+  pipeline.outputColorTransform = false
+  let antialias: ReturnType<typeof smaa> | undefined,
+    composite: ReturnType<typeof createOwnedRtt> | undefined,
+    reflectionResolve: ReturnType<typeof createReflectionResolve> | undefined,
+    ssrEnabled = true,
+    ssgiEnabled = true,
+    denoiseEnabled = true,
+    disposed = false,
+    environment: Texture | null | undefined,
+    environmentVersion = -1
+  const savedState = RendererUtils.saveRendererState(renderer)
+
+  function compose() {
+    if (!reflectionResolve) return
+    const reflected = denoiseEnabled ? reflectionResolve.filtered : reflectionResolve.raw
+    // One filter contains both hit radiance and stable miss IBL. Only the
+    // matching single-scattering term is replaced; native other lobes remain.
+    const specular = ssrEnabled
+      ? baseSpecular.a.greaterThan(0).select(reflected.sub(baseSpecular.rgb), vec4(0).rgb)
+      : vec4(0).rgb
+    // SSGI AO affects indirect diffuse only. Local bounce and retained environment
+    // are distinct signals; direct light and native coat/anisotropy remain intact.
+    const diffuse = ssgiEnabled
+      ? baseDiffuse.a
+          .greaterThan(0)
+          .select(
+            baseDiffuse.rgb
+              .mul(spatialGi.a.sub(1))
+              .add(spatialGi.rgb.mul(albedo.rgb).mul(albedo.a.oneMinus()).mul(baseDiffuse.a)),
+            vec4(0).rgb,
+          )
+      : vec4(0).rgb
+    antialias?.dispose()
+    composite?.dispose()
+    composite = createOwnedRtt(renderOutput(vec4(beauty.rgb.add(specular).add(diffuse).max(0), 1)))
+    antialias = smaa(composite.node)
+    pipeline.outputNode = antialias
+    pipeline.needsUpdate = true
+  }
+  function resetHistory() {
+    if (disposed) return
+    reflectionResolve?.dispose()
+    reflectionResolve = createReflectionResolve(
+      reflection.getTextureNode(),
+      baseSpecular,
+      depth,
+      normal,
+      velocity,
+      sample((uv) => vec2(albedo.sample(uv).a, normal.sample(uv).a)),
+      camera,
+    )
+    // Native beauty already contains IBL. Feeding full SSR back into hit-color
+    // would count it twice; temporal reprojection alone owns this history.
+    compose()
+  }
+  resetHistory()
+  return {
+    render() {
+      RendererUtils.saveRendererState(renderer, savedState)
+      const xr = renderer.xr.enabled,
+        opaque = renderer.opaque,
+        transparent = renderer.transparent,
+        context = renderer.contextNode,
+        mask = camera.layers.mask,
+        name = scene.name,
+        override = scene.overrideMaterial
+      try {
+        pipeline.render()
+      } finally {
+        RendererUtils.restoreRendererState(renderer, savedState)
+        renderer.xr.enabled = xr
+        renderer.opaque = opaque
+        renderer.transparent = transparent
+        renderer.contextNode = context
+        camera.layers.mask = mask
+        scene.name = name
+        scene.overrideMaterial = override
+      }
+    },
+    resetHistory,
+    environment() {
+      const next = scene.environment,
+        version = next?.version ?? -1
+      if (next !== environment || version !== environmentVersion) {
+        reflection.setEnvMap(next)
+        environment = next
+        environmentVersion = version
+      }
+    },
+    setSignals(ssr: boolean, ssgi: boolean, denoise: boolean) {
+      if (ssr === ssrEnabled && ssgi === ssgiEnabled && denoise === denoiseEnabled) return
+      ssrEnabled = ssr
+      ssgiEnabled = ssgi
+      denoiseEnabled = denoise
+      resetHistory()
+    },
+    snapshot: () => ({ ssr: ssrEnabled, ssgi: ssgiEnabled, denoise: denoiseEnabled }),
+    dispose() {
+      if (disposed) return
+      disposed = true
+      antialias?.dispose()
+      composite?.dispose()
+      reflectionResolve?.dispose()
+      spatialGi.dispose()
+      giInput.dispose()
+      reflection.dispose()
+      gi.dispose()
+      scenePass.dispose()
+      pipeline.dispose()
+    },
+  }
+}

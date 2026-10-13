@@ -10,8 +10,9 @@ const output = process.env.HYBRID_CHECK_OUTPUT || 'artifacts/hybrid-workbench/ch
 const timeout = Number(process.env.HYBRID_CHECK_TIMEOUT || 480000)
 if (!Number.isFinite(timeout) || timeout < 1000) throw new Error('Invalid HYBRID_CHECK_TIMEOUT')
 const scope = process.env.HYBRID_CHECK_SCOPE || 'core'
-if (!['core', 'faults', 'admin', 'all'].includes(scope))
+if (!['core', 'high', 'faults', 'admin', 'all'].includes(scope))
   throw new Error('Invalid HYBRID_CHECK_SCOPE')
+const completeHigh = scope === 'high' || scope === 'all'
 const started = Date.now()
 let stage = 'initialization',
   expectedWeightFailure = false
@@ -132,11 +133,21 @@ try {
         triangles = 0
       root.traverse((node) => {
         if (Number.isInteger(node.userData.partId)) parts.push(node.name)
-        poses.push([node.name, ...node.position.toArray(), ...node.quaternion.toArray()])
+        poses.push([
+          node.name,
+          ...node.position.toArray(),
+          ...node.quaternion.toArray(),
+          ...node.scale.toArray(),
+          ...(node.morphTargetInfluences ?? []),
+        ])
         if (node.isMesh) {
           meshes++
           const count = node.isInstancedMesh ? node.count : 1
           instances += node.isInstancedMesh ? count : 0
+          if (node.isInstancedMesh)
+            poses.push(
+              [`${node.name}:instance-matrices`].concat(Array.from(node.instanceMatrix.array)),
+            )
           triangles +=
             ((node.geometry.index?.count ?? node.geometry.attributes.position.count) / 3) * count
           if (node.instanceColor) {
@@ -151,6 +162,13 @@ try {
               material.color?.getHexString(),
               material.roughness,
               material.metalness,
+              material.clearcoat,
+              material.clearcoatRoughness,
+              material.opacity,
+              material.transparent,
+              material.emissive?.getHexString(),
+              material.emissiveIntensity,
+              material.envMapIntensity,
             ])
           }
         }
@@ -177,6 +195,7 @@ try {
         sameCanvas: document.querySelector('canvas') === window.__demo.canvas,
         sameRenderer: renderer === window.__demo.renderer,
         camera: [...camera.position.toArray(), ...camera.quaternion.toArray()],
+        projection: camera.projectionMatrix.toArray(),
         webgpu: Boolean(
           renderer.isWebGPURenderer && renderer.backend?.isWebGPUBackend && device?.queue,
         ),
@@ -300,7 +319,7 @@ try {
   )
   report.checks.push('Existing WebGL entry loads without OIDN weights or WebGPU backend requests')
 
-  if (scope === 'core' || scope === 'all') {
+  if (scope === 'core' || completeHigh) {
     progress('Actual WebGPU raster and first guided 128 spp')
     await page.goto(new URL('/?product=typewriter-study&renderPipeline=hybrid', base).href)
     await ready(true)
@@ -344,16 +363,110 @@ try {
       'Actual canvas pixels change under refinement and keep their vertical orientation',
     )
 
-    progress('Continue to 1024, then mouse takeover')
+    progress('Continue to 1024 using the existing accumulation')
     await page.getByRole('button', { name: '继续精修', exact: true }).click()
     await expect.poll(async () => (await refinement()).target, { timeout: 10000 }).toBe(1024)
     const continued = await refinement()
-    expect(continued.samples?.min ?? complete.samples.min).toBeGreaterThanOrEqual(
-      complete.samples.min,
-    )
+    expect(continued.samples, 'Continuation must retain real sample evidence').not.toBeNull()
+    expect(continued.samples.min).toBeGreaterThanOrEqual(complete.samples.min)
     report.snapshots['high-continuation'] = continued
     report.checks.push('1024 target preserves current valid accumulation')
 
+    if (completeHigh) {
+      await expect
+        .poll(
+          async () => {
+            const state = await refinement()
+            return state.phase === 'sampling' && state.sampleFrames > complete.sampleFrames + 4
+          },
+          { timeout: 15000, intervals: [100, 250] },
+        )
+        .toBe(true)
+      const progressive = await save('raw-1024-in-progress'),
+        progressiveState = await refinement(),
+        progressiveDifference = await compareCanvas('guided-128', 'raw-1024-in-progress'),
+        progressiveRasterDifference = await compareCanvas('raster-ready', 'raw-1024-in-progress')
+      expect(progressiveState.target).toBe(1024)
+      expect(progressiveState.phase).toBe('sampling')
+      expect(progressiveState.samples.min).toBeGreaterThanOrEqual(128)
+      expect(progressiveState.samples.min).toBeLessThan(1024)
+      expect(progressive.camera).toEqual(refined.camera)
+      expect(progressive.projection).toEqual(refined.projection)
+      expect(progressive.poses).toEqual(refined.poses)
+      expect(progressive.materials).toEqual(refined.materials)
+      expect(progressive.sameCanvas && progressive.sameRenderer).toBe(true)
+      expect(
+        progressiveDifference.rms,
+        'Continuation must display current raw accumulation',
+      ).toBeGreaterThan(0.1)
+      expect(progressiveDifference.changedFraction).toBeGreaterThan(0.001)
+      expect(
+        progressiveRasterDifference.rms,
+        'Continuation must not return to the raster image',
+      ).toBeGreaterThan(0.1)
+      expect(progressiveRasterDifference.changedFraction).toBeGreaterThan(0.001)
+      expect(progressiveDifference.rms).toBeLessThan(progressiveDifference.invertedRms)
+      report.snapshots['raw-1024-progress-pixel-difference'] = {
+        guided: progressiveDifference,
+        raster: progressiveRasterDifference,
+      }
+      report.checks.push(
+        '1024 sampling shows current upright raw accumulation rather than raster or cached OIDN output',
+      )
+      await waitPhase('ready')
+      const high = await refinement()
+      expect(high.target).toBe(1024)
+      expect(high.samples.min).toBeGreaterThanOrEqual(1024)
+      expect(high.samples.max).toBeGreaterThanOrEqual(1024)
+      expect(high.samples.avg).toBeGreaterThanOrEqual(high.samples.min)
+      expect(high.samples.avg).toBeLessThanOrEqual(high.samples.max)
+      expect(high.sampleFrames).toBeGreaterThan(complete.sampleFrames)
+      expect(high.generation).toBe(continued.generation)
+      expect(high.revision).toBe(complete.revision)
+      expect(high.denoiseMs, '1024 raw output must not run another denoise pass').toBe(
+        complete.denoiseMs,
+      )
+      const raw = await save('raw-1024')
+      expect(raw.rootUuid).toBe(refined.rootUuid)
+      expect(raw.camera).toEqual(refined.camera)
+      expect(raw.projection).toEqual(refined.projection)
+      expect(raw.poses).toEqual(refined.poses)
+      expect(raw.materials).toEqual(refined.materials)
+      expect(raw.motion).toEqual(refined.motion)
+      expect(raw.sameCanvas && raw.sameRenderer).toBe(true)
+      const guidedDifference = await compareCanvas('guided-128', 'raw-1024'),
+        rasterDifference = await compareCanvas('raster-ready', 'raw-1024')
+      expect(
+        guidedDifference.rms,
+        '1024 raw image must replace the old guided texture',
+      ).toBeGreaterThan(0.1)
+      expect(guidedDifference.changedFraction).toBeGreaterThan(0.001)
+      expect(guidedDifference.rms, 'Raw image must keep the guided image orientation').toBeLessThan(
+        guidedDifference.invertedRms,
+      )
+      expect(rasterDifference.rms, 'Raw image must keep the real camera orientation').toBeLessThan(
+        rasterDifference.invertedRms,
+      )
+      report.snapshots['raw-1024-pixel-difference'] = {
+        guided: guidedDifference,
+        raster: rasterDifference,
+      }
+      await page.waitForTimeout(1200)
+      const highIdle = await refinement()
+      expect(highIdle.phase).toBe('ready')
+      expect(highIdle.sampleFrames).toBe(high.sampleFrames)
+      expect(highIdle.rasterFrames).toBe(high.rasterFrames)
+      expect(highIdle.presentations).toBe(high.presentations)
+      expect(highIdle.denoiseMs).toBe(complete.denoiseMs)
+      report.snapshots['raw-1024-idle'] = highIdle
+      report.checks.push(
+        'Real minimum and maximum 1024 spp complete as a distinct upright raw image with unchanged scene and no additional denoise; all rendering stops',
+      )
+    }
+
+    progress(
+      completeHigh ? 'Mouse takeover after completed 1024' : 'Mouse takeover before completed 1024',
+    )
     const point = await inputPoint(page)
     await page.mouse.move(point.x, point.y)
     await page.mouse.down()
@@ -362,6 +475,7 @@ try {
     expect(interrupted.generation).toBeGreaterThan(continued.generation)
     expect(interrupted.phase).not.toBe('ready')
     expect(interrupted.samples?.min ?? 0).toBe(0)
+    expect(interrupted.target).toBe(128)
     await page.mouse.up()
     const dragged = await save('drag-takeover')
     expect(dragged.camera).not.toEqual(initial.camera)
@@ -369,6 +483,58 @@ try {
     report.checks.push(
       'Mouse input immediately takes control and invalidates old high-sample result',
     )
+
+    if (completeHigh) {
+      await waitPhase('ready')
+      const recovered = await save('guided-128-after-takeover'),
+        state = await refinement()
+      expect(state.target).toBe(128)
+      expect(state.samples.min).toBeGreaterThanOrEqual(128)
+      expect(state.generation).toBeGreaterThan(continued.generation)
+      expect(recovered.camera).toEqual(dragged.camera)
+      expect(recovered.projection).toEqual(dragged.projection)
+      expect(recovered.poses).toEqual(dragged.poses)
+      expect(recovered.materials).toEqual(dragged.materials)
+      expect(recovered.sameCanvas && recovered.sameRenderer).toBe(true)
+      const resumedPixels = await compareCanvas('drag-takeover', 'guided-128-after-takeover')
+      expect(resumedPixels.changedFraction).toBeGreaterThan(0.01)
+      expect(resumedPixels.rms).toBeLessThan(resumedPixels.invertedRms)
+      report.snapshots['takeover-refinement-pixel-difference'] = resumedPixels
+      report.checks.push(
+        'Input resets the completed high-sample image and a fresh guided 128 spp image restores the new camera pose without rebuilding the renderer',
+      )
+
+      progress('Wheel takeover while actual 1024 sampling is running')
+      await page.getByRole('button', { name: '继续精修', exact: true }).click()
+      await expect
+        .poll(
+          async () => {
+            const next = await refinement()
+            return next.phase === 'sampling' && next.sampleFrames > state.sampleFrames + 4
+          },
+          { timeout: 15000, intervals: [100, 250] },
+        )
+        .toBe(true)
+      const samplingBeforeWheel = await refinement()
+      expect(samplingBeforeWheel.samples.min).toBeGreaterThanOrEqual(128)
+      expect(samplingBeforeWheel.samples.min).toBeLessThan(1024)
+      await page.mouse.move(point.x, point.y)
+      await page.mouse.wheel(0, 140)
+      await expect
+        .poll(async () => (await refinement()).generation, { timeout: 5000 })
+        .toBeGreaterThan(samplingBeforeWheel.generation)
+      const wheelTakeover = await save('sampling-wheel-takeover'),
+        interruptedSampling = await refinement()
+      expect(interruptedSampling.target).toBe(128)
+      expect(interruptedSampling.samples?.min ?? 0).toBe(0)
+      expect(interruptedSampling.phase).not.toBe('ready')
+      expect(wheelTakeover.camera).not.toEqual(recovered.camera)
+      expect(wheelTakeover.sameCanvas && wheelTakeover.sameRenderer).toBe(true)
+      report.snapshots['sampling-wheel-takeover'] = interruptedSampling
+      report.checks.push(
+        'Wheel input during genuine high-sample accumulation cancels raw output, resets samples and restores immediate raster control',
+      )
+    }
 
     progress('Realtime mode, paused structure and exact restoration')
     await page.getByRole('button', { name: '仅实时展示', exact: true }).click()

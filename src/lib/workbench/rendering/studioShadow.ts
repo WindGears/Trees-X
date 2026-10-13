@@ -27,6 +27,7 @@ export function createGpuStudioShadow(
   scene: Scene,
   model: Group,
   groundY: number,
+  opacity = 0.46,
 ) {
   const resolution = 1024,
     layer = 7,
@@ -96,7 +97,7 @@ export function createGpuStudioShadow(
     planeMaterial = new MeshBasicNodeMaterial({
       map: target.texture,
       transparent: true,
-      opacity: 0.46,
+      opacity,
       depthWrite: false,
       side: DoubleSide,
       toneMapped: false,

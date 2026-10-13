@@ -15,7 +15,7 @@ import {
 import { studioDesign } from '../studio/design'
 
 /** TSL version of the existing soft planar bounce, owned by the studio rather than its source model. */
-export function createGpuStudioReflection(groundY: number = studioDesign.groundY) {
+export function createGpuStudioReflection(groundY: number = studioDesign.groundY, strength = 0.28) {
   const width = studioDesign.width - studioDesign.radius * 2,
     depth = studioDesign.depth - studioDesign.radius * 2,
     radius = studioDesign.radius,
@@ -54,7 +54,7 @@ export function createGpuStudioReflection(groundY: number = studioDesign.groundY
     .abs()
     .oneMinus()
     .pow(3)
-  material.opacityNode = float(0.28).mul(mix(0.45, 1, grazing))
+  material.opacityNode = float(strength).mul(mix(0.45, 1, grazing))
   material.name = 'TreesXStudioSoftReflectionTSL'
   const mesh = new Mesh(geometry, material)
   mesh.name = 'Trees X / studio reflection'

@@ -6,6 +6,7 @@ import { createGpuStudioReflection } from './studioReflection'
 import { createGpuStudioShadow } from './studioShadow'
 import { bindGpuAreaLights } from './studioEnvironment'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendererTypes'
+import { isRealtimeRenderer } from './realtimeMode'
 
 export type WorkbenchStudio = ReturnType<typeof createTypewriterStudio>
 export type WorkbenchStudioFactory = (
@@ -39,9 +40,17 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
   try {
     bindGpuAreaLights()
     scene.add(geometry.group, ...lighting.lights)
-    reflection = createGpuStudioReflection(groundY)
+    // This planar stage layer is retained for image quality: screen-space rays
+    // cannot reproduce its offscreen reflection reliably. Its native Basic
+    // material writes a zero capture mask, excluding it from SSR replacement.
+    // Product SSR still supplies local detail; this is not a second renderer.
+    // The realtime pass blends in HDR before ACES. WebGL blends the authored
+    // overlays after tone mapping, so equal alpha values look much weaker here.
+    // These stage-only weights are a visual calibration, not BRDF equivalence.
+    const realtime = isRealtimeRenderer(renderer)
+    reflection = createGpuStudioReflection(groundY, realtime ? 0.5 : 0.28)
     scene.add(reflection.mesh)
-    shadow = createGpuStudioShadow(renderer, scene, model, groundY)
+    shadow = createGpuStudioShadow(renderer, scene, model, groundY, realtime ? 0.68 : 0.46)
   } catch (error) {
     dispose()
     throw error
