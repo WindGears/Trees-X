@@ -1,5 +1,7 @@
 # 新版目标架构与当前实现
 
+2026-10-14：realtime/ownedRtt 必须显式设置 HalfFloatType；r185 的非空 options 替换 RTTNode 默认参数，不能只设 depthBuffer 后假定仍为 HDR。目标与 quad 材质保持唯一 owner，上游 pass／loader 纹理只借用。新增 scripts/realtime-probe 为一次性验收工具，只在独立测试页面截取生产已有的四路纹理，不增加产品调度器或逐帧 CPU 回读。实际格式、完整帧及迟到代次保护见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)。
+
 ## 当前实时基线（2026-10-13）
 
 节点一改动后，`WorkbenchStage` 仍唯一拥有 TresCanvas／renderer，`realtime/coordinator` 与受检时钟拥有唯一实际绘制调度；`sceneInputs` 使用同一 renderer 的两个 pass：不透明 surface 六 MRT（output、normal／roughness、albedo／metalness、motion、baseSpecular、baseDiffuse），完整 HDR beauty 两 MRT（output、correctionThroughput）。两 pass 深度目标独立，不能描述为所有信号共享同一个 G-buffer pass。不透明六附件存储为 40 字节／像素、对齐成本 44 字节／采样点，请求 64 上限不变；完整 beauty 增加一次不透明绘制及约 16 字节／像素（HDR 色、RGBA8 transmittance 与深度），需实测其成本，不改输出尺寸或源贴图。

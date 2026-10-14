@@ -1,11 +1,14 @@
-import { Material, REVISION } from 'three'
+import { HalfFloatType, Material, REVISION } from 'three'
 import type { Node } from 'three/webgpu'
 import { rtt } from 'three/tsl'
 
 /** r185 RTTNode has no dispose(). Own its target and quad material explicitly. */
 export function createOwnedRtt(input: Node, revision = REVISION) {
   if (revision !== '185') throw new Error('RTT ownership must be reviewed for this Three revision')
-  const node = rtt(input, null, null, { depthBuffer: false })
+  // Passing an options object replaces RTTNode's { type: HalfFloatType }
+  // default. Explicitly retain signed HDR and SSR's 10000 miss sentinel;
+  // RGBA8 silently clamps both radiance and ray length before denoising.
+  const node = rtt(input, null, null, { type: HalfFloatType, depthBuffer: false })
   const quad: unknown = Reflect.get(node, '_quadMesh')
   const material: unknown =
     quad && typeof quad === 'object' ? Reflect.get(quad, 'material') : undefined

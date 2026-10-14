@@ -1,5 +1,7 @@
 # Trees X 新版项目入口
 
+2026-10-14 最新补充：打字机中间 RTT 已显式使用 HalfFloat，修复实际 GPU 的 RGBA8 截断 HDR 亮度与 10000 未命中哨兵。真实读回和六个冻结输入对照已确认格式修复；Cline 参与诊断编码，由 Codex 审查整合。漆面仍有残余点噪，完整节点一仍未通过；默认 WebGL 保留，不晋级 UV／材质 v2 或 DDGI。最新证据见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)，下方成绩分别属于其标注日期的历史批次。
+
 ## 当前阶段：打字机实时组合渲染，画质优先（2026-10-13）
 
 用户最新目标是自由观察、敲键、分层与平铺时持续保留高质量材质和动态光照。当前已接入打字机 WebGPU 实时基线：随机 SSR、SSGI、Three 内置时域重投影与降噪、完整帧拥有的刚体／实例运动历史；通过 `?product=typewriter-study&renderPipeline=realtime` 检查。一个展示区域仍只有一个 TresCanvas／renderer，HTTP、Pinia 与 v1/v2/v3 配置不变。钢琴和汽车保持原管线，普通首页继续增强 WebGL。

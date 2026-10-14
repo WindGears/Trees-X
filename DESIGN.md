@@ -211,6 +211,8 @@ normal／原生导数调整后 roughness 为 HalfFloat，SSR quality 1、thickne
 
 当前统一替换信号的过滤半径为 5；独立 coverage 和其 flickerSuppression=0 参数仅属历史。实时地台反射／接触阴影权重保留 0.5／0.68。WebGPU 实时叠层先在 HDR 合成再经 ACES，原 WebGL 在显示空间混合；这些权重只是舞台视觉校准，不是 BRDF 等效。旧 hybrid／WebGL 0.28／0.46 保持，当前新 resolve 生产截图已采集，完整画质结论未通过，不因机制或数值变化推断更高质量。
 
+2026-10-14 修复：所有自有中间 RTT 显式 HalfFloat，避免在最终 ACES 前把 HDR 亮度及反射距离截入 RGBA8。UI、天空盒、地台形态、灯光、曝光和源材质保持；六个相同输入取景已核对，漆面颗粒减少但近景仍需精修，不据此切换默认。见 [.ai/typewriter-hdr-rtt-validation.md](.ai/typewriter-hdr-rtt-validation.md)。
+
 只读核查还确认实时全幅 ACES 包含天空盒，而原 WebGL 天空盒按 `toneMapped: false` 只做输出颜色转换。两种地台叠层／色调映射顺序非线性不等效；这尚不是白点或倒影缺失的完整根因结论。后续质量定位先以固定取景分别检查原始反射纹理与最终合成，不用加模糊或盲调强度替代证据，本轮代码保持冻结。
 
 六附件存储 40 字节／像素、WebGPU 对齐成本 44 字节／采样点，宿主明确请求 64 字节支持；不支持时完整卸载实验宿主并显示兼容状态。当前核心、六组对照契约、管理预览与故障恢复通过；三个桌面尺寸、小屏兼容及减弱动态批次通过，1280／320 截图无 UI 阻断，实际 20 分钟操作资源无增长。这些不是画质验收：前罩高光／刻度仍有噪点、A／S与远排字符偏浅颗粒、地台倒影偏浅模糊且有白点，分层／平铺虽可读但无明确质感提升，画质未通过，默认保持 WebGL。JS 提交计时不代表实际呈现帧预算；当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 版重载不替代当前链。DDGI／FFX／BVH 不扩展，证据见 [.ai/realtime-rendering-validation.md](.ai/realtime-rendering-validation.md)。后面的静止精修状态为 hybrid 历史入口。

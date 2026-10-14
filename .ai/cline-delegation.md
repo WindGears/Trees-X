@@ -1,6 +1,14 @@
 # Cline 监督式子代理：使用与验收
 
-2026-10-14。本轮完善开发工具，不修改商品、材质、UI、Three 渲染管线或数据库。源代码和安装说明位于 [tools/cline-delegate](../tools/cline-delegate/README.md)。本机已安装 v2.0.0，当前会话的旧 MCP 工具需要重载后才能刷新。
+2026-10-14。监督工具升级记录见下文；源码与安装说明位于 [tools/cline-delegate](../tools/cline-delegate/README.md)。本机 v2.0.0 已在当前会话加载，并用于打字机 HDR 诊断编码；工具升级本身不改变商品或数据库。
+
+## 打字机诊断的实际派发
+
+任务 d8374b16ee314ec1b76d9bae2a7e32fc 只允许读取指定快照及暂存 scripts/realtime-probe/metrics.mjs、metrics.test.mjs。Cline 编写完整纯 Float32 统计及 9 项固定输入测试，覆盖 hit／miss／unsupported、有限负 HDR、NaN／Infinity、空分类和快照差；没有 GPU、shell、数据库或 Git 权限。
+
+本次请求 max，实际返回模型 deepseek/deepseek-v4.1-flash，上游未确认实际推理强度。8 轮预算耗尽后任务为 failed，验证为 not_run，没有成功回执；MCP 正确拒绝 apply。Codex 单独审查公开完整提案、手动写入主仓库并运行测试，不描述为 MCP 成功合入。审查摘要 b25770fd955acfe0191c1dfec8cdf45cff4125c1e1e5bea2b3dd5afe665a0dc8。
+
+Cline 的 9 项测试实际通过，Codex 补充二进制解码及捕获生命周期 7 项，共 16 项通过。生产 HDR 修复及 GPU／浏览器检查由 Codex 完成，见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)。下次进一步缩小输入、明确先结束可审查提案再扩展；不通过 recover 绕过失败任务的合入资格。
 
 ## 分工
 

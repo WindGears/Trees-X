@@ -1,4 +1,6 @@
-# 当前实时渲染约束（2026-10-13）
+# 当前实时渲染约束（2026-10-14）
+
+- 自有 HDR RTT 显式声明 HalfFloatType／线性颜色空间。r185 中 options 替换默认参数，不能只传 depthBuffer 后依赖 HalfFloat 默认。真实 GPU 已确认原 RGBA8 将 HDR 及 10000 哨兵截为 1；诊断只复制成功完整帧，PNG 为后续固定姿态帧，不冒充同提交帧。证据见 [HDR 修复](typewriter-hdr-rtt-validation.md)。
 
 - 打字机实时入口为 `?product=typewriter-study&renderPipeline=realtime`；默认 WebGL 与钢琴／汽车原管线保持。旧 hybrid 的 128／1024 样本与 OIDN 只属于历史静止精修入口，不是此阶段要求。
 - 固定 Three 0.185.1，唯一 TresCanvas／renderer／实际绘制时钟。WebGPU 受检桥接集中在 `realtime/clock`，检查版本及私有形状；隐藏、离屏停钟，设备恢复卸载旧宿主后重建。
@@ -8,7 +10,7 @@
 - 地台平面反射沿用唯一 renderer 的离屏绘制，Basic 材质捕获权重为零，排除 SSR 替换；不能把它与商品完整 IBL 再重复相加。保留屏幕外舞台反射不等于已经接入世界空间射线追踪。
 - 支持的基础 Physical 支路用自有运行 NodeMaterial、受检 r185 DFGLUT 捕获环境辐射单次散射项与 AO／清漆透过权重。SSR 只给命中辐射；`reflectionResolve` 在过滤前逐射线组合：命中=`rawSSR × AOcoat`，未命中=`nativeSingle`，再统一过滤 RGB＋ray length。最终将 `filteredReplacement − nativeSingle` 与漫反射修正乘完整 beauty 的 `correctionWeight` 后合成；该权重是透明材质 opacity 混合后的 transmittance，不是 roughness 或捕获附件 alpha。保留 native miss、多次散射与清漆，未支持像素不应用修正。非默认 IOR／specular 参数或贴图、独立 envMap 等支路不参与替换。不得全局改 PhysicalLightingModel 原型，不直接叠加完整 SSR 与完整原生 IBL，不回馈完整替换到已含 IBL 的 beauty 冒充多跳追踪。
 - 命中必须在过滤前由原始 SSR alpha 的 ray length 判定；时域／空间过滤后的 alpha 不保证仍是原始 ray length，不能拿它当 hit/miss。此前反射颜色与 coverage 独立过滤的非线性权重不一致，radius 5 后仍有明显噪点；该支路已移除并保留历史结果，当前不能继续描述为独立 coverage 合成。统一 resolve 自有 RTT／历史／过滤器由局部 owner 释放；节点一之前的四项生产核心与六组契约通过仅为历史证据，不由公式或工程 PASS 推断本次画质通过。
-- 2026-10-13 CPU 审计确认：当前未支持像素写零但仍带普通 ray length，过滤器没有独立 support mask，最终目标像素判断不能阻止邻域黑样本参与；全 miss 的原生值经空间过滤也不保证与未过滤 nativeSingle 完全抵消。这些是过滤契约的待验证缺口，尚无 GPU 证据证明它们造成漆面内部颗粒。不得将“过滤前 miss 使用 nativeSingle”写成“过滤后完全稳定”；不得重复乘 SSR 已包含的 GGX 权重／DFG。
+- 2026-10-13 CPU 审计确认：当前未支持像素写零但仍带普通 ray length，过滤器没有独立 support mask，最终目标像素判断不能阻止邻域黑样本参与。10 月 14 日明确标记的 GPU 全 miss 信号诊断确认过滤后减 nativeSingle 仍有非零残差；不能据此宣称漆面全部颗粒归因已完成。不得将“过滤前 miss 使用 nativeSingle”写成“过滤后完全稳定”；不得重复乘 SSR 已包含的 GGX 权重／DFG。
 - 当前统一替换信号过滤半径为 5。实时舞台 HDR 合成权重 0.5／0.68 属于反射／接触阴影视觉校准，旧 hybrid／WebGL 保持 0.28／0.46；不得称为 BRDF 等效或普适物理参数，需新截图核对。旧 coverage flickerSuppression=0 仅为历史试验参数，当前已无独立 coverage 支路。
 - SSGI 是屏幕空间经验贡献，官方实现含亮度 7 的限制；不得称为完整物理 irradiance、严格无截断或路径追踪等效。字符／铭牌透明贴片、微表面与细边需单独近景核对；当前键帽本体不透明，不能把贴片计数误称玻璃材质数。
 - 51 个源字符／铭牌贴片保留 loader 原材质身份、原 alpha 与 alphaTest=0；不再用运行克隆或 cutoff 修补 G-buffer。surface pass 排除透明绘制，完整 beauty 原生混合；源贴片统计与整个 scene 含三种舞台透明材质的统计分开，细节见 [资产核验](typewriter-asset-audit.md)。

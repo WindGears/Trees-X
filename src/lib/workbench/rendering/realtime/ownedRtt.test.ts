@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Texture } from 'three'
+import { HalfFloatType, NoColorSpace, Texture } from 'three'
 import { texture, vec4 } from 'three/tsl'
 import { createOwnedRtt } from './ownedRtt'
 
@@ -16,6 +16,8 @@ describe('explicit RTT lifecycle for r185 effect inputs', () => {
     const materialDispose = vi.spyOn(quad.material, 'dispose'),
       geometryDispose = vi.spyOn(quad.geometry, 'dispose')
     expect(owner.node.renderTarget!.depthBuffer).toBe(false)
+    expect(owner.node.renderTarget!.texture.type).toBe(HalfFloatType)
+    expect(owner.node.renderTarget!.texture.colorSpace).toBe(NoColorSpace)
     owner.dispose()
     owner.dispose()
     expect(targetDispose).toHaveBeenCalledTimes(1)
