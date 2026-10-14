@@ -4,7 +4,12 @@ import { join, relative } from 'node:path'
 
 const before = process.argv[2],
   after = process.argv[3],
-  output = process.argv[4]
+  output = process.argv[4],
+  variant = process.argv[5] || 'hdr'
+assert.ok(['hdr', 'signed'].includes(variant), 'Comparison variant must be hdr or signed')
+const title = variant === 'signed' ? '打字机有符号反射过滤对照' : '打字机 HDR 中间纹理修正',
+  beforeLabel = variant === 'signed' ? '旧统一替换过滤' : '修正前',
+  afterLabel = variant === 'signed' ? '有符号修正过滤' : 'HalfFloat 修正后'
 if (!before || !after || !output)
   throw new Error('Usage: node scripts/realtime-probe/compare.mjs BEFORE AFTER OUTPUT')
 const cases = [
@@ -15,7 +20,7 @@ const cases = [
     ['layers', '分层 60%'],
     ['flat', '平铺 100%'],
   ],
-  report = { inputContractsMatched: false, visualAcceptance: 'not evaluated', cases: [] }
+  report = { variant, inputContractsMatched: false, visualAcceptance: 'not evaluated', cases: [] }
 const read = async (directory, id) =>
   JSON.parse(await readFile(join(directory, `quality-realtime-${id}.json`), 'utf8'))
 for (const [id, title] of cases) {
@@ -71,17 +76,18 @@ const link = (directory, id) =>
 await writeFile(
   join(output, 'index.html'),
   `<!doctype html><html lang="zh-CN"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>打字机 HDR 中间纹理修正</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
 <style>body{margin:0;padding:28px;background:#eeefeb;color:#202820;font:16px/1.6 system-ui}
 main{max-width:1800px;margin:auto}.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 figure{margin:0}img{width:100%;display:block}figcaption{padding:8px 0}
 @media(max-width:700px){.pair{grid-template-columns:1fr}}</style><main>
-<h1>打字机 · HDR 中间纹理修正</h1><p>左：原实时管线；右：显式 HalfFloat 修正。
+<h1>${title}</h1><p>左：${beforeLabel}；右：${afterLabel}。
 六个取景已核对实际相机、模型姿态、源材质摘要、灯光、环境、曝光和输出尺寸。
-这组只比较同一实时管线的纹理格式修正，不与不同布光的 WebGL 或旧路径图计算误差。</p>
-<p>图像为正常浏览器画布截图。真实纹理读回另存于 SSR probe；截图为随后绘制帧，
-不能视作四路读回的精确同帧输出。输入契约一致不代表画质验收通过，仍需人工检查。</p>
-${cases.map(([id, title]) => `<h2>${title}</h2><div class="pair"><figure><img src="${link(before, id)}"><figcaption>修正前</figcaption></figure><figure><img src="${link(after, id)}"><figcaption>HalfFloat 修正后</figcaption></figure></div>`).join('\n')}
+这组只比较同一实时管线的${variant === 'signed' ? '反射过滤修正' : '纹理格式修正'}，不与不同布光的 WebGL 或旧路径图计算误差。</p>
+<p>图像为正常浏览器画布截图。真实纹理另存于 SSR probe；有符号过滤诊断读取五路现有 GPU 信号，
+旧替换过滤读取四路。截图为后续固定姿态帧，不能视作这些读回的精确同帧输出。
+输入契约一致不代表画质验收通过，仍需人工检查。</p>
+${cases.map(([id, title]) => `<h2>${title}</h2><div class="pair"><figure><img src="${link(before, id)}"><figcaption>${beforeLabel}</figcaption></figure><figure><img src="${link(after, id)}"><figcaption>${afterLabel}</figcaption></figure></div>`).join('\n')}
 </main></html>`,
 )
 console.log(`Matched six frozen-input views: ${join(output, 'index.html')}`)

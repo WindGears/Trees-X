@@ -1,5 +1,7 @@
 # 新版目标架构与当前实现
 
+2026-10-14 新候选：reflectionResolve 组合局部 signedSpatial／signedHistory。raw RGB 是 SSR 命中辐射乘捕获权重后减 nativeSingle，miss／unsupported 为零；空间与历史过滤 signed RGB，最终 beauty 加 filteredDelta 乘 correctionWeight，不再减未过滤 nativeSingle。空间 alpha 为 support，历史 alpha 为有效帧数；raw alpha 仍为 ray length。signals.prepare 按尺寸准备，coordinator 在最终 pipeline 成功且无同步 renderer 错误后调用 commitFrame，失败调用 cancelFrame；复制上一帧 delta／depth／normal 与相机矩阵不发生在 updateBefore。材质、SSR、SSGI、透明混合及接口保持；这是有限八 tap 与表面重投影，不等同原官方自适应核／hit-point 历史。详见 [修正验收](typewriter-signed-reflection-validation.md)。
+
 2026-10-14：realtime/ownedRtt 必须显式设置 HalfFloatType；r185 的非空 options 替换 RTTNode 默认参数，不能只设 depthBuffer 后假定仍为 HDR。目标与 quad 材质保持唯一 owner，上游 pass／loader 纹理只借用。新增 scripts/realtime-probe 为一次性验收工具，只在独立测试页面截取生产已有的四路纹理，不增加产品调度器或逐帧 CPU 回读。实际格式、完整帧及迟到代次保护见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)。
 
 ## 当前实时基线（2026-10-13）

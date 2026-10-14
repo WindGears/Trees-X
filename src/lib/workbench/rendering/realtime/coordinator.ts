@@ -126,8 +126,11 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
           try {
             if (signals) signals.render()
             else renderer.render(scene, camera)
+            if (error) throw new Error(error)
+            signals?.commitFrame()
             motion.commitFrame()
           } catch (cause) {
+            signals?.cancelFrame()
             motion.cancelFrame()
             throw cause
           }

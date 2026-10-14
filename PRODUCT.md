@@ -1,5 +1,7 @@
 # Trees X
 
+2026-10-14 最新候选：打字机实时实验采用支持掩码约束的有符号反射修正，暖历史全未命中时 GPU 修正严格归零，完整帧成功后才推进历史。敲键、结构、平铺和六个冻结取景完成工程检查；整体质感仍未通过，金属近景仍有点噪。默认 WebGL 和其余两件商品保持，材质 v2／DDGI 未开始。证据见 [.ai/typewriter-signed-reflection-validation.md](.ai/typewriter-signed-reflection-validation.md)。
+
 2026-10-14 最新状态：打字机实时实验修复了中间纹理误用 RGBA8 导致的 HDR 与反射距离截断，真实 GPU 和六个冻结取景已确认修复。完整画质仍未通过，默认增强 WebGL 保留；不以此独立修复宣称完成材质 v2、DDGI 或整套实时升级。Cline 参与诊断，实际测试与整合由 Codex 执行，见 [.ai/typewriter-hdr-rtt-validation.md](.ai/typewriter-hdr-rtt-validation.md)。下方成绩分别属于其标注日期的历史实现。
 
 2026-10-13 当前推进打字机实时组合渲染：自由观察、敲键、分层和平铺持续使用真实 Three.js WebGPU 光栅，结合随机 SSR、SSGI、内置运动重投影与降噪。实验入口为 `?product=typewriter-study&renderPipeline=realtime`；普通首页仍使用增强 WebGL，钢琴／汽车保持原管线。源模型、原尺寸贴图、界面、管理/API 与配置版本沿用，不等待静止路径追踪或 OIDN。

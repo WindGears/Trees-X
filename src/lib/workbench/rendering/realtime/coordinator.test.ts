@@ -52,7 +52,11 @@ function fixture() {
   }
   let enabled = { ssr: true, ssgi: true, denoise: true }
   const signals = {
-    render: vi.fn(() => calls.push('signals:render')),
+    render: vi.fn(() => {
+      calls.push('signals:render')
+    }),
+    commitFrame: vi.fn(() => calls.push('signals:commit')),
+    cancelFrame: vi.fn(() => calls.push('signals:cancel')),
     resetHistory: vi.fn(() => calls.push('signals:reset')),
     environment: vi.fn(() => calls.push('signals:environment')),
     setSignals: vi.fn((ssr: boolean, ssgi: boolean, denoise: boolean) => {
@@ -115,6 +119,21 @@ function fixture() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('realtime complete-frame coordinator lifecycle', () => {
+  it('does not commit lighting or motion when the renderer reports failure during final draw', () => {
+    const f = fixture()
+    f.coordinator.prepare()
+    f.coordinator.ready('typewriter-study', 8)
+    f.signals.render.mockImplementationOnce(() => f.renderer.onError('submission rejected'))
+    f.coordinator.render(f.notify)
+    expect(f.signals.commitFrame).not.toHaveBeenCalled()
+    expect(f.motion.commitFrame).not.toHaveBeenCalled()
+    expect(f.signals.cancelFrame).toHaveBeenCalledTimes(1)
+    expect(f.motion.cancelFrame).toHaveBeenCalledTimes(1)
+    expect(f.coordinator.snapshot()).toMatchObject({ frames: 0, error: 'submission rejected' })
+    expect(f.notify).not.toHaveBeenCalled()
+    f.coordinator.dispose()
+  })
+
   it('does not claim a first raster until a successful complete frame was submitted', () => {
     const f = fixture()
     f.coordinator.prepare()
@@ -131,6 +150,7 @@ describe('realtime complete-frame coordinator lifecycle', () => {
       'renderer:size',
       'motion:begin',
       'signals:render',
+      'signals:commit',
       'motion:commit',
       'clock:finish',
       'notify',

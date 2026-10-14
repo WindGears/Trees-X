@@ -11,7 +11,8 @@ export function installProbe() {
     throw new Error('Inspected native r185 WebGPU frame hooks absent')
   const nodes = new Map()
   let pending,
-    forceMiss = false
+    forceMiss = false,
+    forceBlackHit = false
   const type = (node) => node.constructor.type
   frame.updateBeforeNode = function (node) {
     const result = originalUpdate.call(this, node)
@@ -22,8 +23,10 @@ export function installProbe() {
       (kind === 'RecurrentDenoiseNode' && node.mode === 'specular')
     )
       nodes.set(kind, { node, frameId: this.frameId })
-    if (forceMiss && kind === 'SSRNode') {
-      // An explicitly synthetic all-miss *signal* diagnostic. Existing scene,
+    if (kind === 'RTTNode' && node.value.name.startsWith('TreesX.Reflection.'))
+      nodes.set(node.value.name, { node, frameId: this.frameId })
+    if ((forceMiss || forceBlackHit) && kind === 'SSRNode') {
+      // Explicit synthetic all-miss / true-black-hit *signal* diagnostics. Scene,
       // G-buffer and native BRDF stay real; no result is a visitor screenshot.
       const target = node.getRenderTarget(),
         texture = renderer.backend.get(target.texture).texture,
@@ -35,7 +38,7 @@ export function installProbe() {
               view: texture.createView(),
               loadOp: 'clear',
               storeOp: 'store',
-              clearValue: { r: 0, g: 0, b: 0, a: 10000 },
+              clearValue: { r: 0, g: 0, b: 0, a: forceBlackHit ? 2 : 10000 },
             },
           ],
         })
@@ -90,9 +93,14 @@ export function installProbe() {
       }
       const ssr = current('SSRNode'),
         temporal = current('TemporalReprojectNode'),
-        filtered = current('RecurrentDenoiseNode')
-      if (!ssr || !temporal || !filtered) throw new Error('Actual reflection resolve nodes absent')
-      const surface = temporal.depthNode.passNode,
+        filtered = current('RecurrentDenoiseNode'),
+        rawDelta = current('TreesX.Reflection.rawDelta'),
+        filteredDelta = current('TreesX.Reflection.filteredDelta'),
+        spatialDelta = current('TreesX.Reflection.spatialDelta')
+      const signed = Boolean(rawDelta && filteredDelta && spatialDelta)
+      if (!ssr || (!signed && (!temporal || !filtered)))
+        throw new Error('Actual reflection resolve nodes absent')
+      const surface = (signed ? ssr : temporal).depthNode.passNode,
         surfaceTarget = surface.renderTarget,
         nativeIndex = surfaceTarget.textures.indexOf(surface.getTexture('baseSpecular'))
       if (nativeIndex < 0) throw new Error('Actual baseSpecular MRT attachment absent')
@@ -101,12 +109,28 @@ export function installProbe() {
       const queued = [
         read('ssr', ssr.getRenderTarget()),
         read('native', surfaceTarget, nativeIndex),
-        read('replacement', filtered.getRenderTarget()),
-        read('raw', temporal.beautyNode.renderTarget),
+        ...(signed
+          ? [
+              read('filteredDelta', filteredDelta.renderTarget),
+              read('rawDelta', rawDelta.renderTarget),
+              read('spatialDelta', spatialDelta.renderTarget),
+            ]
+          : [
+              read('replacement', filtered.getRenderTarget()),
+              read('raw', temporal.beautyNode.renderTarget),
+            ]),
       ]
       const capturedFrame = window.__reflectionLighting.snapshot().frames
       Promise.all(queued).then(
-        (signals) => request.resolve({ capturedFrame, forceMiss, signals }),
+        (signals) =>
+          request.resolve({
+            capturedFrame,
+            armedFrame: request.armed.frames,
+            forceMiss,
+            forceBlackHit,
+            signed,
+            signals,
+          }),
         request.reject,
       )
     } catch (error) {
@@ -117,6 +141,11 @@ export function installProbe() {
   window.__reflectionProbe = {
     forceMiss(value) {
       forceMiss = value
+      forceBlackHit = false
+    },
+    forceBlackHit(value) {
+      forceBlackHit = value
+      forceMiss = false
     },
     capture() {
       if (pending) throw new Error('A diagnostic readback is already pending')

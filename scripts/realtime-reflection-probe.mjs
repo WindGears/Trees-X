@@ -20,7 +20,7 @@ const base = process.env.CHECK_URL || 'http://127.0.0.1:5181',
     errors: [],
     startedAt: new Date().toISOString(),
     method:
-      'Published real typewriter, one production Canvas/renderer. Existing SSR, native baseSpecular MRT, replacement and raw RTT targets copied at one successful complete existing render frame. PNG screenshots are taken later at the same fixed pose, not that exact GPU submission. No extra rendering clock or per-frame CPU readback. A labelled forced-all-miss signal run tests fallback, not scene quality. Temporal difference is same-pixel numeric change, not a perceived noise score or GPU time. HDR contract assertions check component format and miss-sentinel preservation, not image quality.',
+      'Published real typewriter, one production Canvas/renderer. At one successful complete render frame, signed mode copies five existing GPU targets: SSR, native baseSpecular MRT, rawDelta, spatialDelta and filteredDelta. Legacy mode copies four existing targets including replacement/raw. In signed mode native+delta is reconstructed only on CPU for the legacy numeric reducer; it is not an actual GPU replacement target. Delta alpha means raw ray length, spatial support or temporal frame count respectively. PNG screenshots are later fixed-pose frames, not that exact submission. Labelled forced-all-miss and true-black-hit runs are synthetic signal diagnostics, not scene-quality images. No extra render clock or per-frame CPU readback. Numeric contracts and temporal differences are not visual acceptance or GPU/presentation timing.',
   }
 let browser, page
 await mkdir(output, { recursive: true })
@@ -103,10 +103,12 @@ try {
   for (const item of [
     { id: 'whole', view: 'perspective' },
     { id: 'paint', part: 'part-095' },
-    { id: 'all-miss-paint', part: 'part-095', forceMiss: true },
+    { id: 'all-miss-paint', part: 'part-095', forceMiss: true, keepHistory: true },
+    { id: 'black-hit-paint', part: 'part-095', forceBlackHit: true, keepHistory: true },
   ]) {
     console.log(`[SSR probe] ${item.id}`)
     await page.evaluate((item) => {
+      if (item.keepHistory) return
       window.__demo.store.restore()
       window.__demo.store.panel = null
       window.__reflectionProbe.forceMiss(Boolean(item.forceMiss))
@@ -114,21 +116,29 @@ try {
       lighting.setSignals(false, false, true)
       lighting.setSignals(true, true, true)
     }, item)
-    await page.waitForTimeout(1000)
-    if (item.part) {
+    if (!item.keepHistory) await page.waitForTimeout(1000)
+    if (item.part && !item.keepHistory) {
       const hotspot = metadata.product.presentation.hotspots.find(
         (entry) => entry.id === item.part || entry.node === item.part,
       )
       await page.evaluate((id) => window.__demo.store.focus(id), hotspot.id)
-    } else await page.evaluate((id) => window.__demo.store.view(id), item.view)
-    await page.waitForTimeout(1000)
+    } else if (item.view) await page.evaluate((id) => window.__demo.store.view(id), item.view)
+    if (!item.keepHistory) await page.waitForTimeout(1000)
     const previousFrame = await frames()
-    await expect
-      .poll(frames, { timeout: 60000, intervals: [100] })
-      .toBeGreaterThan(previousFrame + 48)
+    if (!item.keepHistory)
+      await expect
+        .poll(frames, { timeout: 60000, intervals: [100] })
+        .toBeGreaterThan(previousFrame + 48)
     let previousReplacement
     for (let repeat = 0; repeat < 2; repeat++) {
-      const capture = await page.evaluate(() => window.__reflectionProbe.capture()),
+      const capture = await page.evaluate(
+          (override) => {
+            if (override === 'miss') window.__reflectionProbe.forceMiss(true)
+            if (override === 'black') window.__reflectionProbe.forceBlackHit(true)
+            return window.__reflectionProbe.capture()
+          },
+          item.forceBlackHit ? 'black' : item.forceMiss ? 'miss' : null,
+        ),
         decoded = {}
       const metadata = []
       for (const signal of capture.signals) {
@@ -143,6 +153,47 @@ try {
           file,
           sha256: createHash('sha256').update(bytes).digest('hex'),
         })
+      }
+      let signedContract
+      if (capture.signed) {
+        const { verifySignedContract } = await import('./realtime-probe/signed-contract.mjs')
+        const { width, height } = capture.signals[0]
+        signedContract = verifySignedContract({
+          width,
+          height,
+          ssr: decoded.ssr,
+          native: decoded.native,
+          rawDelta: decoded.rawDelta,
+          filteredDelta: decoded.filteredDelta,
+          forcedAllMiss: Boolean(item.forceMiss),
+        })
+        expect(signedContract.passed, JSON.stringify(signedContract.errors)).toBe(true)
+        if (item.forceBlackHit) {
+          expect(signedContract.minFiltered, 'True black hits lost signed correction').toBeLessThan(
+            0,
+          )
+          expect(signedContract.maxFiltered).toBeLessThanOrEqual(0)
+        }
+        if (item.keepHistory && repeat === 0)
+          expect(
+            capture.capturedFrame,
+            'Override must be captured on the next armed complete frame',
+          ).toBe(capture.armedFrame + 1)
+        // Diagnostic arithmetic only: the actual sampled texture is signed Δ.
+        // N+Δ below is a CPU reconstruction for the legacy numeric reducer,
+        // not an additional render or an actual GPU replacement target.
+        decoded.raw = decoded.rawDelta
+        decoded.replacement = new Float32Array(decoded.filteredDelta)
+        for (let i = 0; i < decoded.replacement.length; i += 4)
+          for (let channel = 0; channel < 3; channel++)
+            decoded.replacement[i + channel] += decoded.native[i + channel]
+        if (item.forceMiss) {
+          for (const name of ['rawDelta', 'spatialDelta', 'filteredDelta'])
+            expect(
+              decoded[name].findIndex((value, index) => index % 4 !== 3 && value !== 0),
+              `${name}: forced miss changed native IBL`,
+            ).toBe(-1)
+        }
       }
       const { width, height } = capture.signals[0],
         support = Float32Array.from({ length: width * height }, (_, i) => decoded.native[i * 4 + 3])
@@ -174,7 +225,16 @@ try {
         case: item.id,
         repeat,
         capturedFrame: capture.capturedFrame,
+        armedFrame: capture.armedFrame,
         forceMiss: capture.forceMiss,
+        forceBlackHit: capture.forceBlackHit,
+        retainedPriorHistory: Boolean(item.keepHistory),
+        beforeForceFrame: item.keepHistory && repeat === 0 ? previousFrame : undefined,
+        signed: capture.signed,
+        signedContract,
+        replacementSemantics: capture.signed
+          ? 'CPU native+actual signed delta; not a GPU target'
+          : 'actual GPU replacement target',
         signals: metadata,
         analysis,
         rawContract: { rawMaxRgb, rawMaxAlpha, rawMissSentinels, ssrMissSentinels },
@@ -186,7 +246,7 @@ try {
       for (const [name, values] of Object.entries(decoded))
         expect(values.every(Number.isFinite), `${item.id}: ${name} non-finite input`).toBe(true)
       expect(analysis.invalidPixels, `${item.id}: non-finite GPU input`).toBe(0)
-      expect(rawMaxAlpha, `${item.id}: raw miss sentinel`).toBe(10000)
+      expect(rawMaxAlpha, `${item.id}: raw ray length`).toBe(item.forceBlackHit ? 2 : 10000)
       expect(rawMissSentinels, `${item.id}: unclipped raw miss count`).toBe(ssrMissSentinels)
       if (item.forceMiss) expect(ssrMissSentinels).toBe(width * height)
       await page.locator('canvas').screenshot({ path: join(output, `${item.id}-${repeat}.png`) })

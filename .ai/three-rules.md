@@ -1,5 +1,8 @@
 # 当前实时渲染约束（2026-10-14）
 
+- 最新 realtime 候选只过滤 signedDelta，不过滤原生环境亮度。raw hit=SSR.rgb×captureAlpha−nativeSingle，raw miss／unsupported=0；final=beauty+filteredDelta×correctionWeight。每个空间与历史 tap 的 support／边界进入分子和分母，不能只做最终 mask。全 miss 暖历史 GPU 已验证严格零；局部 miss 可接受同表面的有效邻居修正，不把它误写为逐像素 filtered miss 恒为零。保留负修正，不以 RGB black 判断 miss。
+- signedSpatial 使用八个固定几何引导 tap 和稳定 native luma；signedHistory 使用四 tap 表面 motion、depth／世界 normal／roughness 拒绝、signed 邻域范围、最多 16 帧。不能称为官方完整自适应核、hit-point 重投影或路径追踪等效。只有成功完整帧后 commit GPU history／depth／normal／camera，取消、错误、尺寸变化及卸载各有清理路径。旧统一替换过滤与非零全 miss 结果属于历史；最新证据见 [有符号修正](typewriter-signed-reflection-validation.md)。
+
 - 自有 HDR RTT 显式声明 HalfFloatType／线性颜色空间。r185 中 options 替换默认参数，不能只传 depthBuffer 后依赖 HalfFloat 默认。真实 GPU 已确认原 RGBA8 将 HDR 及 10000 哨兵截为 1；诊断只复制成功完整帧，PNG 为后续固定姿态帧，不冒充同提交帧。证据见 [HDR 修复](typewriter-hdr-rtt-validation.md)。
 
 - 打字机实时入口为 `?product=typewriter-study&renderPipeline=realtime`；默认 WebGL 与钢琴／汽车原管线保持。旧 hybrid 的 128／1024 样本与 OIDN 只属于历史静止精修入口，不是此阶段要求。

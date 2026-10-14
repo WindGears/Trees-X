@@ -1,4 +1,4 @@
-import type { Texture } from 'three'
+import { Vector2, type Texture } from 'three'
 import {
   RenderPipeline,
   RendererUtils,
@@ -7,7 +7,7 @@ import {
   type Scene,
   type WebGPURenderer,
 } from 'three/webgpu'
-import { renderOutput, sample, unpackRGBToNormal, vec2, vec4 } from 'three/tsl'
+import { renderOutput, sample, unpackRGBToNormal, vec4 } from 'three/tsl'
 import { ssr } from 'three/addons/tsl/display/SSRNode.js'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { recurrentDenoise } from 'three/addons/tsl/display/RecurrentDenoiseNode.js'
@@ -82,14 +82,15 @@ export function createRealtimeSignals(
     environment: Texture | null | undefined,
     environmentVersion = -1
   const savedState = RendererUtils.saveRendererState(renderer)
+  const frameSize = new Vector2()
 
   function compose() {
     if (!reflectionResolve) return
     const reflected = denoiseEnabled ? reflectionResolve.filtered : reflectionResolve.raw
-    // One filter contains both hit radiance and stable miss IBL. Only the
-    // matching single-scattering term is replaced; native other lobes remain.
+    // Filtered payload is signed correction. Native IBL remains in beauty;
+    // a miss adds exact zero, and a true black hit can subtract its native lobe.
     const specular = ssrEnabled
-      ? baseSpecular.a.greaterThan(0).select(reflected.sub(baseSpecular.rgb), vec4(0).rgb)
+      ? baseSpecular.a.greaterThan(0).select(reflected, vec4(0).rgb)
       : vec4(0).rgb
     // SSGI AO affects indirect diffuse only. Local bounce and retained environment
     // are distinct signals; direct light and native coat/anisotropy remain intact.
@@ -120,12 +121,12 @@ export function createRealtimeSignals(
     if (disposed) return
     reflectionResolve?.dispose()
     reflectionResolve = createReflectionResolve(
+      renderer,
       reflection.getTextureNode(),
       baseSpecular,
       depth,
       normal,
       velocity,
-      sample((uv) => vec2(albedo.sample(uv).a, normal.sample(uv).a)),
       camera,
     )
     // Native beauty already contains IBL. Feeding full SSR back into hit-color
@@ -144,6 +145,8 @@ export function createRealtimeSignals(
         name = scene.name,
         override = scene.overrideMaterial
       try {
+        renderer.getDrawingBufferSize(frameSize)
+        reflectionResolve?.prepare(frameSize.x, frameSize.y)
         pipeline.render()
       } finally {
         RendererUtils.restoreRendererState(renderer, savedState)
@@ -155,6 +158,12 @@ export function createRealtimeSignals(
         scene.name = name
         scene.overrideMaterial = override
       }
+    },
+    commitFrame() {
+      if (!disposed && ssrEnabled && denoiseEnabled) reflectionResolve?.commitFrame()
+    },
+    cancelFrame() {
+      reflectionResolve?.cancelFrame()
     },
     resetHistory,
     environment() {
