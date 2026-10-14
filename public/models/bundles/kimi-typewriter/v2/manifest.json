@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "kimi-typewriter",
+  "version": 2,
+  "entry": "model.glb",
+  "files": [
+    {
+      "path": "model.glb",
+      "bytes": 73065376,
+      "sha256": "59006664cde2f0beae5ac9508391e3bfbfe9c4cf389eaec6ae67783fc40cded4",
+      "role": "model"
+    },
+    {
+      "path": "rig.json",
+      "bytes": 517962,
+      "sha256": "047cddb65994640a25f4fad191131423b1ceafce6b4ab474aa906ac1d4576154",
+      "role": "motion"
+    },
+    {
+      "path": "textures/paint-normal.png",
+      "bytes": 2918261,
+      "sha256": "cb229605a86d30b55bc893b7e39e0c4ecd086ee743e3b5f87c018008e9a748fe",
+      "role": "texture"
+    },
+    {
+      "path": "textures/paint-orm.png",
+      "bytes": 1666662,
+      "sha256": "17ad599543da1649f5d714730070729e18abe96ab5b09a7a638d986f53047665",
+      "role": "texture"
+    },
+    {
+      "path": "textures/brush-normal.png",
+      "bytes": 475696,
+      "sha256": "8b2c9d3a8d36b8a8cb7b0094e421563bf2e6d7608fc2bc80cca25f175c3dde65",
+      "role": "texture"
+    },
+    {
+      "path": "textures/brush-orm.png",
+      "bytes": 437259,
+      "sha256": "038c0d22697d5cd8d194964059c5c2727aa269b8689f3c789396c8bf24ea5e41",
+      "role": "texture"
+    },
+    {
+      "path": "textures/brush-direction.png",
+      "bytes": 345482,
+      "sha256": "69c392e6541c22649b6e680e68ad27aea25ba475d337ce69373381bc3d70c2f7",
+      "role": "texture"
+    },
+    {
+      "path": "textures/iron-normal.png",
+      "bytes": 4147525,
+      "sha256": "cb76acd489b128b5c8395e68095d4514b624169d8cdad648d1f043803382a8db",
+      "role": "texture"
+    },
+    {
+      "path": "textures/iron-orm.png",
+      "bytes": 2076316,
+      "sha256": "0aa7cebf72276823353c10d6ed4416eec93c1d0fa995d7ab00da4bdebc827b28",
+      "role": "texture"
+    }
+  ],
+  "budget": { "maxBytes": 85650539, "maxTriangles": 1257132 },
+  "provenance": {
+    "author": "User-owned Kimi project (confirmed by owner on 2026-10-09); micro-surface maps authored by Trees X in Blender",
+    "source": "https://k3-typewriter.ok.kimi.link/",
+    "license": "Owner-authorized project reuse and GitHub synchronization (2026-10-09); reference contours and inferred mechanical study. Three.js MIT. New procedural maps have no third-party image inputs.",
+    "redistribution": "Owner requested synchronization to WindGears/Trees-X on 2026-10-09. Third-party reference photographs excluded; no additional downstream license is inferred."
+  }
+}

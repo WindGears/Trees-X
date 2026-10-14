@@ -4,6 +4,8 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { bridge } from './demo/browser-check.mjs'
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const fixture = process.env.TYPEWRITER_FIXTURE === '1'
+const asset = process.env.TYPEWRITER_ASSET ?? 'v1'
+if (!['v1', 'v2'].includes(asset)) throw new Error('Invalid TYPEWRITER_ASSET')
 const output = process.env.TYPEWRITER_CHECK_OUTPUT || 'artifacts/typewriter-migration/runtime'
 await mkdir(output, { recursive: true })
 const product = JSON.parse(
@@ -23,7 +25,9 @@ try {
     if (message.type() === 'error') report.errors.push(message.text())
   })
   page.on('request', (request) => report.requests.push(request.url()))
-  await page.goto(base + '/?product=typewriter-study')
+  await page.goto(
+    base + '/?product=typewriter-study' + (asset === 'v2' ? '&typewriterAsset=v2' : ''),
+  )
   await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
     timeout: 90000,
   })

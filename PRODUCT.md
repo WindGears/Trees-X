@@ -1,5 +1,7 @@
 # Trees X
 
+2026-10-14 最新执行：用户要求直接进入打字机 v2 材质制作，并将机身铭牌从 Kimi 改为 WindGear。独立候选补缺失 UV、标准切线与共享 2048²微表面输入，保留原机构、语义部件、操作与 v1 原件；默认仍为 v1＋增强 WebGL。验收入口为 `?product=typewriter-study&typewriterAsset=v2`，WebGPU 对照再加 `&renderPipeline=realtime`；公开 API、数据库、配置版本、钢琴与汽车不变。此前 SSR 画质门槛仍未通过，此次是用户明确调整执行顺序，不表示旧节点已通过或整体质感已达到路径参考。制作与待验收记录见 [.ai/typewriter-v2-validation.md](.ai/typewriter-v2-validation.md)。下方“v2 未开始”等表述仅指其标注批次。
+
 2026-10-14 最新候选：打字机实时实验采用支持掩码约束的有符号反射修正，暖历史全未命中时 GPU 修正严格归零，完整帧成功后才推进历史。敲键、结构、平铺和六个冻结取景完成工程检查；整体质感仍未通过，金属近景仍有点噪。默认 WebGL 和其余两件商品保持，材质 v2／DDGI 未开始。证据见 [.ai/typewriter-signed-reflection-validation.md](.ai/typewriter-signed-reflection-validation.md)。
 
 2026-10-14 最新状态：打字机实时实验修复了中间纹理误用 RGBA8 导致的 HDR 与反射距离截断，真实 GPU 和六个冻结取景已确认修复。完整画质仍未通过，默认增强 WebGL 保留；不以此独立修复宣称完成材质 v2、DDGI 或整套实时升级。Cline 参与诊断，实际测试与整合由 Codex 执行，见 [.ai/typewriter-hdr-rtt-validation.md](.ai/typewriter-hdr-rtt-validation.md)。下方成绩分别属于其标注日期的历史实现。

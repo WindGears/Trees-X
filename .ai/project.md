@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## 最新执行：打字机材质资源 v2 候选（2026-10-14）
+
+用户明确要求“我们直接进 v2”，并将机身 Kimi 铭牌改为 WindGear。这个指令覆盖此前“节点一通过后才制作 v2”的实施顺序；**节点一整体 SSR 画质仍未通过**，不会改写成已通过。当前制作独立 UV／材质资源包，默认入口仍为 v1＋增强 WebGL，钢琴与汽车保持原状，DDGI／FidelityFX／BVH 暂不扩展。
+
+候选入口为 `?product=typewriter-study&typewriterAsset=v2`；加 `&renderPipeline=realtime` 检查同一资源的 WebGPU 实验效果。替换仅针对已核验的原始打字机包引用，不写数据库、不升级 ProductPresentation、不覆盖管理员自定义资源。制作与加载职责、来源、预算和待验收项见 [v2 资源记录](typewriter-v2-validation.md)。下方 10 月 14 日反射修正与 HDR 记录属于该用户调整之前的阶段状态，其中“不进入 v2”不再是当前执行限制。
+
 2026-10-14 有符号反射修正候选：实时实验改为过滤 signed Δ，原生 Physical beauty 保持；每个空间／历史邻居均校验 support，历史只在完整帧成功后推进。暖历史全 miss 的原始、空间与历史 Δ 已经真实 GPU 验证为严格零，正常负修正保留。六个冻结取景、敲键及结构回归通过工程检查；金属近景点带仍存在，完整节点一未通过，默认 WebGL 保留，不晋级材质 v2／DDGI。新增证据见 [有符号修正验收](typewriter-signed-reflection-validation.md)，下方 HDR 修复记录属于此前版本。
 
 2026-10-14 最新补充：打字机中间 RTT 已显式使用 HalfFloat，修复实际 GPU 的 RGBA8 截断 HDR 亮度与 10000 未命中哨兵。真实读回和六个冻结输入对照已确认格式修复；Cline 参与诊断编码，由 Codex 审查整合。漆面仍有残余点噪，完整节点一仍未通过；默认 WebGL 保留，不晋级 UV／材质 v2 或 DDGI。最新证据见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)，下方成绩分别属于其标注日期的历史批次。

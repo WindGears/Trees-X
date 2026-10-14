@@ -3,6 +3,7 @@ import { loadBundle, type LoadPhase } from './assetBundle'
 import type { WorkbenchProduct } from './types'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 import { createProductEnvironment, type OwnedEnvironment } from './rendering/environment'
+import { typewriterCandidate } from './typewriterCandidate'
 
 export async function loadAdapter(
   product: WorkbenchProduct,
@@ -15,7 +16,7 @@ export async function loadAdapter(
     phase('parse')
     return createSampleAdapter(product)
   }
-  const source = product.presentation.source
+  const source = typewriterCandidate(product.presentation.source, location.search)
   const { bundle, bytes } = await loadBundle(source.bundle, signal, phase)
   let decoded: Awaited<ReturnType<(typeof import('./glbLoader'))['decodeGlb']>> | undefined
   let adapter: SceneAdapter | undefined, environment: OwnedEnvironment | undefined
@@ -104,6 +105,8 @@ export async function loadAdapter(
       )
     signal.throwIfAborted()
     const current = adapter
+    current.root.userData.bundleVersion = bundle.version
+    current.root.userData.bundleSha256 = source.bundle.sha256
     let disposed = false
     return {
       ...current,

@@ -1,5 +1,10 @@
 # 当前实时渲染约束（2026-10-14）
 
+- 用户已明确直接制作打字机 v2，覆盖原先节点一未过就不能开始资产制作的顺序；节点一整体画质仍未通过，默认 v1／WebGL 不变，DDGI／FidelityFX／BVH 不因此推进。显式候选入口为 `?product=typewriter-study&typewriterAsset=v2`，可叠加 `&renderPipeline=realtime`。
+- v2 制作不得覆盖 v1、合并语义部件、减面、改轴心或改 rig；补十个缺 UV 表面，保留已有 UV0，用独立 UV1 采样七张共享 2048²线性 normal／ORM／方向 PNG。UV 接缝与切线接缝可拆点，三角形位置、源法线、572 部件和 2257 表面映射必须保持并核验。Mikk fallback 的正交化只改切线 XYZ，手性按当前 UV 通道独立再生成核查；退化 UV 不冒充已证明手性。
+- `treesFinishVersion=2` 材质保持制作时 Physical 参数、法线、粗糙度和各向异性输入，不能被 v1 的运行微纹理替换。loader 唯一释放新纹理／材质／几何，运行材质借用；不新增 renderer、绘制时钟或逐帧响应式输入。PNG 数据不得携带 sRGB／ICC 等色彩解释，不烘死部件间遮蔽。
+- WindGear 只替换原 image 50／decal-62 铭牌，保留原位置、UV、材质和尺寸，其他字符图片保持。新字形为代码生成的金色斜体，不改变源页面归属或许可；制作记录继续保留用户自有 Kimi 项目来源。来源、预算与验证见 [v2 记录](typewriter-v2-validation.md)。
+
 - 最新 realtime 候选只过滤 signedDelta，不过滤原生环境亮度。raw hit=SSR.rgb×captureAlpha−nativeSingle，raw miss／unsupported=0；final=beauty+filteredDelta×correctionWeight。每个空间与历史 tap 的 support／边界进入分子和分母，不能只做最终 mask。全 miss 暖历史 GPU 已验证严格零；局部 miss 可接受同表面的有效邻居修正，不把它误写为逐像素 filtered miss 恒为零。保留负修正，不以 RGB black 判断 miss。
 - signedSpatial 使用八个固定几何引导 tap 和稳定 native luma；signedHistory 使用四 tap 表面 motion、depth／世界 normal／roughness 拒绝、signed 邻域范围、最多 16 帧。不能称为官方完整自适应核、hit-point 重投影或路径追踪等效。只有成功完整帧后 commit GPU history／depth／normal／camera，取消、错误、尺寸变化及卸载各有清理路径。旧统一替换过滤与非零全 miss 结果属于历史；最新证据见 [有符号修正](typewriter-signed-reflection-validation.md)。
 

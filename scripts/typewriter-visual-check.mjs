@@ -6,6 +6,10 @@ const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = process.env.TYPEWRITER_VISUAL_OUTPUT || 'artifacts/typewriter-migration/visual'
 const fixture = process.env.TYPEWRITER_FIXTURE === '1'
 const coverOnly = process.env.TYPEWRITER_COVER_ONLY === '1'
+const asset = process.env.TYPEWRITER_ASSET ?? 'v1'
+if (!['v1', 'v2'].includes(asset)) throw new Error('Invalid TYPEWRITER_ASSET')
+if (asset === 'v2' && (process.env.TYPEWRITER_CREATE_COVER === '1' || coverOnly))
+  throw new Error('Candidate must not replace the published v1 cover')
 const product = JSON.parse(
   await readFile('server/src/main/resources/presentations/typewriter-kimi-v1.json', 'utf8'),
 )
@@ -20,7 +24,9 @@ try {
     )
   const page = await context.newPage()
   page.on('pageerror', (error) => report.errors.push(error.message))
-  await page.goto(base + '/?product=typewriter-study')
+  await page.goto(
+    base + '/?product=typewriter-study' + (asset === 'v2' ? '&typewriterAsset=v2' : ''),
+  )
   await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
     timeout: 90000,
   })

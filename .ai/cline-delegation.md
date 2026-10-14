@@ -1,5 +1,7 @@
 # Cline 监督式子代理：使用与验收
 
+2026-10-14 打字机 v2 的只读 Blender 脚本审查任务 `2309050b4ceb4347a557f1ae0611b40c` 请求 `max`；实际模型 `deepseek/deepseek-v4.1-flash`，上游仍未确认有效强度。两次 API 调用后以 `finish_reason: length` 失败，仅完成列表和读取，没有审查结论、暂存文件或合入。Codex 完成实现、独立审查与实机验证，不将本轮代码归为 Cline 产出；本任务未自动重试。
+
 2026-10-14。监督工具升级记录见下文；源码与安装说明位于 [tools/cline-delegate](../tools/cline-delegate/README.md)。本机 v2.0.0 已在当前会话加载，并用于打字机 HDR 诊断编码；工具升级本身不改变商品或数据库。
 
 ## 打字机诊断的实际派发

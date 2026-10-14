@@ -10,6 +10,7 @@ public/models/reventon/motion.json
 public/models/reventon/workbench-manifest.json
 public/models/bundles/**/manifest.json
 public/models/bundles/kimi-typewriter/v1/rig.json
+public/models/bundles/kimi-typewriter/v2/rig.json
 public/models/bundles/kimi-piano/v1/rig.json
 server/target
 server/.mvn

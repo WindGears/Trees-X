@@ -1,5 +1,9 @@
 # Trees X
 
+最新节点（2026-10-14）：按用户要求直接进入打字机 **v2 材质运行副本**，补十个缺 UV 表面、独立 UV1／切线及七张 2048²线性微表面图，铭牌改为 WindGear。572 个部件、2257 个表面映射和原机构动作保留；原 v1 与默认 WebGL 不替换，钢琴／汽车保持。打开 [v2 实机候选](http://127.0.0.1:5181/?product=typewriter-study&typewriterAsset=v2) 或 [v2 WebGPU 实验](http://127.0.0.1:5181/?product=typewriter-study&typewriterAsset=v2&renderPipeline=realtime)，完整制作与检查见 [v2 记录](.ai/typewriter-v2-validation.md)。新增 GLB／PNG 使用 Git LFS，下方 pull 命令已覆盖。
+
+本轮资源与交互工程检查通过，整体画质与实际呈现预算仍待验收。实时实验已修正 HalfFloat 中间目标与有符号反射过滤，保留各向异性金属的原生 Physical 支路；反射点噪仍存在，DDGI／FFX／BVH 未接入。下方 2026-10-13 数字与过滤说明属于历史批次，不能代替当前 v2 结果。
+
 当前开发节点（2026-10-13）：打字机**实时组合渲染基线**，在自由观察、敲键、分层／平铺过程中连续绘制，采用 Three 0.185.1 WebGPU、随机 SSR、SSGI、内置时域重投影／降噪及完整帧拥有的实例运动历史。**整体渲染质量是最高优先级**，新方案画面未通过前不替换原入口；技术名称、像素差和提交计时不能代替画质收益。
 
 启动现有前后端后，通过 [打字机实时实验入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) 检查；[原 WebGL 对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=webgl) 和普通首页保持原版本。仅打字机进入该实验，钢琴／汽车继续原管线。一个显示区域仍只有一个 TresCanvas／renderer，源模型与原尺寸贴图保持；新 G-buffer 需要 WebGPU 64 字节附件上限支持，实际不足时明确进入兼容模式。

@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 打字机 v2 资源候选接入（2026-10-14）
+
+用户明确直接推进 v2，覆盖此前节点一的资产制作门槛；旧 SSR 画质状态和默认入口不变。`scripts/typewriter-v2/build.mjs` 在独立目录生成候选 GLB、原动作文件副本、七张共享 2048²线性数据 PNG、manifest 与 production-record；原 v1 不被覆盖。十个缺 UV 表面分为六个 xatlas 展开和四个确定性局部投影，保留已有 UV0；微表面另用按部件面积标定的 UV1。MikkTSpace 生成切线并按 Three 的 glTF 手性约定转换，退化 fallback 仅修正切线 XYZ，不修改源法线或切线 W。接缝拆点允许，三角形位置、法线、节点姿态、语义映射与 rig 必须由独立校验核对。
+
+`typewriterCandidate` 只在显式 `typewriterAsset=v2` 且原 `typewriter-v1` 适配器、包 ID、版本及摘要完全匹配时返回新的源配置副本；不会覆盖自定义后台包。`loadAdapter` 沿用同源清单校验、加载代次、解码、首帧及取消释放通道，记录实际包版本；没有额外 Canvas、renderer 或绘制循环。`typewriterFinishes` 对 `treesFinishVersion=2` 的已制作材质先整体校验后借用原输入，不再生成 v1 的 128²运行图或改写 v2 材质参数。
+
+新贴图、材质和派生几何由现有 loader 唯一拥有；渲染支路只能借用。GLB 文件增长来自 UV／切线和接缝顶点，并保留制作前数据以便核查；不宣称已经完成体积或显存优化。纹理预算是明确的质量成本，实际加载、GPU 资源与画质仍按 [v2 记录](typewriter-v2-validation.md) 验收。下方反射/HDR 段落保留各历史批次的事实，其“不进入候选 v2”已由用户覆盖。
+
 2026-10-14 新候选：reflectionResolve 组合局部 signedSpatial／signedHistory。raw RGB 是 SSR 命中辐射乘捕获权重后减 nativeSingle，miss／unsupported 为零；空间与历史过滤 signed RGB，最终 beauty 加 filteredDelta 乘 correctionWeight，不再减未过滤 nativeSingle。空间 alpha 为 support，历史 alpha 为有效帧数；raw alpha 仍为 ray length。signals.prepare 按尺寸准备，coordinator 在最终 pipeline 成功且无同步 renderer 错误后调用 commitFrame，失败调用 cancelFrame；复制上一帧 delta／depth／normal 与相机矩阵不发生在 updateBefore。材质、SSR、SSGI、透明混合及接口保持；这是有限八 tap 与表面重投影，不等同原官方自适应核／hit-point 历史。详见 [修正验收](typewriter-signed-reflection-validation.md)。
 
 2026-10-14：realtime/ownedRtt 必须显式设置 HalfFloatType；r185 的非空 options 替换 RTTNode 默认参数，不能只设 depthBuffer 后假定仍为 HDR。目标与 quad 材质保持唯一 owner，上游 pass／loader 纹理只借用。新增 scripts/realtime-probe 为一次性验收工具，只在独立测试页面截取生产已有的四路纹理，不增加产品调度器或逐帧 CPU 回读。实际格式、完整帧及迟到代次保护见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)。
