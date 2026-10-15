@@ -11,6 +11,7 @@ import {
   float,
   getScreenPosition,
   getViewPosition,
+  interleavedGradientNoise,
   ivec2,
   luminance,
   mix,
@@ -26,6 +27,7 @@ import {
   vec4,
 } from 'three/tsl'
 import { createOwnedRtt } from './ownedRtt'
+import { createReflectionSampling, type ReflectionKernel } from './reflectionSampling'
 
 /** Signed correction only: the native Physical environment is never filtered.
  * Geometric lobe/depth/roughness guides follow Three r185 RecurrentDenoiseNode
@@ -38,7 +40,9 @@ export function createSignedReflectionSpatial(
   depth: TextureNode,
   normal: TextureNode,
   camera: PerspectiveCamera,
+  kernel: ReflectionKernel = 'rotating',
 ) {
+  const sampling = createReflectionSampling(kernel)
   const resolution = uniform(new Vector2(1, 1)).onRenderUpdate(({ renderer }, self) => {
     if (!renderer) throw new Error('Signed reflection needs the existing render frame')
     return renderer.getDrawingBufferSize(self.value)
@@ -114,11 +118,18 @@ export function createSignedReflectionSpatial(
         B = bitangent.mul(radius),
         lobe = atan(roughness.pow(2).mul(Math.sqrt(99))).max(1.5 / 255),
         falloff = float(8).div(lobe.pow(2)),
+        rotation =
+          kernel === 'rotating'
+            ? interleavedGradientNoise(vec2(center.pixel))
+                .mul(Math.PI * 2)
+                .add(sampling.phase)
+                .toConst()
+            : float(0),
         sum = textureLoad(raw.node, center.pixel).rgb.toVar(),
         total = float(1).toVar()
       Loop(8, ({ i }) => {
         const index = float(i).add(0.5),
-          theta = index.mul(2.399827721492203),
+          theta = index.mul(2.399827721492203).add(rotation),
           disk = vec2(cos(theta), sin(theta)).mul(index.div(8).sqrt()),
           projected = getScreenPosition(position.add(B.mul(disk.x).add(T.mul(disk.y))), projection),
           neighbor = read(projected)
@@ -147,9 +158,14 @@ export function createSignedReflectionSpatial(
   return {
     raw: raw.node,
     node: spatial.node,
+    prepare: sampling.prepare,
+    commitFrame: sampling.commitFrame,
+    cancelFrame: sampling.cancelFrame,
+    snapshot: sampling.snapshot,
     dispose() {
       if (disposed) return
       disposed = true
+      sampling.dispose()
       spatial.dispose()
       raw.dispose()
     },

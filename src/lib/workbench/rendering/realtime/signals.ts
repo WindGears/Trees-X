@@ -26,6 +26,11 @@ export function createRealtimeSignals(
   motion: Node,
 ) {
   const inputs = createRealtimeSceneInputs(scene, camera, motion)
+  // Explicit engineering comparison only; the realtime entry uses rotation.
+  const reflectionKernel =
+    new URLSearchParams(location.search).get('reflectionKernel') === 'static'
+      ? 'static'
+      : 'rotating'
   const { color: beauty, depth, normal, albedo, velocity, baseSpecular, baseDiffuse } = inputs
   const signedNormal = sample((uv) => unpackRGBToNormal(normal.sample(uv).rgb))
   const reflection = ssr(beauty, depth, signedNormal, {
@@ -128,6 +133,7 @@ export function createRealtimeSignals(
       normal,
       velocity,
       camera,
+      reflectionKernel,
     )
     // Native beauty already contains IBL. Feeding full SSR back into hit-color
     // would count it twice; temporal reprojection alone owns this history.
@@ -183,6 +189,7 @@ export function createRealtimeSignals(
       resetHistory()
     },
     snapshot: () => ({ ssr: ssrEnabled, ssgi: ssgiEnabled, denoise: denoiseEnabled }),
+    sampling: () => reflectionResolve?.snapshot() ?? null,
     dispose() {
       if (disposed) return
       disposed = true

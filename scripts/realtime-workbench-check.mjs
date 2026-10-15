@@ -1288,9 +1288,10 @@ async function visualBatch(metadata, actionId) {
     { width: 1920, height: 1080 },
   ]) {
     await page.setViewportSize(dimensions)
-    await page.goto(new URL('/?product=typewriter-study&renderPipeline=realtime', base).href, {
-      waitUntil: 'domcontentloaded',
-    })
+    await page.goto(
+      new URL('/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1', base).href,
+      { waitUntil: 'domcontentloaded' },
+    )
     await ready(metadata, true)
     await waitFrames(12)
     await save(`visual-${dimensions.width}x${dimensions.height}-whole`)
@@ -1306,9 +1307,10 @@ async function visualBatch(metadata, actionId) {
   }
   for (const width of [390, 320]) {
     await page.setViewportSize({ width, height: 844 })
-    await page.goto(new URL('/?product=typewriter-study&renderPipeline=realtime', base).href, {
-      waitUntil: 'domcontentloaded',
-    })
+    await page.goto(
+      new URL('/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1', base).href,
+      { waitUntil: 'domcontentloaded' },
+    )
     await ready(metadata, true, 'webgl')
     const snapshot = await save(`visual-${width}-webgl-compatibility`)
     expect(snapshot.semanticParts).toBe(572)
@@ -1320,9 +1322,10 @@ async function visualBatch(metadata, actionId) {
   }
   await page.setViewportSize(viewport)
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.goto(new URL('/?product=typewriter-study&renderPipeline=realtime', base).href, {
-    waitUntil: 'domcontentloaded',
-  })
+  await page.goto(
+    new URL('/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1', base).href,
+    { waitUntil: 'domcontentloaded' },
+  )
   await ready(metadata, true)
   await openPanel(page, '结构与动作', '.wb-layout-motion')
   await page.getByRole('button', { name: '分层展开', exact: true }).click()
@@ -1458,7 +1461,11 @@ async function qualityComparison(metadata, actionId) {
   for (const backend of ['webgl', 'realtime']) {
     await page.setViewportSize(viewport)
     await page.emulateMedia({ reducedMotion: 'no-preference' })
-    const query = new URLSearchParams({ product: 'typewriter-study', renderPipeline: backend })
+    const query = new URLSearchParams({
+      product: 'typewriter-study',
+      renderPipeline: backend,
+      typewriterAsset: 'v1',
+    })
     await page.goto(new URL(`/?${query}`, base).href, { waitUntil: 'domcontentloaded' })
     await ready(metadata, true, backend === 'webgl' ? 'webgl' : 'webgpu')
     if (backend === 'realtime') await setSignals(true, true, true)
@@ -1753,9 +1760,10 @@ try {
     report.failedRequests.push(event)
   })
   progress('Native GPU typewriter loading')
-  await page.goto(new URL('/?product=typewriter-study&renderPipeline=realtime', base).href, {
-    waitUntil: 'domcontentloaded',
-  })
+  await page.goto(
+    new URL('/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1', base).href,
+    { waitUntil: 'domcontentloaded' },
+  )
   await ready(metadata, true)
   await waitFrames(4)
   const initial = await actual(),
@@ -1993,7 +2001,7 @@ try {
         await route.abort('blockedbyclient')
       } else await route.continue()
     })
-    await page.goto(new URL('/admin?renderPipeline=realtime', base).href)
+    await page.goto(new URL('/admin?renderPipeline=realtime&typewriterAsset=v1', base).href)
     await expect
       .poll(
         async () =>

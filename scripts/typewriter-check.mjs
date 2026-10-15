@@ -6,13 +6,15 @@ const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const fixture = process.env.TYPEWRITER_FIXTURE === '1'
 const asset = process.env.TYPEWRITER_ASSET ?? 'v1'
 if (!['v1', 'v2'].includes(asset)) throw new Error('Invalid TYPEWRITER_ASSET')
+const backend = process.env.TYPEWRITER_PIPELINE ?? 'webgl'
+if (!['webgl', 'realtime'].includes(backend)) throw new Error('Invalid TYPEWRITER_PIPELINE')
 const output = process.env.TYPEWRITER_CHECK_OUTPUT || 'artifacts/typewriter-migration/runtime'
 await mkdir(output, { recursive: true })
 const product = JSON.parse(
   await readFile('server/src/main/resources/presentations/typewriter-kimi-v1.json', 'utf8'),
 )
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
-const report = { passed: false, fixture, errors: [], requests: [], checks: [] }
+const report = { passed: false, fixture, backend, errors: [], requests: [], checks: [] }
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
   if (fixture)
@@ -25,14 +27,20 @@ try {
     if (message.type() === 'error') report.errors.push(message.text())
   })
   page.on('request', (request) => report.requests.push(request.url()))
-  await page.goto(
-    base + '/?product=typewriter-study' + (asset === 'v2' ? '&typewriterAsset=v2' : ''),
-  )
+  const url = new URL('/?product=typewriter-study', base)
+  url.searchParams.set('typewriterAsset', asset)
+  url.searchParams.set('renderPipeline', backend)
+  await page.goto(url.href)
   await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
-    timeout: 90000,
+    timeout: backend === 'realtime' ? 240000 : 90000,
   })
   await expect(page.locator('canvas')).toHaveCount(1)
   await bridge(page, true)
+  expect(
+    await page.evaluate(() =>
+      Boolean(window.__demo.scene.renderer.instance.backend?.isWebGPUBackend),
+    ),
+  ).toBe(backend === 'realtime')
   await page.evaluate(() => {
     window.__wb = window.__demo.scene
     window.__canvas = window.__demo.canvas

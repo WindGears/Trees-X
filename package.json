@@ -93,6 +93,7 @@
     "test:hybrid-visual": "node scripts/hybrid-visual-check.mjs",
     "test:hybrid-layout": "node scripts/hybrid-layout-check.mjs",
     "test:realtime": "node scripts/realtime-workbench-check.mjs",
+    "test:realtime-kernel": "node scripts/realtime-kernel-check.mjs",
     "test:realtime-probe": "node --test scripts/realtime-probe/*.test.mjs",
     "asset:denoise-check": "node scripts/denoise-resource-check.mjs"
   },

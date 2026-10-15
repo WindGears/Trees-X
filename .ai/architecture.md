@@ -1,6 +1,14 @@
 # 新版目标架构与当前实现
 
-## 打字机 v2 资源候选接入（2026-10-14）
+## 当前 WebGPU 接入与反射核调度（2026-10-15）
+
+用户要求工程检查成功后逐项接入实时入口，画质交由本人肉眼判断。`typewriterCandidate` 对显式 `renderPipeline=realtime` 默认选择 v2；`typewriterAsset=v1` 显式保留旧材质。原适配器、包 ID、版本与摘要校验仍限制替换范围，普通 WebGL、其他商品和管理员自定义包不变，不写数据库或修改展示配置版本。
+
+`signedSpatial` 保持原有八个几何引导 tap、半径与 signedDelta 语义，加入像素 IGN 和每个成功完整帧的 golden-angle 核旋转；`reflectionKernel=static` 沿用原固定核用于同输入对照。`reflectionResolve` 在已有 prepare／commit／cancel 通道管理 phase：只有历史目标成功提交后才推进，失败或取消复用 phase。沿用 Three MIT 的 Vogel 核旋转组织思路，不新增 renderer、绘制循环、采样数量或 CPU 像素回读，不修改 Physical 参数。
+
+本批 check、生产构建与 API 启动、真实 WebGPU 两核六取景对照、v2 动作／复原／重复加载及管理取景检查通过，结果集中记入 [WebGPU 接入记录](typewriter-webgpu-rollin-validation.md)。工程成功不等于视觉、实际呈现间隔或 P95 已通过；整体画质待用户评定，实际呈现预算仍待验证，DDGI／FidelityFX／BVH 尚未接入。下方 dated 实现和门槛仅说明其对应历史批次，新接入规则以本节为准。
+
+## 打字机 v2 资源初始接入（2026-10-14，历史入口约定）
 
 用户明确直接推进 v2，覆盖此前节点一的资产制作门槛；旧 SSR 画质状态和默认入口不变。`scripts/typewriter-v2/build.mjs` 在独立目录生成候选 GLB、原动作文件副本、七张共享 2048²线性数据 PNG、manifest 与 production-record；原 v1 不被覆盖。十个缺 UV 表面分为六个 xatlas 展开和四个确定性局部投影，保留已有 UV0；微表面另用按部件面积标定的 UV1。MikkTSpace 生成切线并按 Three 的 glTF 手性约定转换，退化 fallback 仅修正切线 XYZ，不修改源法线或切线 W。接缝拆点允许，三角形位置、法线、节点姿态、语义映射与 rig 必须由独立校验核对。
 
@@ -12,7 +20,7 @@
 
 2026-10-14：realtime/ownedRtt 必须显式设置 HalfFloatType；r185 的非空 options 替换 RTTNode 默认参数，不能只设 depthBuffer 后假定仍为 HDR。目标与 quad 材质保持唯一 owner，上游 pass／loader 纹理只借用。新增 scripts/realtime-probe 为一次性验收工具，只在独立测试页面截取生产已有的四路纹理，不增加产品调度器或逐帧 CPU 回读。实际格式、完整帧及迟到代次保护见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)。
 
-## 当前实时基线（2026-10-13）
+## 实时基线阶段记录（2026-10-13，历史）
 
 节点一改动后，`WorkbenchStage` 仍唯一拥有 TresCanvas／renderer，`realtime/coordinator` 与受检时钟拥有唯一实际绘制调度；`sceneInputs` 使用同一 renderer 的两个 pass：不透明 surface 六 MRT（output、normal／roughness、albedo／metalness、motion、baseSpecular、baseDiffuse），完整 HDR beauty 两 MRT（output、correctionThroughput）。两 pass 深度目标独立，不能描述为所有信号共享同一个 G-buffer pass。不透明六附件存储为 40 字节／像素、对齐成本 44 字节／采样点，请求 64 上限不变；完整 beauty 增加一次不透明绘制及约 16 字节／像素（HDR 色、RGBA8 transmittance 与深度），需实测其成本，不改输出尺寸或源贴图。
 

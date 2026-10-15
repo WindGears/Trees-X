@@ -1,6 +1,7 @@
 import type { PerspectiveCamera, Scene } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { RefinementChange } from '../refinementTypes'
+import type { ReflectionSamplingSnapshot } from './reflectionSampling'
 
 export interface RealtimeStatus {
   phase: 'loading' | 'ready' | 'paused' | 'error'
@@ -18,6 +19,7 @@ export interface RealtimeSnapshot extends RealtimeStatus {
   historyResets: number
   motion: { objects: number; instances: number; historyBytes: number; frameOpen: boolean }
   signals: { ssr: boolean; ssgi: boolean; denoise: boolean }
+  reflectionKernel?: ReflectionSamplingSnapshot | null
   resolution: { width: number; height: number }
   materialBranches: Record<string, number>
 }

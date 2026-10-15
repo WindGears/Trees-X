@@ -1,6 +1,14 @@
 # Trees X 新版项目入口
 
-## 最新执行：打字机材质资源 v2 候选（2026-10-14）
+## 当前执行：打字机 WebGPU 持续接入（2026-10-15）
+
+用户要求继续 WebGPU，并将每个工程检查成功的改进落实到可用入口，整体画质由用户本人肉眼判断。工程检查保证操作与资源生命周期可靠，不代替画质或实际呈现预算。此指令覆盖旧记录中“整体视觉门槛未过就不接入下一项”的实施限制；没有改写旧批次的未通过结论。
+
+显式 `?product=typewriter-study&renderPipeline=realtime` 现在默认选择已核验的打字机 v2 材质包；加 `&typewriterAsset=v1` 对照旧材质。只替换摘要匹配的原始打字机配置副本，普通 WebGL、其他商品、自定义包、数据库与 API 保持。反射八 tap 默认使用像素 IGN 与成功完整帧的 golden-angle 旋转，`&reflectionKernel=static` 保留旧固定核对照；采样数量、半径、Physical 参数与唯一 renderer／时钟不改。
+
+旋转 phase 仅在历史成功 commit 后推进，失败或取消复用原 phase。这沿用 Three 的 MIT 核旋转思路，不宣称新算法、点噪已消失或 P95 达标。本批 check、生产构建与 API 启动、真实 WebGPU 两核六取景对照、v2 动作／复原／重复加载及管理取景检查通过；整体画质待用户评定，实际呈现预算仍待验证。证据集中于 [WebGPU 接入记录](typewriter-webgpu-rollin-validation.md)。DDGI／FidelityFX／BVH 本轮未接入，钢琴与汽车不扩展。以下按日期保存的阶段门槛与成绩属于历史批次，当前执行以本节为准。
+
+## 打字机材质资源 v2 初始候选（2026-10-14，历史入口约定）
 
 用户明确要求“我们直接进 v2”，并将机身 Kimi 铭牌改为 WindGear。这个指令覆盖此前“节点一通过后才制作 v2”的实施顺序；**节点一整体 SSR 画质仍未通过**，不会改写成已通过。当前制作独立 UV／材质资源包，默认入口仍为 v1＋增强 WebGL，钢琴与汽车保持原状，DDGI／FidelityFX／BVH 暂不扩展。
 
@@ -10,7 +18,7 @@
 
 2026-10-14 最新补充：打字机中间 RTT 已显式使用 HalfFloat，修复实际 GPU 的 RGBA8 截断 HDR 亮度与 10000 未命中哨兵。真实读回和六个冻结输入对照已确认格式修复；Cline 参与诊断编码，由 Codex 审查整合。漆面仍有残余点噪，完整节点一仍未通过；默认 WebGL 保留，不晋级 UV／材质 v2 或 DDGI。最新证据见 [HDR 修复记录](typewriter-hdr-rtt-validation.md)，下方成绩分别属于其标注日期的历史批次。
 
-## 当前阶段：打字机实时组合渲染，画质优先（2026-10-13）
+## 打字机实时组合渲染阶段记录（2026-10-13，历史）
 
 用户最新目标是自由观察、敲键、分层与平铺时持续保留高质量材质和动态光照。当前已接入打字机 WebGPU 实时基线：随机 SSR、SSGI、Three 内置时域重投影与降噪、完整帧拥有的刚体／实例运动历史；通过 `?product=typewriter-study&renderPipeline=realtime` 检查。一个展示区域仍只有一个 TresCanvas／renderer，HTTP、Pinia 与 v1/v2/v3 配置不变。钢琴和汽车保持原管线，普通首页继续增强 WebGL。
 

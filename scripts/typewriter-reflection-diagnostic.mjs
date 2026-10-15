@@ -153,9 +153,10 @@ try {
       report.errors.push({ stage, message: `${response.status()} ${response.url()}` })
   })
   progress('Load published default whole view in realtime workbench')
-  await page.goto(new URL('/?product=typewriter-study&renderPipeline=realtime', base).href, {
-    waitUntil: 'domcontentloaded',
-  })
+  await page.goto(
+    new URL('/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1', base).href,
+    { waitUntil: 'domcontentloaded' },
+  )
   await expect(page.locator('.workbench')).toHaveAttribute('data-slug', metadata.product.slug, {
     timeout,
   })

@@ -1,5 +1,9 @@
 # Cline 监督式子代理：使用与验收
 
+2026-10-15 WebGPU 反射过滤的小范围只读审查通过 `cline_delegate` 单次完成：仅提供 `signedSpatial.ts`、`signedHistory.ts`，角色 reviewer、请求 `max`、简短回答，不设置隐式输出 token 限额。实际模型 `deepseek/deepseek-v4.1-flash`，`finish_reason=stop`、`complete=true`；有效强度仍为 unknown，验证为 not_run。用量为输入 4,894、输出 39,765（含推理 38,751），总计 44,659 token，网关返回 cost=0.0245931。没有工具执行、文件应用、GPU 检查或重试。
+
+Codex 核对给定源码和已安装 Three r185，接受“固定八点空间核缺少像素／帧旋转”作为优先实验依据；拒绝 Cline 首推的“miss 不参与分母与夹取”建议：miss 的零修正保留原生环境，排除它会按命中重新归一化；邻域加入零也不会自动夹掉已有负值。平面距离与 `n.z` 视角项来自官方同类实现，不据此直接删改；镜面命中点重投影留待独立运动对照。子代理返回成功不等于建议正确，实际实现与画质判断继续由 Codex 和用户负责。审查回答、元数据及可信／拒绝结论保存在忽略的 `artifacts/webgpu-rollin/cline-review.json`；该文件是从已返回工具输出转录的监督记录，不冒充原始传输响应。
+
 2026-10-14 打字机 v2 的只读 Blender 脚本审查任务 `2309050b4ceb4347a557f1ae0611b40c` 请求 `max`；实际模型 `deepseek/deepseek-v4.1-flash`，上游仍未确认有效强度。两次 API 调用后以 `finish_reason: length` 失败，仅完成列表和读取，没有审查结论、暂存文件或合入。Codex 完成实现、独立审查与实机验证，不将本轮代码归为 Cline 产出；本任务未自动重试。
 
 2026-10-14。监督工具升级记录见下文；源码与安装说明位于 [tools/cline-delegate](../tools/cline-delegate/README.md)。本机 v2.0.0 已在当前会话加载，并用于打字机 HDR 诊断编码；工具升级本身不改变商品或数据库。

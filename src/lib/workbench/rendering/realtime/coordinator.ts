@@ -161,6 +161,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         motion: motion.stats(),
         resolution: { width: size.x, height: size.y },
         signals: signals?.snapshot() ?? { ssr: false, ssgi: false, denoise: false },
+        reflectionKernel: signals?.sampling() ?? null,
         materialBranches: materials.stats(),
       }
     },

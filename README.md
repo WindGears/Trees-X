@@ -1,14 +1,13 @@
 # Trees X
 
-最新节点（2026-10-14）：按用户要求直接进入打字机 **v2 材质运行副本**，补十个缺 UV 表面、独立 UV1／切线及七张 2048²线性微表面图，铭牌改为 WindGear。572 个部件、2257 个表面映射和原机构动作保留；原 v1 与默认 WebGL 不替换，钢琴／汽车保持。打开 [v2 实机候选](http://127.0.0.1:5181/?product=typewriter-study&typewriterAsset=v2) 或 [v2 WebGPU 实验](http://127.0.0.1:5181/?product=typewriter-study&typewriterAsset=v2&renderPipeline=realtime)，完整制作与检查见 [v2 记录](.ai/typewriter-v2-validation.md)。新增 GLB／PNG 使用 Git LFS，下方 pull 命令已覆盖。
+最新节点（2026-10-15）：继续推进打字机 WebGPU，已核验的 **v2 材质／WindGear 铭牌默认接入显式实时入口**。本批为原八个反射滤波 tap 增加像素 IGN 与成功完整帧 golden-angle 旋转，保持采样数量、半径、Physical 参数、唯一 renderer 和时钟；失败或取消不推进 phase。check、生产构建与 API 启动、真实 WebGPU 两核六取景、v2 交互／生命周期及管理取景检查通过；整体画质由用户本人肉眼判断，实际呈现预算与 P95 仍待验证。
 
-本轮资源与交互工程检查通过，整体画质与实际呈现预算仍待验收。实时实验已修正 HalfFloat 中间目标与有符号反射过滤，保留各向异性金属的原生 Physical 支路；反射点噪仍存在，DDGI／FFX／BVH 未接入。下方 2026-10-13 数字与过滤说明属于历史批次，不能代替当前 v2 结果。
+- [WebGPU 实时入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime)：默认 v2 材质与旋转核。
+- [旧材质对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1)：保留原 v1；与核开关可独立组合。
+- [固定核对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&reflectionKernel=static)：同 v2 材质，仅恢复旧八 tap 固定方向。
+- [原 WebGL](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=webgl)：普通首页保持原入口；显式 [v2 WebGL 候选](http://127.0.0.1:5181/?product=typewriter-study&typewriterAsset=v2) 仍可用。
 
-当前开发节点（2026-10-13）：打字机**实时组合渲染基线**，在自由观察、敲键、分层／平铺过程中连续绘制，采用 Three 0.185.1 WebGPU、随机 SSR、SSGI、内置时域重投影／降噪及完整帧拥有的实例运动历史。**整体渲染质量是最高优先级**，新方案画面未通过前不替换原入口；技术名称、像素差和提交计时不能代替画质收益。
-
-启动现有前后端后，通过 [打字机实时实验入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) 检查；[原 WebGL 对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=webgl) 和普通首页保持原版本。仅打字机进入该实验，钢琴／汽车继续原管线。一个显示区域仍只有一个 TresCanvas／renderer，源模型与原尺寸贴图保持；新 G-buffer 需要 WebGPU 64 字节附件上限支持，实际不足时明确进入兼容模式。
-
-当前保留源资产与摄影棚，采用逐射线先组合命中反射／稳定原生环境，再统一过滤替换信号。check（375 单测＋48 工具测试）、生产准备、核心与六组公平对照契约、管理取景、故障恢复、尺寸兼容及实际 20 分钟操作通过，固定预热资源无增长。三轮 JS 提交计时不代表 GPU 或实际呈现预算。新生产截图仍有前罩噪点、文字颗粒与地台倒影不足，**画质未通过，默认保持 WebGL**。当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 重载不替代新链。DDGI／FFX／BVH 未接入。证据与具体缺口见 [实时渲染验收](.ai/realtime-rendering-validation.md)。旧 hybrid／OIDN 为历史静止实验，实时入口不等待它们。
+用户授权每个工程成功节点及时接入可用版本，旧批次的画质未通过结论继续保留，但不再统一阻止下一项独立实现。钢琴／汽车、自定义后台资源、API 与数据库不变；DDGI／FidelityFX／BVH 尚未接入。旋转组织沿用 Three MIT 实现思路，不宣称原创算法。当前证据见 [WebGPU 接入记录](.ai/typewriter-webgpu-rollin-validation.md)，资源制作与上一节点检查见 [v2 记录](.ai/typewriter-v2-validation.md)。新 GLB／PNG 使用 Git LFS，下方拉取命令已覆盖；旧日期的测试数字仅属于原批次。
 
 面向商品观察与理解的三维工作台，Vue/Three.js + Spring Boot/MySQL。当前正式目录为机械打字机、三角钢琴与精细 Reventón 汽车，三件均在同一真实 Three.js 工作台中运行。打字机保留首页；音箱退出正式计划，程序化样板和旧固定汽车流程保留作历史与测试资源。
 

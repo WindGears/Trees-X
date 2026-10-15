@@ -111,7 +111,8 @@ try {
       base +
         '/?product=typewriter-study&renderPipeline=' +
         backend +
-        (version === 2 ? '&typewriterAsset=v2' : ''),
+        '&typewriterAsset=v' +
+        version,
     )
     await ready(true)
     const identity = await snapshot()
@@ -171,6 +172,18 @@ try {
         })
       }
     }
+  }
+  if (backend === 'realtime') {
+    await page.goto(base + '/?product=typewriter-study&renderPipeline=realtime')
+    await ready(true)
+    const identity = await snapshot()
+    expect(identity.backend).toBe('realtime')
+    expect(identity.slug).toBe('typewriter-study')
+    expect(identity.version).toBe(2)
+    expect(identity.hash).toBe(bundle.sha256)
+    expect(identity.parts).toBe(572)
+    expect(identity.finishes).toHaveLength(9)
+    report.checks.push({ entry: 'realtime-automatic-v2', identity })
   }
   // Run real production command watchers, not a duplicated pose implementation.
   report.determinism = await page.evaluate(async (id) => {

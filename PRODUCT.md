@@ -1,5 +1,11 @@
 # Trees X
 
+2026-10-15 当前接入：用户要求继续 WebGPU，把工程检查成功的改进逐项导入可用入口，整体画质由本人肉眼判断。显式 `?product=typewriter-study&renderPipeline=realtime` 默认使用打字机 v2 的微表面材质与 WindGear 铭牌，`typewriterAsset=v1` 保留旧材质对照；普通 WebGL、钢琴／汽车、管理员自定义包及数据库不变。自由观察、敲键、聚焦、分层、平铺、导览和管理预览继续原工作台。
+
+本批默认在原有八个反射滤波 tap 上加入像素 IGN 与成功完整帧 golden-angle 旋转，`reflectionKernel=static` 提供原固定核对照。采样数量、半径、Physical 参数与唯一 renderer／时钟不改，失败／取消不推进 phase；这沿用 Three MIT 核旋转思路，不宣称新算法。check、生产构建与 API 启动、真实 WebGPU 对照及 v2 交互／生命周期／管理取景检查通过；整体画质待用户评定，实际呈现预算与 P95 仍待验证。DDGI／FidelityFX／BVH 尚未接入，证据集中于 [.ai/typewriter-webgpu-rollin-validation.md](.ai/typewriter-webgpu-rollin-validation.md)。下方 dated 段落属于对应历史批次，其中“画质未过不接入”及旧入口约定不限制本次用户授权。
+
+## 既有阶段记录
+
 2026-10-14 最新执行：用户要求直接进入打字机 v2 材质制作，并将机身铭牌从 Kimi 改为 WindGear。独立候选补缺失 UV、标准切线与共享 2048²微表面输入，保留原机构、语义部件、操作与 v1 原件；默认仍为 v1＋增强 WebGL。验收入口为 `?product=typewriter-study&typewriterAsset=v2`，WebGPU 对照再加 `&renderPipeline=realtime`；公开 API、数据库、配置版本、钢琴与汽车不变。此前 SSR 画质门槛仍未通过，此次是用户明确调整执行顺序，不表示旧节点已通过或整体质感已达到路径参考。制作与待验收记录见 [.ai/typewriter-v2-validation.md](.ai/typewriter-v2-validation.md)。下方“v2 未开始”等表述仅指其标注批次。
 
 2026-10-14 最新候选：打字机实时实验采用支持掩码约束的有符号反射修正，暖历史全未命中时 GPU 修正严格归零，完整帧成功后才推进历史。敲键、结构、平铺和六个冻结取景完成工程检查；整体质感仍未通过，金属近景仍有点噪。默认 WebGL 和其余两件商品保持，材质 v2／DDGI 未开始。证据见 [.ai/typewriter-signed-reflection-validation.md](.ai/typewriter-signed-reflection-validation.md)。

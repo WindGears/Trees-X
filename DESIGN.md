@@ -199,7 +199,15 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
-## 打字机 v2 材质候选（2026-10-14）
+## 当前实时画面接入（2026-10-15）
+
+用户要求每项工程成功后落实到 WebGPU 实时入口，画质由本人肉眼判断。显式 `?product=typewriter-study&renderPipeline=realtime` 默认使用 v2 微表面与 WindGear 铭牌；`typewriterAsset=v1` 用于旧材质对照。普通 WebGL、其他商品、自定义资源包保持各自内容；方案 C、天空盒、地台形态、灯光、曝光与完整观察操作不改。
+
+反射滤波仍为八个几何引导 tap，默认加入像素 IGN 与成功完整帧 golden-angle 旋转；`reflectionKernel=static` 保留旧固定核。没有扩大半径、增加采样或修改 Physical 清漆／各向异性，失败或取消不推进 phase。采用 Three MIT 核旋转思路，不以此宣称原创算法、点噪已解决或路径参考等效。本批 check、生产构建与 API 启动、真实 WebGPU 两核六取景及 v2 交互／生命周期／管理取景检查通过，见 [.ai/typewriter-webgpu-rollin-validation.md](.ai/typewriter-webgpu-rollin-validation.md)。
+
+普通首页仍为增强 WebGL；DDGI／FidelityFX／BVH 尚未接入。整体画质与实际呈现预算继续明确待验收，不把用户授权接入误写成已经通过画质评估。以下 dated 渲染记录只描述当时批次，旧的入口与阶段门槛由本节当前约定覆盖。
+
+## 打字机 v2 初始材质候选（2026-10-14，历史入口约定）
 
 用户要求直接制作 v2；整体 SSR 画质尚未通过，默认 v1＋增强 WebGL 保持。方案 C、天空盒、地台、灯光、曝光和观察规则不改。候选通过 `?product=typewriter-study&typewriterAsset=v2` 进入，叠加 `&renderPipeline=realtime` 比较同一资源的 WebGPU 实验效果；本轮不以换材质掩盖反射命中噪声，也不宣称达到旧路径追踪图的整体完成度。
 
@@ -207,7 +215,7 @@ components:
 
 七张 PNG 为线性数据，无部件间遮蔽或照明烘焙。表面方向、纹理密度、文字软边、近景清漆、展开与平铺状态以实际截图检查，程序种子或测试通过不代替审美验收。生产记录的 `qualityApproved=false` 明确表示候选尚未完成整体视觉晋级；来源、制作与验收边界见 [.ai/typewriter-v2-validation.md](.ai/typewriter-v2-validation.md)。下方 128²微纹理说明属于 v1 的历史实现，不描述候选 v2。
 
-## 当前渲染体验：打字机实时基线，画质优先（2026-10-13）
+## 打字机实时基线记录（2026-10-13，历史）
 
 沿用方案 C 的浅银灰毛玻璃工作台、黑金打字机与银灰绿无缝摄影棚。`?product=typewriter-study&renderPipeline=realtime` 连续呈现自由观察、敲键与结构变化，不出现等待静止采样、128 样本或 OIDN 融入的访客流程。只提供轻量“WebGPU · 实时光影”实际状态，兼容／错误时显示真实提示；不因算法切换重做工具、镜头或模型流程。
 

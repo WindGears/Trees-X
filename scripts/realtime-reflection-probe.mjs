@@ -35,7 +35,9 @@ try {
   page.on('console', (message) => {
     if (message.type() === 'error') report.errors.push(message.text())
   })
-  await page.goto(new URL('/?product=typewriter-study&renderPipeline=realtime', base).href)
+  await page.goto(
+    new URL('/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1', base).href,
+  )
   await expect
     .poll(
       async () => {

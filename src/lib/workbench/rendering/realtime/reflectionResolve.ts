@@ -1,6 +1,7 @@
 import type { PerspectiveCamera, TextureNode, WebGPURenderer } from 'three/webgpu'
 import { createSignedReflectionSpatial } from './signedSpatial'
 import { createSignedReflectionHistory } from './signedHistory'
+import type { ReflectionKernel } from './reflectionSampling'
 
 /** Filter signed SSR correction, never the native Physical environment itself.
  * Misses carry zero, black hits retain -native, unsupported taps are rejected.
@@ -14,8 +15,16 @@ export function createReflectionResolve(
   normal: TextureNode,
   velocity: TextureNode,
   camera: PerspectiveCamera,
+  kernel: ReflectionKernel = 'rotating',
 ) {
-  const spatial = createSignedReflectionSpatial(reflection, nativeSingle, depth, normal, camera)
+  const spatial = createSignedReflectionSpatial(
+    reflection,
+    nativeSingle,
+    depth,
+    normal,
+    camera,
+    kernel,
+  )
   let history: ReturnType<typeof createSignedReflectionHistory>
   try {
     history = createSignedReflectionHistory(renderer, camera, spatial.node, depth, normal, velocity)
@@ -27,9 +36,29 @@ export function createReflectionResolve(
   return {
     raw: spatial.raw.rgb,
     filtered: history.node.rgb,
-    prepare: history.prepare,
-    commitFrame: history.commitFrame,
-    cancelFrame: history.cancelFrame,
+    prepare(width: number, height: number) {
+      spatial.prepare()
+      try {
+        history.prepare(width, height)
+      } catch (error) {
+        spatial.cancelFrame()
+        throw error
+      }
+    },
+    commitFrame() {
+      try {
+        history.commitFrame()
+        spatial.commitFrame()
+      } catch (error) {
+        spatial.cancelFrame()
+        throw error
+      }
+    },
+    cancelFrame() {
+      history.cancelFrame()
+      spatial.cancelFrame()
+    },
+    snapshot: spatial.snapshot,
     dispose() {
       if (disposed) return
       disposed = true

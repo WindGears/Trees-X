@@ -63,6 +63,7 @@ function fixture() {
       enabled = { ssr, ssgi, denoise }
     }),
     snapshot: vi.fn(() => ({ ...enabled })),
+    sampling: vi.fn(() => ({ mode: 'rotating' as const, frames: 0, phase: 0, prepared: false })),
     dispose: vi.fn(),
   }
   const materials = {
@@ -119,6 +120,21 @@ function fixture() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('realtime complete-frame coordinator lifecycle', () => {
+  it('exposes the scene-owned sampling snapshot separately from enabled signal flags', () => {
+    const f = fixture()
+    expect(f.coordinator.snapshot().reflectionKernel).toBeNull()
+    f.coordinator.prepare()
+    const kernel = { mode: 'rotating' as const, frames: 4, phase: 1.25, prepared: false }
+    f.signals.sampling.mockReturnValue(kernel)
+    expect(f.coordinator.snapshot()).toMatchObject({
+      signals: { ssr: true, ssgi: true, denoise: true },
+      reflectionKernel: kernel,
+    })
+    expect(f.signals.sampling).toHaveBeenCalledTimes(1)
+    f.coordinator.dispose()
+    expect(f.coordinator.snapshot().reflectionKernel).toBeNull()
+  })
+
   it('does not commit lighting or motion when the renderer reports failure during final draw', () => {
     const f = fixture()
     f.coordinator.prepare()
