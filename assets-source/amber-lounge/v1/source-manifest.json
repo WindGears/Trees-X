@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 1,
+  "generatedOn": "2026-10-15",
+  "status": "generated-candidate",
+  "runtimeIntegrated": false,
+  "records": [
+    {
+      "file": "reference-a.png",
+      "width": 1672,
+      "height": 941,
+      "format": "png",
+      "space": "srgb",
+      "depth": "uchar",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 1902968,
+      "sha256": "036fb880706d6419cd011509c0a96ce371d11f38efe98b77638b977524203eb0",
+      "native": true,
+      "resampled": false,
+      "hdr": false
+    },
+    {
+      "file": "lounge-panorama-color.png",
+      "width": 1774,
+      "height": 887,
+      "format": "png",
+      "space": "srgb",
+      "depth": "uchar",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 1825850,
+      "sha256": "8b80615b632b40deee310541dc850d7f0ad7de199fd955aad63b1de294226b2f",
+      "native": true,
+      "resampled": false,
+      "hdr": false
+    },
+    {
+      "file": "stone-basecolor.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "space": "srgb",
+      "depth": "uchar",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 3157881,
+      "sha256": "aaea0363d1d5da09737425a1bc791afc04c5dc7058d81b012ad828a73da4d5ac",
+      "native": true,
+      "resampled": false,
+      "hdr": false
+    },
+    {
+      "file": "ui-reference.png",
+      "width": 1672,
+      "height": 941,
+      "format": "png",
+      "space": "srgb",
+      "depth": "uchar",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 1968940,
+      "sha256": "03c46d4add0130424c5b86d3f099d415e0dc830ad87114b5f80c9a45ae6577c4",
+      "native": true,
+      "resampled": false,
+      "hdr": false
+    },
+    {
+      "file": "lounge-panorama-color-r2.png",
+      "width": 1774,
+      "height": 887,
+      "format": "png",
+      "space": "srgb",
+      "depth": "uchar",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 1679093,
+      "sha256": "fdab4d13b88d04526f6acb4da84334a2dd11d2e6441e0f66e1378713370b5402",
+      "native": true,
+      "resampled": false,
+      "hdr": false
+    },
+    {
+      "file": "stone-basecolor-r2.png",
+      "width": 1254,
+      "height": 1254,
+      "format": "png",
+      "space": "srgb",
+      "depth": "uchar",
+      "channels": 3,
+      "hasAlpha": false,
+      "bytes": 3416536,
+      "sha256": "5f4fda38955a43e7e6cffe8aa51bca4dafe64241008709d03e5bfc398c22ce82",
+      "native": true,
+      "resampled": false,
+      "hdr": false
+    }
+  ],
+  "preferredForTechnicalPreparation": {
+    "panorama": "lounge-panorama-color-r2.png",
+    "stone": null,
+    "ui": "ui-reference.png"
+  },
+  "checks": {
+    "panoramaRatio2to1": true,
+    "stoneSquare": true,
+    "originalBytesPreserved": true,
+    "isolatedProjectionAndTilingReviewComplete": true,
+    "strictSeamlessPanorama": false,
+    "strictTileableBaseColor": false,
+    "completePbrPackage": false,
+    "realHdrLighting": false,
+    "threeJsVisualAcceptance": false
+  },
+  "notes": [
+    "Original generated files preserved byte for byte; native output only, no resampling.",
+    "No claim of native 4K detail, HDR range, complete PBR or runtime acceptance.",
+    "Panorama r2 improves seam-region composition; projection, poles and pixel continuity still need work.",
+    "Stone r2 removes long veins but is denser and edge mismatch is higher; neither stone is approved for runtime.",
+    "See .ai/amber-lounge-generation-validation.md for review method and unresolved findings."
+  ]
+}

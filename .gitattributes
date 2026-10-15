@@ -10,3 +10,4 @@ public/basis/** -text
 public/models/denoise/*.tza filter=lfs diff=lfs merge=lfs -text
 public/models/bundles/kimi-typewriter/v2/*.glb filter=lfs diff=lfs merge=lfs -text
 public/models/bundles/kimi-typewriter/v2/textures/*.png filter=lfs diff=lfs merge=lfs -text
+assets-source/amber-lounge/**/*.png filter=lfs diff=lfs merge=lfs -text
