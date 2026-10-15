@@ -2,6 +2,8 @@ import { defaultStage } from './presentationV2'
 import type { ProductPresentation, StageConfig } from './types'
 import { realtimeReference } from './rendering/realtime/reference'
 import { resolveStudioPalette } from './studio/palette'
+import { studioPalettes } from './studio/palette'
+import type { StudioMood } from './studio/mood'
 
 export function hasTypewriterStudio(presentation?: ProductPresentation) {
   return presentation?.source.kind === 'glb' && presentation.source.adapter === 'typewriter-v1'
@@ -12,10 +14,11 @@ export function resolveWorkbenchStage(
   presentation: ProductPresentation | undefined,
   gallery: boolean,
   realtime = false,
+  mood?: StudioMood,
 ): StageConfig {
   const source = presentation?.stage ?? defaultStage
   if (hasTypewriterStudio(presentation)) {
-    const palette = resolveStudioPalette(realtime)
+    const palette = realtime && mood ? studioPalettes[mood] : resolveStudioPalette(realtime)
     return {
       ...source,
       background: realtime ? palette.background : '#e7e9e5',

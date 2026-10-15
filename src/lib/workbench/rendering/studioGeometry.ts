@@ -84,7 +84,7 @@ export function createGpuStudioGeometry(
     clearcoat: 0.2,
     clearcoatRoughness: 0.3,
   })
-  const pedestal = new Mesh(
+  const pedestal: Mesh<BufferGeometry, Material> = new Mesh(
     new RoundedBoxGeometry(
       studioDesign.width,
       studioDesign.height,
@@ -142,6 +142,12 @@ export function createGpuStudioGeometry(
   let disposed = false
   return {
     group,
+    sky,
+    skyMaterial,
+    pedestal,
+    surface,
+    floorMaterial,
+    traceFloor,
     dispose() {
       if (disposed) return
       disposed = true

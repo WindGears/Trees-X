@@ -58,7 +58,7 @@ test('manifest bytes, hashes, duplicate records and unresolved LFS are verified 
   }
 })
 
-test('support receipts include decoders, covers and validated denoiser files; reject LFS and altered weights', async () => {
+test('support receipts include validated amber maps with decoders, covers and denoiser; reject missing, LFS and corrupted maps', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'trees-demo-support-'))
   const files = {
     'draco/draco_wasm_wrapper.js': 'decoder wrapper',
@@ -68,6 +68,10 @@ test('support receipts include decoders, covers and validated denoiser files; re
     'covers/nested/product.svg': '<svg/>',
     'models/denoise/rt_hdr_alb_nrm.tza': 'guided denoise weights',
     'models/denoise/LICENSE.txt': 'Apache-2.0',
+    'studio/amber-lounge/v1/lounge-panorama.png': 'amber visible panorama fixture',
+    'studio/amber-lounge/v1/stone-basecolor.png': 'amber slab basecolor fixture',
+    'studio/amber-lounge/v1/stone-roughness.png': 'amber roughness data fixture',
+    'studio/amber-lounge/v1/stone-normal.png': 'amber normal data fixture',
   }
   files['models/denoise/manifest.json'] = JSON.stringify({
     schemaVersion: 1,
@@ -80,10 +84,29 @@ test('support receipts include decoders, covers and validated denoiser files; re
         .digest('hex'),
     })),
   })
+  const amberMaps = [
+    'lounge-panorama.png',
+    'stone-basecolor.png',
+    'stone-roughness.png',
+    'stone-normal.png',
+  ]
+  files['studio/amber-lounge/v1/manifest.json'] = JSON.stringify({
+    schemaVersion: 1,
+    id: 'amber-lounge-v1',
+    entry: 'lounge-panorama.png',
+    files: amberMaps.map((path) => ({
+      path,
+      bytes: Buffer.byteLength(files['studio/amber-lounge/v1/' + path]),
+      sha256: createHash('sha256')
+        .update(files['studio/amber-lounge/v1/' + path])
+        .digest('hex'),
+    })),
+  })
   try {
     await mkdir(join(directory, 'draco'))
     await mkdir(join(directory, 'covers', 'nested'), { recursive: true })
     await mkdir(join(directory, 'models', 'denoise'), { recursive: true })
+    await mkdir(join(directory, 'studio', 'amber-lounge', 'v1'), { recursive: true })
     for (const [path, content] of Object.entries(files))
       await writeFile(join(directory, path), content)
     const receipt = await inspectSupportAssets(directory)
@@ -102,6 +125,8 @@ test('support receipts include decoders, covers and validated denoiser files; re
       'draco/draco_decoder.wasm',
       'covers/nested/product.svg',
       'models/denoise/rt_hdr_alb_nrm.tza',
+      'studio/amber-lounge/v1/manifest.json',
+      ...amberMaps.map((path) => 'studio/amber-lounge/v1/' + path),
     ]) {
       await writeFile(
         join(directory, path),
@@ -109,6 +134,21 @@ test('support receipts include decoders, covers and validated denoiser files; re
       )
       await assert.rejects(inspectSupportAssets(directory), /Git LFS/)
       await writeFile(join(directory, path), files[path])
+    }
+    for (const path of ['manifest.json', ...amberMaps]) {
+      const target = join(directory, 'studio', 'amber-lounge', 'v1', path)
+      await rm(target)
+      await assert.rejects(inspectSupportAssets(directory), { code: 'ENOENT' })
+      await writeFile(target, files['studio/amber-lounge/v1/' + path])
+    }
+    for (const path of amberMaps) {
+      const target = join(directory, 'studio', 'amber-lounge', 'v1', path)
+      const content = files['studio/amber-lounge/v1/' + path]
+      const corrupted = Buffer.from(content)
+      corrupted[0] ^= 1 // Equal length: this must exercise the digest check.
+      await writeFile(target, corrupted)
+      await assert.rejects(inspectSupportAssets(directory), /SHA-256/)
+      await writeFile(target, content)
     }
     await writeFile(join(directory, 'models/denoise/rt_hdr_alb_nrm.tza'), 'altered weights')
     await assert.rejects(inspectSupportAssets(directory), /SHA-256/)

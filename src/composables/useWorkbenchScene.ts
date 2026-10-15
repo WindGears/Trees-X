@@ -15,6 +15,7 @@ import { useMotionSession } from '@/lib/workbench/motionSession'
 import { useCameraCaptureSession, type CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
 import { createViewportFraming } from '@/lib/workbench/viewportFraming'
+import type { StudioMood, StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
 
 export interface WorkbenchSceneProps {
   active: boolean
@@ -25,6 +26,7 @@ export interface WorkbenchSceneProps {
   catalog?: boolean
   checkpoint?: CameraSnapshot
   realtimePipeline?: boolean
+  studioMood?: StudioMood
 }
 /** Scene owns all resources except the Tres-owned renderer. */
 export function useWorkbenchScene(
@@ -32,6 +34,7 @@ export function useWorkbenchScene(
   restore: (snapshot?: CameraSnapshot) => void,
   report: (status: RefinementStatus) => void,
   reportRealtime: (status: RealtimeStatus) => void = () => {},
+  reportStudio: (status: StudioEnvironmentStatus) => void = () => {},
 ) {
   const store = useWorkbenchStore()
   const motionSession = useMotionSession()
@@ -73,6 +76,7 @@ export function useWorkbenchScene(
       store.presentation,
       Boolean(props.gallery),
       gpu && Boolean(props.realtimePipeline),
+      props.studioMood,
     ),
   )
   watch(
@@ -87,6 +91,20 @@ export function useWorkbenchScene(
     { immediate: true },
   )
   let controller: ReturnType<typeof createStageController> | undefined
+  function applyStudioMood() {
+    if (disposed || !gpu || !props.realtimePipeline || !studio.value) return
+    const token = generation
+    controller?.setStudioMood({
+      mood: props.studioMood ?? 'dark',
+      changed: () => {
+        if (!disposed && token === generation) dirty('environment')
+      },
+      report: (value) => {
+        if (!disposed && token === generation) reportStudio(value)
+      },
+    })
+  }
+  watch(() => props.studioMood, applyStudioMood)
   onBeforeRender(() => {
     if (!gpu) controller?.beforeRender()
   })
@@ -115,6 +133,7 @@ export function useWorkbenchScene(
         if (!disposed && request === generation) store.loading(product.slug, revision, phase)
       })
       if (!loaded || disposed || request !== generation) return
+      applyStudioMood()
       controller.sync(store.finishId, store.exploded, store.actions, true)
       if (props.checkpoint?.slug === product.slug && props.checkpoint.revision === revision) {
         controller.restoreCamera(props.checkpoint)
@@ -443,5 +462,6 @@ export function useWorkbenchScene(
       const pose = controller?.snapshotCamera(true)
       return pose ? { ...pose, slug: motionSlug, revision: motionRevision } : undefined
     },
+    retryStudioEnvironment: applyStudioMood,
   }
 }

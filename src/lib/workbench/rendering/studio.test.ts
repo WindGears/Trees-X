@@ -13,7 +13,12 @@ import {
   ShaderMaterial,
   Vector4,
 } from 'three'
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial, type WebGPURenderer } from 'three/webgpu'
+import {
+  MeshBasicNodeMaterial,
+  MeshPhysicalNodeMaterial,
+  MeshStandardNodeMaterial,
+  type WebGPURenderer,
+} from 'three/webgpu'
 import { createGpuStudioGeometry } from './studioGeometry'
 import { createGpuStudioReflection } from './studioReflection'
 import { createGpuStudioShadow } from './studioShadow'
@@ -75,11 +80,11 @@ describe('WebGPU authored studio', () => {
       const reflection = scene.getObjectByName('Trees X / studio reflection')
       expect(Boolean(reflection)).toBe(true)
       const pedestal = scene.getObjectByName('Trees X / studio pedestal') as Mesh
-      expect(pedestal.material).toBeInstanceOf(MeshPhysicalMaterial)
-      expect(scene.getObjectByName('Trees X / studio skybox')).toBeDefined()
-      expect(scene.getObjectByName('Trees X / product studio')?.userData.studioMood).toBe(
-        realtime ? 'dark' : 'light',
+      expect(pedestal.material).toBeInstanceOf(
+        realtime ? MeshPhysicalNodeMaterial : MeshPhysicalMaterial,
       )
+      expect(scene.getObjectByName('Trees X / studio skybox')).toBeDefined()
+      expect(scene.getObjectByName('Trees X / product studio')?.userData.studioMood).toBe('light')
       expect(scene.getObjectByName('Trees X / studio contact shadow')).toBeDefined()
       expect(scene.children.filter((object) => 'isRectAreaLight' in object)).toHaveLength(3)
       studio.render()

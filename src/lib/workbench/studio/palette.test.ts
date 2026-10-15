@@ -21,10 +21,10 @@ describe('visible studio palette selection', () => {
     expect(resolveStudioPalette(true, '?studioMood=light')).toBe(studioPalettes.light)
     expect(studioPalettes.dark).toMatchObject({
       mood: 'dark',
-      background: '#333f39',
-      backdrop: { top: '#505c55', middle: '#333f39', bottom: '#242e29' },
-      floor: '#2e3832',
-      pedestal: '#3f4944',
+      background: '#241c17',
+      backdrop: { top: '#33261e', middle: '#241c17', bottom: '#191511' },
+      floor: '#241d17',
+      pedestal: '#44392f',
     })
   })
 

@@ -1,6 +1,16 @@
 # 新版目标架构与当前实现
 
-## 可见舞台配色与照明隔离（2026-10-15）
+## 当前暖夜舞台与原位切换（2026-10-15）
+
+`WorkbenchStage` 的局部环境状态只作用于实时 WebGPU 打字机；`WorkbenchStudioMood` 提供明亮／暖夜入口和加载失败重试。场景通道把环境意图交给既有适配器与 `rendering/studio`，`loungeLook` 管理舞台 NodeMaterial、背景采样及三软箱过渡，不写商品节点、镜头或 Pinia 高频状态。明亮恢复既有舞台；普通 WebGL、hybrid、钢琴／汽车、HTTP API、数据库与 ProductPresentation v1/v2/v3 保持。
+
+`loungeAssets` 是四图的唯一加载通道：固定同源白名单核验字节数、SHA-256 与尺寸，使用显式翻转的 ImageBitmap，Texture.flipY=false；全景／底色为 sRGB，粗糙度／法线为 NoColorSpace。返回包唯一拥有 Texture 与 bitmap，由 `loungeLook` 释放；失败、取消、迟到解码和重复 dispose 各有清理路径，不建全局缓存。`scripts/amber-lounge/build.mjs` 逐字节复制生成 r2 原图，独立生成 512²周期数值微表面图；运行清单与原母版分开保存。
+
+全景仅是 LDR 可见背景，TSL 固定 LOD 3.5 虚化并作接缝／极点采样保护，不是源图修复、真实 DOF 或 HDR 照明重建。Studio Small 05 HDR 保持，三软箱颜色／强度由 `loungeLook` 过渡；地台单块底色不要求平铺，技术法线不读取底色亮度。GSAP 补间约 0.42 秒、暂停式创建，只由已有 `studio.beforeRaster` 时钟推进；快速切换取消旧补间，减弱动态直接到目标。首次暖夜异步读四图，失败保留可操作舞台并可重试，不借切换重建宿主或恢复商品默认状态。
+
+本节是实施边界，实机结果由主代理更新于 [暖夜运行验收](amber-lounge-runtime-validation.md)，不预填通过或性能成绩。下节深灰绿方案保留为此前批次。
+
+## 可见舞台配色与照明隔离（2026-10-15，深灰绿历史）
 
 `studio/palette` 选择可见舞台 light/dark 配色，实时 WebGPU 打字机默认 dark，`studioMood=light` 对照。`rendering/studio` 按 renderer 的已注册实时身份传给 `studioGeometry`，只变天空、地台、地面与派生 traceFloor 颜色；capture 路径强制 light，不改变照明环境。`studioPreset` 同步实际背景／雾色，WebGL 与 hybrid 原值保持。Stage 的 DOM mood 依赖实际后端与商品能力，局部 CSS 只调整暗背景上直接绘制的文字／引线；不改变浅色玻璃面板、不增加 Three 所有者或逐帧响应式状态。配置版本与接口保持。验证见 [暗色舞台](typewriter-dark-studio-validation.md)。
 

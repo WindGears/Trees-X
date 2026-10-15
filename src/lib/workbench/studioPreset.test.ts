@@ -56,8 +56,8 @@ describe('registered photography studio lighting', () => {
     vi.stubGlobal('location', new URL('http://localhost/?studioMood=dark'))
     const dark = resolveWorkbenchStage(source, false, true),
       webgl = resolveWorkbenchStage(source, false)
-    expect(dark.background).toBe('#333f39')
-    expect(dark.ground).toBe('#3f4944')
+    expect(dark.background).toBe('#241c17')
+    expect(dark.ground).toBe('#302923')
     expect(webgl.background).toBe('#e7e9e5')
     expect(webgl.ground).toBe('#d8dcd5')
     vi.stubGlobal('location', new URL('http://localhost/?studioMood=light'))

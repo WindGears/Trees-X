@@ -37,6 +37,10 @@ async function fixture() {
     'public/draco/draco_decoder.wasm': 'decoder wasm',
     'public/covers/product.png': 'cover',
     'public/models/denoise/rt_hdr_alb_nrm.tza': 'guided denoise weights',
+    'public/studio/amber-lounge/v1/lounge-panorama.png': 'amber lounge panorama',
+    'public/studio/amber-lounge/v1/stone-basecolor.png': 'amber stone basecolor',
+    'public/studio/amber-lounge/v1/stone-roughness.png': 'amber roughness data',
+    'public/studio/amber-lounge/v1/stone-normal.png': 'amber normal data',
   }
   files['public/models/denoise/manifest.json'] = JSON.stringify({
     schemaVersion: 1,
@@ -50,6 +54,23 @@ async function fixture() {
           .digest('hex'),
       },
     ],
+  })
+  files['public/studio/amber-lounge/v1/manifest.json'] = JSON.stringify({
+    schemaVersion: 1,
+    id: 'amber-lounge-v1',
+    entry: 'lounge-panorama.png',
+    files: [
+      'lounge-panorama.png',
+      'stone-basecolor.png',
+      'stone-roughness.png',
+      'stone-normal.png',
+    ].map((path) => ({
+      path,
+      bytes: Buffer.byteLength(files['public/studio/amber-lounge/v1/' + path]),
+      sha256: createHash('sha256')
+        .update(files['public/studio/amber-lounge/v1/' + path])
+        .digest('hex'),
+    })),
   })
   for (const [path, content] of Object.entries(files)) {
     await mkdir(dirname(join(rootDir, path)), { recursive: true })
@@ -107,6 +128,11 @@ test('stable preparation records complete production support digests and rejects
         'draco/draco_wasm_wrapper.js',
         'models/denoise/manifest.json',
         'models/denoise/rt_hdr_alb_nrm.tza',
+        'studio/amber-lounge/v1/lounge-panorama.png',
+        'studio/amber-lounge/v1/manifest.json',
+        'studio/amber-lounge/v1/stone-basecolor.png',
+        'studio/amber-lounge/v1/stone-normal.png',
+        'studio/amber-lounge/v1/stone-roughness.png',
       ],
     )
     assert.deepEqual(
@@ -115,6 +141,25 @@ test('stable preparation records complete production support digests and rejects
     )
     await writeFile(join(config.distDir, 'covers/product.png'), 'changed production cover')
     await assert.rejects(verifyPrepared(config), /生产产物已改变/)
+    await writeFile(join(config.distDir, 'covers/product.png'), 'cover')
+    for (const file of [
+      'lounge-panorama.png',
+      'stone-basecolor.png',
+      'stone-roughness.png',
+      'stone-normal.png',
+    ]) {
+      const path = join(config.distDir, 'studio', 'amber-lounge', 'v1', file)
+      const original = await readFile(path)
+      const corrupted = Buffer.from(original)
+      corrupted[0] ^= 1
+      await writeFile(path, corrupted)
+      await assert.rejects(verifyPrepared(config), /SHA-256/, file)
+      await writeFile(path, original)
+    }
+    assert.deepEqual(await verifyPrepared(config), {
+      preparedAt: receipt.preparedAt,
+      products: demoProducts.map((item) => item.slug),
+    })
   } finally {
     await rm(config.rootDir, { recursive: true, force: true })
   }
@@ -202,7 +247,7 @@ test('a dist support mismatch refuses preparation before any receipt is written'
         if (script === 'build')
           await writeFile(join(config.distDir, 'draco', 'draco_decoder.wasm'), 'mismatched decoder')
       }),
-      /解码器、封面或降噪资源摘要不一致/,
+      /解码器、封面、降噪或暖夜资源摘要不一致/,
     )
     assert.equal(await readState(join(config.artifactsDir, 'prepared.json')), null)
   } finally {

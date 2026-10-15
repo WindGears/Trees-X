@@ -1,6 +1,10 @@
 # Trees X
 
-2026-10-15 暗色舞台试用：实时 WebGPU 打字机默认试用深灰绿摄影棚与石墨地台，保留商品原光照、材质、交互和浅色玻璃工具；加 `studioMood=light` 对比原亮色。普通 WebGL、hybrid 和其他商品保持。取舍由用户本人观察，不把暗环境写作渲染噪声已经解决。证据见 [.ai/typewriter-dark-studio-validation.md](.ai/typewriter-dark-studio-validation.md)。
+2026-10-15 当前暖夜舞台：显式 `?product=typewriter-study&renderPipeline=realtime` 的 WebGPU 打字机提供“明亮／暖夜”原位切换，`studioMood=light` 可从明亮开始。暖夜使用本项目生成的酒吧全景和单块岩板底色，配合独立制作的粗糙度／微法线数据；它们不是扫描材质。全景是 8-bit LDR 可见背景，固定 LOD 3.5 取样形成背景虚化，并加接缝／极点采样保护；不宣称真实景深、源图已无缝或专业 HDR。商品照明继续使用原 Studio Small 05 HDR，三块软箱的颜色与强度随环境过渡。
+
+切换通过既有时钟推进约 0.42 秒 GSAP 补间，减弱动态时直接到目标；保持同一 Canvas／renderer，以及当前镜头、外观与动作状态。首次暖夜异步读取四张同源图片，失败显示重试并保留基础可操作舞台；明亮恢复既有舞台效果。普通 WebGL、hybrid、钢琴／汽车、API 和数据库不变。本批实机与画质验收由主代理记录，当前不预填通过成绩，见 [.ai/amber-lounge-runtime-validation.md](.ai/amber-lounge-runtime-validation.md)。
+
+2026-10-15 深灰绿暗色试用（历史）：实时 WebGPU 打字机曾试用深灰绿摄影棚与石墨地台，保留商品原光照、材质、交互和浅色玻璃工具；加 `studioMood=light` 对比原亮色。该配色已由上方暖夜候选覆盖，旧证据保留于 [.ai/typewriter-dark-studio-validation.md](.ai/typewriter-dark-studio-validation.md)，不将历史检查等同本批验收。
 
 2026-10-15 当前接入：用户要求继续 WebGPU，把工程检查成功的改进逐项导入可用入口，整体画质由本人肉眼判断。显式 `?product=typewriter-study&renderPipeline=realtime` 默认使用打字机 v2 的微表面材质与 WindGear 铭牌，`typewriterAsset=v1` 保留旧材质对照；普通 WebGL、钢琴／汽车、管理员自定义包及数据库不变。自由观察、敲键、聚焦、分层、平铺、导览和管理预览继续原工作台。
 

@@ -8,8 +8,12 @@ import { bindGpuAreaLights } from './studioEnvironment'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendererTypes'
 import { isRealtimeRenderer } from './realtimeMode'
 import { resolveStudioPalette } from '../studio/palette'
+import type { StudioMoodUpdate } from '../studio/mood'
+import { createLoungeLook } from './loungeLook'
 
-export type WorkbenchStudio = ReturnType<typeof createTypewriterStudio>
+export type WorkbenchStudio = ReturnType<typeof createTypewriterStudio> & {
+  setMood?: (update: StudioMoodUpdate) => void
+}
 export type WorkbenchStudioFactory = (
   renderer: WorkbenchRenderer,
   scene: Scene,
@@ -26,14 +30,16 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
 ) => {
   if (!isWebGpuRenderer(renderer)) return createTypewriterStudio(renderer, scene, model, groundY)
   const realtime = isRealtimeRenderer(renderer)
-  const geometry = createGpuStudioGeometry(groundY, false, resolveStudioPalette(realtime)),
+  const geometry = createGpuStudioGeometry(groundY, false, resolveStudioPalette(false)),
     lighting = createStudioLights()
+  const lounge = realtime ? createLoungeLook(geometry, lighting.lights) : undefined
   let reflection: ReturnType<typeof createGpuStudioReflection> | undefined,
     shadow: ReturnType<typeof createGpuStudioShadow> | undefined,
     disposed = false
   const dispose = () => {
     if (disposed) return
     disposed = true
+    lounge?.dispose()
     reflection?.dispose()
     shadow?.dispose()
     lighting.dispose()
@@ -57,11 +63,15 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
     throw error
   }
   return {
+    setMood: lounge?.setMood,
     markDirty() {
       if (!disposed) shadow?.markDirty()
     },
     render() {
-      if (!disposed) shadow?.render()
+      if (!disposed) {
+        lounge?.render()
+        shadow?.render()
+      }
     },
     dispose,
   }

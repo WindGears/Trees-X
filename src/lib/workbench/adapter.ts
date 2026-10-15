@@ -4,6 +4,7 @@ import { sampleBuilders } from './samples'
 import type { Vec3, WorkbenchProduct } from './types'
 import { bindMotionPose } from './motionPose'
 import type { WorkbenchRenderer } from './rendering/rendererTypes'
+import type { StudioMoodUpdate } from './studio/mood'
 
 export interface SceneAdapter {
   root: Group
@@ -17,6 +18,7 @@ export interface SceneAdapter {
   dispose(): void
   attach?(scene: Scene, renderer: WorkbenchRenderer): void
   beforeRender?(): void
+  setStudioMood?(update: StudioMoodUpdate): void
   select?(node?: string): void
   nodeForHit?(object: Object3D, instanceId?: number): Object3D | undefined
 }

@@ -13,6 +13,7 @@ import type { MotionCommand, MotionStatus } from './types'
 import { progressActions } from './motionConfig'
 import { createMotionPlayback, type MotionFeedback } from './motionPlayback'
 import { structureReveal, type PlaceCallout } from './calloutProjection'
+import type { StudioMoodUpdate } from './studio/mood'
 
 export function createStageController(
   renderer: WorkbenchRenderer,
@@ -284,6 +285,7 @@ export function createStageController(
     unload,
     command,
     beforeRender: () => adapter?.beforeRender?.(),
+    setStudioMood: (update: StudioMoodUpdate) => adapter?.setStudioMood?.(update),
     enableInteraction() {
       interactive = true
       controls.enabled = active && Boolean(adapter)

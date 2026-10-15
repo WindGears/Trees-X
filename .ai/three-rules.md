@@ -1,5 +1,10 @@
 # 当前实时渲染约束（2026-10-15）
 
+- 当前暖夜运行候选仅服务 realtime WebGPU 打字机，明亮／暖夜切换保持唯一 Canvas、renderer 与实际绘制时钟。`loungeLook` 只写舞台与三个软箱，不修改商品节点或镜头；0.42 秒 GSAP 补间由既有 beforeRaster 推进，快速切换杀旧补间，减弱动态直接到目标。切换不重置外观、结构、动作或当前部件；明亮恢复既有舞台。此前深灰绿暗场属于历史，WebGL、hybrid、钢琴／汽车保持原通道。
+- 酒吧全景是 8-bit sRGB LDR 可见背景，不得替代原 Studio Small 05 HDR 或宣称从图片恢复灯光。固定 LOD 3.5 背景虚化、接缝带混合和极点淡出仅为 TSL 采样保护，不是专业 HDR、真实 DOF、无缝源图或一比一场景重建。HDR 本身保持，三个软箱允许按明暗环境过渡颜色与强度；不把这一布光变化隐入旧版同输入技术对照。
+- 暖夜岩板底色来自原生生成图的逐字节副本，repeat 1；不得把未通过平铺检查的底色宣称为无缝材质。roughness／normal 是独立固定种子数学场的技术数据，512²、NoColorSpace、repeat 8，不从底色反推高度，不烘死商品反射或部件互遮挡；不是扫描 PBR。
+- `loungeAssets` 固定同源四图与摘要，下载、解码、Texture 和 ImageBitmap 只有一个释放方。首次暖夜异步加载，失败保留基础可操作舞台并可重试；取消后迟到 bitmap 只清理，不挂入新舞台。原生成母版保留，生命周期与实机画质分别验收；本批实际结果由主代理写入 [暖夜运行验收](amber-lounge-runtime-validation.md)，不得引用下方历史成绩宣称本批通过。
+
 - 用户要求 WebGPU 每个工程成功节点落实接入，整体画质由本人肉眼判断；这覆盖旧阶段的接入顺序限制，不将历史未通过项或性能目标改写为通过。显式 `?product=typewriter-study&renderPipeline=realtime` 默认加载 v2，`typewriterAsset=v1` 为旧材质对照。普通 WebGL、其他商品、管理员自定义包、API 与数据库不变；DDGI／FidelityFX／BVH 本轮未接入。
 - `signedSpatial` 默认在八个原几何引导 tap 上增加像素 IGN 和成功完整帧 golden-angle 旋转；`reflectionKernel=static` 保持原固定核对照。phase 仅在历史成功 commit 后推进，取消、失败复用；数量、半径、Physical 参数、唯一 renderer／时钟不变。采用 Three MIT 核旋转组织思路，不宣称独创新算法或已解决所有点噪。本批 check、生产构建与 API 启动、真实 WebGPU 对照及 v2 交互／生命周期／管理取景检查通过；整体画质待用户评定，实际呈现预算仍待验证，见 [WebGPU 接入记录](typewriter-webgpu-rollin-validation.md)。
 - v2 制作不得覆盖 v1、合并语义部件、减面、改轴心或改 rig；补十个缺 UV 表面，保留已有 UV0，用独立 UV1 采样七张共享 2048²线性 normal／ORM／方向 PNG。UV 接缝与切线接缝可拆点，三角形位置、源法线、572 部件和 2257 表面映射必须保持并核验。Mikk fallback 的正交化只改切线 XYZ，手性按当前 UV 通道独立再生成核查；退化 UV 不冒充已证明手性。

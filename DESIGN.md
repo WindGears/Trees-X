@@ -1,6 +1,6 @@
 ---
 name: Trees X 三维商品工作台
-description: 访客采用方案 C 毛玻璃漂浮工作台；实时 WebGPU 打字机试用深灰绿摄影棚与浅色玻璃工具，其他入口保留既有配色。
+description: 访客采用方案 C 毛玻璃漂浮工作台；实时 WebGPU 打字机增加明亮与暖夜原位切换、虚化酒吧背景与岩板地台，其他入口保留既有配色。
 scope: 下列 colors/typography/rounded 是共享基础样式；visitorColors/visitorTypography/visitorRounded 仅覆盖 wb-floating。
 visitorColors:
   wb-bg: '#e7e9e5'
@@ -19,6 +19,17 @@ visitorColors:
   selected-background: '#e1e9df'
   selected-border: '#aabbab'
 studioColors:
+  dark-background-middle-fog: '#241c17'
+  dark-sky-top: '#33261e'
+  dark-sky-bottom: '#191511'
+  dark-floor: '#241d17'
+  dark-pedestal: '#44392f'
+  dark-title: '#f1f3ee'
+  dark-description-label-line: '#c0c9c0'
+  dark-input-hint: '#c7cec4'
+  dark-anchor: '#d2dfcf'
+  dark-selected-line: '#edf4e8'
+historicalGreenStudioColors:
   dark-background-middle-fog: '#333f39'
   dark-sky-top: '#505c55'
   dark-sky-bottom: '#242e29'
@@ -210,7 +221,17 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
-## 深灰绿摄影棚试用（2026-10-15）
+## 当前明亮／暖夜舞台（2026-10-15）
+
+仅显式实时 WebGPU 打字机提供两态切换。暖夜以暖琥珀酒吧全景包围可见背景，原生 LDR 图使用固定 LOD 3.5 虚化、接缝带混合与极点淡出保护；这些是采样近似，不是相机散景、真实 DOF、HDR 照明或源图无缝认证。`studioColors` 是加载前及边界过渡配色；实际背景来自图像，不能用单一色值代表整张全景。
+
+实体地台形态保留；暖夜使用生成的单块岩板底色，底色 repeat 1，不宣称可平铺。粗糙度与微法线为独立的固定种子数值图，512²、repeat 8、NoColorSpace，微法线初始强度 0.28；不从底色亮度反推几何或制作扫描材质。原 Studio Small 05 HDR 保持，三个软箱向暖色和各自目标强度过渡；明亮恢复原舞台与软箱设置。
+
+“明亮／暖夜”使用约 0.42 秒 `power2.inOut` GSAP 补间，只由既有舞台时钟推进，快速切换取消旧补间；减弱动态时直接到目标。首个暖夜异步加载四图，失败展示明确重试，基础模型继续可操作。切换保留相机完整姿态与投影、配色、结构和部件状态，不重建 Canvas／renderer。浅色玻璃工作台与已有文字／引线可读规则保持，环境控件以深暖色底和琥珀选中态呈现。
+
+本批实机证据与画质判断由主代理更新于 [暖夜运行验收](.ai/amber-lounge-runtime-validation.md)；此处不预填通过、帧率或概念图等效结论。
+
+## 深灰绿摄影棚试用（2026-10-15，历史）
 
 按用户要求试验压暗环境，实时 WebGPU 打字机默认使用深灰绿天空盒与石墨地台；加 `studioMood=light` 恢复原亮色舞台作同输入对照。三块软箱、Studio Small 05 HDR、曝光 1、环境强度 0.35、原反射／接触阴影权重保持，不以整张画面降曝光代替布光。浅色毛玻璃工具和面板保留，仅将直接叠在暗场的标题、说明、输入提示与细引线改为上述浅色。
 

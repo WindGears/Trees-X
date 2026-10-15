@@ -6,6 +6,8 @@ import { useDocumentVisibility, useElementVisibility } from '@vueuse/core'
 import { useWorkbenchRenderHost } from '@/composables/useWorkbenchRenderHost'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
 import WorkbenchRealtimeStatus from './WorkbenchRealtimeStatus.vue'
+import WorkbenchStudioMood from './WorkbenchStudioMood.vue'
+import type { StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
 import type { RefinementStatus } from '@/lib/workbench/rendering/refinementTypes'
 import WorkbenchRefinement from './WorkbenchRefinement.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
@@ -16,7 +18,7 @@ import WorkbenchCallouts from './WorkbenchCallouts.vue'
 import type { CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
 import { hasTypewriterStudio } from '@/lib/workbench/studioPreset'
-import { resolveStudioPalette } from '@/lib/workbench/studio/palette'
+import { resolveStudioPalette, studioPalettes } from '@/lib/workbench/studio/palette'
 const props = defineProps<{
   preview?: boolean
   gallery?: boolean
@@ -38,10 +40,12 @@ const {
   rendererFailed,
   realtimeRequest,
 } = useWorkbenchRenderHost(() => sceneHost.value?.checkpoint())
+const studioMood = ref<'light' | 'dark'>(resolveStudioPalette(true).mood)
+const supportsStudioMood = computed(
+  () => hasTypewriterStudio(store.presentation) && backend.value === 'webgpu' && realtimeRequest,
+)
 const studioPalette = computed(() =>
-  hasTypewriterStudio(store.presentation) && backend.value === 'webgpu' && realtimeRequest
-    ? resolveStudioPalette(true)
-    : undefined,
+  supportsStudioMood.value ? studioPalettes[studioMood.value] : undefined,
 )
 const stageBackground = computed(
   () =>
@@ -50,6 +54,12 @@ const stageBackground = computed(
 )
 const refinement = shallowRef<RefinementStatus>()
 const lighting = shallowRef<RealtimeStatus>()
+const studioEnvironment = shallowRef<StudioEnvironmentStatus>({ phase: 'idle' })
+function changeStudioMood(mood: 'light' | 'dark') {
+  if (mood === studioMood.value && studioEnvironment.value.phase === 'error')
+    sceneHost.value?.retryStudioEnvironment()
+  else studioMood.value = mood
+}
 defineExpose({
   hybrid: { snapshot: () => sceneHost.value?.hybrid.snapshot() },
   realLighting: {
@@ -141,6 +151,7 @@ onErrorCaptured(() => {
     class="wb-stage"
     :data-render-backend="backend"
     :data-studio-mood="studioPalette?.mood"
+    :data-studio-environment="supportsStudioMood ? studioEnvironment.phase : undefined"
     :data-lighting-phase="lighting?.phase"
     :data-refinement-phase="refinement?.phase ?? 'raster'"
     :data-scene-status="store.status"
@@ -179,11 +190,20 @@ onErrorCaptured(() => {
         :catalog="catalog"
         :checkpoint="checkpoint"
         :realtime-pipeline="realtimeRequest"
+        :studio-mood="studioMood"
         @restore="restore"
         @refinement="reportRefinement"
         @lighting="reportLighting"
+        @studio-environment="studioEnvironment = $event"
       />
     </TresCanvas>
+    <WorkbenchStudioMood
+      v-if="supportsStudioMood"
+      :mood="studioMood"
+      :status="studioEnvironment"
+      :disabled="!store.available"
+      @change="changeStudioMood"
+    />
     <WorkbenchRealtimeStatus
       v-if="store.available && realtimeRequest"
       :status="backend === 'webgpu' ? lighting : undefined"

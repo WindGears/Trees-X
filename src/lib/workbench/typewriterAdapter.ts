@@ -6,7 +6,8 @@ import { applyTypewriterFinishes } from './typewriterFinishes'
 import type { GlbSource, WorkbenchProduct } from './types'
 import { createTypewriterStudio } from './studio/stage'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
-import type { WorkbenchStudioFactory } from './rendering/studio'
+import type { WorkbenchStudio, WorkbenchStudioFactory } from './rendering/studio'
+import type { StudioMoodUpdate } from './studio/mood'
 
 export function bindTypewriter(
   product: WorkbenchProduct,
@@ -35,7 +36,7 @@ export function bindTypewriter(
   )
   adapter.root.userData.parts = parts.length
   adapter.root.userData.adapter = source.adapter
-  let studio: ReturnType<typeof createTypewriterStudio> | undefined
+  let studio: WorkbenchStudio | undefined
   const apply = () => {
     adapter.apply()
     applyRig(adapter.pose)
@@ -63,6 +64,7 @@ export function bindTypewriter(
       else throw new Error('WebGPU 打字机舞台尚未准备完成')
     },
     beforeRender: () => studio?.render(),
+    setStudioMood: (update: StudioMoodUpdate) => studio?.setMood?.(update),
     dispose() {
       if (disposed) return
       disposed = true
