@@ -7,6 +7,7 @@ import { createGpuStudioShadow } from './studioShadow'
 import { bindGpuAreaLights } from './studioEnvironment'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendererTypes'
 import { isRealtimeRenderer } from './realtimeMode'
+import { resolveStudioPalette } from '../studio/palette'
 
 export type WorkbenchStudio = ReturnType<typeof createTypewriterStudio>
 export type WorkbenchStudioFactory = (
@@ -24,7 +25,8 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
   groundY = studioDesign.groundY,
 ) => {
   if (!isWebGpuRenderer(renderer)) return createTypewriterStudio(renderer, scene, model, groundY)
-  const geometry = createGpuStudioGeometry(groundY),
+  const realtime = isRealtimeRenderer(renderer)
+  const geometry = createGpuStudioGeometry(groundY, false, resolveStudioPalette(realtime)),
     lighting = createStudioLights()
   let reflection: ReturnType<typeof createGpuStudioReflection> | undefined,
     shadow: ReturnType<typeof createGpuStudioShadow> | undefined,
@@ -47,7 +49,6 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
     // The realtime pass blends in HDR before ACES. WebGL blends the authored
     // overlays after tone mapping, so equal alpha values look much weaker here.
     // These stage-only weights are a visual calibration, not BRDF equivalence.
-    const realtime = isRealtimeRenderer(renderer)
     reflection = createGpuStudioReflection(groundY, realtime ? 0.5 : 0.28)
     scene.add(reflection.mesh)
     shadow = createGpuStudioShadow(renderer, scene, model, groundY, realtime ? 0.68 : 0.46)

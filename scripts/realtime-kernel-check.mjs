@@ -1,11 +1,19 @@
-/* global fetch, URL */
+/* global fetch, URL, getComputedStyle, innerHeight */
 import { chromium, expect } from '@playwright/test'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { createHash } from 'node:crypto'
 import { bridge } from './demo/browser-check.mjs'
 
-const base = process.env.CHECK_URL || 'http://127.0.0.1:5181',
-  output = process.env.REALTIME_KERNEL_OUTPUT || 'artifacts/webgpu-rollin/kernel',
+const comparison = process.env.REALTIME_COMPARISON || 'kernel'
+if (!['kernel', 'studio'].includes(comparison)) throw new Error('Unknown realtime comparison')
+const modes = comparison === 'studio' ? ['light', 'dark'] : ['static', 'rotating'],
+  base = process.env.CHECK_URL || 'http://127.0.0.1:5181',
+  output =
+    process.env.REALTIME_COMPARISON_OUTPUT ||
+    process.env.REALTIME_KERNEL_OUTPUT ||
+    (comparison === 'studio'
+      ? 'artifacts/typewriter-dark-studio/comparison'
+      : 'artifacts/webgpu-rollin/kernel'),
   bundle = JSON.parse(await readFile('src/lib/workbench/typewriterV2Bundle.json', 'utf8')),
   response = await fetch(new URL('/api/v1/products/typewriter-study', base))
 if (!response.ok) throw new Error('Real typewriter API unavailable')
@@ -22,9 +30,11 @@ const poses = [
 ]
 const report = {
   passed: false,
+  comparison,
   fixture: false,
   viewport: { width: 1440, height: 1000 },
   inputs: [],
+  layouts: [],
   checks: [],
   errors: [],
   requests: [],
@@ -33,8 +43,7 @@ const report = {
     'Actual GPU/presented-frame budget',
     '20-minute joint acceptance',
   ],
-  method:
-    'Actual production WebGPU, automatic v2, static versus rotating eight-tap kernel. Same assets, camera, pose, lights and material inputs. Complete-frame counters are CPU command submission counts, not GPU or presentation timing. Screenshots are qualitative evidence, not proof of improvement. No extra render loop or production pixel readback.',
+  method: `Actual production WebGPU, automatic v2, ${comparison === 'studio' ? 'light versus dark visible studio palette, same rotating reflection kernel and reference HDR' : 'static versus rotating eight-tap kernel'}. Same assets, camera, pose, lights and product material inputs. Complete-frame counters are CPU command submission counts, not GPU or presentation timing. Screenshots are qualitative evidence, not proof of improvement. No extra render loop or production pixel readback.`,
 }
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true }),
@@ -89,6 +98,9 @@ const snapshot = () =>
       renderer = test.scene.renderer.instance,
       scene = test.scene.scene.value,
       root = scene.children.find((node) => node.userData.workbenchProduct),
+      studio = scene.children.find((node) => node.userData.studio && !node.userData.capture),
+      pedestal = studio?.getObjectByName('Trees X / studio pedestal'),
+      floor = studio?.getObjectByName('Trees X / studio floor'),
       camera = test.scene.camera.activeCamera.value,
       poses = [],
       materials = new Map(),
@@ -160,13 +172,36 @@ const snapshot = () =>
       lights,
       exposure: renderer.toneMappingExposure,
       environmentIntensity: scene.environmentIntensity,
+      environmentTextureName: scene.environment?.name ?? null,
+      visibleStudio: {
+        mood: studio?.userData.studioMood ?? null,
+        pedestalColor: pedestal?.material?.color?.getHexString() ?? null,
+        floorColor: floor?.material?.color?.getHexString() ?? null,
+        background: scene.background?.isColor ? scene.background.getHexString() : null,
+        fog: scene.fog?.color.getHexString() ?? null,
+      },
       lighting: window.__kernelLighting.snapshot(),
     }
   })
+const layoutSnapshot = () =>
+  page.evaluate(() => {
+    const stage = document.querySelector('.wb-stage'),
+      title = document.querySelector('#wb-product-title')
+    return {
+      width: innerWidth,
+      height: innerHeight,
+      backend: stage?.getAttribute('data-render-backend'),
+      mood: stage?.getAttribute('data-studio-mood'),
+      title: title?.textContent,
+      titleColor: title ? getComputedStyle(title).color : null,
+      canvases: document.querySelectorAll('canvas').length,
+    }
+  })
 try {
-  for (const mode of ['static', 'rotating']) {
+  for (const mode of modes) {
     const url = new URL('/?product=typewriter-study&renderPipeline=realtime', base)
-    if (mode === 'static') url.searchParams.set('reflectionKernel', 'static')
+    if (comparison === 'studio') url.searchParams.set('studioMood', mode)
+    else if (mode === 'static') url.searchParams.set('reflectionKernel', 'static')
     await page.goto(url.href)
     await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
       timeout: 240000,
@@ -175,15 +210,16 @@ try {
     await attach()
     await settle()
     const first = await lighting()
-    expect(first.reflectionKernel.mode).toBe(mode)
+    const kernel = comparison === 'studio' ? 'rotating' : mode
+    expect(first.reflectionKernel.mode).toBe(kernel)
     const firstPhase = first.reflectionKernel.phase
     await settle()
     const next = await lighting()
     expect(next.reflectionKernel.frames).toBeGreaterThan(first.reflectionKernel.frames)
-    if (mode === 'static') expect(next.reflectionKernel.phase).toBe(0)
+    if (kernel === 'static') expect(next.reflectionKernel.phase).toBe(0)
     else expect(next.reflectionKernel.phase).not.toBe(firstPhase)
     for (const pose of poses) {
-      console.log(`[kernel ${mode}] ${pose.id}`)
+      console.log(`[${comparison} ${mode}] ${pose.id}`)
       await page.evaluate(() => {
         window.__demo.store.panel = null
         window.__demo.store.restore()
@@ -212,16 +248,37 @@ try {
         sameCanvas: true,
         sameRenderer: true,
       })
-      expect(input.lighting.reflectionKernel.mode).toBe(mode)
+      expect(input.lighting.reflectionKernel.mode).toBe(kernel)
+      if (comparison === 'studio') {
+        expect(input.visibleStudio).toEqual(
+          mode === 'dark'
+            ? {
+                mood: 'dark',
+                pedestalColor: '3f4944',
+                floorColor: '2e3832',
+                background: '333f39',
+                fog: '333f39',
+              }
+            : {
+                mood: 'light',
+                pedestalColor: 'd7dcd5',
+                floorColor: 'bfc8bd',
+                background: 'e7e9e5',
+                fog: 'e7e9e5',
+              },
+        )
+        expect(input.environmentTextureName).toBe('Trees X / Studio Small 05 reference HDR')
+      }
       const immutable = {
         poses: input.poses,
         materials: input.materials,
         lights: input.lights,
         exposure: input.exposure,
         environmentIntensity: input.environmentIntensity,
+        environmentTextureName: input.environmentTextureName,
       }
       const inputHash = createHash('sha256').update(JSON.stringify(immutable)).digest('hex')
-      if (mode === 'static') baseline.set(pose.id, { inputHash, camera: input.camera })
+      if (mode === modes[0]) baseline.set(pose.id, { inputHash, camera: input.camera })
       else {
         const previous = baseline.get(pose.id)
         expect(inputHash, pose.id + ' matched inputs').toBe(previous.inputHash)
@@ -235,6 +292,79 @@ try {
       const file = `${mode}-${pose.id}.png`
       await page.screenshot({ path: output + '/' + file })
       report.inputs.push({ mode, pose, file, inputHash, ...input })
+    }
+  }
+  if (comparison === 'studio') {
+    for (const [width, height] of [
+      [1280, 720],
+      [1440, 1000],
+      [1920, 1080],
+    ]) {
+      await page.setViewportSize({ width, height })
+      await page.evaluate(() => {
+        window.__demo.store.panel = null
+        window.__demo.store.restore()
+        window.__demo.store.view('perspective')
+      })
+      await page.waitForTimeout(1200)
+      await settle()
+      const before = await snapshot(),
+        overview = await layoutSnapshot(),
+        overviewFile = `layout-${width}-overview.png`
+      expect(overview).toMatchObject({
+        width,
+        height,
+        backend: 'webgpu',
+        mood: 'dark',
+        titleColor: 'rgb(241, 243, 238)',
+        canvases: 1,
+      })
+      expect(before.sameCanvas && before.sameRenderer).toBe(true)
+      await page.mouse.move(1, 1)
+      await page.screenshot({ path: output + '/' + overviewFile })
+      report.layouts.push({ ...overview, panel: null, file: overviewFile })
+      await page.getByRole('button', { name: '结构与动作', exact: true }).click()
+      await expect(page.locator('#wb-inspector')).toBeVisible()
+      await page.waitForTimeout(350)
+      await settle()
+      const opened = await snapshot(),
+        panel = await layoutSnapshot(),
+        panelFile = `layout-${width}-actions.png`
+      expect(opened.poses).toEqual(before.poses)
+      expect(opened.sameCanvas && opened.sameRenderer).toBe(true)
+      expect(panel).toEqual(overview)
+      await page.mouse.move(1, 1)
+      await page.screenshot({ path: output + '/' + panelFile })
+      await page.getByRole('button', { name: '收起面板', exact: true }).click()
+      await expect(page.locator('#wb-inspector')).toHaveCount(0)
+      await settle()
+      const closed = await snapshot()
+      expect(closed.poses).toEqual(before.poses)
+      expect(closed.sameCanvas && closed.sameRenderer).toBe(true)
+      report.layouts.push({ ...panel, panel: 'actions', file: panelFile, posesPreserved: true })
+    }
+    const darkUrl = new URL(
+      '/?product=typewriter-study&renderPipeline=realtime&studioMood=dark',
+      base,
+    )
+    for (const [width, height] of [
+      [390, 844],
+      [320, 740],
+    ]) {
+      await page.setViewportSize({ width, height })
+      await page.goto(darkUrl.href)
+      await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
+        timeout: 240000,
+      })
+      const fallback = await layoutSnapshot(),
+        file = `layout-${width}-fallback.png`
+      expect(fallback).toMatchObject({ width, height, backend: 'webgl', mood: null, canvases: 1 })
+      expect(fallback.title).toBeTruthy()
+      expect(fallback.titleColor).toBeTruthy()
+      expect(fallback.titleColor).not.toBe('rgb(241, 243, 238)')
+      await page.mouse.move(1, 1)
+      await page.screenshot({ path: output + '/' + file })
+      report.layouts.push({ ...fallback, panel: null, file })
     }
   }
   expect(report.errors).toEqual([])

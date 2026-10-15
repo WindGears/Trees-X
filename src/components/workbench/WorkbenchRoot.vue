@@ -14,6 +14,7 @@ import '@/assets/styles/workbench.css'
 import '@/assets/styles/workbench-accessibility.css'
 import '@/assets/styles/workbench-motion.css'
 import '@/assets/styles/workbench-floating.css'
+import '@/assets/styles/workbench-studio.css'
 
 const store = useWorkbenchStore()
 provideMotionSession(store)

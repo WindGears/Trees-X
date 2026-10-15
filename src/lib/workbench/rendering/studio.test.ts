@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   BoxGeometry,
+  Box3,
   Color,
   Group,
   HalfFloatType,
@@ -18,6 +19,7 @@ import { createGpuStudioReflection } from './studioReflection'
 import { createGpuStudioShadow } from './studioShadow'
 import { createStudioSkyTexture } from './studioEnvironment'
 import { studioDesign } from '../studio/design'
+import { studioPalettes } from '../studio/palette'
 import { createWorkbenchStudio } from './studio'
 import { registerRealtimeRenderer } from './realtimeMode'
 
@@ -75,6 +77,9 @@ describe('WebGPU authored studio', () => {
       const pedestal = scene.getObjectByName('Trees X / studio pedestal') as Mesh
       expect(pedestal.material).toBeInstanceOf(MeshPhysicalMaterial)
       expect(scene.getObjectByName('Trees X / studio skybox')).toBeDefined()
+      expect(scene.getObjectByName('Trees X / product studio')?.userData.studioMood).toBe(
+        realtime ? 'dark' : 'light',
+      )
       expect(scene.getObjectByName('Trees X / studio contact shadow')).toBeDefined()
       expect(scene.children.filter((object) => 'isRectAreaLight' in object)).toHaveLength(3)
       studio.render()
@@ -120,6 +125,55 @@ describe('WebGPU authored studio', () => {
     expect(source).toHaveBeenCalledTimes(1)
     expect(trace).toHaveBeenCalledTimes(1)
     expect(skyDispose).toHaveBeenCalledTimes(1)
+  })
+
+  it('changes visible colors without reshaping the studio or recoloring frozen environment captures', () => {
+    const light = createGpuStudioGeometry(-0.15, false, studioPalettes.light),
+      dark = createGpuStudioGeometry(-0.15, false, studioPalettes.dark),
+      capture = createGpuStudioGeometry(-0.15, true, studioPalettes.dark)
+    const mesh = (studio: typeof light, name: string) => {
+      const node = studio.group.getObjectByName(`Trees X / studio ${name}`)
+      if (!(node instanceof Mesh)) throw new Error(`Missing ${name}`)
+      return node
+    }
+    const bounds = new Map(
+      ['pedestal', 'floor', 'skybox'].map((name) => [
+        name,
+        new Box3().setFromObject(mesh(light, name)),
+      ]),
+    )
+    try {
+      for (const [studio, palette] of [
+        [light, studioPalettes.light],
+        [dark, studioPalettes.dark],
+        [capture, studioPalettes.light],
+      ] as const) {
+        const pedestal = mesh(studio, 'pedestal'),
+          floor = mesh(studio, 'floor'),
+          pedestalMaterial = pedestal.material as MeshPhysicalMaterial,
+          floorMaterial = floor.material as MeshStandardNodeMaterial,
+          traceFloor = floor.userData.traceMaterial as MeshStandardMaterial
+        expect(studio.group.userData.studioMood).toBe(palette.mood)
+        expect(pedestalMaterial.color.getHexString()).toBe(palette.pedestal.slice(1))
+        expect(floorMaterial.color.getHexString()).toBe(palette.floor.slice(1))
+        expect(traceFloor.color.equals(floorMaterial.color)).toBe(true)
+        for (const name of ['pedestal', 'floor', 'skybox']) {
+          const expected = bounds.get(name)!,
+            actual = new Box3().setFromObject(mesh(studio, name))
+          expect(actual.min.toArray()).toEqual(expected.min.toArray())
+          expect(actual.max.toArray()).toEqual(expected.max.toArray())
+        }
+        const owners = [pedestal.geometry, pedestalMaterial, floorMaterial, traceFloor],
+          disposal = owners.map((owner) => vi.spyOn(owner, 'dispose'))
+        studio.dispose()
+        studio.dispose()
+        for (const dispose of disposal) expect(dispose).toHaveBeenCalledOnce()
+      }
+    } finally {
+      light.dispose()
+      dark.dispose()
+      capture.dispose()
+    }
   })
 
   it('keeps the planar reflection as a separate owned TSL layer', () => {

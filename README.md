@@ -1,5 +1,7 @@
 # Trees X
 
+实时打字机暗色试用：[深灰绿摄影棚](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) ／ [原亮色对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light)。使用支持 WebGPU 的桌面浏览器；不支持时明确回退 WebGL。曝光、HDR、软箱和商品材质保持，实际效果由本人比较，见 [试用记录](.ai/typewriter-dark-studio-validation.md)。
+
 最新节点（2026-10-15）：继续推进打字机 WebGPU，已核验的 **v2 材质／WindGear 铭牌默认接入显式实时入口**。本批为原八个反射滤波 tap 增加像素 IGN 与成功完整帧 golden-angle 旋转，保持采样数量、半径、Physical 参数、唯一 renderer 和时钟；失败或取消不推进 phase。check、生产构建与 API 启动、真实 WebGPU 两核六取景、v2 交互／生命周期及管理取景检查通过；整体画质由用户本人肉眼判断，实际呈现预算与 P95 仍待验证。
 
 - [WebGPU 实时入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime)：默认 v2 材质与旋转核。

@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { parseProduct } from './api'
 import { hasTypewriterStudio, resolveWorkbenchStage } from './studioPreset'
 import { defaultStage } from './presentationV2'
+
+afterEach(() => vi.unstubAllGlobals())
 
 function presentation(file: string) {
   return parseProduct(JSON.parse(readFileSync(file, 'utf8')) as unknown).presentation
@@ -46,6 +48,28 @@ describe('registered photography studio lighting', () => {
     expect(webgl.key.intensity).toBe(0.75)
     expect(webgl.rim.intensity).toBe(0.35)
     expect(webgl.environmentIntensity).toBe(0.9)
+    expect(JSON.stringify(source)).toBe(snapshot)
+  })
+  it('changes only the visible realtime stage palette while retaining its calibrated lighting', () => {
+    const source = presentation('server/src/main/resources/presentations/typewriter-kimi-v1.json'),
+      snapshot = JSON.stringify(source)
+    vi.stubGlobal('location', new URL('http://localhost/?studioMood=dark'))
+    const dark = resolveWorkbenchStage(source, false, true),
+      webgl = resolveWorkbenchStage(source, false)
+    expect(dark.background).toBe('#333f39')
+    expect(dark.ground).toBe('#3f4944')
+    expect(webgl.background).toBe('#e7e9e5')
+    expect(webgl.ground).toBe('#d8dcd5')
+    vi.stubGlobal('location', new URL('http://localhost/?studioMood=light'))
+    const light = resolveWorkbenchStage(source, false, true)
+    expect(light.background).not.toBe(dark.background)
+    expect(light.ground).not.toBe(dark.ground)
+    expect({ ...dark, background: light.background, ground: light.ground }).toEqual(light)
+    expect(dark.exposure).toBe(1)
+    expect(dark.environmentIntensity).toBe(0.35)
+    expect(dark.ambient).toBe(0.16)
+    expect(dark.key.intensity).toBe(0)
+    expect(dark.rim.intensity).toBe(0)
     expect(JSON.stringify(source)).toBe(snapshot)
   })
 })

@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 可见舞台配色与照明隔离（2026-10-15）
+
+`studio/palette` 选择可见舞台 light/dark 配色，实时 WebGPU 打字机默认 dark，`studioMood=light` 对照。`rendering/studio` 按 renderer 的已注册实时身份传给 `studioGeometry`，只变天空、地台、地面与派生 traceFloor 颜色；capture 路径强制 light，不改变照明环境。`studioPreset` 同步实际背景／雾色，WebGL 与 hybrid 原值保持。Stage 的 DOM mood 依赖实际后端与商品能力，局部 CSS 只调整暗背景上直接绘制的文字／引线；不改变浅色玻璃面板、不增加 Three 所有者或逐帧响应式状态。配置版本与接口保持。验证见 [暗色舞台](typewriter-dark-studio-validation.md)。
+
 ## 当前 WebGPU 接入与反射核调度（2026-10-15）
 
 用户要求工程检查成功后逐项接入实时入口，画质交由本人肉眼判断。`typewriterCandidate` 对显式 `renderPipeline=realtime` 默认选择 v2；`typewriterAsset=v1` 显式保留旧材质。原适配器、包 ID、版本与摘要校验仍限制替换范围，普通 WebGL、其他商品和管理员自定义包不变，不写数据库或修改展示配置版本。

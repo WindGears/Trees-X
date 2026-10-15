@@ -1,0 +1,21 @@
+/* Only text drawn directly over the dark live studio changes. The glass tools
+   retain their established light palette, including in management previews. */
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-intro {
+  color: #f1f3ee;
+}
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-intro p,
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-sample-label {
+  color: #c0c9c0;
+}
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-input-hint {
+  color: #c7cec4;
+}
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-callout-lines {
+  color: #c0c9c0;
+}
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-callout-lines circle {
+  fill: #d2dfcf;
+}
+.wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-callout-lines .is-selected {
+  color: #edf4e8;
+}

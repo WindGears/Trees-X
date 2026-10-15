@@ -1,5 +1,7 @@
 # Trees X
 
+2026-10-15 暗色舞台试用：实时 WebGPU 打字机默认试用深灰绿摄影棚与石墨地台，保留商品原光照、材质、交互和浅色玻璃工具；加 `studioMood=light` 对比原亮色。普通 WebGL、hybrid 和其他商品保持。取舍由用户本人观察，不把暗环境写作渲染噪声已经解决。证据见 [.ai/typewriter-dark-studio-validation.md](.ai/typewriter-dark-studio-validation.md)。
+
 2026-10-15 当前接入：用户要求继续 WebGPU，把工程检查成功的改进逐项导入可用入口，整体画质由本人肉眼判断。显式 `?product=typewriter-study&renderPipeline=realtime` 默认使用打字机 v2 的微表面材质与 WindGear 铭牌，`typewriterAsset=v1` 保留旧材质对照；普通 WebGL、钢琴／汽车、管理员自定义包及数据库不变。自由观察、敲键、聚焦、分层、平铺、导览和管理预览继续原工作台。
 
 本批默认在原有八个反射滤波 tap 上加入像素 IGN 与成功完整帧 golden-angle 旋转，`reflectionKernel=static` 提供原固定核对照。采样数量、半径、Physical 参数与唯一 renderer／时钟不改，失败／取消不推进 phase；这沿用 Three MIT 核旋转思路，不宣称新算法。check、生产构建与 API 启动、真实 WebGPU 对照及 v2 交互／生命周期／管理取景检查通过；整体画质待用户评定，实际呈现预算与 P95 仍待验证。DDGI／FidelityFX／BVH 尚未接入，证据集中于 [.ai/typewriter-webgpu-rollin-validation.md](.ai/typewriter-webgpu-rollin-validation.md)。下方 dated 段落属于对应历史批次，其中“画质未过不接入”及旧入口约定不限制本次用户授权。

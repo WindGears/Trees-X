@@ -1,6 +1,6 @@
 ---
 name: Trees X 三维商品工作台
-description: 访客采用方案 C 浅银灰毛玻璃漂浮工作台；管理端与管理预览保留深蓝灰基础主题，打字机共用摄影棚舞台。
+description: 访客采用方案 C 毛玻璃漂浮工作台；实时 WebGPU 打字机试用深灰绿摄影棚与浅色玻璃工具，其他入口保留既有配色。
 scope: 下列 colors/typography/rounded 是共享基础样式；visitorColors/visitorTypography/visitorRounded 仅覆盖 wb-floating。
 visitorColors:
   wb-bg: '#e7e9e5'
@@ -18,6 +18,17 @@ visitorColors:
   stage-ground: '#d8dcd5'
   selected-background: '#e1e9df'
   selected-border: '#aabbab'
+studioColors:
+  dark-background-middle-fog: '#333f39'
+  dark-sky-top: '#505c55'
+  dark-sky-bottom: '#242e29'
+  dark-floor: '#2e3832'
+  dark-pedestal: '#3f4944'
+  dark-title: '#f1f3ee'
+  dark-description-label-line: '#c0c9c0'
+  dark-input-hint: '#c7cec4'
+  dark-anchor: '#d2dfcf'
+  dark-selected-line: '#edf4e8'
 visitorTypography:
   display-desktop: 'clamp(34px, 2.6vw, 44px) / 1.25 / 500'
   display-mobile: '29px / 1.25 / 500'
@@ -198,6 +209,12 @@ components:
 ---
 
 # Design System: Trees X 三维商品工作台
+
+## 深灰绿摄影棚试用（2026-10-15）
+
+按用户要求试验压暗环境，实时 WebGPU 打字机默认使用深灰绿天空盒与石墨地台；加 `studioMood=light` 恢复原亮色舞台作同输入对照。三块软箱、Studio Small 05 HDR、曝光 1、环境强度 0.35、原反射／接触阴影权重保持，不以整张画面降曝光代替布光。浅色毛玻璃工具和面板保留，仅将直接叠在暗场的标题、说明、输入提示与细引线改为上述浅色。
+
+`studio/palette.ts` 是可见舞台配色源，`studioPreset` 同步背景雾色；捕获环境与 hybrid 保留原亮色。DOM `data-studio-mood` 依据实际后端和已注册打字机源设置，硬件回退、移动端、钢琴和汽车不套用暗场文字。没有新纹理、绘制通道、时钟或 renderer。明暗取景证据与检查范围见 [.ai/typewriter-dark-studio-validation.md](.ai/typewriter-dark-studio-validation.md)，画质取舍由用户本人判断。
 
 ## 当前实时画面接入（2026-10-15）
 

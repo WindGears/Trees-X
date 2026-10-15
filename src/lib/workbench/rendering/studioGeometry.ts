@@ -27,12 +27,20 @@ import {
 } from 'three/tsl'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { studioDesign } from '../studio/design'
+import { studioPalettes, type StudioPalette } from '../studio/palette'
 
-export function createGpuStudioGeometry(groundY: number = studioDesign.groundY, capture = false) {
+export function createGpuStudioGeometry(
+  groundY: number = studioDesign.groundY,
+  capture = false,
+  palette: StudioPalette = studioPalettes.light,
+) {
+  // Environment captures are frozen references, never the visitor's visible mood.
+  const colors = capture ? studioPalettes.light : palette
   const group = new Group()
   group.name = capture ? 'Trees X / studio capture' : 'Trees X / product studio'
   group.userData.studio = true
   group.userData.capture = capture
+  group.userData.studioMood = colors.mood
   const geometries = new Set<BufferGeometry>(),
     materials = new Set<Material>()
   const fill = capture ? studioDesign.captureFill : 1
@@ -49,13 +57,13 @@ export function createGpuStudioGeometry(groundY: number = studioDesign.groundY, 
   skyMaterial.name = 'TreesXStudioSkyboxTSL'
   const elevation = positionLocal.normalize().y
   const upper = mix(
-    color(new Color(studioDesign.backdrop.middle).multiplyScalar(fill)),
-    color(new Color(studioDesign.backdrop.top).multiplyScalar(fill)),
+    color(new Color(colors.backdrop.middle).multiplyScalar(fill)),
+    color(new Color(colors.backdrop.top).multiplyScalar(fill)),
     smoothstep(0, 0.85, elevation),
   )
   skyMaterial.colorNode = mix(
     upper,
-    color(new Color(studioDesign.backdrop.bottom).multiplyScalar(fill)),
+    color(new Color(colors.backdrop.bottom).multiplyScalar(fill)),
     smoothstep(0, 0.85, elevation.negate()),
   )
   const view = cameraViewMatrix.mul(vec4(positionLocal, 0))
@@ -70,7 +78,7 @@ export function createGpuStudioGeometry(groundY: number = studioDesign.groundY, 
   materials.add(skyMaterial)
   group.add(sky)
   const surface = new MeshPhysicalMaterial({
-    color: studioDesign.pedestal,
+    color: colors.pedestal,
     roughness: 0.32,
     metalness: 0.055,
     clearcoat: 0.2,
@@ -93,7 +101,7 @@ export function createGpuStudioGeometry(groundY: number = studioDesign.groundY, 
   materials.add(surface)
   group.add(pedestal)
   const floorMaterial = new MeshStandardNodeMaterial({
-    color: studioDesign.floor,
+    color: colors.floor,
     roughness: 0.74,
     transparent: true,
     depthWrite: false,
@@ -103,7 +111,7 @@ export function createGpuStudioGeometry(groundY: number = studioDesign.groundY, 
     30,
     positionWorld.xz.sub(cameraPosition.xz).length(),
   ).oneMinus()
-  const traceFloor = new MeshStandardMaterial({ color: studioDesign.floor, roughness: 0.74 })
+  const traceFloor = new MeshStandardMaterial({ color: colors.floor, roughness: 0.74 })
   const floor = new Mesh(new PlaneGeometry(200, 200), floorMaterial)
   floor.name = 'Trees X / studio floor'
   floor.userData.traceMaterial = traceFloor

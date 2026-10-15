@@ -15,15 +15,14 @@ import WorkbenchFallback from './WorkbenchFallback.vue'
 import WorkbenchCallouts from './WorkbenchCallouts.vue'
 import type { CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
+import { hasTypewriterStudio } from '@/lib/workbench/studioPreset'
+import { resolveStudioPalette } from '@/lib/workbench/studio/palette'
 const props = defineProps<{
   preview?: boolean
   gallery?: boolean
   inspector?: boolean
   catalog?: boolean
 }>()
-const stageBackground = computed(() =>
-  props.gallery ? '#e7e9e5' : (store.presentation?.stage?.background ?? '#151c25'),
-)
 const store = useWorkbenchStore()
 const revision = ref(0),
   stageElement = ref<HTMLElement>()
@@ -39,6 +38,16 @@ const {
   rendererFailed,
   realtimeRequest,
 } = useWorkbenchRenderHost(() => sceneHost.value?.checkpoint())
+const studioPalette = computed(() =>
+  hasTypewriterStudio(store.presentation) && backend.value === 'webgpu' && realtimeRequest
+    ? resolveStudioPalette(true)
+    : undefined,
+)
+const stageBackground = computed(
+  () =>
+    studioPalette.value?.background ??
+    (props.gallery ? '#e7e9e5' : (store.presentation?.stage?.background ?? '#151c25')),
+)
 const refinement = shallowRef<RefinementStatus>()
 const lighting = shallowRef<RealtimeStatus>()
 defineExpose({
@@ -131,6 +140,7 @@ onErrorCaptured(() => {
     ref="stageElement"
     class="wb-stage"
     :data-render-backend="backend"
+    :data-studio-mood="studioPalette?.mood"
     :data-lighting-phase="lighting?.phase"
     :data-refinement-phase="refinement?.phase ?? 'raster'"
     :data-scene-status="store.status"
