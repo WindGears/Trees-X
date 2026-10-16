@@ -41,6 +41,11 @@ async function fixture() {
     'public/studio/amber-lounge/v1/stone-basecolor.png': 'amber stone basecolor',
     'public/studio/amber-lounge/v1/stone-roughness.png': 'amber roughness data',
     'public/studio/amber-lounge/v1/stone-normal.png': 'amber normal data',
+    'public/studio/amber-lounge/spatial-v1/radial-distance.f32': 'radial distance float data',
+    'public/studio/amber-lounge/spatial-v1/DA2-LICENSE.txt': 'Apache-2.0',
+    'public/studio/amber-lounge/layers-v1/clean-room.png': 'inferred room background',
+    'public/studio/amber-lounge/layers-v1/chair-table.png': 'fixed chair and table RGBA',
+    'public/studio/amber-lounge/layers-v1/table-lamp.png': 'fixed lamp RGBA',
   }
   files['public/models/denoise/manifest.json'] = JSON.stringify({
     schemaVersion: 1,
@@ -72,6 +77,23 @@ async function fixture() {
         .digest('hex'),
     })),
   })
+  for (const [pack, entry, paths] of [
+    ['spatial-v1', 'radial-distance.f32', ['radial-distance.f32', 'DA2-LICENSE.txt']],
+    ['layers-v1', 'clean-room.png', ['clean-room.png', 'chair-table.png', 'table-lamp.png']],
+  ]) {
+    const directory = 'public/studio/amber-lounge/' + pack + '/'
+    files[directory + 'manifest.json'] = JSON.stringify({
+      schemaVersion: 1,
+      entry,
+      files: paths.map((path) => ({
+        path,
+        bytes: Buffer.byteLength(files[directory + path]),
+        sha256: createHash('sha256')
+          .update(files[directory + path])
+          .digest('hex'),
+      })),
+    })
+  }
   for (const [path, content] of Object.entries(files)) {
     await mkdir(dirname(join(rootDir, path)), { recursive: true })
     await writeFile(join(rootDir, path), content)
@@ -128,6 +150,13 @@ test('stable preparation records complete production support digests and rejects
         'draco/draco_wasm_wrapper.js',
         'models/denoise/manifest.json',
         'models/denoise/rt_hdr_alb_nrm.tza',
+        'studio/amber-lounge/layers-v1/chair-table.png',
+        'studio/amber-lounge/layers-v1/clean-room.png',
+        'studio/amber-lounge/layers-v1/manifest.json',
+        'studio/amber-lounge/layers-v1/table-lamp.png',
+        'studio/amber-lounge/spatial-v1/DA2-LICENSE.txt',
+        'studio/amber-lounge/spatial-v1/manifest.json',
+        'studio/amber-lounge/spatial-v1/radial-distance.f32',
         'studio/amber-lounge/v1/lounge-panorama.png',
         'studio/amber-lounge/v1/manifest.json',
         'studio/amber-lounge/v1/stone-basecolor.png',
@@ -143,12 +172,17 @@ test('stable preparation records complete production support digests and rejects
     await assert.rejects(verifyPrepared(config), /生产产物已改变/)
     await writeFile(join(config.distDir, 'covers/product.png'), 'cover')
     for (const file of [
-      'lounge-panorama.png',
-      'stone-basecolor.png',
-      'stone-roughness.png',
-      'stone-normal.png',
+      'v1/lounge-panorama.png',
+      'v1/stone-basecolor.png',
+      'v1/stone-roughness.png',
+      'v1/stone-normal.png',
+      'spatial-v1/radial-distance.f32',
+      'spatial-v1/DA2-LICENSE.txt',
+      'layers-v1/clean-room.png',
+      'layers-v1/chair-table.png',
+      'layers-v1/table-lamp.png',
     ]) {
-      const path = join(config.distDir, 'studio', 'amber-lounge', 'v1', file)
+      const path = join(config.distDir, 'studio', 'amber-lounge', file)
       const original = await readFile(path)
       const corrupted = Buffer.from(original)
       corrupted[0] ^= 1

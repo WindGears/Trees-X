@@ -67,7 +67,7 @@ const records: readonly Readonly<AssetRecord>[] = Object.freeze(
 )
 
 /** ImageBitmap decode cannot be cancelled; close a late bitmap without allocating a texture. */
-function decodeBitmap(bytes: ArrayBuffer, signal: AbortSignal): Promise<ImageBitmap> {
+export function decodeBitmap(bytes: ArrayBuffer, signal: AbortSignal): Promise<ImageBitmap> {
   signal.throwIfAborted()
   return new Promise((resolve, reject) => {
     let finished = false
@@ -100,7 +100,7 @@ function decodeBitmap(bytes: ArrayBuffer, signal: AbortSignal): Promise<ImageBit
   })
 }
 
-function ownTexture(texture: Texture, bitmap: ImageBitmap) {
+export function ownTexture(texture: Texture, bitmap: ImageBitmap) {
   let disposed = false
   return {
     texture,

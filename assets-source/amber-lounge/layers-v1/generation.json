@@ -1,0 +1,22 @@
+{
+  "createdOn": "2026-10-16",
+  "tool": "built-in image_gen",
+  "source": "public/studio/amber-lounge/v1/lounge-panorama.png",
+  "jobs": [
+    {
+      "key": "clean-room",
+      "transparent": false,
+      "prompt": "Use case: precise-object-edit. DELIVERABLE: one clean background plate for layered 2.5D Three.js room projection, retaining the input's exact 2:1 full-spherical equirectangular projection, camera optical centre, horizon, ceiling/wall/floor junctions, wall panel divisions, amber cove lighting, exposure, warm espresso palette and stone material. EDIT ONLY: remove BOTH groups of armchairs/ottomans, all side tables, table lamps and potted plants, including their cast shadows and localized reflections; reconstruct the wall and floor that were hidden behind them. There must be NO furniture or freestanding object anywhere. Preserve the architectural light strips and ceiling spotlights and their broad wall lighting. Keep architecture in its original angular positions; do not recompose the room, change focal length, straighten the panorama into a perspective photo, add doors or windows, or add foreground staging. Keep sharp natural detail throughout: NO artificial bokeh, NO uniform blur, NO typewriter, NO pedestal, NO UI, NO lettering. This clean plate will fill disocclusion holes behind separately projected furniture, so geometry/alignment fidelity outranks decorative detail. Preserve seamless longitude intent with a broad quiet wall at the left/right join. Output full image only, no labels or comparison layout. Maximize native resolution, do not claim HDR: this remains an LDR color plate."
+    },
+    {
+      "key": "chair-table",
+      "transparent": true,
+      "prompt": "Use case: precise-object-edit. DELIVERABLE: a genuinely transparent RGBA cutout asset for a layered Three.js lounge. The input image is the material, lighting, style and object identity reference. Isolate and faithfully reconstruct ONE of its taupe-brown upholstered low lounge armchairs, together with one small dark round side table placed immediately to the chair's right; REMOVE the table lamp, plant and ottoman. Show one coherent furniture group from a front three-quarter camera, slight top visibility as in the reference, at normal human eye height. Keep the same elegant chunky chair proportions, softly padded arms, short dark feet, muted woven upholstery, dark brown circular tabletop, warm upper side light and restrained shadows on the objects. Preserve complete silhouettes and all legs; reconstruct formerly occluded parts plausibly, do not cut objects at the image boundaries. Objects occupy roughly 75% of a landscape canvas with transparent margin all around. The chair/table group is the ONLY opaque content. Absolutely no wall, floor, room, baked floor shadow, rectangle behind the asset, checkerboard pattern, typewriter, pedestal, UI, caption or text. No excessive glow or blur. Genuine transparent background, sharp edge alpha."
+    },
+    {
+      "key": "table-lamp",
+      "transparent": true,
+      "prompt": "Use case: precise-object-edit. DELIVERABLE: a genuinely transparent RGBA cutout of ONE practical table lamp from the reference amber lounge, for a separate midground image layer. Faithfully retain the lamp's warm cream truncated fabric shade, small slender dark bronze stem and restrained round base. Show the entire standalone lamp in a consistent front three-quarter perspective with slight top visibility matching a seated tabletop product view. The shade emits a restrained warm amber-white light but remains visibly textured and not clipped to white; body detail and silhouette stay sharp. Place the full lamp centrally with transparent margins and no cropping. The lamp alone is opaque: no table, furniture, walls, floor, baked background glow, checkerboard, pedestal, typewriter, labels, text or UI. No motion blur or fake depth blur. Keep the input room's dark warm-brown and amber lighting character. Real transparent background, including around and below the base. The luminous shade will be paired with a real light in Three.js; do not paint an environment into this asset."
+    }
+  ]
+}

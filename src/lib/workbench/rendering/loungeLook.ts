@@ -25,6 +25,7 @@ import type { createGpuStudioGeometry } from './studioGeometry'
 import { loadLoungeAssets, type LoungeAssets } from './loungeAssets'
 import { studioPalettes } from '../studio/palette'
 import type { StudioEnvironmentStatus, StudioMoodUpdate } from '../studio/mood'
+import { createLoungeSpatialLook } from './loungeSpatialLook'
 
 /** Appearance only. No camera/model writes, renderer, extra draw or automatic ticker. */
 export function createLoungeLook(
@@ -83,6 +84,15 @@ export function createLoungeLook(
   material.clearcoat = 0.2
   material.clearcoatRoughness = 0.3
   pedestal.material = material
+  const sideMaterial = geometry.tableSideMaterial
+    ? new MeshPhysicalNodeMaterial().copy(geometry.tableSideMaterial)
+    : undefined
+  if (sideMaterial && geometry.table) {
+    sideMaterial.colorNode = material.colorNode
+    sideMaterial.roughnessNode = material.roughnessNode
+    sideMaterial.normalNode = material.normalNode
+    geometry.table.top.material = [material, sideMaterial]
+  }
   const lightFloor = new Color(studioPalettes.light.floor),
     darkFloor = new Color(studioPalettes.dark.floor),
     originalLights = lights.map((light) => ({
@@ -92,6 +102,7 @@ export function createLoungeLook(
     warmLights = [new Color('#ffe4c0'), new Color('#fff0dc'), new Color('#dfb489')],
     warmPower = [0.6, 0.92, 0.85]
   let assets: LoungeAssets | undefined,
+    spatial: Awaited<ReturnType<typeof createLoungeSpatialLook>>,
     loading = false,
     disposed = false,
     target: 'light' | 'dark' = 'light',
@@ -108,16 +119,25 @@ export function createLoungeLook(
     report(value)
   }
   async function load() {
-    if (disposed || loading || assets) return
+    if (disposed || loading || (assets && (!geometry.table || spatial))) return
     loading = true
     publish({ phase: 'loading' })
     try {
-      const result = await loadLoungeAssets(abort.signal)
+      const result = assets ?? (await loadLoungeAssets(abort.signal))
       if (disposed) {
         result.dispose()
         return
       }
       assets = result
+      if (geometry.table && !spatial) {
+        spatial = await createLoungeSpatialLook(geometry, result.panorama, abort.signal)
+        if (disposed) {
+          spatial?.dispose()
+          spatial = undefined
+          return
+        }
+        spatial?.setBlend(amount.value)
+      }
       panorama.value = result.panorama
       base.value = result.baseColor
       roughness.value = result.roughness
@@ -126,6 +146,12 @@ export function createLoungeLook(
       material.normalMap = result.normal
       material.normalScale = new Vector2(0.28, 0.28)
       material.roughnessMap = result.roughness
+      if (sideMaterial) {
+        sideMaterial.map = result.baseColor
+        sideMaterial.normalMap = result.normal
+        sideMaterial.roughnessMap = result.roughness
+        sideMaterial.needsUpdate = true
+      }
       ready.value = 1
       skyMaterial.needsUpdate = material.needsUpdate = true
       publish({ phase: 'ready' })
@@ -144,6 +170,7 @@ export function createLoungeLook(
     const blend = amount.value
     floorMaterial.color.copy(lightFloor).lerp(darkFloor, blend)
     traceFloor.color.copy(floorMaterial.color)
+    spatial?.setBlend(blend)
     for (let index = 0; index < lights.length; index++) {
       const light = lights[index]!,
         original = originalLights[index]!
@@ -196,7 +223,11 @@ export function createLoungeLook(
       abort.abort()
       tween?.kill()
       tween = undefined
-      if (pedestal.material === material) pedestal.material = surface
+      spatial?.dispose()
+      spatial = undefined
+      if (geometry.table) geometry.table.top.material = surface
+      else if (pedestal.material === material) pedestal.material = surface
+      sideMaterial?.dispose()
       material.dispose()
       assets?.dispose()
       assets = undefined

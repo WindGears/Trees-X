@@ -4,6 +4,13 @@ import { open, readFile, readdir, stat } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { demoProducts } from './config.mjs'
 
+export const supportAssetManifests = Object.freeze([
+  'models/denoise/manifest.json',
+  'studio/amber-lounge/v1/manifest.json',
+  'studio/amber-lounge/spatial-v1/manifest.json',
+  'studio/amber-lounge/layers-v1/manifest.json',
+])
+
 export async function fileDigest(path) {
   const hash = createHash('sha256')
   let bytes = 0
@@ -141,9 +148,9 @@ export async function inspectSupportAssets(directory) {
       }
     }
   }
-  await inspectManifest(join(directory, 'models', 'denoise', 'manifest.json'))
-  await inspectManifest(join(directory, 'studio', 'amber-lounge', 'v1', 'manifest.json'))
-  for (const path of ['draco', 'covers', 'models/denoise', 'studio/amber-lounge/v1'])
+  for (const manifest of supportAssetManifests)
+    await inspectManifest(resourcePath(directory, manifest))
+  for (const path of ['draco', 'covers', ...supportAssetManifests.map(dirname)])
     await collect(join(directory, path))
   for (const required of ['draco/draco_wasm_wrapper.js', 'draco/draco_decoder.wasm'])
     if (!files.some((file) => file.path === required))

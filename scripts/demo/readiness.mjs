@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import { demoProducts } from './config.mjs'
-import { resourcePath } from './assets.mjs'
+import { resourcePath, supportAssetManifests } from './assets.mjs'
 import { listeningPids, ownsProcess, readProcess } from './processes.mjs'
 
 export function staticPath(value, baseUrl) {
@@ -71,14 +71,17 @@ export async function inspectApi(config, products = demoProducts) {
   // All formal adapters use the locally shipped Draco decoder; no CDN is needed.
   for (const path of ['/draco/draco_wasm_wrapper.js', '/draco/draco_decoder.wasm'])
     await checkStatic(config, path, checked)
-  const denoiseManifest = '/models/denoise/manifest.json'
-  const denoiseResponse = await request(config.baseUrl + denoiseManifest)
-  const denoiseBytes = Buffer.from(await denoiseResponse.arrayBuffer())
-  const denoiseLocal = await readFile(resourcePath(config.distDir, denoiseManifest.slice(1)))
-  if (!denoiseBytes.equals(denoiseLocal)) throw new Error('降噪资源清单与生产 dist 不一致。')
-  checked.add(denoiseManifest)
-  for (const file of JSON.parse(denoiseBytes.toString('utf8')).files)
-    await checkStatic(config, '/models/denoise/' + file.path, checked)
+  for (const manifest of supportAssetManifests) {
+    const url = '/' + manifest,
+      response = await request(config.baseUrl + url),
+      bytes = Buffer.from(await response.arrayBuffer()),
+      local = await readFile(resourcePath(config.distDir, manifest))
+    if (!bytes.equals(local)) throw new Error('舞台或降噪资源清单与生产 dist 不一致：' + url)
+    checked.add(url)
+    const directory = url.slice(0, url.lastIndexOf('/') + 1)
+    for (const file of JSON.parse(bytes.toString('utf8')).files)
+      await checkStatic(config, directory + file.path, checked)
+  }
   const index = await request(config.baseUrl + '/')
   const html = await index.text()
   if (!html.includes('/assets/') || html.includes('/src/main.ts'))

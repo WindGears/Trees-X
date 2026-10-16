@@ -28,11 +28,13 @@ import {
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
 import { studioDesign } from '../studio/design'
 import { studioPalettes, type StudioPalette } from '../studio/palette'
+import { createLoungeSpatialTable } from './loungeSpatialTable'
 
 export function createGpuStudioGeometry(
   groundY: number = studioDesign.groundY,
   capture = false,
   palette: StudioPalette = studioPalettes.light,
+  spatialTable = false,
 ) {
   // Environment captures are frozen references, never the visitor's visible mood.
   const colors = capture ? studioPalettes.light : palette
@@ -84,22 +86,37 @@ export function createGpuStudioGeometry(
     clearcoat: 0.2,
     clearcoatRoughness: 0.3,
   })
-  const pedestal: Mesh<BufferGeometry, Material> = new Mesh(
-    new RoundedBoxGeometry(
-      studioDesign.width,
-      studioDesign.height,
-      studioDesign.depth,
-      5,
-      studioDesign.radius,
-    ),
-    surface,
-  )
+  const tableSideMaterial = spatialTable
+    ? new MeshPhysicalMaterial({ color: '#40362c', roughness: 0.42, clearcoat: 0.1 })
+    : undefined
+  const table = spatialTable
+    ? createLoungeSpatialTable({ groundY, topMaterial: surface, sideMaterial: tableSideMaterial })
+    : undefined
+  const pedestalMesh: Mesh<BufferGeometry, Material | Material[]> =
+    table?.top ??
+    new Mesh(
+      new RoundedBoxGeometry(
+        studioDesign.width,
+        studioDesign.height,
+        studioDesign.depth,
+        5,
+        studioDesign.radius,
+      ),
+      surface,
+    )
+  // The look owner replaces this with its Node Physical top and, in the
+  // experimental profile, a separate side material. Keep the original handle.
+  pedestalMesh.material = surface
+  // The common handle starts with one material, preserving callers' existing
+  // contract. The experiment's table.top exposes the later Material[] form.
+  const pedestal = pedestalMesh as Mesh<BufferGeometry, Material>
   pedestal.name = 'Trees X / studio pedestal'
-  pedestal.position.y = groundY - studioDesign.height / 2
+  if (!table) pedestal.position.y = groundY - studioDesign.height / 2
   pedestal.receiveShadow = true
-  geometries.add(pedestal.geometry)
+  if (!table) geometries.add(pedestal.geometry)
   materials.add(surface)
-  group.add(pedestal)
+  if (tableSideMaterial) materials.add(tableSideMaterial)
+  group.add(table?.group ?? pedestal)
   const floorMaterial = new MeshStandardNodeMaterial({
     color: colors.floor,
     roughness: 0.74,
@@ -115,7 +132,9 @@ export function createGpuStudioGeometry(
   const floor = new Mesh(new PlaneGeometry(200, 200), floorMaterial)
   floor.name = 'Trees X / studio floor'
   floor.userData.traceMaterial = traceFloor
-  floor.position.y = groundY - studioDesign.height - 0.005
+  floor.position.y = table?.floorY ?? groundY - studioDesign.height - 0.005
+  // Finite room geometry supplies the experimental floor with actual depth.
+  floor.visible = !spatialTable
   floor.rotation.x = -Math.PI / 2
   floor.renderOrder = -900
   geometries.add(floor.geometry)
@@ -146,12 +165,16 @@ export function createGpuStudioGeometry(
     skyMaterial,
     pedestal,
     surface,
+    table,
+    tableSideMaterial,
+    floorMesh: floor,
     floorMaterial,
     traceFloor,
     dispose() {
       if (disposed) return
       disposed = true
       group.removeFromParent()
+      table?.dispose()
       for (const geometry of geometries) geometry.dispose()
       for (const material of materials) material.dispose()
       group.clear()

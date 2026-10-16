@@ -28,6 +28,7 @@ export function createGpuStudioShadow(
   model: Group,
   groundY: number,
   opacity = 0.46,
+  dimensions: { width: number; depth: number } = studioDesign,
 ) {
   const resolution = 1024,
     layer = 7,
@@ -80,10 +81,10 @@ export function createGpuStudioShadow(
     blurCamera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
   blurScene.add(new Mesh(quadGeometry, blur))
   const camera = new OrthographicCamera(
-    -studioDesign.width / 2,
-    studioDesign.width / 2,
-    studioDesign.depth / 2,
-    -studioDesign.depth / 2,
+    -dimensions.width / 2,
+    dimensions.width / 2,
+    dimensions.depth / 2,
+    -dimensions.depth / 2,
     0.001,
     3.2,
   )
@@ -91,9 +92,7 @@ export function createGpuStudioShadow(
   camera.up.set(0, 0, 1)
   camera.lookAt(0, 1, 0)
   camera.layers.set(layer)
-  const planeGeometry = new PlaneGeometry(studioDesign.width, studioDesign.depth).rotateX(
-      Math.PI / 2,
-    ),
+  const planeGeometry = new PlaneGeometry(dimensions.width, dimensions.depth).rotateX(Math.PI / 2),
     planeMaterial = new MeshBasicNodeMaterial({
       map: target.texture,
       transparent: true,

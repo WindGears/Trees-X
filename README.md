@@ -1,8 +1,10 @@
 # Trees X
 
-实时打字机暗色试用：[深灰绿摄影棚](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) ／ [原亮色对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light)。使用支持 WebGPU 的桌面浏览器；不支持时明确回退 WebGL。曝光、HDR、软箱和商品材质保持，实际效果由本人比较，见 [试用记录](.ai/typewriter-dark-studio-validation.md)。
+2026-10-16 空间分层实验：[新生成素材分层](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=box&loungeLayers=1) ／ [单图深度代理](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=depth)。三图分层、实体厚桌台与可选深度景深已接入独立实验。五模式实际浏览器工程检查通过，家具侧背面、落地感及反光仍有缺口，**完整空间画质未通过，默认不替换**。入口、49 张实机图、5 段录像的复现与结论见 [空间验证](.ai/lounge-spatial-validation.md)。
 
-最新节点（2026-10-15）：继续推进打字机 WebGPU，已核验的 **v2 材质／WindGear 铭牌默认接入显式实时入口**。本批为原八个反射滤波 tap 增加像素 IGN 与成功完整帧 golden-angle 旋转，保持采样数量、半径、Physical 参数、唯一 renderer 和时钟；失败或取消不推进 phase。check、生产构建与 API 启动、真实 WebGPU 两核六取景、v2 交互／生命周期及管理取景检查通过；整体画质由用户本人肉眼判断，实际呈现预算与 P95 仍待验证。
+普通实时打字机：[暖夜舞台](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) ／ [明亮对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light)。使用支持 WebGPU 的桌面浏览器；不支持时明确回退 WebGL。两态可原位切换，保留相机与商品状态；原酒吧背景仍为虚化单图。前一轮深灰绿方案仅保留[历史记录](.ai/typewriter-dark-studio-validation.md)。
+
+2026-10-15 节点：继续推进打字机 WebGPU，已核验的 **v2 材质／WindGear 铭牌默认接入显式实时入口**。本批为原八个反射滤波 tap 增加像素 IGN 与成功完整帧 golden-angle 旋转，保持采样数量、半径、Physical 参数、唯一 renderer 和时钟；失败或取消不推进 phase。check、生产构建与 API 启动、真实 WebGPU 两核六取景、v2 交互／生命周期及管理取景检查通过；整体画质由用户本人肉眼判断，实际呈现预算与 P95 仍待验证。
 
 - [WebGPU 实时入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime)：默认 v2 材质与旋转核。
 - [旧材质对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v1)：保留原 v1；与核开关可独立组合。
@@ -25,7 +27,7 @@ Node/npm 版本遵循 package.json。另需 Java 17 和 MySQL 8.0。
 
 ```sh
 git lfs install --local
-git lfs pull --include="public/models/bundles/kimi-typewriter/**,public/models/bundles/kimi-piano/**,public/models/reventon/**" --exclude=""
+git lfs pull --include="public/models/bundles/kimi-typewriter/**,public/models/bundles/kimi-piano/**,public/models/reventon/**,public/models/denoise/**,public/studio/amber-lounge/**" --exclude=""
 ```
 
 1. `npm ci`

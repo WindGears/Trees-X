@@ -10,6 +10,7 @@ import { isRealtimeRenderer } from './realtimeMode'
 import { resolveStudioPalette } from '../studio/palette'
 import type { StudioMoodUpdate } from '../studio/mood'
 import { createLoungeLook } from './loungeLook'
+import { resolveLoungeProjection } from './loungeSpatialMode'
 
 export type WorkbenchStudio = ReturnType<typeof createTypewriterStudio> & {
   setMood?: (update: StudioMoodUpdate) => void
@@ -29,8 +30,9 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
   groundY = studioDesign.groundY,
 ) => {
   if (!isWebGpuRenderer(renderer)) return createTypewriterStudio(renderer, scene, model, groundY)
-  const realtime = isRealtimeRenderer(renderer)
-  const geometry = createGpuStudioGeometry(groundY, false, resolveStudioPalette(false)),
+  const realtime = isRealtimeRenderer(renderer),
+    spatial = realtime && resolveLoungeProjection() !== 'infinite'
+  const geometry = createGpuStudioGeometry(groundY, false, resolveStudioPalette(false), spatial),
     lighting = createStudioLights()
   const lounge = realtime ? createLoungeLook(geometry, lighting.lights) : undefined
   let reflection: ReturnType<typeof createGpuStudioReflection> | undefined,
@@ -55,9 +57,20 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
     // The realtime pass blends in HDR before ACES. WebGL blends the authored
     // overlays after tone mapping, so equal alpha values look much weaker here.
     // These stage-only weights are a visual calibration, not BRDF equivalence.
-    reflection = createGpuStudioReflection(groundY, realtime ? 0.5 : 0.28)
+    reflection = createGpuStudioReflection(
+      groundY,
+      spatial ? 0.28 : realtime ? 0.5 : 0.28,
+      geometry.table?.dimensions,
+    )
     scene.add(reflection.mesh)
-    shadow = createGpuStudioShadow(renderer, scene, model, groundY, realtime ? 0.68 : 0.46)
+    shadow = createGpuStudioShadow(
+      renderer,
+      scene,
+      model,
+      groundY,
+      realtime ? 0.68 : 0.46,
+      geometry.table?.dimensions,
+    )
   } catch (error) {
     dispose()
     throw error

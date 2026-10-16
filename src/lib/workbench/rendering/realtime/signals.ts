@@ -15,6 +15,7 @@ import { smaa } from 'three/addons/tsl/display/SMAANode.js'
 import { createOwnedRtt } from './ownedRtt'
 import { createReflectionResolve } from './reflectionResolve'
 import { createRealtimeSceneInputs } from './sceneInputs'
+import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
 
 /** Opaque lighting geometry and complete beauty share one renderer and clock.
  * All inputs and composition are full-resolution linear HDR.
@@ -26,6 +27,7 @@ export function createRealtimeSignals(
   motion: Node,
 ) {
   const inputs = createRealtimeSceneInputs(scene, camera, motion)
+  const loungeFocus = createLoungeDofFocus(scene, camera, resolveLoungeDof())
   // Explicit engineering comparison only; the realtime entry uses rotation.
   const reflectionKernel =
     new URLSearchParams(location.search).get('reflectionKernel') === 'static'
@@ -79,6 +81,8 @@ export function createRealtimeSignals(
   pipeline.outputColorTransform = false
   let antialias: ReturnType<typeof smaa> | undefined,
     composite: ReturnType<typeof createOwnedRtt> | undefined,
+    linearBeauty: ReturnType<typeof createOwnedRtt> | undefined,
+    loungeDof: ReturnType<typeof createOwnedLoungeDof> | undefined,
     reflectionResolve: ReturnType<typeof createReflectionResolve> | undefined,
     ssrEnabled = true,
     ssgiEnabled = true,
@@ -111,13 +115,27 @@ export function createRealtimeSignals(
       : vec4(0).rgb
     antialias?.dispose()
     composite?.dispose()
+    loungeDof?.dispose()
+    linearBeauty?.dispose()
+    loungeDof = undefined
+    linearBeauty = undefined
     // Native transparent beauty is already alpha-composited. Only the opaque
     // surface lighting correction passes through its retained transmittance.
-    composite = createOwnedRtt(
-      renderOutput(
-        vec4(beauty.rgb.add(specular.add(diffuse).mul(inputs.correctionWeight)).max(0), 1),
-      ),
+    const correctedBeauty = vec4(
+      beauty.rgb.add(specular.add(diffuse).mul(inputs.correctionWeight)).max(0),
+      1,
     )
+    if (loungeFocus.enabled) {
+      // DOF samples corrected linear HDR and the opaque scene's actual view Z.
+      // Passing an owned texture prevents convertToTexture's implicit RTT leak.
+      linearBeauty = createOwnedRtt(correctedBeauty)
+      loungeDof = createOwnedLoungeDof(
+        linearBeauty.node,
+        inputs.surface.getViewZNode(),
+        loungeFocus,
+      )
+    }
+    composite = createOwnedRtt(renderOutput(loungeDof?.node ?? correctedBeauty))
     antialias = smaa(composite.node)
     pipeline.outputNode = antialias
     pipeline.needsUpdate = true
@@ -152,6 +170,7 @@ export function createRealtimeSignals(
         override = scene.overrideMaterial
       try {
         renderer.getDrawingBufferSize(frameSize)
+        loungeFocus.prepare()
         reflectionResolve?.prepare(frameSize.x, frameSize.y)
         pipeline.render()
       } finally {
@@ -195,6 +214,9 @@ export function createRealtimeSignals(
       disposed = true
       antialias?.dispose()
       composite?.dispose()
+      loungeDof?.dispose()
+      linearBeauty?.dispose()
+      loungeFocus.dispose()
       reflectionResolve?.dispose()
       spatialGi.dispose()
       giInput.dispose()

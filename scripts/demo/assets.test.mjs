@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath, URL } from 'node:url'
 import test from 'node:test'
 import {
   fileDigest,
@@ -58,7 +59,7 @@ test('manifest bytes, hashes, duplicate records and unresolved LFS are verified 
   }
 })
 
-test('support receipts include validated amber maps with decoders, covers and denoiser; reject missing, LFS and corrupted maps', async () => {
+test('support receipts require all amber, spatial and layer packs; reject missing, LFS and corrupt assets', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'trees-demo-support-'))
   const files = {
     'draco/draco_wasm_wrapper.js': 'decoder wrapper',
@@ -72,6 +73,11 @@ test('support receipts include validated amber maps with decoders, covers and de
     'studio/amber-lounge/v1/stone-basecolor.png': 'amber slab basecolor fixture',
     'studio/amber-lounge/v1/stone-roughness.png': 'amber roughness data fixture',
     'studio/amber-lounge/v1/stone-normal.png': 'amber normal data fixture',
+    'studio/amber-lounge/spatial-v1/radial-distance.f32': 'radial distance fixture',
+    'studio/amber-lounge/spatial-v1/DA2-LICENSE.txt': 'Apache-2.0',
+    'studio/amber-lounge/layers-v1/clean-room.png': 'inferred empty room fixture',
+    'studio/amber-lounge/layers-v1/chair-table.png': 'fixed chair and table RGBA fixture',
+    'studio/amber-lounge/layers-v1/table-lamp.png': 'fixed lamp RGBA fixture',
   }
   files['models/denoise/manifest.json'] = JSON.stringify({
     schemaVersion: 1,
@@ -102,13 +108,49 @@ test('support receipts include validated amber maps with decoders, covers and de
         .digest('hex'),
     })),
   })
+  const additionalPacks = [
+    {
+      directory: 'spatial-v1',
+      entry: 'radial-distance.f32',
+      paths: ['radial-distance.f32', 'DA2-LICENSE.txt'],
+    },
+    {
+      directory: 'layers-v1',
+      entry: 'clean-room.png',
+      paths: ['clean-room.png', 'chair-table.png', 'table-lamp.png'],
+    },
+  ]
+  for (const { directory: pack, entry, paths } of additionalPacks) {
+    const directory = 'studio/amber-lounge/' + pack + '/'
+    files[directory + 'manifest.json'] = JSON.stringify({
+      schemaVersion: 1,
+      entry,
+      files: paths.map((path) => ({
+        path,
+        bytes: Buffer.byteLength(files[directory + path]),
+        sha256: createHash('sha256')
+          .update(files[directory + path])
+          .digest('hex'),
+      })),
+    })
+  }
+  const loungeManifests = [
+      'studio/amber-lounge/v1/manifest.json',
+      ...additionalPacks.map(
+        ({ directory }) => 'studio/amber-lounge/' + directory + '/manifest.json',
+      ),
+    ],
+    loungePayloads = [
+      ...amberMaps.map((path) => 'studio/amber-lounge/v1/' + path),
+      ...additionalPacks.flatMap(({ directory, paths }) =>
+        paths.map((path) => 'studio/amber-lounge/' + directory + '/' + path),
+      ),
+    ]
   try {
-    await mkdir(join(directory, 'draco'))
-    await mkdir(join(directory, 'covers', 'nested'), { recursive: true })
-    await mkdir(join(directory, 'models', 'denoise'), { recursive: true })
-    await mkdir(join(directory, 'studio', 'amber-lounge', 'v1'), { recursive: true })
-    for (const [path, content] of Object.entries(files))
+    for (const [path, content] of Object.entries(files)) {
+      await mkdir(dirname(join(directory, path)), { recursive: true })
       await writeFile(join(directory, path), content)
+    }
     const receipt = await inspectSupportAssets(directory)
     assert.deepEqual(
       receipt.map((file) => file.path),
@@ -125,8 +167,8 @@ test('support receipts include validated amber maps with decoders, covers and de
       'draco/draco_decoder.wasm',
       'covers/nested/product.svg',
       'models/denoise/rt_hdr_alb_nrm.tza',
-      'studio/amber-lounge/v1/manifest.json',
-      ...amberMaps.map((path) => 'studio/amber-lounge/v1/' + path),
+      ...loungeManifests,
+      ...loungePayloads,
     ]) {
       await writeFile(
         join(directory, path),
@@ -135,15 +177,15 @@ test('support receipts include validated amber maps with decoders, covers and de
       await assert.rejects(inspectSupportAssets(directory), /Git LFS/)
       await writeFile(join(directory, path), files[path])
     }
-    for (const path of ['manifest.json', ...amberMaps]) {
-      const target = join(directory, 'studio', 'amber-lounge', 'v1', path)
+    for (const path of [...loungeManifests, ...loungePayloads]) {
+      const target = join(directory, path)
       await rm(target)
       await assert.rejects(inspectSupportAssets(directory), { code: 'ENOENT' })
-      await writeFile(target, files['studio/amber-lounge/v1/' + path])
+      await writeFile(target, files[path])
     }
-    for (const path of amberMaps) {
-      const target = join(directory, 'studio', 'amber-lounge', 'v1', path)
-      const content = files['studio/amber-lounge/v1/' + path]
+    for (const path of loungePayloads) {
+      const target = join(directory, path)
+      const content = files[path]
       const corrupted = Buffer.from(content)
       corrupted[0] ^= 1 // Equal length: this must exercise the digest check.
       await writeFile(target, corrupted)
@@ -160,5 +202,28 @@ test('support receipts include validated amber maps with decoders, covers and de
     await assert.rejects(inspectSupportAssets(directory), /必要的本地解码器/)
   } finally {
     await rm(directory, { recursive: true, force: true })
+  }
+})
+
+test('shipped spatial and layer manifests obey the delivery contract and preserve distance provenance', async () => {
+  for (const pack of ['spatial-v1', 'layers-v1']) {
+    const path = fileURLToPath(
+        new URL('../../public/studio/amber-lounge/' + pack + '/manifest.json', import.meta.url),
+      ),
+      manifest = JSON.parse(await readFile(path, 'utf8')),
+      receipt = await inspectManifest(path)
+    assert.equal(receipt.files, pack === 'spatial-v1' ? 2 : 3)
+    if (pack === 'spatial-v1') {
+      const distance = manifest.files.find((record) => record.path === manifest.distance.file)
+      assert.equal(manifest.entry, manifest.distance.file)
+      assert.equal(distance.bytes, manifest.distance.bytes)
+      assert.equal(distance.sha256, manifest.distance.sha256)
+      assert.equal(distance.bytes, manifest.distance.width * manifest.distance.height * 4)
+      assert.equal(manifest.distance.units, 'relative-not-metres')
+      assert.equal(manifest.source.altered, false)
+      assert.equal(manifest.estimator.networkModified, false)
+      assert.ok(manifest.inference.nativeStatistics.quantiles['0.98'] > 0)
+      assert.ok(manifest.files.some((record) => record.path === 'DA2-LICENSE.txt'))
+    }
   }
 })

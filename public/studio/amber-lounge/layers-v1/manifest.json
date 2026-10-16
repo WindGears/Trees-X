@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "amber-lounge-layers-v1",
+  "entry": "clean-room.png",
+  "generatedOn": "2026-10-16",
+  "source": "public/studio/amber-lounge/v1/lounge-panorama.png",
+  "generator": "built-in image_gen",
+  "status": "experimental-inferred-layers",
+  "files": [
+    {
+      "file": "clean-room.png",
+      "path": "clean-room.png",
+      "bytes": 1717615,
+      "sha256": "a9398aad5aeb4e35b7658b8a2ea6aad677b8127ec975db792c567c3754ef925e",
+      "width": 1774,
+      "height": 887,
+      "hasAlpha": false,
+      "source": "assets-source/amber-lounge/layers-v1/clean-room.png",
+      "colorSpace": "SRGBColorSpace"
+    },
+    {
+      "file": "chair-table.png",
+      "path": "chair-table.png",
+      "bytes": 2569845,
+      "sha256": "7bea5e02b29e29cdcef0272ee0eee4cbe07c967a04f82d623e1a3eefd358fd69",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": true,
+      "source": "assets-source/amber-lounge/layers-v1/chair-table.png",
+      "colorSpace": "SRGBColorSpace"
+    },
+    {
+      "file": "table-lamp.png",
+      "path": "table-lamp.png",
+      "bytes": 890314,
+      "sha256": "0ca571ff6c1db21f8bd7d0c84645f480ff9d09217bb6b09797ae4dd1eae52dfb",
+      "width": 1280,
+      "height": 1229,
+      "hasAlpha": true,
+      "source": "assets-source/amber-lounge/layers-v1/table-lamp.png",
+      "colorSpace": "SRGBColorSpace"
+    }
+  ],
+  "limitations": [
+    "Generated disoccluded background is inferred, not measured hidden geometry.",
+    "Cutout furniture and lamp are fixed image cards, not complete 3D assets; oblique/rear views may reveal their limits.",
+    "No source pixels were edited by numerical scripts; PNGs are unchanged generated outputs."
+  ]
+}

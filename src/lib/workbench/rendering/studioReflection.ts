@@ -14,11 +14,21 @@ import {
 } from 'three/tsl'
 import { studioDesign } from '../studio/design'
 
+export interface StudioReflectionDimensions {
+  width: number
+  depth: number
+  radius: number
+}
+
 /** TSL version of the existing soft planar bounce, owned by the studio rather than its source model. */
-export function createGpuStudioReflection(groundY: number = studioDesign.groundY, strength = 0.28) {
-  const width = studioDesign.width - studioDesign.radius * 2,
-    depth = studioDesign.depth - studioDesign.radius * 2,
-    radius = studioDesign.radius,
+export function createGpuStudioReflection(
+  groundY: number = studioDesign.groundY,
+  strength = 0.28,
+  dimensions: StudioReflectionDimensions = studioDesign,
+) {
+  const width = dimensions.width - dimensions.radius * 2,
+    depth = dimensions.depth - dimensions.radius * 2,
+    radius = dimensions.radius,
     shape = new Shape(),
     x = -width / 2,
     y = -depth / 2

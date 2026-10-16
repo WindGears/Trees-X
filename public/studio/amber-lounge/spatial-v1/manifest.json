@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "id": "amber-lounge-spatial-v1",
+  "entry": "radial-distance.f32",
+  "files": [
+    {
+      "path": "radial-distance.f32",
+      "bytes": 524288,
+      "sha256": "dfb53155cf4443a3eb2a606e08a6b17c8955829a2e961e0da5d761c451499678"
+    },
+    {
+      "path": "DA2-LICENSE.txt",
+      "bytes": 11558,
+      "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6"
+    }
+  ],
+  "status": "experimental-single-view-proxy",
+  "source": {
+    "url": "/studio/amber-lounge/v1/lounge-panorama.png",
+    "sha256": "fdab4d13b88d04526f6acb4da84334a2dd11d2e6441e0f66e1378713370b5402",
+    "bytes": 1679093,
+    "width": 1774,
+    "height": 887,
+    "altered": false
+  },
+  "distance": {
+    "url": "/studio/amber-lounge/spatial-v1/radial-distance.f32",
+    "file": "radial-distance.f32",
+    "sha256": "dfb53155cf4443a3eb2a606e08a6b17c8955829a2e961e0da5d761c451499678",
+    "bytes": 524288,
+    "width": 512,
+    "height": 256,
+    "type": "float32",
+    "endianness": "little",
+    "layout": "row-major",
+    "semantic": "scale-invariant-radial-distance",
+    "units": "relative-not-metres",
+    "origin": "top-left",
+    "u": "right",
+    "v": "down",
+    "samplePosition": "pixel-centre",
+    "directionThreeYUp": "theta=2*pi*(u-0.5); latitude=pi*(0.5-v); xyz=(cos(latitude)*cos(theta),sin(latitude),cos(latitude)*sin(theta))",
+    "statistics": {
+      "min": 0.10980395972728729,
+      "max": 1.133731484413147,
+      "mean": 0.4936663806438446,
+      "quantiles": {
+        "0.01": 0.11192289739847183,
+        "0.05": 0.11762313544750214,
+        "0.5": 0.4995015859603882,
+        "0.95": 0.944184422492981,
+        "0.98": 1.0007245540618896,
+        "0.99": 1.0343652963638306
+      }
+    }
+  },
+  "estimator": {
+    "name": "DA²: Depth Anything in Any Direction",
+    "repository": "https://github.com/EnVision-Research/DA-2",
+    "codeCommit": "d659838585f2bc9967c7e9367af573795271dbbb",
+    "codeLicense": "Apache-2.0",
+    "model": "https://huggingface.co/haodongli/DA-2",
+    "modelCommit": "0d55ccb5e46b8ed4715fae3a4c04fc897f1689f3",
+    "modelSha256": "d8ea568fc3dfb7d7432e5b763de499dd03fb6dc1c2020d84639f35e2dfa4f78e",
+    "modelBytes": 1378513064,
+    "modelLicense": "Apache-2.0",
+    "networkModified": false,
+    "sourceCodeSHA256": {
+      "src/da2/model/spherevit.py": "cc51b5b4e496d66a016c22cb27cfdb7178d13e51928d9e90aa2cb3174ea33975",
+      "src/da2/model/vit_w_esphere.py": "aa8903768f843e004f83ee5595597dcbd3810e93d2ba7a5124d9e547af6a6b83",
+      "src/da2/utils/d2pc.py": "e1e02e5173b1489fdc40e426a6761f92d2e3d5e439964348ba33dc2a726e16cc"
+    }
+  },
+  "inference": {
+    "inputWidth": 1092,
+    "inputHeight": 546,
+    "inputResample": "bilinear-RGB-analysis-only",
+    "runtimeResample": "bilinear-radial-float32-align_corners-false",
+    "config": {
+      "env": {
+        "seed": 42,
+        "verbose": true
+      },
+      "accelerator": {
+        "report_to": ["tensorboard"],
+        "mixed_precision": "fp16",
+        "accumulation_nsteps": 4,
+        "timeout": 36000
+      },
+      "inference": {
+        "images": "assets/demos",
+        "masks": "assets/masks",
+        "min_pixels": 596232,
+        "max_pixels": 596232
+      },
+      "spherevit": {
+        "vit_w_esphere": {
+          "input_dims": [1024, 1024, 1024, 1024],
+          "hidden_dim": 512,
+          "num_heads": 8,
+          "expansion": 4,
+          "num_layers_head": [2, 2, 2],
+          "dropout": 0.0,
+          "layer_scale": 0.0001,
+          "out_dim": 64,
+          "kernel_size": 3,
+          "num_prompt_blocks": 1,
+          "use_norm": false
+        },
+        "sphere": {
+          "width": 1092,
+          "height": 546,
+          "hfov": 6.2832,
+          "vfov": 3.1416
+        }
+      }
+    },
+    "seed": 42,
+    "mixedPrecision": "fp16",
+    "attention": "upstream-torch-SDPA-fallback-xformers-disabled",
+    "device": "cuda",
+    "deviceName": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "seconds": 1.1044253000000026,
+    "peakTorchAllocatedBytes": 3030804992,
+    "peakTorchReservedBytes": 4127195136,
+    "python": "3.13.11",
+    "packages": {
+      "torch": "2.10.0+cu130",
+      "torchvision": "0.25.0+cu130",
+      "safetensors": "0.7.0",
+      "huggingface-hub": "1.4.1",
+      "einops": "0.8.2",
+      "numpy": "2.4.2",
+      "pillow": "12.1.1"
+    },
+    "nativeStatistics": {
+      "min": 0.10970494151115417,
+      "max": 1.1353636980056763,
+      "mean": 0.49366962909698486,
+      "quantiles": {
+        "0.01": 0.11186867207288742,
+        "0.05": 0.1175813376903534,
+        "0.5": 0.49940598011016846,
+        "0.95": 0.9449336528778076,
+        "0.98": 1.0,
+        "0.99": 1.0337605476379395
+      }
+    }
+  },
+  "limitations": [
+    "Single-image geometry is inferred, with no ground-truth metric error available.",
+    "Distances are radial from the panorama optical origin, not camera-view Z and not inverse depth.",
+    "The model divides its distance by the 98th percentile; the browser must apply an explicit scene calibration scale.",
+    "Occluded surfaces have no observation; this asset does not contain hallucinated colour layers or completed room geometry.",
+    "Depth discontinuities, source-image seams and the poles require runtime mesh rejection/fallback and visual inspection.",
+    "Native RGB source is generated LDR, not a measured HDR environment or calibrated physical room."
+  ]
+}

@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## 当前空间分层验证（2026-10-16）
+
+用户要求用多张生成素材验证暖夜空间。仅实时 WebGPU 打字机的显式空间入口采用实体厚桌台；`loungeSpatial=box` 为有限盒体投影，`loungeSpatial=depth` 为离线 DA² 径向距离代理，`loungeSpatial=box&loungeLayers=1` 为去家具房间底图＋固定椅桌／台灯卡片。加 `loungeDof=1` 才执行商品保护的真实深度景深；默认关闭，先检查空间。普通实时暖夜、WebGL、hybrid、其他商品与管理业务不替换。
+
+图片分层是 2.5D 候选，隐藏区域为生成推断，固定家具不具备完整侧背面。浏览器不运行 AI，不新增 renderer、时钟、数据库或配置版本。数值深度、三张生成原图、摘要与许可记录各自保留，失败和取消有独立清理；原始素材不覆盖。本批实机结果与有效范围见 [空间验证记录](lounge-spatial-validation.md)，不继承旧批次通过成绩。
+
 ## 当前暖夜运行候选（2026-10-15）
 
 用户要求将暖琥珀酒吧方向落实到真实舞台，并能原位切换明暗。仅显式 `?product=typewriter-study&renderPipeline=realtime` 的 WebGPU 打字机加入“明亮／暖夜”；`studioMood=light` 保留明亮初始入口。可见背景使用生成的原生 LDR 全景，固定 LOD 3.5 虚化并对接缝／极点作采样保护；不能称为真实 DOF、专业 HDR、无缝源图或从图片恢复照明。Studio Small 05 HDR 本身保持，三个软箱的色温表现与强度随暖夜过渡。

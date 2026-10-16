@@ -1,5 +1,9 @@
 # Trees X
 
+2026-10-16 空间实验：显式实时打字机入口增加实体厚桌台、有限房间投影、离线 DA² 深度代理，以及三张新生成素材构成的房间／椅桌／台灯分层候选。空间方案仅由 `loungeSpatial=box|depth` 开启；`box&loungeLayers=1` 为固定图像分层，`loungeDof=1` 可选真实深度景深。默认不变，先以清楚背景检查空间和遮挡，不通过统一虚化掩盖问题。
+
+这是带深度或多层图像的 2.5D 验证：桌台与商品是真实几何，生成隐藏墙面和固定家具卡片不等于完整三维房间；原有观察范围不受暗中限制。交付对照取景与连续绕行，失败范围如实保留。工程、素材与画质结论见 [.ai/lounge-spatial-validation.md](.ai/lounge-spatial-validation.md)。
+
 2026-10-15 当前暖夜舞台：显式 `?product=typewriter-study&renderPipeline=realtime` 的 WebGPU 打字机提供“明亮／暖夜”原位切换，`studioMood=light` 可从明亮开始。暖夜使用本项目生成的酒吧全景和单块岩板底色，配合独立制作的粗糙度／微法线数据；它们不是扫描材质。全景是 8-bit LDR 可见背景，固定 LOD 3.5 取样形成背景虚化，并加接缝／极点采样保护；不宣称真实景深、源图已无缝或专业 HDR。商品照明继续使用原 Studio Small 05 HDR，三块软箱的颜色与强度随环境过渡。
 
 切换通过既有时钟推进约 0.42 秒 GSAP 补间，减弱动态时直接到目标；保持同一 Canvas／renderer，以及当前镜头、外观与动作状态。首次暖夜异步读取四张同源图片，失败显示重试并保留基础可操作舞台；明亮恢复既有舞台效果。普通 WebGL、hybrid、钢琴／汽车、API 和数据库不变。本批实机与画质验收由主代理记录，当前不预填通过成绩，见 [.ai/amber-lounge-runtime-validation.md](.ai/amber-lounge-runtime-validation.md)。
