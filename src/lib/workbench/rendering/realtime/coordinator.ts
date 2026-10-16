@@ -4,6 +4,7 @@ import { createMotionHistory } from './motion'
 import { createRealtimeSignals } from './signals'
 import { createRealtimeMaterials } from './materials'
 import type { RealtimeChange, RealtimeOptions, RealtimeSnapshot, RealtimeStatus } from './types'
+import type { RealtimeDdgi } from './ddgi/field'
 
 /** Tres owns the renderer. This owner coordinates every auxiliary and final draw. */
 export function createRealtimeCoordinator(options: RealtimeOptions) {
@@ -26,7 +27,50 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     generation = 0,
     phase: RealtimeStatus['phase'] = 'loading',
     error: string | null = null,
-    lastReport = -Infinity
+    lastReport = -Infinity,
+    ddgi: RealtimeDdgi | undefined,
+    ddgiLoading = false,
+    ddgiGraphDirty = false,
+    ddgiError: string | null = null,
+    ddgiFramePending = false
+  const indirectRequested: 'ssgi' | 'ddgi' =
+    typeof location !== 'undefined' &&
+    new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
+      ? 'ddgi'
+      : 'ssgi'
+
+  function prepareDdgi() {
+    if (indirectRequested !== 'ddgi' || ddgi || ddgiLoading) return
+    ddgiLoading = true
+    const token = generation
+    void import('./ddgi/field')
+      .then(({ createRealtimeDdgi }) => {
+        if (disposed || token !== generation) return
+        ddgi = createRealtimeDdgi({
+          renderer,
+          scene,
+          onReadyChanged: () => {
+            if (!disposed && token === generation) ddgiGraphDirty = true
+          },
+          onError: (cause) => {
+            if (!disposed && token === generation) {
+              ddgiError = cause.message
+              ddgiGraphDirty = true
+            }
+          },
+        })
+      })
+      .catch((cause: unknown) => {
+        if (!disposed && token === generation)
+          ddgiError = cause instanceof Error ? cause.message : String(cause)
+      })
+      .finally(() => {
+        if (!disposed && token === generation) {
+          ddgiLoading = false
+          options.invalidate()
+        }
+      })
+  }
   const previousError = renderer.onError
   const onError: typeof renderer.onError = (event) => {
     previousError.call(renderer, event)
@@ -41,7 +85,14 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     const now = performance.now()
     if (force || now - lastReport > 1000) {
       lastReport = now
-      options.report({ phase, error, slug, revision, generation })
+      options.report({
+        phase,
+        error,
+        slug,
+        revision,
+        generation,
+        indirectLighting: indirectStatus(),
+      })
     }
   }
   function unload() {
@@ -51,12 +102,26 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     slug = null
     revision = -1
     error = null
+    signals?.setWorldGi(null)
+    ddgi?.dispose()
+    ddgi = undefined
+    ddgiLoading = false
+    ddgiGraphDirty = false
+    ddgiError = null
     materials.restore()
     reset = true
     phase = 'loading'
     firstRasterMs = null
     motion.reset(scene)
     report(true)
+  }
+  function indirectStatus() {
+    return {
+      requested: indirectRequested,
+      actual: ddgi?.snapshot().ready && !ddgiError ? ('ddgi' as const) : ('ssgi' as const),
+      preparing: ddgiLoading || Boolean(ddgi && !ddgi.snapshot().ready && !ddgiError),
+      error: ddgiError,
+    }
   }
   return {
     ready(value: string, token: number) {
@@ -75,6 +140,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       const reuse = Boolean(signals)
       signals ??= createRealtimeSignals(renderer, scene, camera, motion.node)
       signals.environment()
+      prepareDdgi()
       started = performance.now()
       firstRasterMs = null
       reset = reuse
@@ -109,42 +175,40 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       options.invalidate()
     },
     render(notify: () => void) {
-      if (disposed || !active || error) return
-      try {
-        clock.frame(() => {
-          options.beforeRaster()
-          materials.sync()
-          renderer.getDrawingBufferSize(size)
-          if (reset) {
-            signals?.resetHistory()
-            signals?.environment()
-            motion.reset(scene)
-            historyResets++
-            reset = false
-          }
-          motion.beginFrame(scene)
-          try {
-            if (signals) signals.render()
-            else renderer.render(scene, camera)
-            if (error) throw new Error(error)
-            signals?.commitFrame()
-            motion.commitFrame()
-          } catch (cause) {
-            signals?.cancelFrame()
-            motion.cancelFrame()
-            throw cause
-          }
-          frames++
-          firstRasterMs ??= performance.now() - started
-        })
-        notify()
-        report()
-        if (loaded && !error) options.invalidate()
-      } catch (cause) {
-        error = cause instanceof Error ? cause.message : '实时光影绘制失败'
-        phase = 'error'
-        report(true)
+      if (ddgiFramePending || disposed || !active || error) return
+      if (ddgiError && ddgiGraphDirty) {
+        signals?.setWorldGi(null)
+        ddgiGraphDirty = false
       }
+      if (ddgi && !ddgiError) {
+        // Serialize asynchronous probe compute with every raster/auxiliary draw
+        // on the existing renderer. Tres remains the sole scheduling clock.
+        const token = generation,
+          field = ddgi
+        ddgiFramePending = true
+        // Probe compute consumes the last completed pose. Scene animation and
+        // shadow rendering remain exactly once inside the real frame below.
+        void field
+          .tick()
+          .then(() => {
+            if (disposed || token !== generation || !active) return
+            if (ddgiGraphDirty && signals) {
+              signals.setWorldGi(field.createReceiver(signals.ddgiInputs()))
+              ddgiGraphDirty = false
+            }
+            draw(notify)
+          })
+          .catch((cause: unknown) => {
+            if (!disposed && token === generation) {
+              ddgiError = cause instanceof Error ? cause.message : String(cause)
+              signals?.setWorldGi(null)
+            }
+          })
+          .finally(() => {
+            ddgiFramePending = false
+            if (!disposed && active) options.invalidate()
+          })
+      } else draw(notify)
     },
     snapshot(): RealtimeSnapshot {
       return {
@@ -163,6 +227,10 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals: signals?.snapshot() ?? { ssr: false, ssgi: false, denoise: false },
         reflectionKernel: signals?.sampling() ?? null,
         materialBranches: materials.stats(),
+        indirectLighting: {
+          ...indirectStatus(),
+          details: ddgi?.snapshot() ?? null,
+        },
       }
     },
     dispose() {
@@ -175,6 +243,45 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       motion.dispose()
       clock.dispose()
     },
+  }
+
+  function draw(notify: () => void) {
+    if (disposed || !active || error) return
+    try {
+      clock.frame(() => {
+        options.beforeRaster()
+        materials.sync()
+        renderer.getDrawingBufferSize(size)
+        if (reset) {
+          signals?.resetHistory()
+          signals?.environment()
+          motion.reset(scene)
+          historyResets++
+          reset = false
+        }
+        motion.beginFrame(scene)
+        try {
+          if (signals) signals.render()
+          else renderer.render(scene, camera)
+          if (error) throw new Error(error)
+          signals?.commitFrame()
+          motion.commitFrame()
+        } catch (cause) {
+          signals?.cancelFrame()
+          motion.cancelFrame()
+          throw cause
+        }
+        frames++
+        firstRasterMs ??= performance.now() - started
+      })
+      notify()
+      report()
+      if (loaded && !error) options.invalidate()
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : '实时光影绘制失败'
+      phase = 'error'
+      report(true)
+    }
   }
 }
 export type RealtimeCoordinator = ReturnType<typeof createRealtimeCoordinator>

@@ -38,6 +38,7 @@ function createCaptures() {
   return {
     specular: property('vec3', 'treesBaseSpecular'),
     diffuse: property('vec3', 'treesBaseDiffuse'),
+    diffuseResponse: property('vec3', 'treesDiffuseResponse'),
     weight: property('float', 'treesIndirectWeight'),
     coat: property('float', 'treesCoatThroughput'),
   }
@@ -84,6 +85,25 @@ class CapturedPhysicalLighting extends PhysicalLightingModel {
     this.captures.weight.assign(throughput.mul(specularAO))
     this.captures.specular.assign(context.radiance.mul(singleScattering).mul(this.captures.weight))
     this.captures.diffuse.assign(context.reflectedLight.indirectDiffuse.mul(throughput))
+    // Use the same native dielectric multiscatter energy split as r185 IBL.
+    // Store its per-unit irradiance response in the otherwise unused surface
+    // output attachment, so DDGI needs no seventh MRT or duplicate full IBL.
+    const dielectricSingle = vec3(0).toVar(),
+      dielectricMultiple = vec3(0).toVar()
+    this.computeMultiscattering(dielectricSingle, dielectricMultiple, specularF90, specularColor)
+    this.captures.diffuseResponse.assign(
+      // Match MeshStandardNodeMaterial.setupVariants(): this is its diffuse
+      // contribution, using the same bundled TSL nodes. Importing PropertyNode
+      // from three/src creates a second node runtime beside three/webgpu.
+      diffuseColor.rgb
+        .mul(metalness.oneMinus())
+        .mul(dielectricSingle.add(dielectricMultiple).oneMinus())
+        // Preserve source material AO, as native ambientOcclusion() does. The
+        // screen-space SSGI AO is a separate signal and is not multiplied here.
+        .mul(context.ambientOcclusion)
+        .mul(throughput)
+        .mul(1 / Math.PI),
+    )
     super.finish(builder)
   }
 }
@@ -114,6 +134,13 @@ export const diffuseCaptureNode = Fn((builder: NodeBuilder) =>
   builder.material instanceof RealtimePhysicalMaterial &&
   realtimeMaterialSupported(builder.material.source)
     ? vec4(captures.diffuse, captures.coat)
+    : vec4(0),
+)()
+
+export const diffuseResponseNode = Fn((builder: NodeBuilder) =>
+  builder.material instanceof RealtimePhysicalMaterial &&
+  realtimeMaterialSupported(builder.material.source)
+    ? vec4(captures.diffuseResponse, captures.coat)
     : vec4(0),
 )()
 

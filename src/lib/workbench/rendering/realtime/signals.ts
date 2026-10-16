@@ -17,6 +17,11 @@ import { createReflectionResolve } from './reflectionResolve'
 import { createRealtimeSceneInputs } from './sceneInputs'
 import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
 
+export interface RealtimeIrradiance {
+  irradiance: Node<'vec3'>
+  validity: Node<'float'>
+}
+
 /** Opaque lighting geometry and complete beauty share one renderer and clock.
  * All inputs and composition are full-resolution linear HDR.
  */
@@ -33,7 +38,16 @@ export function createRealtimeSignals(
     new URLSearchParams(location.search).get('reflectionKernel') === 'static'
       ? 'static'
       : 'rotating'
-  const { color: beauty, depth, normal, albedo, velocity, baseSpecular, baseDiffuse } = inputs
+  const {
+    color: beauty,
+    depth,
+    normal,
+    albedo,
+    velocity,
+    baseSpecular,
+    baseDiffuse,
+    diffuseResponse,
+  } = inputs
   const signedNormal = sample((uv) => unpackRGBToNormal(normal.sample(uv).rgb))
   const reflection = ssr(beauty, depth, signedNormal, {
     stochastic: true,
@@ -89,7 +103,8 @@ export function createRealtimeSignals(
     denoiseEnabled = true,
     disposed = false,
     environment: Texture | null | undefined,
-    environmentVersion = -1
+    environmentVersion = -1,
+    worldGi: RealtimeIrradiance | null = null
   const savedState = RendererUtils.saveRendererState(renderer)
   const frameSize = new Vector2()
 
@@ -103,7 +118,7 @@ export function createRealtimeSignals(
       : vec4(0).rgb
     // SSGI AO affects indirect diffuse only. Local bounce and retained environment
     // are distinct signals; direct light and native coat/anisotropy remain intact.
-    const diffuse = ssgiEnabled
+    const screenDiffuse = ssgiEnabled
       ? baseDiffuse.a
           .greaterThan(0)
           .select(
@@ -113,6 +128,16 @@ export function createRealtimeSignals(
             vec4(0).rgb,
           )
       : vec4(0).rgb
+    // The world-space field owns diffuse irradiance, including distant sky.
+    // Replace captured native indirect diffuse; never add a second full IBL or
+    // combine SSGI with DDGI on the same pixel. Invalid volume keeps baseline.
+    const diffuse =
+      worldGi && ssgiEnabled
+        ? worldGi.validity
+            .greaterThan(0)
+            .and(baseDiffuse.a.greaterThan(0))
+            .select(worldGi.irradiance.mul(diffuseResponse.rgb).sub(baseDiffuse.rgb), screenDiffuse)
+        : screenDiffuse
     antialias?.dispose()
     composite?.dispose()
     loungeDof?.dispose()
@@ -191,6 +216,12 @@ export function createRealtimeSignals(
       reflectionResolve?.cancelFrame()
     },
     resetHistory,
+    ddgiInputs: () => ({ depth, normal, camera }),
+    setWorldGi(receiver: RealtimeIrradiance | null) {
+      if (disposed || receiver === worldGi) return
+      worldGi = receiver
+      compose()
+    },
     environment() {
       const next = scene.environment,
         version = next?.version ?? -1

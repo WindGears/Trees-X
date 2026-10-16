@@ -4,6 +4,8 @@
 
 ## 当前接入约定
 
+2026-10-16：按用户“继续完善管线”接入商品独立地台反射、同表面 signed SSR 过滤及可选固定预算 DDGI。最终生产六取景、实际设备恢复／模块失败回退和管理预览通过工程复验，整体画质与实际呈现预算仍待用户确认。普通首页保留 WebGL，实时默认间接光仍是 SSGI；`indirectLighting=ddgi` 显式对照。图像房间暂停扩展。FFX 正 radiance 契约不能直接接收 signed Δ，本节点未强接；独立 BVH 阴影／镜面仍条件性后续。真实结果与历史批次分开见 [本轮管线记录](realtime-ddgi-validation.md)，以下 10 月 15 日“DDGI 尚未接入”只属于旧批次。
+
 用户要求继续 WebGPU，每个工程成功节点及时落实到可用入口，画质由本人肉眼判断。旧记录中的整体画质未通过继续如实保留，但不再作为阻止下一项独立实现接入实时入口的统一门槛。仍保留同输入对照、明确回退、互动与生命周期检查；不将工程 PASS 写成视觉提升或 P95 达标。
 
 显式 `?product=typewriter-study&renderPipeline=realtime` 默认接入已核验的 v2 材质包，`typewriterAsset=v1` 为旧材质对照；普通 WebGL、其他商品、自定义包、HTTP 与数据库不变。本批优先给 signedSpatial 原有八 tap 增加像素 IGN／成功完整帧 golden-angle 旋转，`reflectionKernel=static` 保留旧核。采样数量、半径、Physical 参数、唯一 renderer 和时钟不改，phase 在历史成功 commit 后推进，失败或取消复用。这沿用 Three MIT 核旋转思路；本批 check、生产构建与 API 启动、真实 WebGPU 两核六取景、v2 动作／复原／重复加载及管理取景检查通过，整体画质待用户评定，实际呈现预算仍待验证。证据见 [WebGPU 接入记录](typewriter-webgpu-rollin-validation.md)。DDGI／FidelityFX／BVH 尚未接入，不因改入口宣称完成后续节点。

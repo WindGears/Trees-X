@@ -1,4 +1,11 @@
-# 当前实时渲染约束（2026-10-15）
+# 当前实时渲染约束（2026-10-16）
+
+- 当前用户要求回归渲染管线，图像空间／素材分层暂停扩展，旧入口与证据保留。实时打字机继续 v2，默认 WebGL 及其他商品不变。下方历史“DDGI 未接入”不覆盖当前可选增强。
+- 商品平面反射只借用唯一 renderer，局部捕获必须在 finally 恢复背景、clear、根节点可见性与原生钩子；RGBA 同核过滤并解预乘，不能将完整房间 RGB 当商品覆盖率。`planarReflection=scene|off` 仅作对照。
+- Speedball 固定 0.8.0／a997aee5b0791be61b49719377e811c41720df59，独立低层 field，不用材质 installer。单体积 16×9×10、64 rays/probe、98,304 rays/tick 上限；禁止自动缩减预算或开启探针镜面。代理只借源资源；field、代理与组合目标各自唯一释放。
+- DDGI 在同一时钟内与绘制串行，读取上个完成姿态；场景 beforeRaster 不得为探针额外执行离屏 draw。失败或迟到结果不能留旧 receiver 或覆盖新商品。源材质 AO 和 native dielectric 能量响应保留，DDGI 与 SSGI 不同时贡献同一像素的间接漫反射。
+- 所有 TSL 链式节点来自同一 three/webgpu＋three/tsl 打包运行时；禁止直接从 three/src 引入另一个节点运行时。r185 私有桥接须明确版本和形状检查。DDGI 的 SH9／面灯中心点／着色法线偏置／辅助贴图重采样都是近似，不能冒充完整 Physical 等效。
+- FFX 正 radiance 输入与当前 signed Δ 不兼容，未实现专门信号组织前不直接替换或串联；独立 BVH 镜面／阴影仅在实际缺口证据后研究。工程成功不等于画质或实际帧预算通过，证据见 [本轮管线记录](realtime-ddgi-validation.md)。
 
 - 当前暖夜运行候选仅服务 realtime WebGPU 打字机，明亮／暖夜切换保持唯一 Canvas、renderer 与实际绘制时钟。`loungeLook` 只写舞台与三个软箱，不修改商品节点或镜头；0.42 秒 GSAP 补间由既有 beforeRaster 推进，快速切换杀旧补间，减弱动态直接到目标。切换不重置外观、结构、动作或当前部件；明亮恢复既有舞台。此前深灰绿暗场属于历史，WebGL、hybrid、钢琴／汽车保持原通道。
 - 酒吧全景是 8-bit sRGB LDR 可见背景，不得替代原 Studio Small 05 HDR 或宣称从图片恢复灯光。固定 LOD 3.5 背景虚化、接缝带混合和极点淡出仅为 TSL 采样保护，不是专业 HDR、真实 DOF、无缝源图或一比一场景重建。HDR 本身保持，三个软箱允许按明暗环境过渡颜色与强度；不把这一布光变化隐入旧版同输入技术对照。

@@ -1,5 +1,13 @@
 # Trees X
 
+2026-10-16 渲染管线继续接入：打字机实时入口使用商品独立捕获的地台倒影，以及同表面约束的有符号 SSR 空间／历史过滤。新增可选的 **Speedball DDGI 间接光**，保持 Physical、原生镜面和透明文字支路；加载或增强失败明确回到 SSGI。整体画质由用户实机判断，实际呈现预算仍待验证，普通首页保留增强 WebGL。
+
+- [DDGI 实时体验](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light&indirectLighting=ddgi)：明亮舞台，固定探针预算，不等待静止采样。
+- [SSGI 对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light&indirectLighting=ssgi)：同资产、取景、灯光与曝光。
+- 状态提示显示实际间接光模式；DDGI 未就绪时保持基础画面，失败时明确显示已回退基础光照。实现、测量及尚未验收项目见 [本轮管线记录](.ai/realtime-ddgi-validation.md)。
+
+此前图像空间实验暂停扩展，以下入口和后续带日期段落保留历史证据，其“尚未接入 DDGI”不再代表当前实现。本轮不扩展空间素材、钢琴或汽车。
+
 2026-10-16 空间分层实验：[新生成素材分层](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=box&loungeLayers=1) ／ [单图深度代理](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=depth)。三图分层、实体厚桌台与可选深度景深已接入独立实验。五模式实际浏览器工程检查通过，家具侧背面、落地感及反光仍有缺口，**完整空间画质未通过，默认不替换**。入口、49 张实机图、5 段录像的复现与结论见 [空间验证](.ai/lounge-spatial-validation.md)。
 
 普通实时打字机：[暖夜舞台](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) ／ [明亮对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light)。使用支持 WebGPU 的桌面浏览器；不支持时明确回退 WebGL。两态可原位切换，保留相机与商品状态；原酒吧背景仍为虚化单图。前一轮深灰绿方案仅保留[历史记录](.ai/typewriter-dark-studio-validation.md)。

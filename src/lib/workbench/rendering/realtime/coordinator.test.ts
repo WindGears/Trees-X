@@ -59,6 +59,8 @@ function fixture() {
     cancelFrame: vi.fn(() => calls.push('signals:cancel')),
     resetHistory: vi.fn(() => calls.push('signals:reset')),
     environment: vi.fn(() => calls.push('signals:environment')),
+    setWorldGi: vi.fn(),
+    ddgiInputs: vi.fn(() => ({ camera })),
     setSignals: vi.fn((ssr: boolean, ssgi: boolean, denoise: boolean) => {
       enabled = { ssr, ssgi, denoise }
     }),

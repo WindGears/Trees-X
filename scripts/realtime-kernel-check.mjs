@@ -5,15 +5,23 @@ import { createHash } from 'node:crypto'
 import { bridge } from './demo/browser-check.mjs'
 
 const comparison = process.env.REALTIME_COMPARISON || 'kernel'
-if (!['kernel', 'studio'].includes(comparison)) throw new Error('Unknown realtime comparison')
-const modes = comparison === 'studio' ? ['light', 'dark'] : ['static', 'rotating'],
+if (!['kernel', 'studio', 'reflection'].includes(comparison))
+  throw new Error('Unknown realtime comparison')
+const modes =
+    comparison === 'studio'
+      ? ['light', 'dark']
+      : comparison === 'reflection'
+        ? ['scene', 'product', 'off']
+        : ['static', 'rotating'],
   base = process.env.CHECK_URL || 'http://127.0.0.1:5181',
   output =
     process.env.REALTIME_COMPARISON_OUTPUT ||
     process.env.REALTIME_KERNEL_OUTPUT ||
     (comparison === 'studio'
       ? 'artifacts/typewriter-dark-studio/comparison'
-      : 'artifacts/webgpu-rollin/kernel'),
+      : comparison === 'reflection'
+        ? 'artifacts/typewriter-realtime-complete/reflection'
+        : 'artifacts/webgpu-rollin/kernel'),
   bundle = JSON.parse(await readFile('src/lib/workbench/typewriterV2Bundle.json', 'utf8')),
   response = await fetch(new URL('/api/v1/products/typewriter-study', base))
 if (!response.ok) throw new Error('Real typewriter API unavailable')
@@ -43,7 +51,13 @@ const report = {
     'Actual GPU/presented-frame budget',
     '20-minute joint acceptance',
   ],
-  method: `Actual production WebGPU, automatic v2, ${comparison === 'studio' ? 'light versus dark visible studio palette, same rotating reflection kernel and reference HDR' : 'static versus rotating eight-tap kernel'}. Same assets, camera, pose, lights and product material inputs. Complete-frame counters are CPU command submission counts, not GPU or presentation timing. Screenshots are qualitative evidence, not proof of improvement. No extra render loop or production pixel readback.`,
+  method: `Actual production WebGPU, automatic v2, ${
+    comparison === 'studio'
+      ? 'light versus dark visible studio palette, same rotating reflection kernel and reference HDR'
+      : comparison === 'reflection'
+        ? 'whole-scene planar capture versus product-only coverage-weighted capture versus planar layer disabled, fixed light studio, rotating eight-tap reflection kernel and no spatial-background experiment'
+        : 'static versus rotating eight-tap kernel'
+  }. Same assets, camera, pose, lights and product material inputs. The reflection comparison changes what the planar layer captures and blends; it does not isolate the stochastic SSR algorithm. Complete-frame counters are CPU command submission counts, not GPU or presentation timing. Screenshots are qualitative evidence, not proof of improvement. No extra render loop or production pixel readback.`,
 }
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true }),
@@ -101,6 +115,7 @@ const snapshot = () =>
       studio = scene.children.find((node) => node.userData.studio && !node.userData.capture),
       pedestal = studio?.getObjectByName('Trees X / studio pedestal'),
       floor = studio?.getObjectByName('Trees X / studio floor'),
+      planar = scene.getObjectByName('Trees X / studio reflection'),
       camera = test.scene.camera.activeCamera.value,
       poses = [],
       materials = new Map(),
@@ -173,6 +188,11 @@ const snapshot = () =>
       exposure: renderer.toneMappingExposure,
       environmentIntensity: scene.environmentIntensity,
       environmentTextureName: scene.environment?.name ?? null,
+      planarReflection: {
+        present: !!planar,
+        visible: planar?.visible ?? false,
+        capture: planar?.userData.reflectionCapture ?? null,
+      },
       visibleStudio: {
         mood: studio?.userData.studioMood ?? null,
         pedestalColor: pedestal?.material?.color?.getHexString() ?? null,
@@ -201,7 +221,10 @@ try {
   for (const mode of modes) {
     const url = new URL('/?product=typewriter-study&renderPipeline=realtime', base)
     if (comparison === 'studio') url.searchParams.set('studioMood', mode)
-    else if (mode === 'static') url.searchParams.set('reflectionKernel', 'static')
+    else if (comparison === 'reflection') {
+      url.searchParams.set('studioMood', 'light')
+      url.searchParams.set('planarReflection', mode)
+    } else if (mode === 'static') url.searchParams.set('reflectionKernel', 'static')
     await page.goto(url.href)
     await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
       timeout: 240000,
@@ -210,7 +233,7 @@ try {
     await attach()
     await settle()
     const first = await lighting()
-    const kernel = comparison === 'studio' ? 'rotating' : mode
+    const kernel = comparison === 'kernel' ? mode : 'rotating'
     expect(first.reflectionKernel.mode).toBe(kernel)
     const firstPhase = first.reflectionKernel.phase
     await settle()
@@ -249,6 +272,16 @@ try {
         sameRenderer: true,
       })
       expect(input.lighting.reflectionKernel.mode).toBe(kernel)
+      if (comparison === 'reflection') {
+        expect(input.visibleStudio.mood).toBe('light')
+        expect(input.environmentTextureName).toBe('Trees X / Studio Small 05 reference HDR')
+        expect(input.planarReflection.visible).toBe(mode !== 'off')
+        expect(input.planarReflection.capture).toBe(
+          mode === 'scene' ? 'scene-rgb' : 'product-premultiplied-coverage',
+        )
+        expect(new URL(page.url()).searchParams.has('loungeSpatial')).toBe(false)
+        expect(new URL(page.url()).searchParams.has('loungeLayers')).toBe(false)
+      }
       if (comparison === 'studio') {
         expect(input.visibleStudio).toEqual(
           mode === 'dark'
@@ -294,7 +327,7 @@ try {
       report.inputs.push({ mode, pose, file, inputHash, ...input })
     }
   }
-  if (comparison === 'studio') {
+  if (comparison === 'studio' || comparison === 'reflection') {
     for (const [width, height] of [
       [1280, 720],
       [1440, 1000],
@@ -315,10 +348,14 @@ try {
         width,
         height,
         backend: 'webgpu',
-        mood: 'dark',
-        titleColor: 'rgb(241, 243, 238)',
+        mood: comparison === 'reflection' ? 'light' : 'dark',
         canvases: 1,
       })
+      if (comparison === 'studio') expect(overview.titleColor).toBe('rgb(241, 243, 238)')
+      else {
+        expect(overview.titleColor).toBeTruthy()
+        expect(overview.titleColor).not.toBe('rgb(241, 243, 238)')
+      }
       expect(before.sameCanvas && before.sameRenderer).toBe(true)
       await page.mouse.move(1, 1)
       await page.screenshot({ path: output + '/' + overviewFile })
@@ -343,16 +380,15 @@ try {
       expect(closed.sameCanvas && closed.sameRenderer).toBe(true)
       report.layouts.push({ ...panel, panel: 'actions', file: panelFile, posesPreserved: true })
     }
-    const darkUrl = new URL(
-      '/?product=typewriter-study&renderPipeline=realtime&studioMood=dark',
-      base,
-    )
+    const fallbackUrl = new URL('/?product=typewriter-study&renderPipeline=realtime', base)
+    fallbackUrl.searchParams.set('studioMood', comparison === 'reflection' ? 'light' : 'dark')
+    if (comparison === 'reflection') fallbackUrl.searchParams.set('planarReflection', 'off')
     for (const [width, height] of [
       [390, 844],
       [320, 740],
     ]) {
       await page.setViewportSize({ width, height })
-      await page.goto(darkUrl.href)
+      await page.goto(fallbackUrl.href)
       await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
         timeout: 240000,
       })

@@ -1,9 +1,86 @@
 import { BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, Texture } from 'three'
-import { MeshPhysicalNodeMaterial, PhysicalLightingModel } from 'three/webgpu'
+import {
+  MeshPhysicalNodeMaterial,
+  Node,
+  PhysicalLightingModel,
+  type NodeBuilder,
+} from 'three/webgpu'
+import {
+  diffuseColor,
+  getCurrentStack,
+  metalness,
+  setCurrentStack,
+  specularColor,
+  specularF90,
+  stack,
+  uniform,
+  vec3,
+} from 'three/tsl'
 import { describe, expect, it, vi } from 'vitest'
 import { createRealtimeMaterials, realtimeMaterialSupported } from './materials'
 
 describe('realtime Physical signal bridge', () => {
+  it.each([0, 0.8])(
+    'constructs the bundled TSL finish graph with native dielectric response and source AO at clearcoat %s',
+    (clearcoat) => {
+      const source = new MeshPhysicalMaterial({ clearcoat }),
+        geometry = new BoxGeometry(),
+        root = new Group(),
+        mesh = new Mesh(geometry, source)
+      root.add(mesh)
+      const bridge = createRealtimeMaterials(root),
+        runtime = mesh.material as unknown as MeshPhysicalNodeMaterial,
+        model = runtime.setupLightingModel(),
+        previousStack = getCurrentStack(),
+        flow = stack(),
+        sourceAo = uniform(0.37)
+      if (!(model instanceof PhysicalLightingModel)) throw new Error('Expected physical lighting')
+      const multiscattering = vi.spyOn(model, 'computeMultiscattering')
+      try {
+        setCurrentStack(flow)
+        model.clearcoatSpecularDirect = vec3(0)
+        model.clearcoatSpecularIndirect = vec3(0)
+        const builder = {
+          context: {
+            radiance: vec3(1),
+            ambientOcclusion: sourceAo,
+            reflectedLight: { indirectDiffuse: vec3(0.25), indirectSpecular: vec3(0.4) },
+            outgoingLight: vec3(1).toVar(),
+          },
+        } as unknown as NodeBuilder
+        // Construct the actual production nodes without compiling or executing
+        // shaders. A second TSL runtime lacks these bundled method chains.
+        expect(() => model.finish(builder)).not.toThrow()
+        expect(multiscattering).toHaveBeenCalledExactlyOnceWith(
+          expect.any(Node),
+          expect.any(Node),
+          specularF90,
+          specularColor,
+        )
+        const assignments = flow.nodes.filter((node) => {
+          const target: unknown = Reflect.get(node, 'targetNode')
+          return target instanceof Node && Reflect.get(target, 'name') === 'treesDiffuseResponse'
+        })
+        expect(assignments).toHaveLength(1)
+        const response: unknown = Reflect.get(assignments[0]!, 'sourceNode')
+        if (!(response instanceof Node)) throw new Error('Missing native diffuse response graph')
+        const dependencies = new Set<Node>()
+        response.traverse((node) => dependencies.add(node))
+        expect(dependencies).toContain(diffuseColor)
+        expect(dependencies).toContain(metalness)
+        expect(dependencies).toContain(sourceAo)
+        expect(dependencies).toContain(multiscattering.mock.calls[0]![0])
+        expect(dependencies).toContain(multiscattering.mock.calls[0]![1])
+      } finally {
+        setCurrentStack(previousStack)
+        multiscattering.mockRestore()
+        bridge.dispose()
+        source.dispose()
+        geometry.dispose()
+      }
+    },
+  )
+
   it('borrows shared maps and restores source identity without disposing loader assets', () => {
     const source = new MeshPhysicalMaterial({ clearcoat: 0.8 })
     const texture = new Texture()

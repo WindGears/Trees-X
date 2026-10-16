@@ -1,11 +1,23 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
-defineProps<{ status?: RealtimeStatus; notice?: string }>()
+const props = defineProps<{ status?: RealtimeStatus; notice?: string }>()
+const detail = computed(() => props.status?.indirectLighting)
+const message = computed(() => {
+  if (props.notice) return props.notice
+  if (props.status?.error) return '实时光影暂不可用，请重新加载'
+  if (detail.value?.error) return '实时光影 · 空间增强不可用，已用基础光照'
+  if (detail.value?.preparing) return '实时光影 · 准备空间增强'
+  if (detail.value?.actual === 'ddgi') return 'WebGPU · 实时光影与空间增强'
+  return 'WebGPU · 实时光影'
+})
 </script>
 
 <template>
   <p v-if="status || notice" class="wb-lighting-status" role="status">
-    {{ notice || (status?.error ? '实时光影暂不可用，请重新加载' : 'WebGPU · 实时光影') }}
+    <span :title="detail?.error ?? undefined" :data-indirect-lighting="detail?.actual">{{
+      message
+    }}</span>
   </p>
 </template>
 

@@ -1,5 +1,17 @@
 # 新版目标架构与当前实现
 
+## 当前实时管线接入（2026-10-16）
+
+`studioReflection` 默认仅捕获实际商品与灯光，`productReflectionCapture` 在同一 renderer 的离屏反射前暂存并清空背景／隐藏非商品根分支，结束或失败恢复。RGBA 一起过滤，再以 coverage 解预乘并合成，避免地台／天空混入商品倒影。`planarReflection=scene|off` 仅为旧捕获与关闭的对照；WebGL／hybrid 原实现保持。
+
+`signedSpatial` 的半径引导排除未命中及非同表面邻居，实际 signed Δ 平均仍允许同表面的零修正；`signedHistory` 同样检查平面距离、法线与粗糙度。保留有符号值、原生材质参数与八 tap，不扩大模糊掩盖字符或金属问题。
+
+`realtime/coordinator` 按 `indirectLighting=ddgi` 异步装配 `ddgi/field`，在既有绘制时钟上串行执行探针 tick 与辅助／最终绘制。探针读取上个已完成姿态，`beforeRaster` 只在真正光栅帧内执行一次；迟到模块和回调受商品／渲染代次保护。准备期及失败使用 SSGI，局部状态向界面报告实际模式；高频变换和 Three 对象不进入 Pinia。
+
+`ddgi/proxyScene` 借用 loader 几何、源材质及实例属性，只拥有代理对象／变换；field 拥有 BVH、追踪辅助纹理和探针资源，不使用会释放场景材质的默认 installer。`materials` 用同一打包版 TSL 和 r185 原生多散射函数捕获带源 AO／清漆透过的漫反射响应；既有六 MRT 的 surface output 存储该响应，无第七附件。`signals` 以 DDGI irradiance × response 替换已捕获的原生间接漫反射，有效像素不再加 SSGI；透明 transmittance、镜面和不支持的 Physical 支路保留。
+
+固定版本／预算、SH9 环境、矩形灯中心点近似、追踪辅助贴图重采样、主线程分步构建与收敛延迟见 [DDGI 记录](realtime-ddgi-validation.md)。不得把该组合称为完整 Physical、硬件光追或路径追踪等效。图像空间暂停扩展，以下历史实现仍保留独立入口；API、配置版本和后台不变。
+
 ## 图像空间实验（2026-10-16）
 
 `rendering/studio` 只在实时 WebGPU 的显式 `loungeSpatial=box|depth` 参数下启用 `loungeSpatialTable` 厚桌台，并同步平面反射与接触阴影尺寸。`loungeSpatialGeometry` 拥有有限盒体或径向代理的几何和 NodeMaterial，借用 RGB 纹理；`loungeDepth` 校验实际 DA² 512×256 Float32 距离。预测地面经尺度标定拟合桌体底面；跨深度三角形剔除暴露的洞使用原图远盒补底，不能称为遮挡重建。

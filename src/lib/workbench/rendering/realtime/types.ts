@@ -9,6 +9,12 @@ export interface RealtimeStatus {
   revision: number
   generation: number
   error: string | null
+  indirectLighting?: {
+    requested: 'ssgi' | 'ddgi'
+    actual: 'ssgi' | 'ddgi'
+    preparing: boolean
+    error: string | null
+  }
 }
 
 export interface RealtimeSnapshot extends RealtimeStatus {
@@ -22,6 +28,13 @@ export interface RealtimeSnapshot extends RealtimeStatus {
   reflectionKernel?: ReflectionSamplingSnapshot | null
   resolution: { width: number; height: number }
   materialBranches: Record<string, number>
+  indirectLighting?: {
+    requested: 'ssgi' | 'ddgi'
+    actual: 'ssgi' | 'ddgi'
+    preparing: boolean
+    error: string | null
+    details: unknown
+  }
 }
 
 export interface RealtimeOptions {

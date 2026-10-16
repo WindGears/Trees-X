@@ -1,4 +1,4 @@
-import { Mesh, Shape, ShapeGeometry } from 'three'
+import { Mesh, Shape, ShapeGeometry, type Object3D } from 'three'
 import { MeshBasicNodeMaterial, type Node } from 'three/webgpu'
 import {
   cameraPosition,
@@ -10,9 +10,10 @@ import {
   screenSize,
   screenUV,
   vec2,
-  vec3,
+  vec4,
 } from 'three/tsl'
 import { studioDesign } from '../studio/design'
+import { bindProductReflectionCapture } from './productReflectionCapture'
 
 export interface StudioReflectionDimensions {
   width: number
@@ -25,6 +26,7 @@ export function createGpuStudioReflection(
   groundY: number = studioDesign.groundY,
   strength = 0.28,
   dimensions: StudioReflectionDimensions = studioDesign,
+  product?: Object3D,
 ) {
   const width = dimensions.width - dimensions.radius * 2,
     depth = dimensions.depth - dimensions.radius * 2,
@@ -44,7 +46,8 @@ export function createGpuStudioReflection(
   const geometry = new ShapeGeometry(shape, 12),
     material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false }),
     reflected = reflector({ resolutionScale: 0.75, samples: 4, bounces: false })
-  let blurred: Node<'vec3'> = vec3(0)
+  const releaseCapture = product ? bindProductReflectionCapture(reflected, product) : undefined
+  let blurred: Node<'vec4'> = vec4(0)
   const weights = [1, 4, 6, 4, 1]
   const step = vec2(1.5).div(screenSize.mul(0.75))
   for (let row = 0; row < 5; row++)
@@ -53,10 +56,12 @@ export function createGpuStudioReflection(
       blurred = blurred.add(
         reflected
           .sample(screenUV.flipX().add(offset))
-          .rgb.mul((weights[row]! * weights[column]!) / 256),
+          .mul((weights[row]! * weights[column]!) / 256),
       )
     }
-  material.colorNode = blurred
+  // Capture is premultiplied over transparent black. Filter RGB and coverage
+  // together, then unpremultiply for Three's ordinary transparent blending.
+  material.colorNode = product ? blurred.rgb.div(blurred.a.max(1e-5)) : blurred.rgb
   const grazing = cameraPosition
     .sub(positionWorld)
     .normalize()
@@ -64,11 +69,14 @@ export function createGpuStudioReflection(
     .abs()
     .oneMinus()
     .pow(3)
-  material.opacityNode = float(strength).mul(mix(0.45, 1, grazing))
+  material.opacityNode = float(strength)
+    .mul(mix(0.45, 1, grazing))
+    .mul(product ? blurred.a.clamp() : 1)
   material.name = 'TreesXStudioSoftReflectionTSL'
   const mesh = new Mesh(geometry, material)
   mesh.name = 'Trees X / studio reflection'
   mesh.userData.traceExclude = true
+  mesh.userData.reflectionCapture = product ? 'product-premultiplied-coverage' : 'scene-rgb'
   mesh.rotation.x = -Math.PI / 2
   mesh.position.y = groundY + 0.00035
   mesh.renderOrder = 1
@@ -80,6 +88,7 @@ export function createGpuStudioReflection(
       if (disposed) return
       disposed = true
       mesh.removeFromParent()
+      releaseCapture?.()
       reflected.dispose()
       material.dispose()
       geometry.dispose()

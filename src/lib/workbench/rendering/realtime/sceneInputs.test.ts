@@ -13,11 +13,36 @@ import {
   UnsignedByteType,
   Vector2,
 } from 'three'
-import { mrt, vec2, vec4 } from 'three/tsl'
+import { mrt, output, vec2, vec4 } from 'three/tsl'
 import { describe, expect, it, vi } from 'vitest'
 import { createRealtimeSceneInputs } from './sceneInputs'
+import { diffuseResponseNode } from './materials'
 
 describe('opaque surface and native transparent beauty inputs', () => {
+  it('stores native diffuse response in the existing surface output without a seventh attachment', () => {
+    const inputs = createRealtimeSceneInputs(new Scene(), new PerspectiveCamera(), vec2(0)),
+      surfaceMrt = inputs.surface.getMRT()!,
+      beautyMrt = inputs.beauty.getMRT()!
+    expect(surfaceMrt.get('output')).toBe(diffuseResponseNode)
+    expect(Object.keys(surfaceMrt.outputNodes).sort()).toEqual([
+      'albedo',
+      'baseDiffuse',
+      'baseSpecular',
+      'motion',
+      'normal',
+      'output',
+    ])
+    expect(inputs.diffuseResponse).toBe(inputs.surface.getTextureNode('output'))
+    expect(inputs.diffuseResponse.value).toBe(inputs.surface.getTexture('output'))
+    expect(inputs.surface.renderTarget.textures).toHaveLength(6)
+    expect(beautyMrt.get('output')).toBe(output)
+    expect(inputs.color).toBe(inputs.beauty.getTextureNode('output'))
+    expect(inputs.color).not.toBe(inputs.diffuseResponse)
+    expect(Object.keys(beautyMrt.outputNodes).sort()).toEqual(['correctionThroughput', 'output'])
+    expect(inputs.beauty.renderTarget.textures).toHaveLength(2)
+    inputs.dispose()
+  })
+
   it('isolates lighting MRTs and depth from native alpha beauty without source mutation', () => {
     const scene = new Scene(),
       camera = new PerspectiveCamera(),

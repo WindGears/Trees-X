@@ -25,6 +25,7 @@ import {
   vec4,
 } from 'three/tsl'
 import { createOwnedRtt } from './ownedRtt'
+import { reflectionNeighborhoodCompatible } from './signedSpatial'
 
 /** Signed delta history for the pinned r185 pipeline. Geometric four-tap
  * reprojection and the NDC velocity conversion follow Three's MIT-licensed
@@ -83,10 +84,14 @@ export function createSignedReflectionHistory(
     const currentNormalRoughness = textureLoad(normal, pixel).toConst()
     const result = vec4(0).toVar()
     If(current.a.greaterThan(0).and(currentDepth.lessThan(1)), () => {
-      const minimum = current.rgb.toVar(),
+      const viewPosition = getViewPosition(coord, currentDepth, inverseProjection).toConst(),
+        viewNormal = unpackRGBToNormal(currentNormalRoughness.rgb).normalize().toConst(),
+        viewZ = viewPosition.z.abs().max(1e-6),
+        minimum = current.rgb.toVar(),
         maximum = current.rgb.toVar()
-      // Unsupported neighboring surfaces supply neither clipping bounds nor
-      // history. A zero current neighborhood clips stale delta exactly to zero.
+      // Only same-surface neighbors may widen history clipping bounds. An
+      // adjacent valid surface is still a different history signal. A zero
+      // same-surface neighborhood clips stale delta exactly to zero.
       for (const [x, y] of [
         [-1, -1],
         [0, -1],
@@ -104,10 +109,28 @@ export function createSignedReflectionHistory(
           .and(tap.x.lessThan(int(resolution.x)))
           .and(tap.y.lessThan(int(resolution.y)))
         If(inside, () => {
-          const neighbor = textureLoad(signal, tap)
-          If(neighbor.a.greaterThan(0).and(textureLoad(depth, tap).r.lessThan(1)), () => {
-            minimum.assign(minimum.min(neighbor.rgb))
-            maximum.assign(maximum.max(neighbor.rgb))
+          const neighbor = textureLoad(signal, tap),
+            neighborDepth = textureLoad(depth, tap).r
+          If(neighbor.a.greaterThan(0).and(neighborDepth.lessThan(1)), () => {
+            const neighborNormalRoughness = textureLoad(normal, tap),
+              neighborPosition = getViewPosition(
+                vec2(tap).add(0.5).div(resolution),
+                neighborDepth,
+                inverseProjection,
+              ),
+              neighborNormal = unpackRGBToNormal(neighborNormalRoughness.rgb).normalize(),
+              plane = abs(viewPosition.sub(neighborPosition).dot(viewNormal)).div(viewZ)
+            If(
+              reflectionNeighborhoodCompatible(
+                plane,
+                neighborNormal.dot(viewNormal),
+                currentNormalRoughness.a.sub(neighborNormalRoughness.a),
+              ),
+              () => {
+                minimum.assign(minimum.min(neighbor.rgb))
+                maximum.assign(maximum.max(neighbor.rgb))
+              },
+            )
           })
         })
       }
@@ -115,12 +138,8 @@ export function createSignedReflectionHistory(
         historyCount = float(0).toVar(),
         weights = float(0).toVar()
       If(enabled.greaterThan(0), () => {
-        const viewPosition = getViewPosition(coord, currentDepth, inverseProjection)
         const worldPosition = world.mul(vec4(viewPosition, 1)).xyz.toConst()
-        const worldNormal = world
-          .mul(vec4(unpackRGBToNormal(currentNormalRoughness.rgb), 0))
-          .xyz.normalize()
-          .toConst()
+        const worldNormal = world.mul(vec4(viewNormal, 0)).xyz.normalize().toConst()
         const reproj = coord
           .sub(textureLoad(velocity, pixel).rg.mul(vec2(0.5, -0.5)))
           .mul(resolution)

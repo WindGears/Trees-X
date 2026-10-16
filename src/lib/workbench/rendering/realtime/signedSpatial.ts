@@ -29,6 +29,40 @@ import {
 import { createOwnedRtt } from './ownedRtt'
 import { createReflectionSampling, type ReflectionKernel } from './reflectionSampling'
 
+/** Current-frame neighbors must stay on the same geometric/material surface.
+ * Depth/roughness use the full-trust range of the existing r185 temporal gates;
+ * the normal cutoff retains their rejection boundary for curved micro-surfaces.
+ */
+export function reflectionNeighborhoodCompatible(
+  relativePlaneDistance: Node<'float'>,
+  normalCosine: Node<'float'>,
+  roughnessDifference: Node<'float'>,
+) {
+  return relativePlaneDistance
+    .abs()
+    .lessThanEqual(0.001)
+    .and(normalCosine.greaterThanEqual(0.95))
+    .and(roughnessDifference.abs().lessThanEqual(0.05))
+}
+
+/** r185's inverse-distance guide weighting, restricted to actual screen hits.
+ * A miss contributes no distance/weight here; its signed color remains zero
+ * and still participates normally in the separate eight-tap signal average.
+ */
+export function reflectionRayGuideContribution(distance: Node<'float'>) {
+  const hit = distance.greaterThan(0).and(distance.lessThan(9999)),
+    ray = hit.select(distance.max(0.001), 0),
+    weight = hit.select(float(1).div(ray.add(0.001)), 0)
+  return vec2(ray.mul(weight), weight)
+}
+
+export function reflectionRayGuide(sum: Node<'vec2'>) {
+  return sum.y
+    .greaterThan(0)
+    .select(sum.x.div(sum.y.max(1e-6)), 0.25)
+    .max(0.001)
+}
+
 /** Signed correction only: the native Physical environment is never filtered.
  * Geometric lobe/depth/roughness guides follow Three r185 RecurrentDenoiseNode
  * (MIT). This bounded eight-tap filter deliberately has no adaptive kernel,
@@ -94,7 +128,31 @@ export function createSignedReflectionSpatial(
         position = getViewPosition(center.uv, center.z, inverseProjection).toConst(),
         viewZ = position.z.abs().max(1e-6),
         roughness = center.packed.a.toConst(),
-        rayLength = center.ray.a.greaterThan(1000).select(0.25, center.ray.a).max(0.001),
+        rayStatistics = reflectionRayGuideContribution(center.ray.a).toVar()
+      // Fixed four-neighbor cross follows r185's bounded local guide statistics.
+      // Stabilize only the radius, without conditioning signed radiance on hits.
+      for (const [x, y] of [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+      ] as const) {
+        const neighbor = read(center.uv.add(vec2(x, y).div(resolution)))
+        If(neighbor.supported, () => {
+          const neighborPosition = getViewPosition(neighbor.uv, neighbor.z, inverseProjection),
+            neighborNormal = unpackRGBToNormal(neighbor.packed.rgb).normalize(),
+            plane = abs(position.sub(neighborPosition).dot(n)).div(viewZ),
+            sameSurface = reflectionNeighborhoodCompatible(
+              plane,
+              neighborNormal.dot(n),
+              roughness.sub(neighbor.packed.a),
+            )
+          If(sameSurface, () => {
+            rayStatistics.addAssign(reflectionRayGuideContribution(neighbor.ray.a))
+          })
+        })
+      }
+      const rayLength = reflectionRayGuide(rayStatistics).toConst(),
         view = normalize(position).negate(),
         dominant = normalize(mix(n, reflect(view.negate(), n), roughness.oneMinus())),
         reflected = reflect(dominant.negate(), n),

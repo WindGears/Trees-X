@@ -17,7 +17,12 @@ import {
   pass,
   vec4,
 } from 'three/tsl'
-import { diffuseCaptureNode, physicalRoughnessNode, specularCaptureNode } from './materials'
+import {
+  diffuseCaptureNode,
+  diffuseResponseNode,
+  physicalRoughnessNode,
+  specularCaptureNode,
+} from './materials'
 
 // In this attachment alpha means material opacity, not roughness or a BRDF
 // weight. Opaque surfaces write 1; each native transparent fragment leaves
@@ -36,7 +41,7 @@ export function createRealtimeSceneInputs(scene: Scene, camera: PerspectiveCamer
   surface.transparent = false
   surface.setMRT(
     mrt({
-      output,
+      output: diffuseResponseNode,
       normal: vec4(packNormalToRGB(normalView), physicalRoughnessNode),
       albedo: vec4(diffuseColor.rgb, materialMetalness),
       motion,
@@ -73,6 +78,7 @@ export function createRealtimeSceneInputs(scene: Scene, camera: PerspectiveCamer
     velocity: surface.getTextureNode('motion'),
     baseSpecular: surface.getTextureNode('baseSpecular'),
     baseDiffuse: surface.getTextureNode('baseDiffuse'),
+    diffuseResponse: surface.getTextureNode('output'),
     dispose() {
       if (disposed) return
       disposed = true

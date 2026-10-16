@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## 当前执行：补齐打字机实时管线（2026-10-16）
+
+用户要求回归修补并继续完善渲染管线，暂停扩展图像房间。显式实时入口继续 v2：商品独立捕获的透明覆盖率地台反射、同表面约束的 signed SSR 过滤，以及可选 `indirectLighting=ddgi` 动态间接光。SSGI 为保留对照与失败回退；DDGI 只替换支持表面的间接漫反射，不叠加第二套 SSGI 间接光。顶部状态报告真实模式和增强失败原因。
+
+Three 0.185.1、Speedball 0.8.0 固定，唯一 Canvas／renderer／时钟；不修改数据库、API 或 ProductPresentation。钢琴、汽车和普通 WebGL 保持。FidelityFX 与独立 BVH 镜面／阴影未接入，不以技术名词或工程通过宣称整体画质与呈现预算通过。实机、生命周期和局限见 [本轮管线记录](realtime-ddgi-validation.md)。下方带日期的“DDGI 未接入／不扩展”保留历史，不再覆盖本次实现。
+
 ## 当前空间分层验证（2026-10-16）
 
 用户要求用多张生成素材验证暖夜空间。仅实时 WebGPU 打字机的显式空间入口采用实体厚桌台；`loungeSpatial=box` 为有限盒体投影，`loungeSpatial=depth` 为离线 DA² 径向距离代理，`loungeSpatial=box&loungeLayers=1` 为去家具房间底图＋固定椅桌／台灯卡片。加 `loungeDof=1` 才执行商品保护的真实深度景深；默认关闭，先检查空间。普通实时暖夜、WebGL、hybrid、其他商品与管理业务不替换。

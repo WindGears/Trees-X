@@ -57,11 +57,17 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
     // The realtime pass blends in HDR before ACES. WebGL blends the authored
     // overlays after tone mapping, so equal alpha values look much weaker here.
     // These stage-only weights are a visual calibration, not BRDF equivalence.
+    const reflectionMode =
+      realtime && typeof location !== 'undefined'
+        ? new URLSearchParams(location.search).get('planarReflection')
+        : null
     reflection = createGpuStudioReflection(
       groundY,
       spatial ? 0.28 : realtime ? 0.5 : 0.28,
       geometry.table?.dimensions,
+      realtime && reflectionMode !== 'scene' ? model : undefined,
     )
+    if (realtime && reflectionMode === 'off') reflection.mesh.visible = false
     scene.add(reflection.mesh)
     shadow = createGpuStudioShadow(
       renderer,
