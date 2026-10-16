@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ClampToEdgeWrapping, LinearMipmapLinearFilter, SRGBColorSpace, Texture } from 'three'
-import { loadLoungeLayerAssets } from './loungeLayerAssets'
+import { loadLoungeCleanRoom, loadLoungeLayerAssets } from './loungeLayerAssets'
 
 const baseUrl = '/studio/amber-lounge/layers-v1/',
   files = ['clean-room.png', 'chair-table.png', 'table-lamp.png'],
@@ -226,5 +226,99 @@ describe('fixed generated lounge layer assets', () => {
     await Promise.resolve()
     expect(releases).not.toHaveBeenCalled()
     for (const item of bitmaps) expect(item.close).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('clean room without retired furniture assets', () => {
+  it('requests only the trusted clean-room PNG and owns its texture and bitmap exactly once', async () => {
+    const controller = new AbortController(),
+      assets = await loadLoungeCleanRoom(controller.signal),
+      release = vi.spyOn(assets.cleanRoom, 'dispose'),
+      record = manifest.files.find((entry) => entry.file === 'clean-room.png')!
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe(baseUrl + 'clean-room.png')
+    expect(vi.mocked(fetch).mock.calls[0]?.[1]).toMatchObject({
+      mode: 'same-origin',
+      credentials: 'same-origin',
+      redirect: 'error',
+    })
+    expect(assets.cleanRoom.userData.loungeLayerAsset).toMatchObject({
+      file: record.file,
+      bytes: record.bytes,
+      sha256: record.sha256,
+      width: record.width,
+      height: record.height,
+      hasAlpha: record.hasAlpha,
+      key: 'cleanRoom',
+      packId: 'amber-lounge-layers-v1',
+    })
+    expect(assets.cleanRoom.colorSpace).toBe(SRGBColorSpace)
+    expect(assets.cleanRoom.flipY).toBe(false)
+    expect(bitmaps).toHaveLength(1)
+    controller.abort()
+    expect(release).not.toHaveBeenCalled()
+    expect(bitmaps[0]!.close).not.toHaveBeenCalled()
+    assets.dispose()
+    assets.dispose()
+    expect(release).toHaveBeenCalledTimes(1)
+    expect(bitmaps[0]!.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not request any image when already cancelled', async () => {
+    const controller = new AbortController(),
+      reason = new Error('clean room no longer needed')
+    controller.abort(reason)
+    await expect(loadLoungeCleanRoom(controller.signal)).rejects.toBe(reason)
+    expect(fetch).not.toHaveBeenCalled()
+    expect(createImageBitmap).not.toHaveBeenCalled()
+  })
+
+  it('rejects corrupted clean-room bytes before creating a bitmap or texture', async () => {
+    const bytes = new Uint8Array(fixtures.get(baseUrl + 'clean-room.png')!.slice(0))
+    bytes[100] = bytes[100]! ^ 1
+    vi.mocked(fetch).mockResolvedValue(new Response(bytes))
+    const release = vi.spyOn(Texture.prototype, 'dispose')
+    await expect(loadLoungeCleanRoom(new AbortController().signal)).rejects.toThrow('校验失败')
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(createImageBitmap).not.toHaveBeenCalled()
+    expect(release).not.toHaveBeenCalled()
+  })
+
+  it('cancels promptly during decode and closes a late bitmap without allocating a texture', async () => {
+    const pending = deferred<ImageBitmap>(),
+      controller = new AbortController(),
+      release = vi.spyOn(Texture.prototype, 'dispose')
+    vi.mocked(createImageBitmap).mockReturnValue(pending.promise)
+    const rejected = expect(loadLoungeCleanRoom(controller.signal)).rejects.toMatchObject({
+      name: 'AbortError',
+    })
+    await vi.waitFor(() => expect(createImageBitmap).toHaveBeenCalledTimes(1))
+    controller.abort()
+    await rejected
+    pending.resolve(bitmap(1774, 887))
+    await Promise.resolve()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(release).not.toHaveBeenCalled()
+    expect(bitmaps[0]!.close).toHaveBeenCalledTimes(1)
+  })
+
+  it('cancels an in-flight request when the transfer deadline expires', async () => {
+    const deadline = new AbortController(),
+      reason = new DOMException('clean-room transfer expired', 'TimeoutError')
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal)
+    vi.mocked(fetch).mockImplementation(
+      (_input, options) =>
+        new Promise<Response>((_accept, reject) => {
+          options?.signal?.addEventListener('abort', () => reject(options.signal?.reason), {
+            once: true,
+          })
+        }),
+    )
+    const rejected = expect(loadLoungeCleanRoom(new AbortController().signal)).rejects.toBe(reason)
+    expect(timeout).toHaveBeenCalledWith(180_000)
+    deadline.abort(reason)
+    await rejected
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(createImageBitmap).not.toHaveBeenCalled()
   })
 })

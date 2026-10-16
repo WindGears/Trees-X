@@ -3,12 +3,11 @@ import { MeshBasicNodeMaterial, type Node } from 'three/webgpu'
 import { color, mix, uniform } from 'three/tsl'
 import type { createGpuStudioGeometry } from './studioGeometry'
 import { loadLoungeDepth } from './loungeDepth'
-import { loadLoungeLayerAssets } from './loungeLayerAssets'
-import { createLoungeImageLayers } from './loungeImageLayers'
+import { loadLoungeCleanRoom } from './loungeLayerAssets'
 import { createDepthLoungeProjection, createFiniteLoungeProjection } from './loungeSpatialGeometry'
 import { resolveLoungeProjection } from './loungeSpatialMode'
 
-/** Owns derived room/layers; the source panorama and original studio are borrowed. */
+/** Owns the derived room/clean plate; the source panorama and studio are borrowed. */
 export async function createLoungeSpatialLook(
   studio: ReturnType<typeof createGpuStudioGeometry>,
   image: Texture,
@@ -16,7 +15,7 @@ export async function createLoungeSpatialLook(
 ) {
   const mode = resolveLoungeProjection()
   if (mode === 'infinite' || !studio.table) return undefined
-  const layered =
+  const cleanRoomRequested =
       mode === 'box' && new URLSearchParams(window.location.search).get('loungeLayers') === '1',
     floorY = studio.table.floorY,
     origin = [0, 1.4, 0] as const,
@@ -30,15 +29,15 @@ export async function createLoungeSpatialLook(
       maxDepthRatio: 1.35,
       longitudeOffset: 0.08,
     }
-  let layerAssets: Awaited<ReturnType<typeof loadLoungeLayerAssets>> | undefined,
-    layers: ReturnType<typeof createLoungeImageLayers> | undefined,
+  let roomAssets: Awaited<ReturnType<typeof loadLoungeCleanRoom>> | undefined,
     projection:
       | ReturnType<typeof createDepthLoungeProjection>
       | ReturnType<typeof createFiniteLoungeProjection>
       | undefined
   try {
     signal.throwIfAborted()
-    if (layered) layerAssets = await loadLoungeLayerAssets(signal)
+    // Keep existing URLs, but no longer load or create the flat furniture cards.
+    if (cleanRoomRequested) roomAssets = await loadLoungeCleanRoom(signal)
     const source = mode === 'depth' ? await loadLoungeDepth(signal) : undefined
     signal.throwIfAborted()
     projection = source
@@ -50,7 +49,7 @@ export async function createLoungeSpatialLook(
           calibration,
           fallbackBounds: bounds,
         })
-      : createFiniteLoungeProjection(layerAssets?.cleanRoom ?? image, {
+      : createFiniteLoungeProjection(roomAssets?.cleanRoom ?? image, {
           ...bounds,
           captureOrigin: origin,
           longitudeOffset: calibration.longitudeOffset,
@@ -79,10 +78,6 @@ export async function createLoungeSpatialLook(
           material.colorNode = mix(color('#e7e9e5'), material.colorNode as Node<'vec3'>, blend)
       }
     })
-    if (layerAssets) {
-      layers = createLoungeImageLayers(layerAssets, floorY)
-      projection.group.add(layers.group)
-    }
     const metadata = {
       mode,
       status: 'ready',
@@ -91,15 +86,14 @@ export async function createLoungeSpatialLook(
       groundedVertices,
       fallback: source ? 'unrecovered-far-box' : null,
       stats: 'stats' in projection ? projection.stats : null,
-      imageLayers: layers?.metadata ?? null,
-      cleanPlate: layerAssets ? '/studio/amber-lounge/layers-v1/clean-room.png' : null,
+      imageLayers: null,
+      cleanPlate: roomAssets ? '/studio/amber-lounge/layers-v1/clean-room.png' : null,
     }
     projection.group.userData.loungeSpatial = metadata
     studio.group.userData.loungeSpatial = metadata
     studio.group.add(projection.group)
     const ownedProjection = projection,
-      ownedLayers = layers,
-      ownedAssets = layerAssets,
+      ownedAssets = roomAssets,
       originalSky = studio.sky.visible,
       originalFloor = studio.floorMesh.visible
     let disposed = false
@@ -110,14 +104,12 @@ export async function createLoungeSpatialLook(
           visible = amount > 0.001
         blend.value = amount
         ownedProjection.group.visible = visible
-        ownedLayers?.setBlend(amount)
         studio.sky.visible = visible ? false : originalSky
         studio.floorMesh.visible = visible ? false : originalFloor
       },
       dispose() {
         if (disposed) return
         disposed = true
-        ownedLayers?.dispose()
         ownedProjection.dispose()
         ownedAssets?.dispose()
         studio.sky.visible = originalSky
@@ -127,9 +119,8 @@ export async function createLoungeSpatialLook(
       },
     }
   } catch (cause) {
-    layers?.dispose()
     projection?.dispose()
-    layerAssets?.dispose()
+    roomAssets?.dispose()
     throw cause
   }
 }

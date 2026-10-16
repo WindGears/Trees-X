@@ -105,6 +105,20 @@ async function loadTexture(record: Readonly<LayerRecord>, signal: AbortSignal) {
   }
 }
 
+/** Runtime room plate only. Rejected furniture cards stay in the source archive. */
+export async function loadLoungeCleanRoom(signal: AbortSignal) {
+  signal.throwIfAborted()
+  const transfer = AbortSignal.any([signal, AbortSignal.timeout(180_000)]),
+    owner = await loadTexture(records[0], transfer)
+  try {
+    transfer.throwIfAborted()
+    return { cleanRoom: owner.texture, dispose: owner.dispose }
+  } catch (error) {
+    owner.dispose()
+    throw error
+  }
+}
+
 /** The caller exclusively owns the returned textures/bitmaps. After return,
  * aborting the request does not dispose a pack already attached to the stage.
  */

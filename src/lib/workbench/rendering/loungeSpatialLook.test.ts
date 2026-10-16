@@ -3,15 +3,18 @@ import { Mesh, Texture } from 'three'
 import { MeshBasicNodeMaterial, type Node } from 'three/webgpu'
 import { createLoungeSpatialLook } from './loungeSpatialLook'
 import { loadLoungeDepth } from './loungeDepth'
-import { loadLoungeLayerAssets, type LoungeLayerAssets } from './loungeLayerAssets'
+import { loadLoungeCleanRoom, loadLoungeLayerAssets } from './loungeLayerAssets'
 import { createGpuStudioGeometry } from './studioGeometry'
 import { studioPalettes } from '../studio/palette'
 
 vi.mock('./loungeDepth', () => ({ loadLoungeDepth: vi.fn() }))
-vi.mock('./loungeLayerAssets', () => ({ loadLoungeLayerAssets: vi.fn() }))
+vi.mock('./loungeLayerAssets', () => ({
+  loadLoungeCleanRoom: vi.fn(),
+  loadLoungeLayerAssets: vi.fn(),
+}))
 
 const depthLoader = vi.mocked(loadLoungeDepth),
-  layerLoader = vi.mocked(loadLoungeLayerAssets),
+  layerLoader = vi.mocked(loadLoungeCleanRoom),
   cleanups: (() => void)[] = []
 
 function fixture(search: string, spatialTable = true) {
@@ -34,9 +37,7 @@ function fixture(search: string, spatialTable = true) {
 
 function ownedPack() {
   const cleanRoom = new Texture(),
-    chair = new Texture(),
-    lamp = new Texture(),
-    textures = [cleanRoom, chair, lamp],
+    textures = [cleanRoom],
     releases = textures.map((texture) => vi.spyOn(texture, 'dispose'))
   let disposed = false
   const dispose = vi.fn(() => {
@@ -45,7 +46,7 @@ function ownedPack() {
     for (const texture of textures) texture.dispose()
   })
   cleanups.push(dispose)
-  return { cleanRoom, chair, lamp, dispose, releases }
+  return { cleanRoom, dispose, releases }
 }
 
 function deferred<T>() {
@@ -82,6 +83,7 @@ function expectUnchangedStage(f: ReturnType<typeof fixture>) {
 beforeEach(() => {
   depthLoader.mockReset()
   layerLoader.mockReset()
+  vi.mocked(loadLoungeLayerAssets).mockReset()
 })
 afterEach(() => {
   for (const cleanup of cleanups.splice(0).reverse()) cleanup()
@@ -149,7 +151,7 @@ describe('owned finite lounge integration', () => {
     for (const release of f.borrowed) expect(release).not.toHaveBeenCalled()
   })
 
-  it('attaches a clean room and two real cards, switches their visibility, and releases the pack once', async () => {
+  it('keeps the clean room and physical table without furniture cards and releases only its owned room resources', async () => {
     const f = fixture('?loungeSpatial=box&loungeLayers=1'),
       pack = ownedPack(),
       signal = new AbortController().signal
@@ -158,33 +160,39 @@ describe('owned finite lounge integration', () => {
     if (!look) throw new Error('Expected layered look')
     cleanups.push(look.dispose)
     const room = mesh(f.studio, 'Trees X / finite image room'),
-      layers = f.studio.group.getObjectByName('Trees X / experimental lounge image layers')
-    if (!layers) throw new Error('Expected attached image layers')
+      table = f.studio.table,
+      releases = [vi.spyOn(room.geometry, 'dispose'), vi.spyOn(room.material, 'dispose')]
+    if (!table) throw new Error('Expected physical table')
+    const tableGeometry = table.top.geometry,
+      tableRelease = vi.spyOn(tableGeometry, 'dispose'),
+      tableChildren = [...table.group.children]
     expect(layerLoader).toHaveBeenCalledExactlyOnceWith(signal)
+    expect(loadLoungeLayerAssets).not.toHaveBeenCalled()
     expect(depthLoader).not.toHaveBeenCalled()
     expect(imageTextures(room.material.colorNode)).toEqual(new Set([pack.cleanRoom]))
-    expect(layers.parent).toBe(room.parent)
-    expect(layers.children).toHaveLength(2)
-    const releases = layers.children.flatMap((card) => {
-      if (!(card instanceof Mesh) || Array.isArray(card.material))
-        throw new Error('Expected card mesh')
-      return [vi.spyOn(card.geometry, 'dispose'), vi.spyOn(card.material, 'dispose')]
+    const furniture: string[] = []
+    f.studio.group.traverse((node) => {
+      if (node.userData.loungeImageLayers || /image card/.test(node.name)) furniture.push(node.name)
     })
+    expect(furniture).toEqual([])
     expect(f.studio.group.userData.loungeSpatial).toMatchObject({
       mode: 'box',
-      imageLayers: { cardCount: 2 },
+      imageLayers: null,
       cleanPlate: '/studio/amber-lounge/layers-v1/clean-room.png',
     })
     look.setBlend(1)
-    expect(layers.visible && room.parent?.visible).toBe(true)
+    expect(room.parent?.visible).toBe(true)
     look.setBlend(0)
-    expect(layers.visible || room.parent?.visible).toBe(false)
+    expect(room.parent?.visible).toBe(false)
     expect(pack.dispose).not.toHaveBeenCalled()
     look.dispose()
     look.dispose()
     expect(pack.dispose).toHaveBeenCalledTimes(1)
     for (const release of [...releases, ...pack.releases]) expect(release).toHaveBeenCalledTimes(1)
-    expect(layers.parent).toBeNull()
+    expect(table.top.geometry).toBe(tableGeometry)
+    expect(table.group.children).toEqual(tableChildren)
+    expect(table.group.parent).toBe(f.studio.group)
+    expect(tableRelease).not.toHaveBeenCalled()
     expectUnchangedStage(f)
   })
 
@@ -202,7 +210,7 @@ describe('owned finite lounge integration', () => {
   it('releases a late returned pack once after cancellation without attaching any room or cards', async () => {
     const f = fixture('?loungeSpatial=box&loungeLayers=1'),
       pack = ownedPack(),
-      pending = deferred<LoungeLayerAssets>(),
+      pending = deferred<Awaited<ReturnType<typeof loadLoungeCleanRoom>>>(),
       controller = new AbortController(),
       reason = new Error('cancelled while layer pack was pending')
     layerLoader.mockReturnValue(pending.promise)

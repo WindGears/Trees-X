@@ -126,7 +126,9 @@ const snapshot = (page) =>
       materials = new Map(),
       calibration = []
     const projections = [],
-      imageLayers = []
+      imageLayers = [],
+      furnitureCards = [],
+      physicalTables = []
     const isProjection = (node) =>
       ['Trees X / finite lounge projection', 'Trees X / depth lounge projection'].includes(
         node.name,
@@ -153,6 +155,13 @@ const snapshot = (page) =>
     scene.updateMatrixWorld(true)
     camera.updateMatrixWorld(true)
     scene.traverse((node) => {
+      if (/^Trees X \/ (chair and side table|table lamp) image card$/.test(node.name))
+        furnitureCards.push({ name: node.name, visible: effectivelyVisible(node) })
+      if (node.userData.loungeSpatialTable)
+        physicalTables.push({
+          name: node.name,
+          meshes: node.children.filter((child) => child.isMesh).map((child) => child.name),
+        })
       if (node.userData.loungeSpatial)
         calibration.push({
           name: node.name,
@@ -293,6 +302,8 @@ const snapshot = (page) =>
       studio: { mood: studio?.userData.studioMood, lounge: studio?.userData.lounge ?? null },
       calibration,
       imageLayers,
+      furnitureCards,
+      physicalTables,
       dof: scene.userData.loungeDof ? JSON.parse(JSON.stringify(scene.userData.loungeDof)) : null,
       physicalProjection: {
         count: primary.length,
@@ -335,27 +346,19 @@ function identity(state, mode) {
         state.studio.mood === 'dark',
       )
   if (mode === 'layers') {
-    const layered = state.calibration.find((entry) => entry.value.imageLayers)?.value
-    expect(layered?.imageLayers?.cardCount, 'actual layered branch metadata').toBe(2)
+    const layered = state.calibration.find((entry) => entry.value.cleanPlate)?.value
+    expect(layered?.imageLayers, 'furniture cards are retired').toBeNull()
     expect(layered?.cleanPlate, 'actual clean background source').toBe(
       '/studio/amber-lounge/layers-v1/clean-room.png',
     )
-    expect(state.imageLayers, 'actual independent card group').toHaveLength(1)
-    expect(state.imageLayers[0].cards, 'actual independent mesh count').toHaveLength(2)
-    expect(state.imageLayers[0].visible, 'cards follow the current mood').toBe(
-      state.studio.mood === 'dark',
-    )
-    for (const card of state.imageLayers[0].cards) {
-      expect(card).toMatchObject({
-        visible: true,
-        alphaTest: 0.2,
-        depthTest: true,
-        depthWrite: true,
-      })
-      expect(card.effectiveVisible, 'card ancestors follow the current mood').toBe(
-        state.studio.mood === 'dark',
-      )
-    }
+    expect(state.imageLayers, 'no independent furniture card group').toHaveLength(0)
+    expect(state.furnitureCards, 'no standalone furniture card meshes').toEqual([])
+    expect(state.physicalTables, 'actual thick table is retained').toEqual([
+      {
+        name: 'Trees X / spatial lounge table',
+        meshes: ['Trees X / thick stone tabletop', 'Trees X / grounded table body'],
+      },
+    ])
   } else expect(state.imageLayers).toHaveLength(0)
   expect(state.dof?.enabled, 'actual optional DOF selection').toBe(mode === 'depth-dof')
   if (mode === 'depth-dof') {
@@ -889,6 +892,11 @@ try {
       result.final = await snapshot(page)
       identity(result.final, mode)
       expect(result.requests.every((request) => new URL(request).origin === origin)).toBe(true)
+      if (mode === 'layers')
+        expect(
+          result.requests.filter((request) => /\/(chair-table|table-lamp)\.png/.test(request)),
+          'retired furniture textures are not requested',
+        ).toEqual([])
       expect(result.errors).toEqual([])
       expect(result.failedRequests).toEqual([])
       result.passed = true

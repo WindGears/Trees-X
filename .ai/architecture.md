@@ -22,7 +22,7 @@
 
 `rendering/studio` 只在实时 WebGPU 的显式 `loungeSpatial=box|depth` 参数下启用 `loungeSpatialTable` 厚桌台，并同步平面反射与接触阴影尺寸。`loungeSpatialGeometry` 拥有有限盒体或径向代理的几何和 NodeMaterial，借用 RGB 纹理；`loungeDepth` 校验实际 DA² 512×256 Float32 距离。预测地面经尺度标定拟合桌体底面；跨深度三角形剔除暴露的洞使用原图远盒补底，不能称为遮挡重建。
 
-`loungeSpatialLook` 统一编排投影与 mood 可见性，并在 `box&loungeLayers=1` 下拥有三图资源包和固定家具卡片。`loungeLayerAssets` 独占 Texture／ImageBitmap；`loungeImageLayers` 只拥有派生平面／材质并借纹理。先释放卡片、投影，再释放图片，迟到取消也遵循该顺序。层图不再完整打光；不加额外循环或逐帧响应式状态。
+`loungeSpatialLook` 统一编排投影与 mood 可见性。2026-10-16 按用户反馈，`box&loungeLayers=1` 通过 `loadLoungeCleanRoom` 只加载去家具底图，不再加载或创建椅桌／台灯卡片；实体桌台与其他光影保持。图片 loader 独占 Texture／ImageBitmap，投影借纹理；先释放投影，再释放图片，迟到取消也遵循该顺序。底图不再完整打光，不加额外循环或逐帧响应式状态。`loadLoungeLayerAssets` 和 `createLoungeImageLayers` 仅保留历史实验／单测，舞台不再导入；原家具素材与卡片实验记录也保留为历史。
 
 `realtime/signals` 可选 `loungeSpatialDof`：真实 view-Z 与当前商品／实例包围盒确定清晰范围，在线性 HDR 合成后景深，最后一次 ACES／sRGB 与 SMAA。RTT、DOF 自有目标及 r185 遗漏的内部 blur 子节点由受检 owner 释放；不销毁共享 quad 几何或 loader 资源。无参数时保留现有通道。测试工具校验运行清单、模型身份、同输入相机、状态保持和实际模式，不将图像差异计作视觉通过。
 

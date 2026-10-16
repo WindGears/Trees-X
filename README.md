@@ -10,7 +10,7 @@
 
 此前图像空间实验暂停扩展，以下入口和后续带日期段落保留历史证据，其“尚未接入 DDGI”不再代表当前实现。本轮不扩展空间素材、钢琴或汽车。
 
-2026-10-16 空间分层实验：[新生成素材分层](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=box&loungeLayers=1) ／ [单图深度代理](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=depth)。三图分层、实体厚桌台与可选深度景深已接入独立实验。五模式实际浏览器工程检查通过，家具侧背面、落地感及反光仍有缺口，**完整空间画质未通过，默认不替换**。入口、49 张实机图、5 段录像的复现与结论见 [空间验证](.ai/lounge-spatial-validation.md)。
+2026-10-16 空间实验：[实体桌台＋去家具房间](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=box&loungeLayers=1) ／ [单图深度代理](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=dark&loungeSpatial=depth)。按用户反馈移除独立椅桌／台灯贴图，保留实体厚桌台、clean-room 底图及可选深度景深；默认入口与深度路径不变。原三图分层素材、49 张实机图和 5 段录像保留作历史证据，不作为当前修订的验收成绩。**完整空间画质未通过，默认不替换**，详见 [空间验证](.ai/lounge-spatial-validation.md)。
 
 普通实时打字机：[暖夜舞台](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime) ／ [明亮对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&studioMood=light)。使用支持 WebGPU 的桌面浏览器；不支持时明确回退 WebGL。两态可原位切换，保留相机与商品状态；原酒吧背景仍为虚化单图。前一轮深灰绿方案仅保留[历史记录](.ai/typewriter-dark-studio-validation.md)。
 
