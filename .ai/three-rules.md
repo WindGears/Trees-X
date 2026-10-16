@@ -4,6 +4,7 @@
 - 商品平面反射只借用唯一 renderer，局部捕获必须在 finally 恢复背景、clear、根节点可见性与原生钩子；RGBA 同核过滤并解预乘，不能将完整房间 RGB 当商品覆盖率。`planarReflection=scene|off` 仅作对照。
 - Speedball 固定 0.8.0／a997aee5b0791be61b49719377e811c41720df59，独立低层 field，不用材质 installer。单体积 16×9×10、64 rays/probe、98,304 rays/tick 上限；禁止自动缩减预算或开启探针镜面。代理只借源资源；field、代理与组合目标各自唯一释放。
 - DDGI 在同一时钟内与绘制串行，读取上个完成姿态；场景 beforeRaster 不得为探针额外执行离屏 draw。失败或迟到结果不能留旧 receiver 或覆盖新商品。源材质 AO 和 native dielectric 能量响应保留，DDGI 与 SSGI 不同时贡献同一像素的间接漫反射。
+- Speedball dirty 也表示合法重建，不能将 clean→dirty 一律视为失败。首次暖夜贴图绑定可从材质值更新升级 fresh-build；灯光缓存也可要求重建。仅真实 backoff／异常走错误回退，重建期间保留基础画面并在探针再次就绪后接回；resident kernel 复用同样是正常完成，不要求无意义的 shader 重编译。
 - 所有 TSL 链式节点来自同一 three/webgpu＋three/tsl 打包运行时；禁止直接从 three/src 引入另一个节点运行时。r185 私有桥接须明确版本和形状检查。DDGI 的 SH9／面灯中心点／着色法线偏置／辅助贴图重采样都是近似，不能冒充完整 Physical 等效。
 - FFX 正 radiance 输入与当前 signed Δ 不兼容，未实现专门信号组织前不直接替换或串联；独立 BVH 镜面／阴影仅在实际缺口证据后研究。工程成功不等于画质或实际帧预算通过，证据见 [本轮管线记录](realtime-ddgi-validation.md)。
 

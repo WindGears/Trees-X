@@ -69,7 +69,6 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
     environment = options.scene.environment,
     environmentVersion = -1,
     environmentIntensity = -1,
-    lastDirty = true,
     environmentMetadata: EnvironmentSHMetadata | null = null
 
   function publish(next: boolean, structure = false) {
@@ -132,7 +131,6 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       const changes = proxy.sync()
       if (changes.topology) {
         field.markTopologyDirty()
-        lastDirty = true
         publish(false)
       }
       if (changes.transforms.length) field.markTransformsDirty(changes.transforms)
@@ -142,17 +140,24 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       // and its automatic budget controller. It does not reset probe history or
       // per-cascade solve time. No extra loop or synthetic time is introduced.
       field.resetFramePacing()
+      const before = field._debugState()
       await field.tick({ idleMs: Infinity, playing: false })
       if (disposed) return
       const state = field._debugState()
-      // The low-level implementation catches internal build/solve errors. Its
-      // backoff or a newly dirty solve is therefore an explicit host failure.
-      if (state.rebuildBackoff > 0 || (!lastDirty && state.dirty))
+      // In 0.8.0 a material/instance packet may legitimately escalate to a
+      // rebuild inside tick (for example the first warm-night map binding).
+      // Dirty alone is not an error. Preserve that rebuild lane while still
+      // detecting build backoff and unsolicited swallowed solve failures.
+      const requestedChange =
+        changes.materials.length > 0 || changes.transforms.length > 0 || changes.lighting
+      if (
+        state.rebuildBackoff > 0 ||
+        (!before.dirty && state.dirty && !state.buildDirty && !requestedChange)
+      )
         throw new Error(
           'Speedball rejected its build or solve; inspect the upstream warning for details',
         )
       validateBudget()
-      lastDirty = state.dirty
       acceptedTicks++
       publish(
         field.hasData() &&

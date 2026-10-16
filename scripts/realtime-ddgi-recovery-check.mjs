@@ -6,6 +6,8 @@ import { bridge } from './demo/browser-check.mjs'
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const origin = new URL(base).origin
 const output = process.env.DDGI_RECOVERY_OUTPUT || 'artifacts/realtime-ddgi/recovery'
+const scope = process.env.DDGI_RECOVERY_SCOPE || 'all'
+if (!['all', 'mood'].includes(scope)) throw new Error('DDGI_RECOVERY_SCOPE must be all or mood')
 const viewport = { width: 1440, height: 1000 }
 const url = new URL(
   '/?product=typewriter-study&renderPipeline=realtime&studioMood=light&indirectLighting=ddgi',
@@ -19,6 +21,7 @@ const report = {
   frameBudgetValidated: false,
   startedAt: new Date().toISOString(),
   viewport,
+  scope,
   cases: [],
   errors: [],
   pending: [
@@ -272,6 +275,7 @@ function events(page, result, injected = new Set()) {
 }
 
 async function runCase(name, operation) {
+  if (scope === 'mood' && name !== 'studio-mood') return
   const result = {
     name,
     passed: false,
@@ -327,6 +331,84 @@ try {
   if (!action) throw new Error('Actual structure program unavailable')
   bundle = JSON.parse(await readFile('src/lib/workbench/typewriterV2Bundle.json', 'utf8'))
   browser = await chromium.launch({ channel: 'msedge', headless: true })
+
+  await runCase('studio-mood', async (_context, page, result) => {
+    events(page, result)
+    await page.goto(url.href, { waitUntil: 'domcontentloaded' })
+    await ready(page, 'ddgi')
+    const before = await snapshot(page)
+    identity(before, 'ddgi')
+    const studioGeneration = await page.evaluate(
+      () =>
+        window.__demo.scene.scene.value.children.find((node) => node.userData.studio === true)
+          ?.uuid,
+    )
+    result.moods = []
+    await save(page, result, 'mood-initial-light', before)
+    for (const mood of ['dark', 'light', 'dark', 'light']) {
+      await page
+        .getByRole('button', {
+          name: mood === 'dark' ? '切换暖夜环境' : '切换明亮环境',
+          exact: true,
+        })
+        .click()
+      await expect(page.locator('.wb-stage')).toHaveAttribute('data-studio-mood', mood)
+      if (mood === 'dark')
+        await expect
+          .poll(
+            () =>
+              page.evaluate(
+                () =>
+                  window.__demo.scene.scene.value.children.find(
+                    (node) => node.userData.studio === true,
+                  )?.userData.lounge?.status,
+              ),
+            { timeout: 120000 },
+          )
+          .toBe('ready')
+      await page.waitForTimeout(700)
+      await settle(page, 'ddgi', 24)
+      const after = await snapshot(page)
+      identity(after, 'ddgi')
+      expect(after.root).toBe(before.root)
+      expect(after.poses).toEqual(before.poses)
+      expect(after.instances).toEqual(before.instances)
+      expect(after.finish).toBe(before.finish)
+      expect(after.motion).toEqual(before.motion)
+      expect(difference(before.camera, after.camera)).toBeLessThanOrEqual(1e-6)
+      expect(
+        await page.evaluate(
+          () =>
+            window.__demo.scene.scene.value.children.find((node) => node.userData.studio === true)
+              ?.uuid,
+        ),
+      ).toBe(studioGeneration)
+      const evidence = {
+        mood,
+        generation: after.lighting.indirectLighting.details.generation,
+        kernelRebuilds: after.lighting.indirectLighting.details.state.kernelRebuilds,
+        kernelResidentReuses: after.lighting.indirectLighting.details.state.kernelResidentReuses,
+        ready: after.lighting.indirectLighting.details.ready,
+        actual: after.lighting.indirectLighting.actual,
+        error: after.lighting.indirectLighting.error,
+        sameCanvas: after.sameCanvas,
+        sameRenderer: after.sameRenderer,
+      }
+      result.moods.push(evidence)
+      await save(page, result, `mood-${result.moods.length}-${mood}`, after)
+    }
+    // Source map binding legitimately caused a rebuild; merely suppressing the
+    // failure without completing the new tracing field must not pass.
+    // r185/0.8.0 can rebuild tracing inputs in a resident kernel when arena
+    // capacities remain sufficient; a shader recompile is not required.
+    expect(result.moods[0].kernelRebuilds + result.moods[0].kernelResidentReuses).toBeGreaterThan(
+      before.lighting.indirectLighting.details.state.kernelRebuilds +
+        before.lighting.indirectLighting.details.state.kernelResidentReuses,
+    )
+    expect(result.moods[0].generation).toBeGreaterThan(
+      before.lighting.indirectLighting.details.generation,
+    )
+  })
 
   await runCase('native-device', async (_context, page, result) => {
     events(page, result)
@@ -476,7 +558,9 @@ try {
     }
     await save(page, result, 'module-failure-operable', operated)
   })
-  report.passed = report.cases.length === 2 && report.cases.every((result) => result.passed)
+  report.passed =
+    report.cases.length === (scope === 'all' ? 3 : 1) &&
+    report.cases.every((result) => result.passed)
   if (!report.passed) process.exitCode = 1
 } catch (error) {
   report.errors.push({ kind: 'test', message: error.stack || String(error) })

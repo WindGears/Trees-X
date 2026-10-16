@@ -2,6 +2,20 @@
 
 2026-10-16。打字机实时 WebGPU 的反射修补与可选间接光实验已接入。最终生产构建完成六取景、真实设备恢复、模块失败回退与管理预览检查；整体画质、真实呈现预算及长期联合验收仍未通过。下方明确区分完整早期批次与能量响应调整后的复验，不将两者拼作同一版本的完整成绩。
 
+## 暖夜切换误报修复（后续节点）
+
+用户实际 Edge 页面显示“空间增强不可用”，读回原因是 `Speedball rejected its build or solve`，并非设备不支持：此前已有 589 个 accepted tick，实际场为 1440 探针／64 射线；失败时 `dirty=true`、`buildDirty=true`、`rebuildBackoff=0`。页面实际输出为 2546×1288，该记录仅用于诊断，不是帧预算验收。
+
+首次暖夜异步载入后，`loungeLook` 给桌面增加 map／normalMap／roughnessMap。Speedball 的材质值更新发现贴图绑定发生结构变化，正常调用 `requestRebuild()`，本 tick 暂停求解。旧适配层把任何 clean→dirty 当成失败，阻止了下一次正常重建，并锁定 SSGI 回退。上游源码位置为 `spectral_scene.js:updateMaterialValues`、`gi_probes.js:refreshMaterialValues/requestRebuild`，均是已锁定 0.8.0 实现。
+
+修正后在提交本次变更后、tick 之前取真实 dirty 状态，允许 fresh-build 标记或已知材质／实例／光照变更升级重建；仍检测 rebuildBackoff 和无变更来源的求解失败。重建期间 receiver 暂停，重新就绪后恢复，不隐藏错误、不降低预算、不重建 renderer。新增三项单元覆盖贴图变更后的重建恢复、光照缓存核重建和真实异常仍回退；`npm run check` 通过 96 文件／558 Vitest 及原工具套件，生产 prepare/build/start 通过。证据为 `artifacts/realtime-ddgi-mood-check.log`、`realtime-ddgi-mood-prepare.log`。
+
+生产构建标识：`preparedAt=2026-10-16T10:56:40.505Z`，源码指纹 `d7487a1ae239e5a09e9d1faa2aeb83039c67ac472fa0a67930533fb0f47b6034`，index SHA-256 `6bc33cd51e550a32ee4558df2a6307d97dec12fc0fc7067c2386e66c30f2fcd5`。下文 09:11 构建的成绩保留为上一节点，不自动移作本修复全部联合验收。
+
+新增 `DDGI_RECOVERY_SCOPE=mood` 专项，实际点击明亮→暖夜→明亮→暖夜→明亮，核对同一商品、相机、姿态、Canvas 与 renderer，并要求增强重新就绪且探针输入确实完成重建。首轮测试四个切换都已恢复，但测试误将“必须重编译 shader”当成重建证据而失败；0.8.0 在存储容量足够时合法复用 resident kernel，实际计数由 0→1。首轮材料保留在 `artifacts/realtime-ddgi/mood-first-assertion-failed/`；最终断言检查重新编译或 resident 复用的总次数及增强代次，不把抑制错误或只等待当作通过。
+
+最终专项 `artifacts/realtime-ddgi/mood-fix/report.json` 实测 `passed=true`，四次切换均为 actual=ddgi／ready=true／error=null，同一 Canvas 与 renderer、相机和部件姿态保持。首次贴图改变后增强代次 2→4、resident kernel 复用 0→1、kernel 编译次数维持 1，证明真正完成重建而非屏蔽错误。零非预期控制台／GPU／网络错误，五张实际 1440×1000 截图保留；日志为 `artifacts/realtime-ddgi-mood-browser-final.log`。本专项不重跑上一节点的设备丢失／模块 503 或长测。原用户标签页自动刷新时，浏览器工具被 Work 设置禁用；未宣称该旧标签页已自动更新，需刷新读取修正版。
+
 ## 本节点交付状态
 
 - 实时入口默认使用商品独立平面反射和同表面约束的 signed SSR 空间／历史过滤。反射覆盖率与 RGB 一起过滤，再解预乘合成；保留 `planarReflection=scene|off` 作对照。固定输入三种反射模式的 18 张图与八项尺寸／界面检查保留于 `artifacts/realtime-complete/reflection/`，没有新增 renderer。

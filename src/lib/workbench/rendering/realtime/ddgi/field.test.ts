@@ -318,6 +318,69 @@ describe('owned fixed-budget DDGI field', () => {
     expect(f.fake.api.dispose).toHaveBeenCalledOnce()
   })
 
+  it('lets a new warm-night texture binding rebuild and resume instead of treating dirty as a failure', async () => {
+    const f = fixture(),
+      map = new Texture()
+    cleanups.push(() => map.dispose())
+    await f.adapter.tick()
+    await f.adapter.tick()
+    expect(f.adapter.snapshot().ready).toBe(true)
+    f.material.map = map
+    f.material.needsUpdate = true
+    f.fake.tick.mockImplementationOnce(async () => {
+      // Real updateMaterialValues returns null for a changed map binding;
+      // refreshMaterialValues requests a fresh build and ends this tick.
+      f.fake.state.dirty = f.fake.state.buildDirty = true
+    })
+    await f.adapter.tick()
+    expect(f.fake.api.markMaterialValuesDirty).toHaveBeenCalledWith([f.material])
+    expect(f.adapter.snapshot()).toMatchObject({ ready: false, error: null })
+    f.fake.tick.mockImplementationOnce(async () => {
+      f.fake.state.dirty = f.fake.state.buildDirty = false
+      f.fake.state.updatedCount = 0
+      f.fake.state.cascadeState[0]!.needsClear = true
+      create.mock.calls[0]![0].onRebuilt()
+    })
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({ ready: false, error: null })
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({ ready: true, error: null })
+    expect(f.onError).not.toHaveBeenCalled()
+    expect(f.fake.api.dispose).not.toHaveBeenCalled()
+    expect(f.material.map).toBe(map)
+  })
+
+  it('allows a lighting refresh to request a cached-kernel rebuild before tick', async () => {
+    const f = fixture()
+    await f.adapter.tick()
+    await f.adapter.tick()
+    f.fake.api.forceLightingRefresh = vi.fn(() => {
+      f.fake.state.dirty = true
+      f.fake.state.buildDirty = false
+    })
+    f.scene.environmentIntensity = 0.5
+    f.fake.tick.mockImplementationOnce(async () => {})
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({ ready: false, error: null })
+    expect(f.onError).not.toHaveBeenCalled()
+  })
+
+  it('still reports an unsolicited swallowed solve failure after a ready field', async () => {
+    const f = fixture()
+    await f.adapter.tick()
+    await f.adapter.tick()
+    f.fake.tick.mockImplementationOnce(async () => {
+      f.fake.state.dirty = true
+      f.fake.state.buildDirty = false
+    })
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({
+      ready: false,
+      error: expect.stringContaining('rejected'),
+    })
+    expect(f.onError).toHaveBeenCalledOnce()
+  })
+
   it('fails closed rather than silently lowering the ray budget or probe resolution', async () => {
     const f = fixture()
     await f.adapter.tick()
