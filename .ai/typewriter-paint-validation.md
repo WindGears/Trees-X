@@ -4,9 +4,12 @@
 
 只修改三种黑漆材质和 `image 50 / decal-62` 铭牌。金属、铸铁、其他字符、几何、UV、动作及现有实时渲染算法保持。普通入口不切换：
 
-- 样片：`http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light&indirectLighting=ssgi`
-- 原 v2：同一地址将 `typewriterAsset` 改为 `v2`。
-- 同输入对照：`http://127.0.0.1:5181/artifacts/typewriter-paint/browser/index.html`，由本批浏览器脚本生成，不使用 `file://`。
+- 新材质＋空间增强互动入口：`http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light&indirectLighting=ddgi`。本组合的明暗切换与击发专项已实测通过，完整联合验收仍未完成，不沿用原 v2 DDGI 的成绩。
+- SSGI 材质单项样片：`http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light&indirectLighting=ssgi`。
+- 原 v2 SSGI 对照：同一 SSGI 地址将 `typewriterAsset` 改为 `v2`。
+- 同输入静态对照：`http://127.0.0.1:5181/artifacts/typewriter-paint/browser/index.html`，由本批浏览器脚本生成，不使用 `file://`。三组均固定 SSGI，专门比较材质，不包含 DDGI 空间增强。
+
+界面中的“空间增强”专指 DDGI 世界空间间接光，由 `indirectLighting=ddgi` 显式开启；SSGI 对照入口未请求该支路，并非新材质删除了增强实现。`loungeSpatial=box|depth` 是另一项图片空间投影实验，不与该状态混用。此处只修正入口和说明，不改变运行默认、三组测试参数或既有结论。
 
 仅已核验的原 v1／v2 引用可以切入样片，自定义资源不替换。资源包版本 3 与 ProductPresentation v3 不是同一个版本概念；HTTP、数据库和展示配置均不变。
 
@@ -40,6 +43,10 @@ npm run test:typewriter-paint
 $env:TYPEWRITER_ADMIN_ASSET='paint-study'
 $env:TYPEWRITER_V2_ADMIN_BACKEND='realtime'
 node scripts/typewriter-v2-admin-check.mjs
+$env:DDGI_RECOVERY_ASSET='paint-study'
+$env:DDGI_RECOVERY_SCOPE='mood'
+$env:DDGI_RECOVERY_OUTPUT='artifacts/typewriter-paint/ddgi-combined'
+node scripts/realtime-ddgi-recovery-check.mjs
 ```
 
 本次数值母版、三张 GRAY16 与独立材质检查场景保存于忽略目录 `artifacts/typewriter-paint/materials/`，没有导入或修改打字机源场景。它们可由上述源图和脚本重新制作，原始制作文件另行保留，不充当浏览器依赖。
@@ -66,6 +73,14 @@ node scripts/typewriter-v2-admin-check.mjs
 证据：`artifacts/typewriter-paint/browser-r2/summary.json`、`compat/report.json`。首次 `browser/` 批次误用了未暴露的测试桥接方法，在读取场景时失败；已改为现有 `snapshot / setSignals`，未给生产代码增加调试接口，原失败保留，不计入通过批次。对照 HTML 由通过的 r2 复制到上方 HTTP 路径，生产重新 prepare 后需重跑或恢复该忽略目录。
 
 已逐图检查完整样片六取景、暖夜、1280 桌面与 320 手机：字形正向、拼写准确、与黑金机身协调；没有看到新增明显脏块或突出重复图案。漆面改变克制，整体跃升有限；前罩高光边缘的既有 SSR 点噪、远景反射与源键帽文字精度仍有缺口。本轮不据此宣称路径参考等效，用户整体画质验收仍保留。
+
+## 新材质与空间增强专项（同日补充）
+
+用户发现样片缺少“空间增强”，实际原因是交付入口及三组材质截图固定 `indirectLighting=ssgi`，没有请求 DDGI；并非材质包移除了增强，也不是本次发生求解失败。图库已明确标注固定 SSGI，并增加 DDGI 综合互动入口，静态截图和测试变量保持。
+
+真实生产服务、API、paint-study 包版本 3／摘要与 Edge 原生 WebGPU 在 1440×1000 完成独立 `scope=mood` 专项，报告 `artifacts/typewriter-paint/ddgi-combined/report.json` 为 `passed=true`。四次暖夜／明亮切换后均为实际 DDGI、ready=true、error=null；1440 探针、64 rays/probe、98304 预算保持，首次换图完成实际 resident kernel 重建复用。商品、572 个部件、相机、原 Canvas 与 renderer 保持。一次真实 A 键击发观察到姿态变化 0.01361106，恢复误差为 0；末态截图显示“WebGPU · 实时光影与空间增强”。零非预期控制台／GPU／网络错误。
+
+此次另外重跑 check（560 Vitest 及现有工具套件）和 build 通过；只更新入口、说明与测试选择能力，没有改变渲染默认或算法。该专项没有重跑设备丢失、隐藏页、30 次重载或 20 分钟验证；实际呈现预算与用户画质判断仍待验收。
 
 ## 画质与运行边界
 

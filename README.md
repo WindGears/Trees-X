@@ -1,6 +1,6 @@
 # Trees X
 
-2026-10-16 黑漆与 WindGear 连笔艺术字独立样片：[实时体验](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light&indirectLighting=ssgi) ／ [原 v2 对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v2&studioMood=light&indirectLighting=ssgi)。只更新黑漆技术图与原铭牌，572 部件、UV、机构、金属和其他字符保持。原 v2 与普通入口不替换；整体画质由用户实机判断。制作源图、SVG、数值母版、检查与入口说明见 [样片验收记录](.ai/typewriter-paint-validation.md)。
+2026-10-16 黑漆与 WindGear 连笔艺术字独立样片：[新材质＋空间增强互动入口](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light&indirectLighting=ddgi) ／ [SSGI 材质单项对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light&indirectLighting=ssgi) ／ [原 v2 SSGI 对照](http://127.0.0.1:5181/?product=typewriter-study&renderPipeline=realtime&typewriterAsset=v2&studioMood=light&indirectLighting=ssgi)。原三组静态图库固定使用 SSGI，仅比较材质，不包含 DDGI 空间增强；新材质配合 DDGI 的四次明暗切换与击发专项已实测通过，完整联合验收仍待完成。只更新黑漆技术图与原铭牌，572 部件、UV、机构、金属和其他字符保持。原 v2 与普通入口不替换；整体画质由用户实机判断。制作源图、SVG、数值母版、检查与入口说明见 [样片验收记录](.ai/typewriter-paint-validation.md)。
 
 2026-10-16 渲染管线继续接入：打字机实时入口使用商品独立捕获的地台倒影，以及同表面约束的有符号 SSR 空间／历史过滤。新增可选的 **Speedball DDGI 间接光**，保持 Physical、原生镜面和透明文字支路；加载或增强失败明确回到 SSGI。整体画质由用户实机判断，实际呈现预算仍待验证，普通首页保留增强 WebGL。
 

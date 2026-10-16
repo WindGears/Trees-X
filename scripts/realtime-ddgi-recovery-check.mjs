@@ -8,11 +8,15 @@ const origin = new URL(base).origin
 const output = process.env.DDGI_RECOVERY_OUTPUT || 'artifacts/realtime-ddgi/recovery'
 const scope = process.env.DDGI_RECOVERY_SCOPE || 'all'
 if (!['all', 'mood'].includes(scope)) throw new Error('DDGI_RECOVERY_SCOPE must be all or mood')
+const asset = process.env.DDGI_RECOVERY_ASSET || 'v2'
+if (!['v2', 'paint-study'].includes(asset))
+  throw new Error('DDGI_RECOVERY_ASSET must be v2 or paint-study')
 const viewport = { width: 1440, height: 1000 }
 const url = new URL(
   '/?product=typewriter-study&renderPipeline=realtime&studioMood=light&indirectLighting=ddgi',
   base,
 )
+url.searchParams.set('typewriterAsset', asset)
 const badge = '.wb-lighting-status [data-indirect-lighting]'
 const report = {
   passed: false,
@@ -22,6 +26,7 @@ const report = {
   startedAt: new Date().toISOString(),
   viewport,
   scope,
+  asset,
   cases: [],
   errors: [],
   pending: [
@@ -30,15 +35,14 @@ const report = {
     'GPU and actual presentation budget',
     '20-minute joint acceptance',
   ],
-  method:
-    'Real API, unchanged production GLB and native Edge WebGPU. GPUDevice.destroy deliberately loses the actual device and must recover through the existing production host. A separate fresh context fulfills only the actual dynamically requested /assets/field-*.js module with HTTP503; APIs/models are never fulfilled or replaced. Native error state and badge title must expose the real failure while baseline SSR/SSGI remains operable. Submission counters are not GPU/presentation timing.',
+  method: `Real API, actual audited ${asset} GLB selected by the production typewriterAsset query and native Edge WebGPU. The API, database and source bundle are unchanged. GPUDevice.destroy deliberately loses the actual device and must recover through the existing production host. A separate fresh context fulfills only the actual dynamically requested /assets/field-*.js module with HTTP503; APIs/models are never fulfilled or replaced. Native error state and badge title must expose the real failure while baseline SSR/SSGI remains operable. Submission counters are not GPU/presentation timing.`,
 }
 const difference = (a, b) =>
   a.length === b.length
     ? Math.max(0, ...a.map((value, index) => Math.abs(value - b[index])))
     : Infinity
 const fatalCases = new WeakMap()
-let browser, product, action, bundle
+let browser, product, action, pulse, bundle
 await mkdir(output, { recursive: true })
 
 async function attach(page, remember = false) {
@@ -185,7 +189,7 @@ function identity(state, actual) {
   expect(state).toMatchObject({
     roots: 1,
     slug: 'typewriter-study',
-    version: 2,
+    version: bundle.version,
     bundleSha256: bundle.sha256,
     parts: 572,
     sameCanvas: true,
@@ -329,7 +333,18 @@ try {
     throw new Error('Actual GLB presentation unavailable')
   action = product.presentation.actions.find((entry) => entry.motion?.program)
   if (!action) throw new Error('Actual structure program unavailable')
-  bundle = JSON.parse(await readFile('src/lib/workbench/typewriterV2Bundle.json', 'utf8'))
+  pulse = product.presentation.actions.find((entry) => entry.kind === 'pulse')
+  if (!pulse) throw new Error('Actual strike definition unavailable')
+  bundle = JSON.parse(
+    await readFile(
+      asset === 'paint-study'
+        ? 'src/lib/workbench/typewriterPaintBundle.json'
+        : 'src/lib/workbench/typewriterV2Bundle.json',
+      'utf8',
+    ),
+  )
+  report.bundle = bundle
+  report.url = url.href
   browser = await chromium.launch({ channel: 'msedge', headless: true })
 
   await runCase('studio-mood', async (_context, page, result) => {
@@ -408,6 +423,39 @@ try {
     expect(result.moods[0].generation).toBeGreaterThan(
       before.lighting.indirectLighting.details.generation,
     )
+    result.strike = await page.evaluate(
+      async ({ id, node }) => {
+        const root = window.__demo.scene.scene.value.children.find(
+            (entry) => entry.userData.workbenchProduct,
+          ),
+          key = root?.getObjectByName(node)
+        if (!key) throw new Error('Actual strike key missing')
+        const initial = [...key.position.toArray(), ...key.quaternion.toArray()]
+        window.__demo.store.action(id)
+        for (let frame = 0; frame < 120; frame++) {
+          await new Promise((resolve) => requestAnimationFrame(resolve))
+          const current = [...key.position.toArray(), ...key.quaternion.toArray()],
+            delta = Math.max(0, ...current.map((value, index) => Math.abs(value - initial[index])))
+          if (delta > 1e-6) return { node, observedRaf: frame, delta }
+        }
+        throw new Error('Actual strike key did not move')
+      },
+      { id: pulse.id, node: pulse.node },
+    )
+    await page.waitForTimeout(1500)
+    await settle(page, 'ddgi')
+    const afterStrike = await snapshot(page)
+    identity(afterStrike, 'ddgi')
+    expect(afterStrike.root).toBe(before.root)
+    const poseError = difference(
+      before.poses.flatMap((entry) => entry.slice(1)),
+      afterStrike.poses.flatMap((entry) => entry.slice(1)),
+    )
+    expect(poseError).toBeLessThanOrEqual(1e-6)
+    expect(difference(before.camera, afterStrike.camera)).toBeLessThanOrEqual(1e-6)
+    result.strike.restoredPoseError = poseError
+    result.strike.completed = true
+    await save(page, result, 'mood-strike-restored', afterStrike)
   })
 
   await runCase('native-device', async (_context, page, result) => {
@@ -571,6 +619,7 @@ try {
   console.log(
     JSON.stringify({
       passed: report.passed,
+      asset,
       cases: report.cases.map((result) => ({
         name: result.name,
         passed: result.passed,
