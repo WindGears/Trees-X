@@ -1,5 +1,11 @@
 # 新版目标架构与当前实现
 
+## 独立黑漆资源样片（2026-10-16）
+
+`typewriterCandidate` 仅在明确 `typewriterAsset=paint-study` 时，将已核验的原 v1 或 v2 引用快照替换为 `typewriterPaintBundle.json`；其他商品、未知摘要和管理员自定义包不替换。只变更资源引用，不写数据库或升级展示配置。普通实时仍 v2，普通 WebGL 仍原通道。
+
+`scripts/blender/typewriter_paint_study.py` 离线制作三张线性技术图和忽略目录下的数值母版／独立 `.blend`。`scripts/typewriter-paint/build.mjs` 核对源摘要并以独立目录装配包版本 3，保留整个原 binary 前缀、accessor、UV、切线、节点与 rig，只附加清漆纹理绑定及新 image 50。三个漆面共用贴图，标量与 treesFinishVersion=2 保持；原 GLB loader 唯一释放新增图与材质，不引入运行修图或第二渲染时钟。制作和验证命令见 [样片验收](typewriter-paint-validation.md)。
+
 ## 当前实时管线接入（2026-10-16）
 
 `studioReflection` 默认仅捕获实际商品与灯光，`productReflectionCapture` 在同一 renderer 的离屏反射前暂存并清空背景／隐藏非商品根分支，结束或失败恢复。RGBA 一起过滤，再以 coverage 解预乘并合成，避免地台／天空混入商品倒影。`planarReflection=scene|off` 仅为旧捕获与关闭的对照；WebGL／hybrid 原实现保持。

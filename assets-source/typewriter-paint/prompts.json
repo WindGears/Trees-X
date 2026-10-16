@@ -1,0 +1,20 @@
+{
+  "recordType": "Exact submitted tool prompts, not the tool's internal rewrite",
+  "tool": "image_gen.imagegen",
+  "transparentBackground": false,
+  "inputs": [],
+  "prompts": [
+    {
+      "output": "orange-peel.png",
+      "prompt": "Use case: product-mockup. Asset type: a single square technical material-reference master for a vintage black enamel typewriter coating, intended as a spatial reference for offline Blender micro-surface authoring, NOT a finished normal map or an in-scene render. Produce the highest available native resolution, preferably 2048 by 2048, opaque full-frame. A straight-on orthographic macro view of immaculate, well-preserved enamel paint microtexture: extremely fine, shallow orange-peel undulations, softly rounded densely distributed small cells, mostly isotropic, natural non-repeating scale variation. Neutral medium-gray monochrome representation so structure is visible, very low contrast, even diffuse illumination, no lighting gradient. This is a material field, no object, no visible boundary, no composition. Even texture density and contrast from edge to edge, intended to repeat; do not paint a border. Preserve refined glossy-enamel character rather than gritty cast metal. NO directional shading, highlights, specular blobs, shadows, ambient occlusion, depth of field, perspective, seams, rust, grunge, stains, deep pits, cracks, pores, scratches, text, logos, watermark, UI, collage or side-by-side panels. The result should be restrained and physically plausible as an appearance reference; normal vectors will be generated numerically later."
+    },
+    {
+      "output": "polish.png",
+      "prompt": "Use case: product-mockup. Asset type: a single square monochrome material mask reference for clean, carefully polished black enamel on a vintage typewriter; used ONLY to guide spatial roughness variation in offline Blender authoring. Produce the highest available native resolution, preferably 2048x2048. Opaque full-frame single image, orthographic flat-on field, entirely neutral gray with VERY LOW CONTRAST. Show extremely subtle, sparse overlapping hand-polish sweep traces, large soft imperfect sweeping arcs from cloth movement, with very fine diffuse linear wisps, restrained and maintained, no damage. These are faint distribution marks in a matte flat technical mask, NOT highlights or rendered grooves. Most of the field should be almost uniform gray; no dramatic streaks or high contrast elements. Uniform illumination and gray level across all edges, no vignette. Seamlessly repeating intent, no visible tile boundaries. NO object, no perspective, no metal brushing, no grainy cast iron, no orange peel (separate master already exists), no strong scratches, deep scoring, fingerprints, dust, rust, grunge, mottled stains, reflections, light sources, specular highlights, shadows, ambient occlusion, depth of field, text, letters, logos, watermark, UI, collage or side-by-side. This is an artistic roughness mask reference, not a measured PBR map and not a normal map."
+    }
+  ],
+  "requestedSizeIsActualSize": false,
+  "actualNativeSize": [1254, 1254],
+  "nativeHashes": "generation-record.json",
+  "limitations": "The exact internal model and rewritten prompt are not exposed. Appearance and seamless tiling require inspection; they are not guaranteed by the prompt."
+}

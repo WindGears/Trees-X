@@ -1,0 +1,311 @@
+{
+  "version": 3,
+  "source": "kimi-typewriter/v2",
+  "sourceManifestSha256": "dcffa2dd699d269f1c16631343cf96e6b925c00153119363589b0693243f8b26",
+  "sourceSha256": "59006664cde2f0beae5ac9508391e3bfbfe9c4cf389eaec6ae67783fc40cded4",
+  "modelSha256": "fe3785c38247622baad6ed7288323ac076f91a331f1b2ea5e0748ed7d7167943",
+  "rigSha256": "047cddb65994640a25f4fad191131423b1ceafce6b4ab474aa906ac1d4576154",
+  "materialRecipe": {
+    "version": "paint-study-1",
+    "size": 2048,
+    "seed": 10731,
+    "blenderVersion": "5.2.2 LTS",
+    "numpyVersion": "2.3.4",
+    "method": "Controlled periodic seeded micro-height modulated by detrended AI art masks; centered wrap derivatives; no lighting or assembly shadows baked",
+    "qualityApproved": false,
+    "measuredPbr": false,
+    "inputs": [
+      {
+        "role": "orange-peel art distribution",
+        "path": "I:\\ssr\\NIXUS\\Trees X\\assets-source\\typewriter-paint\\orange-peel.png",
+        "bytes": 3191534,
+        "sha256": "7218f85b758e3ea2e9a9129e26e7ff67ddbe3a7e6f912d8852d26d00fa657093",
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "workingWidth": 2048,
+        "workingHeight": 2048,
+        "method": "Blender image scaling; periodic-plus-smooth boundary removal; wrap Gaussian 3px minus 112px; bounded normalized mask",
+        "claim": "AI-authored visual distribution only; not a scan, not measured roughness or recovered surface height",
+        "maskStatistics": {
+          "min": -0.9141270518302917,
+          "max": 0.971173107624054,
+          "mean": -0.008640681393444538,
+          "standardDeviation": 0.42196133732795715,
+          "rms": 0.4220498204231262
+        }
+      },
+      {
+        "role": "restrained wiping/polish art distribution",
+        "path": "I:\\ssr\\NIXUS\\Trees X\\assets-source\\typewriter-paint\\polish.png",
+        "bytes": 1714783,
+        "sha256": "00682d74b1a467cb0d71713db4c061c3320935b20a1cbe5b564c838861a14970",
+        "nativeWidth": 1254,
+        "nativeHeight": 1254,
+        "workingWidth": 2048,
+        "workingHeight": 2048,
+        "method": "Blender image scaling; periodic-plus-smooth boundary removal; wrap Gaussian 3px minus 112px; bounded normalized mask",
+        "claim": "AI-authored visual distribution only; not a scan, not measured roughness or recovered surface height",
+        "maskStatistics": {
+          "min": -0.9776082634925842,
+          "max": 0.9892202019691467,
+          "mean": -0.0009444686584174633,
+          "standardDeviation": 0.41446128487586975,
+          "rms": 0.4144623875617981
+        }
+      }
+    ],
+    "reference": {
+      "path": "I:\\ssr\\NIXUS\\Trees X\\public\\models\\bundles\\kimi-typewriter\\v2\\textures\\paint-normal.png",
+      "sha256": "cb229605a86d30b55bc893b7e39e0c4ecd086ee743e3b5f87c018008e9a748fe",
+      "quantizedSlopeRms": 0.01716194860637188
+    },
+    "recipes": [
+      {
+        "kind": "paint",
+        "seed": 10731,
+        "tileSceneUnits": 0.04,
+        "heightSceneUnits": 0.000004,
+        "normalConvention": "OpenGL +Y; Blender bottom-up +V rows; N=(-dHdu,-dHdv,1)",
+        "periodicity": "Seeded FFT periodic fields; periodic-plus-smooth input masks; centered wrap derivatives",
+        "heightConstruction": "0.82 Gaussian sigma 5.8px seeded band + 0.18 sigma 2.2px band; 8% bounded image-mask amplitude only; zero mean",
+        "slopeScale": 1,
+        "preLimitSlopeRms": 0.013906430453062057,
+        "finalSlopeRms": 0.013906430453062057,
+        "finalQuantizedSlopeRms": 0.01426615845412016,
+        "roughness": "ORM G mean .93; only low-amplitude spatial polish variation; runtime material scalars retained",
+        "clearcoatRoughness": "G mean .94; runtime clearcoat scalars retained",
+        "heightMasterDecode": "(GRAY16 / 65535 * 2 - 1) * 1.0 * 4e-06 scene units",
+        "occlusion": "R=1; no inter-part or fixed assembly occlusion",
+        "metalness": "B=1; scalar retained"
+      }
+    ],
+    "statistics": {
+      "height": {
+        "min": -0.000003862762241624296,
+        "max": 0.000003734735400939826,
+        "mean": -5.329070518200751e-15,
+        "standardDeviation": 0.0000013970543477626052,
+        "rms": 0.0000013970543477626052
+      },
+      "normal": {
+        "min": -0.050499629229307175,
+        "max": 1,
+        "mean": 0.3333010971546173,
+        "standardDeviation": 0.471427321434021,
+        "rms": 0.5773502588272095
+      },
+      "roughness": {
+        "min": 0.9062347412109375,
+        "max": 0.9531978964805603,
+        "mean": 0.9300000071525574,
+        "standardDeviation": 0.0065534221939742565,
+        "rms": 0.9300230741500854
+      },
+      "clearcoatRoughness": {
+        "min": 0.9246285557746887,
+        "max": 0.9541905522346497,
+        "mean": 0.9399999976158142,
+        "standardDeviation": 0.0045916419476270676,
+        "rms": 0.940011203289032
+      },
+      "heightSeam": {
+        "wrapXMeanDifference": 0.04084797576069832,
+        "wrapYMeanDifference": 0.041646432131528854,
+        "allAdjacentXMeanDifference": 0.03828096389770508,
+        "allAdjacentYMeanDifference": 0.03845890238881111,
+        "note": "Periodic adjacent samples need not be identical; compare seam steps to interior steps"
+      },
+      "roughnessSeam": {
+        "wrapXMeanDifference": 0.00032947646104730666,
+        "wrapYMeanDifference": 0.0002497271925676614,
+        "allAdjacentXMeanDifference": 0.0002810763253364712,
+        "allAdjacentYMeanDifference": 0.00021536627900786698,
+        "note": "Periodic adjacent samples need not be identical; compare seam steps to interior steps"
+      }
+    },
+    "files": [
+      {
+        "path": "paint-normal.png",
+        "bytes": 1785231,
+        "sha256": "ae25b124f12a60aead54b19480323d9fa751f8c63e6cf816275b61ff7f1195f0",
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG RGB8",
+        "colorSpace": "linear data",
+        "metadata": "IHDR, IDAT, IEND only; no sRGB, ICC or gamma",
+        "statistics": {
+          "min": 0.47475019097328186,
+          "max": 1,
+          "mean": 0.6666505336761475,
+          "standardDeviation": 0.2357136607170105,
+          "rms": 0.7070953845977783
+        }
+      },
+      {
+        "path": "paint-orm.png",
+        "bytes": 327867,
+        "sha256": "e74055c93fc14bfae5cd115bf8d17c27960355f0fc32ee34a76b93996e9ccfc3",
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG RGB8",
+        "colorSpace": "linear data",
+        "metadata": "IHDR, IDAT, IEND only; no sRGB, ICC or gamma",
+        "statistics": {
+          "min": 0.9062347412109375,
+          "max": 1,
+          "mean": 0.9766666889190674,
+          "standardDeviation": 0.03321452438831329,
+          "rms": 0.9772312641143799
+        }
+      },
+      {
+        "path": "paint-coat-roughness.png",
+        "bytes": 165539,
+        "sha256": "1a2fa04a5ca672bb3f73d788fe38983ddc1f3e57f700971f0faaff611d750a9c",
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG RGB8",
+        "colorSpace": "linear data",
+        "metadata": "IHDR, IDAT, IEND only; no sRGB, ICC or gamma",
+        "statistics": {
+          "min": 0.9246285557746887,
+          "max": 1,
+          "mean": 0.9799999594688416,
+          "standardDeviation": 0.02840823493897915,
+          "rms": 0.98041170835495
+        }
+      },
+      {
+        "path": "paint-height-master.png",
+        "bytes": 8335118,
+        "sha256": "1743bd9c6859f37533f6e4155bc865169d830ab7a5d0c27cf0ff06eb69f75120",
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG GRAY16",
+        "colorSpace": "linear data",
+        "metadata": "IHDR, IDAT, IEND only; no sRGB, ICC or gamma",
+        "statistics": {
+          "min": 0.017154723405838013,
+          "max": 0.9668419361114502,
+          "mean": 0.5,
+          "standardDeviation": 0.17463178932666779,
+          "rms": 0.5296189785003662
+        }
+      },
+      {
+        "path": "paint-roughness-master.png",
+        "bytes": 6097386,
+        "sha256": "d73930ccce8b1b02727ee13bc4530bb97d0d92369c203e36225ab22b892bf524",
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG GRAY16",
+        "colorSpace": "linear data",
+        "metadata": "IHDR, IDAT, IEND only; no sRGB, ICC or gamma",
+        "statistics": {
+          "min": 0.9062347412109375,
+          "max": 0.9531978964805603,
+          "mean": 0.9300000071525574,
+          "standardDeviation": 0.0065534221939742565,
+          "rms": 0.9300230741500854
+        }
+      },
+      {
+        "path": "paint-coat-roughness-master.png",
+        "bytes": 5150343,
+        "sha256": "c7501a0912504c1631b8cc4558687a8fc8befc23b2a2f344e6f925f81f138c3f",
+        "width": 2048,
+        "height": 2048,
+        "format": "PNG GRAY16",
+        "colorSpace": "linear data",
+        "metadata": "IHDR, IDAT, IEND only; no sRGB, ICC or gamma",
+        "statistics": {
+          "min": 0.9246285557746887,
+          "max": 0.9541905522346497,
+          "mean": 0.9399999976158142,
+          "standardDeviation": 0.0045916419476270676,
+          "rms": 0.940011203289032
+        }
+      }
+    ],
+    "provenance": "Trees X: GPT image references + Blender Python/NumPy authored numeric maps. Source images retain their native resolution and are not described as scans or measured PBR.",
+    "limitations": [
+      "No model, UV, triangle, pivot, material binding or rig edited",
+      "No assembly shadow baked",
+      "No claim of physical measurements or automatic PBR recovery",
+      "Actual rendering and distant specular stability require browser comparison"
+    ],
+    "master": {
+      "path": "paint-study.blend",
+      "bytes": 21930159,
+      "sha256": "784c206f245cfa6965218a766cefbf52515fe69178270ef48277b0b69cdc8fae",
+      "role": "Independent editable Blender material inspection scene; no source geometry"
+    }
+  },
+  "materialRecipeSha256": "faa7455db50e540e57c542b07006b4dfbe6b148e65db9bb7dc2d1e7a9dcf36d8",
+  "materialBindings": {
+    "names": ["enamel", "shellGloss", "shellRim"],
+    "normal": { "index": 51, "texCoord": 1, "convention": "OpenGL +Y; linear data" },
+    "orm": { "index": 52, "texCoord": 1, "channels": "R=1, G=roughness multiplier, B=1" },
+    "clearcoatRoughness": { "index": 58, "texCoord": 1, "channel": "G" },
+    "scalarParameters": "v2 preserved exactly; treesFinishVersion remains 2"
+  },
+  "preservation": {
+    "semanticParts": 572,
+    "surfaceMappings": 2257,
+    "nodes": "all v2 nodes, transforms, hierarchy and semantic mappings unchanged",
+    "geometry": "original binary prefix, mesh primitives, accessors, UV0/UV1 and tangents unchanged",
+    "motion": "rig.json byte-identical to audited v2",
+    "nonPaintTextures": [
+      {
+        "path": "textures/brush-normal.png",
+        "bytes": 475696,
+        "sha256": "8b2c9d3a8d36b8a8cb7b0094e421563bf2e6d7608fc2bc80cca25f175c3dde65",
+        "role": "texture"
+      },
+      {
+        "path": "textures/brush-orm.png",
+        "bytes": 437259,
+        "sha256": "038c0d22697d5cd8d194964059c5c2727aa269b8689f3c789396c8bf24ea5e41",
+        "role": "texture"
+      },
+      {
+        "path": "textures/brush-direction.png",
+        "bytes": 345482,
+        "sha256": "69c392e6541c22649b6e680e68ad27aea25ba475d337ce69373381bc3d70c2f7",
+        "role": "texture"
+      },
+      {
+        "path": "textures/iron-normal.png",
+        "bytes": 4147525,
+        "sha256": "cb76acd489b128b5c8395e68095d4514b624169d8cdad648d1f043803382a8db",
+        "role": "texture"
+      },
+      {
+        "path": "textures/iron-orm.png",
+        "bytes": 2076316,
+        "sha256": "0aa7cebf72276823353c10d6ed4416eec93c1d0fa995d7ab00da4bdebc827b28",
+        "role": "texture"
+      }
+    ],
+    "assemblyOcclusion": "none baked; inter-part occlusion remains dynamic"
+  },
+  "brandReplacement": {
+    "sourceIndex": 50,
+    "sourceMaterial": "decal-62",
+    "text": "WindGear",
+    "sourceSha256": "5506c87b1a6f792b1a070f57fde51a0707375f876d0e24973f9941290343e0ee",
+    "candidateSha256": "5d9aa27ee60c94e636b9d35575437e337cef685a64efd793403030aa5b7b3e63",
+    "width": 1024,
+    "height": 416,
+    "color": "#d8b368",
+    "method": "Owner-requested editable connected-script SVG, rasterized with unchanged storage flip",
+    "placement": "source UV0, material, texture binding, alpha and node transform unchanged"
+  },
+  "gpuEstimate": {
+    "textureCount": 8,
+    "rgba8MipmappedExternalTexturesBytes": 178956971,
+    "addedBytesVersusV2": 22369622,
+    "assumptions": "RGBA8 GPU allocation with complete mip chain; estimate only, excludes embedded decals, geometry, render targets and driver overhead; no measured VRAM claim"
+  },
+  "qualityApproved": false
+}

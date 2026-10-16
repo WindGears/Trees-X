@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { typewriterCandidate } from './typewriterCandidate'
 import type { GlbSource } from './types'
 import bundle from './typewriterV2Bundle.json'
+import paintBundle from './typewriterPaintBundle.json'
 
 const original: GlbSource = {
   kind: 'glb',
@@ -18,6 +19,31 @@ const original: GlbSource = {
 }
 
 describe('typewriter material candidate selection', () => {
+  it('only selects the paint study explicitly, preserving the original source snapshot', () => {
+    for (const source of [original, { ...original, bundle: { ...bundle } }]) {
+      const before = structuredClone(source)
+      const selected = typewriterCandidate(source, '?typewriterAsset=paint-study')
+      expect(selected.bundle).toEqual(paintBundle)
+      expect(selected.bundle).not.toBe(paintBundle)
+      expect(selected.transform).toBe(source.transform)
+      expect(source).toEqual(before)
+    }
+    expect(typewriterCandidate(original, '?typewriterAsset=v2').bundle).toEqual(bundle)
+    expect(typewriterCandidate(original, '?renderPipeline=realtime').bundle).toEqual(bundle)
+    expect(
+      typewriterCandidate(original, '?typewriterAsset=v2&typewriterAsset=paint-study').bundle,
+    ).toEqual(bundle)
+  })
+  it('does not replace unverified or unrelated resources with the paint study', () => {
+    for (const patch of [{ id: 'other' }, { version: 2 }, { sha256: 'b'.repeat(64) }]) {
+      const source = { ...original, bundle: { ...original.bundle, ...patch } }
+      expect(typewriterCandidate(source, '?typewriterAsset=paint-study')).toBe(source)
+    }
+    const moved = { ...original, bundle: { ...bundle, manifest: '/custom/manifest.json' } }
+    expect(typewriterCandidate(moved, '?typewriterAsset=paint-study')).toBe(moved)
+    const piano: GlbSource = { ...original, adapter: 'piano-v1' }
+    expect(typewriterCandidate(piano, '?typewriterAsset=paint-study')).toBe(piano)
+  })
   it('keeps the default source and unrelated products unmodified', () => {
     expect(typewriterCandidate(original, '')).toBe(original)
     expect(typewriterCandidate(original, '?typewriterAsset=invalid')).toBe(original)

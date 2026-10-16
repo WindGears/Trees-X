@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "createdLocalDate": "2026-10-16",
+  "project": "Trees X",
+  "purpose": "Independent black-enamel art study and WindGear connected lettering; original v2 resources preserved",
+  "generatedImageSource": {
+    "provider": "OpenAI GPT image generation tool",
+    "generationType": "Native text-to-image generation for this project",
+    "sourceInputs": "Text art direction; no third-party scanned PBR input asserted",
+    "exactModelIdentifier": "Not exposed or independently verified",
+    "notExactPrompt": true,
+    "promptSpecificationSummary": [
+      "Two separate orthographic material art references: delicate orange-peel enamel texture and restrained wiping/polish distribution",
+      "Even lighting, no perspective, text, cast shadows, explicit highlights or product silhouette",
+      "No rust, heavy grime, strong scratches or exaggerated surface relief"
+    ],
+    "promptRecordLimitation": "This section is a summary. prompts.json preserves exact submitted prompts; the tool internal rewrite remains unavailable.",
+    "exactSubmittedPrompts": "assets-source/typewriter-paint/prompts.json"
+  },
+  "files": [
+    {
+      "path": "assets-source/typewriter-paint/orange-peel.png",
+      "role": "Orange-peel art-distribution reference only",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "format": "PNG",
+      "channels": 3,
+      "colorSpace": "sRGB",
+      "bytes": 3191534,
+      "sha256": "7218f85b758e3ea2e9a9129e26e7ff67ddbe3a7e6f912d8852d26d00fa657093",
+      "originalPreserved": true,
+      "measuredPbr": false
+    },
+    {
+      "path": "assets-source/typewriter-paint/polish.png",
+      "role": "Restrained wiping/polish art-distribution reference only",
+      "nativeWidth": 1254,
+      "nativeHeight": 1254,
+      "format": "PNG",
+      "channels": 3,
+      "colorSpace": "sRGB",
+      "bytes": 1714783,
+      "sha256": "00682d74b1a467cb0d71713db4c061c3320935b20a1cbe5b564c838861a14970",
+      "originalPreserved": true,
+      "measuredPbr": false
+    },
+    {
+      "path": "assets-source/typewriter-paint/windgear.svg",
+      "role": "Original editable path-based connected lettering",
+      "width": 1024,
+      "height": 416,
+      "bytes": 51198,
+      "sha256": "445ef440b721966bd7ccdc39f3e2770ff3bc6848734d282598540e633ea3de7e",
+      "text": "WindGear",
+      "color": "#d8b368",
+      "letterGroups": 8,
+      "fontDependency": false,
+      "background": "Transparent",
+      "origin": "Original closed path lettering authored for Trees X at the owner's request"
+    },
+    {
+      "path": "assets-source/typewriter-paint/windgear.png",
+      "role": "Upright transparent PNG rasterized from the editable SVG",
+      "width": 1024,
+      "height": 416,
+      "bytes": 25929,
+      "sha256": "f59f006884250c022b84b7b9c0bcc982a6d992564811d3f55ceb05cde4c764a6",
+      "color": "#d8b368",
+      "orientation": "Upright; GLB payload applies the documented vertical row flip"
+    }
+  ],
+  "numericProduction": {
+    "script": "scripts/blender/typewriter_paint_study.py",
+    "actualOutput": "artifacts/typewriter-paint/materials",
+    "outputRecord": "artifacts/typewriter-paint/materials/textures.json",
+    "reproductionOutputMustBeNew": true,
+    "blenderVersion": "5.2.2 LTS",
+    "numpyVersion": "2.3.4",
+    "workingSize": [2048, 2048],
+    "seed": 10731,
+    "tileSceneUnits": 0.04,
+    "heightSceneUnits": 4e-6,
+    "method": "Periodic-plus-smooth boundary removal, Gaussian low-frequency lighting detrend, bounded art masks, seeded periodic procedural micro-height and centered wrap derivatives",
+    "normalConvention": "OpenGL tangent-space +Y; internal Blender bottom-up +V rows are converted to PNG storage rows once",
+    "runtimeMaps": ["paint-normal.png", "paint-orm.png", "paint-coat-roughness.png"],
+    "runtimeFormat": "2048x2048 RGB8 PNG; no sRGB, ICC or gamma metadata; NoColorSpace numeric data",
+    "masterFiles": [
+      "paint-height-master.png",
+      "paint-roughness-master.png",
+      "paint-coat-roughness-master.png",
+      "paint-study.blend"
+    ],
+    "materialScalars": "Original v2 retained by resource assembler",
+    "sourceBrightnessIsPhysicalHeight": false,
+    "assemblyOcclusionBaked": false,
+    "sourceModelModified": false,
+    "sourceRigModified": false,
+    "claim": "2048-square technical outputs are authored numeric maps; the source GPT images remain native 1254-square, not native 2K scans or measured PBR."
+  },
+  "wordmarkProduction": {
+    "script": "scripts/typewriter-paint/wordmark.mjs",
+    "svgOrientation": "Upright editable artwork",
+    "embeddedPngOrientation": "One vertical row flip to match original GLTFExporter CanvasTexture storage convention",
+    "sourceImageIndex": 50,
+    "sourceMaterial": "decal-62",
+    "preserved": [
+      "UV0",
+      "image dimensions",
+      "placement",
+      "transparent alpha behavior",
+      "other character textures",
+      "node transforms"
+    ]
+  },
+  "publicMetadataPolicy": "Repository-relative sources only. Do not expose private user-home generation paths, temporary caches, credentials, tokens or tool session data in public records or runtime packages.",
+  "qualityApproved": false,
+  "limitations": [
+    "Generated references are art direction, not physical measurements or scanned material acquisition",
+    "No assertion of exclusive copyright or third-party scan licensing",
+    "Source-art resolution does not determine actual runtime surface-detail quality",
+    "Browser close-ups, animation, seams, normals and distant specular stability still require actual comparison"
+  ]
+}

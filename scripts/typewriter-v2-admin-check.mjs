@@ -6,17 +6,31 @@ import { bridge, inputPoint } from './demo/browser-check.mjs'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const backend = process.env.TYPEWRITER_V2_ADMIN_BACKEND || 'webgl'
-const output = process.env.TYPEWRITER_V2_ADMIN_OUTPUT || `artifacts/typewriter-v2/admin-${backend}`
+const asset = process.env.TYPEWRITER_ADMIN_ASSET || 'v2'
+if (!['v2', 'paint-study'].includes(asset)) throw new Error('Invalid TYPEWRITER_ADMIN_ASSET')
+const assetDirectory = asset === 'v2' ? 'typewriter-v2' : 'typewriter-paint'
+const output =
+  process.env.TYPEWRITER_V2_ADMIN_OUTPUT || `artifacts/${assetDirectory}/admin-${backend}`
 const timeout = Number(process.env.TYPEWRITER_V2_ADMIN_TIMEOUT || 240000)
 if (!['webgl', 'realtime'].includes(backend)) throw new Error('Invalid TYPEWRITER_V2_ADMIN_BACKEND')
 if (!Number.isFinite(timeout) || timeout < 1000) throw new Error('Invalid preview timeout')
 const origin = new URL(base).origin
-const candidate = JSON.parse(await readFile('src/lib/workbench/typewriterV2Bundle.json', 'utf8'))
+const candidate = JSON.parse(
+  await readFile(
+    asset === 'v2'
+      ? 'src/lib/workbench/typewriterV2Bundle.json'
+      : 'src/lib/workbench/typewriterPaintBundle.json',
+    'utf8',
+  ),
+)
+const modelPath = new URL('model.glb', new URL(candidate.manifest, base)).pathname
 const report = {
   passed: false,
   fixture: false,
   persistentWritesAllowed: false,
   backend,
+  asset,
+  bundleReference: candidate,
   startedAt: new Date().toISOString(),
   checks: [],
   captures: [],
@@ -131,8 +145,8 @@ async function actual() {
   expect(state.roots).toEqual(['typewriter-study'])
   expect(state.source).toBe('glb')
   expect(state.adapter).toBe('typewriter-v1')
-  expect(state.bundle).toBe('kimi-typewriter@2')
-  expect(state.bundleVersion).toBe(2)
+  expect(state.bundle).toBe(`${candidate.id}@${candidate.version}`)
+  expect(state.bundleVersion).toBe(candidate.version)
   expect(state.bundleSha256).toBe(candidate.sha256)
   expect(state.semanticParts).toBe(572)
   expect(state.canvasCount).toBe(1)
@@ -222,7 +236,7 @@ try {
       .map((line) => [line.slice(0, line.indexOf('=')), line.slice(line.indexOf('=') + 1)]),
   )
   const url = new URL('/admin', base)
-  url.searchParams.set('typewriterAsset', 'v2')
+  url.searchParams.set('typewriterAsset', asset)
   url.searchParams.set('renderPipeline', backend)
   await page.goto(url.href)
   await expect
@@ -315,7 +329,7 @@ try {
       persistedUnchanged: true,
     })
     report.checks.push(
-      `Round ${round}: actual v2 preview, right-pan, position/target return, perspective synchronization, no persistent changes, cleared capture provider and zero Canvas after exit`,
+      `Round ${round}: actual ${asset} preview, right-pan, position/target return, perspective synchronization, no persistent changes, cleared capture provider and zero Canvas after exit`,
     )
     await page.evaluate(() => {
       delete window.__demo
@@ -328,11 +342,7 @@ try {
   expect(
     report.requests.some((request) => new URL(request.url).pathname === candidate.manifest),
   ).toBe(true)
-  expect(
-    report.requests.some((request) =>
-      /\/kimi-typewriter\/v2\/model\.glb$/.test(new URL(request.url).pathname),
-    ),
-  ).toBe(true)
+  expect(report.requests.some((request) => new URL(request.url).pathname === modelPath)).toBe(true)
   expect(report.blockedWrites).toEqual([])
   const unmatchedProbes = [...report.expectedAuthProbeResponses]
   for (const item of report.consoleErrors) {
@@ -378,6 +388,7 @@ console.log(
     {
       passed: report.passed,
       backend,
+      asset,
       output,
       checks: report.checks.length,
       failure: report.failure,

@@ -221,6 +221,12 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 黑漆与 WindGear 连笔铭牌样片（2026-10-16）
+
+显式 `typewriterAsset=paint-study` 保持黑金风格和当前摄影棚，不改变界面。黑漆沿用原 UV1、0.04 场景单位纹理周期及原 Physical 标量；新 2048² OpenGL 微法线以受控周期高度生成，ORM G 均值约 0.93、清漆粗糙度 G 均值约 0.94。无锈蚀、厚污垢、夸张划痕或烘死的装配阴影。
+
+`WindGear` 使用原创连笔路径字形，W／G 短回钩，`#d8b368`，1024×416 透明画幅；保留原铭牌位置、UV0、贴片与 alpha。SVG 与正向 PNG 保存于 `assets-source/typewriter-paint`，GLB PNG 按原约定翻转一次。整机、漆面、铭牌、键帽、分层与平铺的同输入对照见 [.ai/typewriter-paint-validation.md](.ai/typewriter-paint-validation.md)。默认资源仍由用户实机审阅决定。
+
 ## 实时管线反馈（2026-10-16）
 
 当前回归打字机渲染修补，暖夜图像空间保留实验入口并暂停扩展。界面布局与毛玻璃样式不变；底部原实时状态提示区分准备空间增强、实际 DDGI 以及增强失败后的基础光照，不新增访客技术参数面板。普通默认 WebGL 保留，显式实时入口仍可比较 SSGI／DDGI。

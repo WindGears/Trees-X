@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "id": "kimi-typewriter",
+  "version": 3,
+  "entry": "model.glb",
+  "files": [
+    {
+      "path": "model.glb",
+      "bytes": 73091684,
+      "sha256": "fe3785c38247622baad6ed7288323ac076f91a331f1b2ea5e0748ed7d7167943",
+      "role": "model"
+    },
+    {
+      "path": "rig.json",
+      "bytes": 517962,
+      "sha256": "047cddb65994640a25f4fad191131423b1ceafce6b4ab474aa906ac1d4576154",
+      "role": "motion"
+    },
+    {
+      "path": "textures/paint-normal.png",
+      "bytes": 1785231,
+      "sha256": "ae25b124f12a60aead54b19480323d9fa751f8c63e6cf816275b61ff7f1195f0",
+      "role": "texture"
+    },
+    {
+      "path": "textures/paint-orm.png",
+      "bytes": 327867,
+      "sha256": "e74055c93fc14bfae5cd115bf8d17c27960355f0fc32ee34a76b93996e9ccfc3",
+      "role": "texture"
+    },
+    {
+      "path": "textures/brush-normal.png",
+      "bytes": 475696,
+      "sha256": "8b2c9d3a8d36b8a8cb7b0094e421563bf2e6d7608fc2bc80cca25f175c3dde65",
+      "role": "texture"
+    },
+    {
+      "path": "textures/brush-orm.png",
+      "bytes": 437259,
+      "sha256": "038c0d22697d5cd8d194964059c5c2727aa269b8689f3c789396c8bf24ea5e41",
+      "role": "texture"
+    },
+    {
+      "path": "textures/brush-direction.png",
+      "bytes": 345482,
+      "sha256": "69c392e6541c22649b6e680e68ad27aea25ba475d337ce69373381bc3d70c2f7",
+      "role": "texture"
+    },
+    {
+      "path": "textures/iron-normal.png",
+      "bytes": 4147525,
+      "sha256": "cb76acd489b128b5c8395e68095d4514b624169d8cdad648d1f043803382a8db",
+      "role": "texture"
+    },
+    {
+      "path": "textures/iron-orm.png",
+      "bytes": 2076316,
+      "sha256": "0aa7cebf72276823353c10d6ed4416eec93c1d0fa995d7ab00da4bdebc827b28",
+      "role": "texture"
+    },
+    {
+      "path": "textures/paint-coat-roughness.png",
+      "bytes": 165539,
+      "sha256": "1a2fa04a5ca672bb3f73d788fe38983ddc1f3e57f700971f0faaff611d750a9c",
+      "role": "texture"
+    }
+  ],
+  "budget": { "maxBytes": 83370561, "maxTriangles": 1257132 },
+  "provenance": {
+    "author": "User-owned Kimi project (confirmed by owner on 2026-10-09); micro-surface maps authored by Trees X in Blender; paint-study maps and WindGear script by Trees X",
+    "source": "https://k3-typewriter.ok.kimi.link/",
+    "license": "Owner-authorized project reuse and GitHub synchronization (2026-10-09); reference contours and inferred mechanical study. Three.js MIT. New procedural maps have no third-party image inputs. Paint study: GPT-generated artistic distribution references converted to controlled technical maps in Blender; not scanned PBR. WindGear is owner-requested custom vector lettering.",
+    "redistribution": "Owner requested synchronization to WindGears/Trees-X on 2026-10-09. Third-party reference photographs excluded; no additional downstream license is inferred."
+  }
+}

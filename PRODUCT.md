@@ -1,5 +1,11 @@
 # Trees X
 
+## 当前黑漆与铭牌样片（2026-10-16）
+
+打字机新增显式 `typewriterAsset=paint-study` 对照资源，保留现有 v2 与所有交互。样片仅改变黑漆微表面分布、轻微擦拭粗糙度和清漆粗糙度，并将 WindGear 换为同金色、同位置的复古连笔字形。原几何、UV、机构和其他字符不修改；金属、铸铁与其他商品本轮不处理。
+
+普通入口不切换。实时体验使用 `?product=typewriter-study&renderPipeline=realtime&typewriterAsset=paint-study&studioMood=light`，与 `typewriterAsset=v2` 在相同 SSGI、灯光和曝光下比较。生成图是美术参考，技术法线由 Blender 数值生成，不宣称实测 PBR。工程证据、画质与性能边界见 [.ai/typewriter-paint-validation.md](.ai/typewriter-paint-validation.md)。
+
 ## 当前执行：打字机实时管线接入（2026-10-16）
 
 用户将重点收回渲染修补。实时 WebGPU 打字机默认使用 v2 材质、商品独立捕获的地台反射和同表面约束的有符号 SSR 过滤；`indirectLighting=ddgi` 显式启用固定预算的动态探针间接光，省略参数仍使用 SSGI。DDGI 失败保留可操作的基础光影并显示实际状态，不将回退计作增强成功。
