@@ -14,6 +14,7 @@ import {
 } from 'three/tsl'
 import { studioDesign } from '../studio/design'
 import { bindProductReflectionCapture } from './productReflectionCapture'
+import { bindReflectionProjection } from './reflectionProjection'
 
 export interface StudioReflectionDimensions {
   width: number
@@ -46,7 +47,17 @@ export function createGpuStudioReflection(
   const geometry = new ShapeGeometry(shape, 12),
     material = new MeshBasicNodeMaterial({ transparent: true, depthWrite: false }),
     reflected = reflector({ resolutionScale: 0.75, samples: 4, bounces: false })
-  const releaseCapture = product ? bindProductReflectionCapture(reflected, product) : undefined
+  let releaseProjection: (() => void) | undefined, releaseCapture: (() => void) | undefined
+  try {
+    releaseProjection = bindReflectionProjection(reflected)
+    releaseCapture = product ? bindProductReflectionCapture(reflected, product) : undefined
+  } catch (error) {
+    releaseProjection?.()
+    reflected.dispose()
+    material.dispose()
+    geometry.dispose()
+    throw error
+  }
   let blurred: Node<'vec4'> = vec4(0)
   const weights = [1, 4, 6, 4, 1]
   const step = vec2(1.5).div(screenSize.mul(0.75))
@@ -89,6 +100,7 @@ export function createGpuStudioReflection(
       disposed = true
       mesh.removeFromParent()
       releaseCapture?.()
+      releaseProjection?.()
       reflected.dispose()
       material.dispose()
       geometry.dispose()

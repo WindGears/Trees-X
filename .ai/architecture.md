@@ -10,6 +10,8 @@
 
 `studioReflection` 默认仅捕获实际商品与灯光，`productReflectionCapture` 在同一 renderer 的离屏反射前暂存并清空背景／隐藏非商品根分支，结束或失败恢复。RGBA 一起过滤，再以 coverage 解预乘并合成，避免地台／天空混入商品倒影。`planarReflection=scene|off` 仅为旧捕获与关闭的对照；WebGL／hybrid 原实现保持。
 
+2026-10-18 面板重新构图修复：左右 UI 通过非对称透视投影居中商品，r185 原生 ReflectorNode 镜像相机右轴却原样复制水平主点，导致倒影相对商品漂移。局部 `reflectionProjection` 桥接只在虚拟透视相机复制主投影时镜像 `projectionMatrix.elements[8]`，先于原生 oblique clip 计算；商品与 scene 捕获共用修正。保留原生 flipX、垂直主点和主相机，不锁屏倒影、不偏移采样 UV；版本／内部形状检查、异常回滚与卸载恢复均由舞台反射 owner 负责。具体检查状态见 [反射与面板构图验收](reflection-framing-validation.md)。
+
 `signedSpatial` 的半径引导排除未命中及非同表面邻居，实际 signed Δ 平均仍允许同表面的零修正；`signedHistory` 同样检查平面距离、法线与粗糙度。保留有符号值、原生材质参数与八 tap，不扩大模糊掩盖字符或金属问题。
 
 `realtime/coordinator` 按 `indirectLighting=ddgi` 异步装配 `ddgi/field`，在既有绘制时钟上串行执行探针 tick 与辅助／最终绘制。探针读取上个已完成姿态，`beforeRaster` 只在真正光栅帧内执行一次；迟到模块和回调受商品／渲染代次保护。准备期及失败使用 SSGI，局部状态向界面报告实际模式；高频变换和 Three 对象不进入 Pinia。

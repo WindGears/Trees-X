@@ -2,6 +2,7 @@
 
 - 当前用户要求回归渲染管线，图像空间／素材分层暂停扩展，旧入口与证据保留。实时打字机继续 v2，默认 WebGL 及其他商品不变。下方历史“DDGI 未接入”不覆盖当前可选增强。
 - 商品平面反射只借用唯一 renderer，局部捕获必须在 finally 恢复背景、clear、根节点可见性与原生钩子；RGBA 同核过滤并解预乘，不能将完整房间 RGB 当商品覆盖率。`planarReflection=scene|off` 仅作对照。
+- 2026-10-18：面板造成的非对称投影必须同步到平面反射。受检 r185 局部桥接只镜像虚拟 PerspectiveCamera 的水平主点 P[8]，先于原生斜裁剪计算；主相机、P[9] 与 flipX 采样保持。禁止锁屏倒影或平移采样 UV 掩盖错位，禁止全局修改 Three 原型；商品／scene 捕获共用桥接，销毁恢复原方法。实际检查范围见 [反射构图验收](reflection-framing-validation.md)。
 - Speedball 固定 0.8.0／a997aee5b0791be61b49719377e811c41720df59，独立低层 field，不用材质 installer。单体积 16×9×10、64 rays/probe、98,304 rays/tick 上限；禁止自动缩减预算或开启探针镜面。代理只借源资源；field、代理与组合目标各自唯一释放。
 - DDGI 在同一时钟内与绘制串行，读取上个完成姿态；场景 beforeRaster 不得为探针额外执行离屏 draw。失败或迟到结果不能留旧 receiver 或覆盖新商品。源材质 AO 和 native dielectric 能量响应保留，DDGI 与 SSGI 不同时贡献同一像素的间接漫反射。
 - Speedball dirty 也表示合法重建，不能将 clean→dirty 一律视为失败。首次暖夜贴图绑定可从材质值更新升级 fresh-build；灯光缓存也可要求重建。仅真实 backoff／异常走错误回退，重建期间保留基础画面并在探针再次就绪后接回；resident kernel 复用同样是正常完成，不要求无意义的 shader 重编译。
