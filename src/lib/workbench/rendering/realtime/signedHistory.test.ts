@@ -51,6 +51,35 @@ function fixture() {
 }
 
 describe('complete-frame signed reflection history ownership', () => {
+  it('invalidates a pose cut without reallocating, copying or disposing the retained targets', () => {
+    const f = fixture()
+    try {
+      f.owner.prepare(1440, 1000)
+      f.owner.commitFrame()
+      f.owner.prepare(1440, 1000)
+      expect(f.owner.snapshot()).toMatchObject({ valid: true, enabled: 1, prepared: true })
+      const output = f.owner.node.value,
+        release = vi.spyOn(output, 'dispose')
+      f.owner.resetHistory()
+      expect(f.owner.snapshot()).toMatchObject({ valid: false, enabled: 0, prepared: false })
+      expect(() => f.owner.commitFrame()).toThrow('no prepared frame')
+      expect(f.copyTextureToTexture).toHaveBeenCalledTimes(3)
+      f.owner.prepare(1440, 1000)
+      expect(f.owner.snapshot().enabled).toBe(0)
+      expect(f.initRenderTarget).toHaveBeenCalledTimes(1)
+      expect(f.initTexture).toHaveBeenCalledTimes(1)
+      expect(f.owner.node.value).toBe(output)
+      expect(release).not.toHaveBeenCalled()
+      f.owner.commitFrame()
+      f.owner.prepare(1440, 1000)
+      expect(f.owner.snapshot().enabled).toBe(1)
+      f.owner.cancelFrame()
+    } finally {
+      f.owner.dispose()
+    }
+    expect(() => f.owner.resetHistory()).not.toThrow()
+  })
+
   it('rejects unprepared and cancelled commits without copying GPU resources', () => {
     const f = fixture()
     expect(() => f.owner.commitFrame()).toThrow('no prepared frame')

@@ -26,6 +26,7 @@ import { loadLoungeAssets, type LoungeAssets } from './loungeAssets'
 import { studioPalettes } from '../studio/palette'
 import type { StudioEnvironmentStatus, StudioMoodUpdate } from '../studio/mood'
 import { createLoungeSpatialLook } from './loungeSpatialLook'
+import { createLoungeTraceMaterials } from './loungeTraceMaterial'
 
 /** Appearance only. No camera/model writes, renderer, extra draw or automatic ticker. */
 export function createLoungeLook(
@@ -93,6 +94,11 @@ export function createLoungeLook(
     sideMaterial.normalNode = material.normalNode
     geometry.table.top.material = [material, sideMaterial]
   }
+  const tracing = createLoungeTraceMaterials(
+    geometry.table?.top ?? pedestal,
+    sideMaterial ? [material, sideMaterial] : [material],
+    surface.roughness,
+  )
   const lightFloor = new Color(studioPalettes.light.floor),
     darkFloor = new Color(studioPalettes.dark.floor),
     originalLights = lights.map((light) => ({
@@ -112,7 +118,13 @@ export function createLoungeLook(
     changed = () => {},
     report: (status: StudioEnvironmentStatus) => void = () => {}
   const abort = new AbortController()
-  group.userData.lounge = { status: 'idle', defocusLod: 3.5, seamGuard: true, poleFade: true }
+  group.userData.lounge = {
+    status: 'idle',
+    defocusLod: 3.5,
+    seamGuard: true,
+    poleFade: true,
+    traceMaterial: tracing.metadata,
+  }
   function publish(value: StudioEnvironmentStatus) {
     status = value
     group.userData.lounge.status = value.phase
@@ -153,6 +165,7 @@ export function createLoungeLook(
         sideMaterial.needsUpdate = true
       }
       ready.value = 1
+      update()
       skyMaterial.needsUpdate = material.needsUpdate = true
       publish({ phase: 'ready' })
       changed()
@@ -168,6 +181,7 @@ export function createLoungeLook(
   }
   function update() {
     const blend = amount.value
+    tracing.sync(blend, ready.value === 1 ? assets : undefined)
     floorMaterial.color.copy(lightFloor).lerp(darkFloor, blend)
     traceFloor.color.copy(floorMaterial.color)
     spatial?.setBlend(blend)
@@ -225,6 +239,7 @@ export function createLoungeLook(
       tween = undefined
       spatial?.dispose()
       spatial = undefined
+      tracing.dispose()
       if (geometry.table) geometry.table.top.material = surface
       else if (pedestal.material === material) pedestal.material = surface
       sideMaterial?.dispose()

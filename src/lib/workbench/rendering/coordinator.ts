@@ -402,9 +402,11 @@ export function createHybridCoordinator(options: HybridCoordinatorOptions) {
         tracing.sync()
         if (changes.has('all')) tracer.setScene(tracing.scene, camera)
         else {
-          if (changes.has('pose') || changes.has('materials')) tracer.updateTransforms()
+          if (changes.has('pose') || changes.has('pose-jump') || changes.has('materials'))
+            tracer.updateTransforms()
           if (changes.has('materials')) tracer.updateMaterials()
-          if (changes.has('camera') || changes.has('size')) tracer.updateCamera()
+          if (changes.has('camera') || changes.has('camera-cut') || changes.has('size'))
+            tracer.updateCamera()
           if (changes.has('lights')) tracer.updateLights()
           if (changes.has('environment')) tracer.updateEnvironment()
         }

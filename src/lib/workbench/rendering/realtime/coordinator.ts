@@ -253,11 +253,13 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         materials.sync()
         renderer.getDrawingBufferSize(size)
         if (reset) {
+          // Consume before resetting: a synchronous invalidation raised by an
+          // owner during cleanup must survive for the next complete frame.
+          reset = false
           signals?.resetHistory()
           signals?.environment()
           motion.reset(scene)
           historyResets++
-          reset = false
         }
         motion.beginFrame(scene)
         try {

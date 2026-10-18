@@ -58,6 +58,9 @@ export function createReflectionResolve(
       history.cancelFrame()
       spatial.cancelFrame()
     },
+    resetHistory() {
+      if (!disposed) history.resetHistory()
+    },
     snapshot: spatial.snapshot,
     dispose() {
       if (disposed) return

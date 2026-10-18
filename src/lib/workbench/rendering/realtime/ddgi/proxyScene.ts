@@ -1,9 +1,22 @@
-import { Color, InstancedMesh, Light, Material, Matrix4, Mesh, Scene, type Object3D } from 'three'
+import {
+  Color,
+  InstancedMesh,
+  Light,
+  Material,
+  Matrix4,
+  Mesh,
+  Scene,
+  type Object3D,
+  type Texture,
+  type Vector2,
+} from 'three'
 
 interface MeshEntry {
   source: Mesh
   sourceBinding: Material | Material[]
+  sourceSlots: Material[]
   traceBinding: unknown
+  materialSlots: Material[]
   proxy: Mesh
   world: Matrix4
   instanceVersion: number
@@ -19,16 +32,42 @@ type PbrValues = Material &
     metalness: number
     opacity: number
     emissiveIntensity: number
+    transmission: number
+    ior: number
+    clearcoat: number
+    clearcoatRoughness: number
+    normalScale: Vector2
+    map: Texture | null
+    normalMap: Texture | null
+    roughnessMap: Texture | null
+    metalnessMap: Texture | null
+    emissiveMap: Texture | null
+    alphaMap: Texture | null
   }>
+const trackedFields = [
+  'roughness',
+  'metalness',
+  'opacity',
+  'emissiveIntensity',
+  'transmission',
+  'ior',
+  'clearcoat',
+  'clearcoatRoughness',
+  'map',
+  'normalMap',
+  'roughnessMap',
+  'metalnessMap',
+  'emissiveMap',
+  'alphaMap',
+] as const
 interface MaterialEntry {
   seen: number
   version: number
   color: Color
   emissive: Color
-  roughness?: number
-  metalness?: number
-  opacity: number
-  emissiveIntensity?: number
+  fields: Map<(typeof trackedFields)[number], unknown>
+  normalScaleX?: number
+  normalScaleY?: number
 }
 interface LightEntry {
   source: Light
@@ -48,14 +87,18 @@ function sourceMaterial(material: Material) {
 function borrowedMaterials(source: Mesh) {
   const trace: unknown = source.userData.traceMaterial
   if (trace instanceof Material) return trace
+  if (Array.isArray(trace) && trace.length > 0 && trace.every((item) => item instanceof Material))
+    return trace as Material[]
   return Array.isArray(source.material)
     ? source.material.map(sourceMaterial)
     : sourceMaterial(source.material)
 }
 
-function sameMaterials(a: Material | Material[], b: Material | Material[]) {
-  if (!Array.isArray(a) || !Array.isArray(b)) return a === b
-  return a.length === b.length && a.every((material, index) => material === b[index])
+function sameMaterials(slots: Material[], binding: Material | Material[]) {
+  return Array.isArray(binding)
+    ? slots.length === binding.length &&
+        slots.every((material, index) => material === binding[index])
+    : slots.length === 1 && slots[0] === binding
 }
 
 function sourceAllowed(mesh: Mesh, root: Object3D) {
@@ -95,10 +138,9 @@ export function createDdgiProxyScene(sourceScene: Scene) {
         version: value.version,
         color: value.color?.clone() ?? new Color(),
         emissive: value.emissive?.clone() ?? new Color(0),
-        roughness: value.roughness,
-        metalness: value.metalness,
-        opacity: value.opacity,
-        emissiveIntensity: value.emissiveIntensity,
+        fields: new Map(trackedFields.map((field) => [field, value[field]])),
+        normalScaleX: value.normalScale?.x,
+        normalScaleY: value.normalScale?.y,
       })
       return
     }
@@ -107,18 +149,16 @@ export function createDdgiProxyScene(sourceScene: Scene) {
       previous.version !== value.version ||
       (value.color && !previous.color.equals(value.color)) ||
       (value.emissive && !previous.emissive.equals(value.emissive)) ||
-      previous.roughness !== value.roughness ||
-      previous.metalness !== value.metalness ||
-      previous.opacity !== value.opacity ||
-      previous.emissiveIntensity !== value.emissiveIntensity
+      trackedFields.some((field) => previous.fields.get(field) !== value[field]) ||
+      previous.normalScaleX !== value.normalScale?.x ||
+      previous.normalScaleY !== value.normalScale?.y
     ) {
       previous.version = value.version
       if (value.color) previous.color.copy(value.color)
       if (value.emissive) previous.emissive.copy(value.emissive)
-      previous.roughness = value.roughness
-      previous.metalness = value.metalness
-      previous.opacity = value.opacity
-      previous.emissiveIntensity = value.emissiveIntensity
+      for (const field of trackedFields) previous.fields.set(field, value[field])
+      previous.normalScaleX = value.normalScale?.x
+      previous.normalScaleY = value.normalScale?.y
       materials.push(material)
     }
   }
@@ -134,12 +174,18 @@ export function createDdgiProxyScene(sourceScene: Scene) {
     const bindingChanged =
       !entry ||
       entry.sourceBinding !== node.material ||
-      entry.traceBinding !== node.userData.traceMaterial
+      entry.traceBinding !== node.userData.traceMaterial ||
+      (Array.isArray(node.userData.traceMaterial) &&
+        !sameMaterials(entry.materialSlots, node.userData.traceMaterial)) ||
+      (Array.isArray(node.material) &&
+        !sameMaterials(entry.sourceSlots, node.material) &&
+        node.userData.traceMaterial === undefined)
     const material = !entry || bindingChanged ? borrowedMaterials(node) : entry.proxy.material
     if (
       !entry ||
       entry.proxy.geometry !== node.geometry ||
-      !sameMaterials(entry.proxy.material, material) ||
+      Array.isArray(entry.proxy.material) !== Array.isArray(material) ||
+      !sameMaterials(entry.materialSlots, material) ||
       (node instanceof InstancedMesh && entry.instanceCapacity !== node.instanceMatrix.count)
     ) {
       entry?.proxy.removeFromParent()
@@ -161,7 +207,9 @@ export function createDdgiProxyScene(sourceScene: Scene) {
       entry = {
         source: node,
         sourceBinding: node.material,
+        sourceSlots: Array.isArray(node.material) ? node.material.slice() : [node.material],
         traceBinding: node.userData.traceMaterial,
+        materialSlots: Array.isArray(material) ? material.slice() : [material],
         proxy,
         world: node.matrixWorld.clone(),
         instanceVersion: node instanceof InstancedMesh ? node.instanceMatrix.version : -1,
@@ -192,6 +240,8 @@ export function createDdgiProxyScene(sourceScene: Scene) {
         transforms.push(entry.proxy)
       }
     }
+    if (bindingChanged)
+      entry.sourceSlots = Array.isArray(node.material) ? node.material.slice() : [node.material]
     entry.sourceBinding = node.material
     entry.traceBinding = node.userData.traceMaterial
     entry.seen = revision

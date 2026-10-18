@@ -5,6 +5,7 @@ import {
   Group,
   LinearFilter,
   LinearMipmapLinearFilter,
+  MeshPhysicalMaterial,
   NoColorSpace,
   PerspectiveCamera,
   RectAreaLight,
@@ -89,6 +90,58 @@ afterEach(() => {
 })
 
 describe('owned amber lounge appearance', () => {
+  it('synchronizes the actual tracing binding when assets arrive after switching back to light', async () => {
+    const assets = ownedAssets(),
+      pending = deferred<LoungeAssets>()
+    load.mockReturnValue(pending.promise)
+    const f = fixture(),
+      tracing: unknown = f.geometry.pedestal.userData.traceMaterial
+    if (!(tracing instanceof MeshPhysicalMaterial)) throw new Error('Missing owned trace material')
+    try {
+      f.setMood('dark')
+      f.setMood('light')
+      pending.resolve(assets)
+      await vi.waitFor(() => expect(f.report).toHaveBeenLastCalledWith({ phase: 'ready' }))
+      expect(tracing.map).toBeNull()
+      expect(tracing.roughnessMap).toBeNull()
+      expect(tracing.color.getHexString()).toBe(studioPalettes.light.pedestal.slice(1))
+      f.setMood('dark')
+      expect(tracing.map).toBe(assets.baseColor)
+      expect(tracing.roughnessMap).toBe(assets.roughness)
+      expect(tracing.color.toArray()).toEqual([1, 1, 1])
+      f.setMood('light')
+      expect(tracing.map).toBeNull()
+      expect(tracing.roughness).toBe(f.geometry.surface.roughness)
+    } finally {
+      f.dispose()
+    }
+    expect(Object.hasOwn(f.geometry.pedestal.userData, 'traceMaterial')).toBe(false)
+  })
+
+  it('advances the tracing approximation from the existing tween and does not revive a late load', async () => {
+    const assets = ownedAssets(),
+      pending = deferred<LoungeAssets>()
+    load.mockReturnValue(pending.promise)
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000),
+      f = fixture(),
+      tracing: unknown = f.geometry.pedestal.userData.traceMaterial
+    if (!(tracing instanceof MeshPhysicalMaterial)) throw new Error('Missing owned trace material')
+    const release = vi.spyOn(tracing, 'dispose')
+    f.setMood('dark')
+    now.mockReturnValue(1210)
+    f.look.render()
+    expect(tracing.userData.loungeTrace.blend).toBeCloseTo(0.5)
+    expect(tracing.map).toBeNull()
+    f.look.dispose()
+    pending.resolve(assets)
+    await vi.waitFor(() => expect(assets.dispose).toHaveBeenCalledOnce())
+    expect(release).toHaveBeenCalledOnce()
+    expect(tracing.map).toBeNull()
+    expect(Object.hasOwn(f.geometry.pedestal.userData, 'traceMaterial')).toBe(false)
+    f.dispose()
+  })
+
   it('reuses stage geometry and one asset pack across immediate in-place switches', async () => {
     const assets = ownedAssets(),
       pending = deferred<LoungeAssets>()

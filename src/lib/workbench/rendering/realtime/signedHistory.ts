@@ -271,6 +271,14 @@ export function createSignedReflectionHistory(
     cancelFrame() {
       prepared = false
     },
+    resetHistory() {
+      if (disposed) return
+      // Reject the old pose without reallocating targets or recompiling the graph.
+      prepared = false
+      valid = false
+      enabled.value = 0
+    },
+    snapshot: () => ({ prepared, valid, enabled: enabled.value, width, height }),
     dispose() {
       if (disposed) return
       disposed = true

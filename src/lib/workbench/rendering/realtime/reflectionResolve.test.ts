@@ -45,6 +45,7 @@ describe('reflection resolver construction rollback', () => {
       historyPrepare = vi.fn(),
       historyCommit = vi.fn(),
       historyCancel = vi.fn(),
+      historyReset = vi.fn(),
       historyDispose = vi.fn()
     factories.spatial.mockReturnValue({
       raw: node,
@@ -58,6 +59,7 @@ describe('reflection resolver construction rollback', () => {
       prepare: historyPrepare,
       commitFrame: historyCommit,
       cancelFrame: historyCancel,
+      resetHistory: historyReset,
       dispose: historyDispose,
     })
     const owner = createReflectionResolve(
@@ -94,8 +96,18 @@ describe('reflection resolver construction rollback', () => {
     expect(owner.snapshot().frames).toBe(2)
     expect(historyPrepare).toHaveBeenLastCalledWith(1440, 1000)
     expect(spatialCancel).toHaveBeenCalledTimes(4)
+    const frames = owner.snapshot().frames,
+      constructions = factories.spatial.mock.calls.length
+    owner.resetHistory()
+    expect(historyReset).toHaveBeenCalledTimes(1)
+    expect(owner.snapshot().frames).toBe(frames)
+    expect(factories.spatial.mock.calls).toHaveLength(constructions)
+    expect(spatialDispose).not.toHaveBeenCalled()
+    expect(historyDispose).not.toHaveBeenCalled()
     owner.dispose()
     owner.dispose()
+    owner.resetHistory()
+    expect(historyReset).toHaveBeenCalledTimes(1)
     expect(spatialDispose).toHaveBeenCalledTimes(1)
     expect(historyDispose).toHaveBeenCalledTimes(1)
     expect(sourceDispose).not.toHaveBeenCalled()

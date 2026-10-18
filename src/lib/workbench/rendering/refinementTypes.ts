@@ -14,7 +14,15 @@ export type RefinementPhase =
   | 'error'
 
 export type RefinementChange =
-  'camera' | 'pose' | 'materials' | 'lights' | 'environment' | 'size' | 'all'
+  | 'camera'
+  | 'camera-cut'
+  | 'pose'
+  | 'pose-jump'
+  | 'materials'
+  | 'lights'
+  | 'environment'
+  | 'size'
+  | 'all'
 
 export interface RefinementStatus {
   phase: RefinementPhase

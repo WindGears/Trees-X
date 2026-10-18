@@ -8,6 +8,7 @@ import {
   MeshStandardMaterial,
   RectAreaLight,
   Scene,
+  Texture,
   type Material,
 } from 'three'
 import { MeshPhysicalNodeMaterial } from 'three/webgpu'
@@ -153,5 +154,65 @@ describe('borrowed Speedball tracing scene', () => {
     expect(f.proxy.scene.getObjectByName(sky.name)).toBeUndefined()
     expect(f.proxy.scene.getObjectByName(floor.name)).toBeUndefined()
     expect(f.proxy.snapshot().meshes).toBe(3)
+  })
+
+  it('accepts checked multi-material tracing groups and detects an in-place slot replacement', () => {
+    const f = fixture(),
+      trace = [new MeshStandardMaterial(), new MeshStandardMaterial()],
+      replacement = new MeshStandardMaterial()
+    cleanups.push(() => {
+      trace.forEach((material) => material.dispose())
+      replacement.dispose()
+    })
+    f.mesh.userData.traceMaterial = trace
+    expect(f.proxy.sync().topology).toBe(true)
+    const mesh = f.proxy.scene.getObjectByName(f.mesh.name)
+    if (!(mesh instanceof Mesh)) throw new Error('Expected checked material array proxy')
+    expect(mesh.material).toBe(trace)
+    const original = trace[1]!
+    trace[1] = replacement
+    expect(f.proxy.sync().topology).toBe(true)
+    expect(f.proxy.sync().topology).toBe(false)
+    original.dispose()
+    f.mesh.userData.traceMaterial = [replacement, null]
+    expect(f.proxy.sync().topology).toBe(true)
+    const fallback = f.proxy.scene.getObjectByName(f.mesh.name)
+    if (!(fallback instanceof Mesh)) throw new Error('Expected original-material fallback')
+    expect(fallback.material).toBe(f.material)
+  })
+
+  it('detects direct map, Physical scalar and normal-scale edits without requiring needsUpdate', () => {
+    const f = fixture(),
+      trace = new MeshPhysicalNodeMaterial(),
+      map = new Texture()
+    cleanups.push(() => {
+      trace.dispose()
+      map.dispose()
+    })
+    f.mesh.userData.traceMaterial = trace
+    f.proxy.sync()
+    trace.map = map
+    expect(f.proxy.sync().materials).toEqual([trace])
+    trace.roughnessMap = map
+    expect(f.proxy.sync().materials).toEqual([trace])
+    trace.normalScale.set(0.25, 0.5)
+    expect(f.proxy.sync().materials).toEqual([trace])
+    trace.clearcoat = 0.2
+    expect(f.proxy.sync().materials).toEqual([trace])
+    trace.clearcoatRoughness = 0.3
+    expect(f.proxy.sync().materials).toEqual([trace])
+    expect(f.proxy.sync().materials).toEqual([])
+  })
+
+  it('retains material-group semantics when a single binding changes into a one-slot array', () => {
+    const f = fixture()
+    f.mesh.userData.traceMaterial = f.material
+    f.proxy.sync()
+    f.mesh.userData.traceMaterial = [f.material]
+    expect(f.proxy.sync().topology).toBe(true)
+    const mesh = f.proxy.scene.getObjectByName(f.mesh.name)
+    if (!(mesh instanceof Mesh)) throw new Error('Expected one-slot grouped proxy')
+    expect(mesh.material).toEqual([f.material])
+    expect(f.proxy.sync().topology).toBe(false)
   })
 })

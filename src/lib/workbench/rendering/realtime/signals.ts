@@ -97,7 +97,6 @@ export function createRealtimeSignals(
     composite: ReturnType<typeof createOwnedRtt> | undefined,
     linearBeauty: ReturnType<typeof createOwnedRtt> | undefined,
     loungeDof: ReturnType<typeof createOwnedLoungeDof> | undefined,
-    reflectionResolve: ReturnType<typeof createReflectionResolve> | undefined,
     ssrEnabled = true,
     ssgiEnabled = true,
     denoiseEnabled = true,
@@ -107,6 +106,16 @@ export function createRealtimeSignals(
     worldGi: RealtimeIrradiance | null = null
   const savedState = RendererUtils.saveRendererState(renderer)
   const frameSize = new Vector2()
+  const reflectionResolve = createReflectionResolve(
+    renderer,
+    reflection.getTextureNode(),
+    baseSpecular,
+    depth,
+    normal,
+    velocity,
+    camera,
+    reflectionKernel,
+  )
 
   function compose() {
     if (!reflectionResolve) return
@@ -167,22 +176,11 @@ export function createRealtimeSignals(
   }
   function resetHistory() {
     if (disposed) return
-    reflectionResolve?.dispose()
-    reflectionResolve = createReflectionResolve(
-      renderer,
-      reflection.getTextureNode(),
-      baseSpecular,
-      depth,
-      normal,
-      velocity,
-      camera,
-      reflectionKernel,
-    )
-    // Native beauty already contains IBL. Feeding full SSR back into hit-color
-    // would count it twice; temporal reprojection alone owns this history.
-    compose()
+    reflectionResolve?.resetHistory()
   }
-  resetHistory()
+  // Native beauty already contains IBL. Only temporal reprojection owns history.
+  // Build once; pose cuts invalidate its history without rebuilding DOF/SMAA.
+  compose()
   return {
     render() {
       RendererUtils.saveRendererState(renderer, savedState)
@@ -237,6 +235,7 @@ export function createRealtimeSignals(
       ssgiEnabled = ssgi
       denoiseEnabled = denoise
       resetHistory()
+      compose()
     },
     snapshot: () => ({ ssr: ssrEnabled, ssgi: ssgiEnabled, denoise: denoiseEnabled }),
     sampling: () => reflectionResolve?.snapshot() ?? null,

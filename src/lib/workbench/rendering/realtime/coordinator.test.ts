@@ -261,6 +261,55 @@ describe('realtime complete-frame coordinator lifecycle', () => {
     f.coordinator.dispose()
   })
 
+  it('resets pose jumps and camera cuts before motion begins, including changes raised inside beforeRaster', () => {
+    const f = fixture()
+    f.coordinator.prepare()
+    f.coordinator.ready('typewriter-study', 3)
+    f.coordinator.render(f.notify)
+    for (const kind of ['pose-jump', 'camera-cut'] as const) {
+      f.calls.length = 0
+      f.beforeRaster.mockImplementationOnce(() => {
+        f.calls.push('beforeRaster:jump')
+        f.coordinator.invalidate(kind)
+        return f.calls.length
+      })
+      f.coordinator.render(f.notify)
+      expect(f.calls.slice(0, 8)).toEqual([
+        'clock:begin',
+        'beforeRaster:jump',
+        'materials:sync',
+        'renderer:size',
+        'signals:reset',
+        'signals:environment',
+        'motion:reset',
+        'motion:begin',
+      ])
+    }
+    expect(f.coordinator.snapshot().historyResets).toBe(2)
+    f.coordinator.dispose()
+  })
+
+  it('retains a reentrant reset notification for the next frame rather than clearing it during history cleanup', () => {
+    const f = fixture()
+    f.coordinator.prepare()
+    f.coordinator.ready('typewriter-study', 3)
+    f.coordinator.render(f.notify)
+    f.coordinator.invalidate('pose-jump')
+    f.signals.resetHistory.mockImplementationOnce(() => {
+      f.calls.push('signals:reset')
+      f.coordinator.invalidate('camera-cut')
+      return f.calls.length
+    })
+    f.coordinator.render(f.notify)
+    expect(f.coordinator.snapshot().historyResets).toBe(1)
+    f.coordinator.render(f.notify)
+    expect(f.coordinator.snapshot().historyResets).toBe(2)
+    f.coordinator.render(f.notify)
+    expect(f.coordinator.snapshot().historyResets).toBe(2)
+    expect(f.signals.resetHistory).toHaveBeenCalledTimes(2)
+    f.coordinator.dispose()
+  })
+
   it('preserves asynchronous GPU errors over ready and does not schedule a new erroneous frame', () => {
     const f = fixture()
     f.coordinator.prepare()

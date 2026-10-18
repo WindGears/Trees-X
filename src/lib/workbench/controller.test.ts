@@ -227,3 +227,75 @@ it('allows inactive device-checkpoint capture only for a loaded and ready produc
     item.dispose()
   }
 })
+
+it('forwards seek/reset jumps from the real playback while retaining continuous action history', async () => {
+  const item = await loadedStage(),
+    tweens = vi.spyOn(gsap, 'to'),
+    action = item.product.presentation.actions.find((value) => value.kind === 'progress')!
+  try {
+    item.changed.mockClear()
+    item.controller.motionCommand({ revision: 1, operation: 'seek', id: action.id, value: 0.4 })
+    expect(item.adapter.pose[action.id]).toBe(0.4)
+    expect(item.changed.mock.calls).toEqual([['pose-jump']])
+    item.controller.motionCommand({ revision: 2, operation: 'play', id: action.id, value: 1 })
+    const tween = tweens.mock.results.at(-1)!.value as gsap.core.Tween
+    item.changed.mockClear()
+    tween.progress(0.5)
+    tween.progress(1)
+    expect(item.changed.mock.calls.length).toBeGreaterThan(1)
+    expect(item.changed.mock.calls.every(([kind]) => kind === 'pose')).toBe(true)
+    item.controller.resetMotion()
+    expect(item.adapter.pose[action.id]).toBe(0)
+    expect(item.changed.mock.calls.at(-1)).toEqual(['pose-jump'])
+    item.changed.mockClear()
+    item.controller.sync(item.product.presentation.finishes[0]!.id, true, {}, true)
+    expect(item.changed.mock.calls.at(-1)).toEqual(['pose-jump'])
+  } finally {
+    item.dispose()
+  }
+})
+
+it('distinguishes smooth view transitions from camera restores and reduced-motion jumps', async () => {
+  const item = await loadedStage(),
+    tweens = vi.spyOn(gsap, 'to'),
+    view = item.product.presentation.views[0]!
+  try {
+    item.changed.mockClear()
+    item.controller.command({ revision: 1, kind: 'view', id: view.id })
+    const tween = tweens.mock.results.at(-1)!.value as gsap.core.Tween
+    tween.progress(0.5)
+    expect(item.changed.mock.calls).toContainEqual(['camera'])
+    expect(item.changed.mock.calls).not.toContainEqual(['camera-cut'])
+    item.changed.mockClear()
+    item.controller.restoreCamera({ position: [4, 3, 5], target: [0, 0.5, 0] })
+    item.camera.position.toArray().forEach((value, index) => {
+      expect(value).toBeCloseTo([4, 3, 5][index]!, 12)
+    })
+    expect(item.changed.mock.calls.at(-1)).toEqual(['camera-cut'])
+    vi.stubGlobal('matchMedia', () => ({ matches: true }))
+    item.changed.mockClear()
+    item.controller.command({ revision: 2, kind: 'view', id: view.id })
+    expect(item.changed.mock.calls.at(-1)).toEqual(['camera-cut'])
+    item.changed.mockClear()
+    const action = item.product.presentation.actions.find((value) => value.kind === 'progress')!
+    item.controller.motionCommand({ revision: 3, operation: 'play', id: action.id, value: 1 })
+    expect(item.adapter.pose[action.id]).toBe(1)
+    expect(item.changed.mock.calls).toEqual([['pose-jump']])
+  } finally {
+    item.dispose()
+  }
+})
+
+it('does not emit late scene changes or load new resources after disposal', async () => {
+  const item = await loadedStage()
+  item.dispose()
+  item.changed.mockClear()
+  const loads = vi.mocked(loadAdapter).mock.calls.length
+  item.controller.restoreCamera({ position: [5, 3, 2], target: [0, 0, 0] })
+  item.controller.resetMotion()
+  item.controller.setActive(true)
+  item.controller.enableInteraction()
+  await item.controller.load(item.product, vi.fn())
+  expect(item.changed).not.toHaveBeenCalled()
+  expect(vi.mocked(loadAdapter).mock.calls).toHaveLength(loads)
+})

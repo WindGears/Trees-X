@@ -1,5 +1,19 @@
 # 新版目标架构与当前实现
 
+## 渲染一致性修补（2026-10-18）
+
+本节点仅补齐实时打字机的桌台追踪材质与离散操作历史，不更换既有工作台、商品资源、HTTP API、数据库或展示配置版本；此前面板与倒影构图修复继续保留。工程、GPU 和视觉检查分别记录于 [一致性修补验收](rendering-consistency-validation.md)，未完成项目不得借用旧批次成绩。
+
+`loungeTraceMaterial` 为可见桌台建立独立的标量 PBR 追踪视图，并通过 `mesh.userData.traceMaterial` 提供单材质或 `Material[]` 绑定。`loungeLook` 拥有这些派生材质及绑定恢复，DDGI 代理只借用；共享岩板纹理仍由 `loungeAssets` 唯一释放。明亮端点清除岩板贴图并恢复基线颜色与粗糙度；素材就绪的暖夜端点使用白色 tint 乘底色、粗糙度标量 1 乘粗糙度图，避免重复染色或缩放。约 0.42 秒过渡采用 palette-only 颜色／粗糙度近似，不在每个补间帧重建纹理图集。`ddgi/proxyScene` 跟踪数组槽位、绑定替换及材质值变化，绑定变化走既有结构重建通道，不修改可见 NodeMaterial。
+
+追踪视图不是可见 TSL 图的完整复制：Speedball 对材质贴图共用一套 UV 变换，岩板粗糙度沿用底色 UV 变换；独立 repeat 的微法线不强塞进该追踪图，追踪保留几何法线；Physical 清漆 BRDF 仍不由探针追踪实现。这些差异需随画面证据保留，不能将端点颜色同步描述成完整材质等效。
+
+场景局部事件新增 `pose-jump` 与 `camera-cut`，不改变数据库契约。连续相机／刚体姿态变化继续保留运动历史；指定进度、动作复原、减弱动态下的即时操作和键盘离散步进按相应 cut 通知实时协调器。cut 在下一完整绘制前同时失效 signed SSR 历史和刚体／实例运动基线；旧 hybrid 将新事件映射到原有 `updateCamera`／`updateTransforms` 路径。DDGI 探针自身的时域收敛仍由上游管理，本节点没有重置所有光照历史。
+
+`signedHistory.resetHistory()` 只取消未提交帧并禁用旧历史有效位，不重新分配目标或改写上次成功数据。`signals` 在构造、模式变化或 DDGI receiver 绑定变化时组合图；普通姿态／镜头 cut 复用 SSR 输出、DOF、SMAA 与合成目标，只清历史有效性。成功完整帧的 prepare／commit／cancel 所有权不变，不增加第二绘制循环或逐帧 CPU 像素回读。
+
+下一节点可恢复真实安静时长对 DDGI 重建的门控，但须保留固定射线预算和同 renderer 串行调度，不能移除 `await tick` 后并发绘制。主软箱动态自阴影仍需独立的逐光源可见性实验，不得全图乘暗，也不能声称 DDGI 已提供该直接光遮挡。被反射物体的 hit-point 历史与暖夜背景／HDR 空间匹配仍是未完成项，本次 cut 处理不代表这些缺口已修复。
+
 ## 独立黑漆资源样片（2026-10-16）
 
 `typewriterCandidate` 仅在明确 `typewriterAsset=paint-study` 时，将已核验的原 v1 或 v2 引用快照替换为 `typewriterPaintBundle.json`；其他商品、未知摘要和管理员自定义包不替换。只变更资源引用，不写数据库或升级展示配置。普通实时仍 v2，普通 WebGL 仍原通道。

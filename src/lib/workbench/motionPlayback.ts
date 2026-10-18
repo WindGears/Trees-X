@@ -4,11 +4,12 @@ import { clampProgress } from './motionPose'
 import type { MotionCommand, MotionStatus, ProgressAction } from './types'
 
 export type MotionFeedback = (id: string, status: MotionStatus) => void
+export type MotionChange = 'pose' | 'pose-jump'
 
 export function createMotionPlayback(
   adapter: SceneAdapter,
   actions: ProgressAction[],
-  invalidate: () => void,
+  invalidate: (kind: MotionChange) => void,
   feedback: MotionFeedback,
   reduced: () => boolean,
   checkpoint: Record<string, MotionStatus> = {},
@@ -43,10 +44,11 @@ export function createMotionPlayback(
       })
     }
   }
-  function apply(channel: Channel, force = false) {
+  function apply(channel: Channel, force = false, kind: MotionChange = 'pose') {
+    if (disposed) return
     adapter.pose[channel.action.id] = channel.status.progress
     adapter.apply()
-    invalidate()
+    invalidate(kind)
     report(channel, force)
   }
   function pause(channel: Channel) {
@@ -64,7 +66,7 @@ export function createMotionPlayback(
     const distance = Math.abs(channel.status.progress - channel.status.target)
     if (reduced() || distance < 1e-8) {
       channel.status.progress = channel.status.target
-      apply(channel, true)
+      apply(channel, true, distance < 1e-8 ? 'pose' : 'pose-jump')
       return
     }
     channel.status.playing = true
@@ -98,10 +100,11 @@ export function createMotionPlayback(
           command.operation === 'reset' ? 0 : (command.value ?? 0),
         )
         if (command.operation === 'reset') channel.status.target = 1
-        apply(channel, true)
+        apply(channel, true, 'pose-jump')
       }
     },
     reset() {
+      if (disposed) return
       pauseAll()
       for (const channel of channels.values()) {
         channel.status.progress = 0
@@ -110,11 +113,11 @@ export function createMotionPlayback(
         report(channel, true)
       }
       adapter.apply()
-      invalidate()
+      invalidate('pose-jump')
     },
     dispose() {
-      pauseAll()
       disposed = true
+      pauseAll()
       channels.clear()
     },
   }

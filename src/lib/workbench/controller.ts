@@ -30,7 +30,9 @@ export function createStageController(
     interaction?: (active: boolean) => void
   } = {},
 ) {
+  let disposed = false
   const dirty = (kind: RefinementChange) => {
+    if (disposed) return
     options.changed?.(kind)
     invalidate()
   }
@@ -98,7 +100,9 @@ export function createStageController(
   controls.addEventListener('end', endInteraction)
   controls.addEventListener('change', changed)
   function move(position: Vec3, target: Vec3, instant = false) {
+    if (disposed) return
     stopCamera()
+    const jump = instant || reduced()
     const state = {
       x: camera.position.x,
       y: camera.position.y,
@@ -111,7 +115,7 @@ export function createStageController(
       camera.position.set(state.x, state.y, state.z)
       controls.target.set(state.tx, state.ty, state.tz)
       controls.update()
-      dirty('camera')
+      dirty(jump ? 'camera-cut' : 'camera')
     }
     cameraTween = gsap.to(state, {
       x: position[0],
@@ -120,7 +124,7 @@ export function createStageController(
       tx: target[0],
       ty: target[1],
       tz: target[2],
-      duration: instant || reduced() ? 0 : 0.65,
+      duration: jump ? 0 : 0.65,
       ease: 'power3.out',
       onUpdate: update,
     })
@@ -128,25 +132,26 @@ export function createStageController(
   function animate(values: Record<string, number>, pulse = false) {
     if (!adapter) return
     const current = adapter
+    const jump = reduced()
     // Actions blend independently; only the same pose channels replace each other.
     const tween = gsap.to(current.pose, {
       paused: true,
       ...values,
-      duration: reduced() ? 0 : pulse ? 0.18 : 0.55,
-      repeat: pulse && !reduced() ? 1 : 0,
-      yoyo: pulse && !reduced(),
+      duration: jump ? 0 : pulse ? 0.18 : 0.55,
+      repeat: pulse && !jump ? 1 : 0,
+      yoyo: pulse && !jump,
       overwrite: 'auto',
       ease: pulse ? 'power1.inOut' : 'power3.out',
       onUpdate: () => {
         current.apply()
-        dirty('pose')
+        dirty(jump ? 'pose-jump' : 'pose')
       },
       onComplete: () => {
         motion.delete(tween)
         if (pulse) {
           for (const id of Object.keys(values)) current.pose[id] = 0
           current.apply()
-          dirty('pose')
+          dirty(jump ? 'pose-jump' : 'pose')
         }
       },
       onInterrupt: () => motion.delete(tween),
@@ -172,6 +177,7 @@ export function createStageController(
     controls.enabled = false
   }
   async function load(value: WorkbenchProduct, phase: (p: LoadPhase) => void) {
+    if (disposed) return
     unload()
     const snapshot = parseProduct(value)
     const loaded = await slot.load((signal) => loadAdapter(snapshot, renderer, signal, phase))
@@ -183,7 +189,7 @@ export function createStageController(
     progress = createMotionPlayback(
       loaded,
       progressActions(snapshot.presentation),
-      () => dirty('pose'),
+      dirty,
       feedback,
       reduced,
       checkpoint(),
@@ -226,7 +232,7 @@ export function createStageController(
       destination.setFromSpherical(orbit)
       camera.position.copy(controls.target).add(destination)
       controls.update()
-      dirty('camera')
+      dirty('camera-cut')
     } else if (value.kind === 'zoom') {
       stopCamera()
       destination.copy(camera.position).sub(controls.target)
@@ -241,7 +247,7 @@ export function createStageController(
       )
       camera.position.copy(controls.target).add(destination)
       controls.update()
-      dirty('camera')
+      dirty('camera-cut')
     }
   }
   function down(event: PointerEvent) {
@@ -287,6 +293,7 @@ export function createStageController(
     beforeRender: () => adapter?.beforeRender?.(),
     setStudioMood: (update: StudioMoodUpdate) => adapter?.setStudioMood?.(update),
     enableInteraction() {
+      if (disposed) return
       interactive = true
       controls.enabled = active && Boolean(adapter)
     },
@@ -325,7 +332,7 @@ export function createStageController(
       if (adapter && product) {
         for (const action of product.presentation.actions) adapter.pose[action.id] = 0
         adapter.apply()
-        dirty('pose')
+        dirty('pose-jump')
       }
     },
     sync(finishId: string, exploded: boolean, actions: Record<string, number>, instant = false) {
@@ -343,7 +350,7 @@ export function createStageController(
       if (instant) {
         Object.assign(adapter.pose, values)
         adapter.apply()
-        dirty('pose')
+        dirty('pose-jump')
       } else animate(values)
     },
     pulse(id: string) {
@@ -377,6 +384,7 @@ export function createStageController(
       }
     },
     setActive(value: boolean) {
+      if (disposed) return
       if (!value) {
         controls.enabled = false
         cancelInteraction()
@@ -391,6 +399,8 @@ export function createStageController(
       if (value) invalidate()
     },
     dispose() {
+      if (disposed) return
+      disposed = true
       unload()
       controls.removeEventListener('start', takeover)
       controls.removeEventListener('end', endInteraction)

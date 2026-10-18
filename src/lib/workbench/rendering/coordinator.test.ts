@@ -363,6 +363,23 @@ describe('hybrid renderer control and cancellation', () => {
     item.coordinator.dispose()
   })
 
+  it('updates tracing transforms and camera for explicit jump events without rebuilding the scene', async () => {
+    const item = fixture()
+    await prepare(item)
+    const initial = driver(),
+      builds = initial.setScene.mock.calls.length
+    item.coordinator.invalidate('pose-jump')
+    item.coordinator.invalidate('camera-cut')
+    item.coordinator.render(item.notify)
+    await vi.advanceTimersByTimeAsync(500)
+    await vi.dynamicImportSettled()
+    expect(driver()).toBe(initial)
+    expect(initial.updateTransforms).toHaveBeenCalledTimes(1)
+    expect(initial.updateCamera).toHaveBeenCalledTimes(1)
+    expect(initial.setScene).toHaveBeenCalledTimes(builds)
+    item.coordinator.dispose()
+  })
+
   it('reads actual minimum sample counts at most once per second and ignores a late old-product result', async () => {
     const item = fixture()
     await prepare(item)
