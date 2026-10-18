@@ -64,6 +64,7 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
     ready = false,
     generation = 0,
     acceptedTicks = 0,
+    lastIdleMs = 0,
     error: Error | null = null,
     pending: Promise<void> | undefined,
     environment = options.scene.environment,
@@ -125,7 +126,7 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       )
   }
 
-  async function advance() {
+  async function advance(idleMs: number) {
     try {
       updateEnvironment()
       const changes = proxy.sync()
@@ -141,7 +142,13 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       // per-cascade solve time. No extra loop or synthetic time is introduced.
       field.resetFramePacing()
       const before = field._debugState()
-      await field.tick({ idleMs: Infinity, playing: false })
+      lastIdleMs = idleMs
+      // Continuous mode keeps fixed-budget solves and explicit transform/value
+      // packets live; only heavy rebuilds wait for the real quiet window. All
+      // activity, including animation, is merged into idleMs. Passing playing
+      // would trigger 0.8.0's post-playback budget reduction even in continuous
+      // mode; resetFramePacing does not undo that reduction.
+      await field.tick({ idleMs, playing: false })
       if (disposed) return
       const state = field._debugState()
       // In 0.8.0 a material/instance packet may legitimately escalate to a
@@ -174,10 +181,12 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
   }
 
   return {
-    tick() {
+    tick(idleMs = 0) {
       if (disposed || error) return Promise.resolve()
       if (pending) return pending
-      pending = advance().finally(() => {
+      // Unknown/non-finite input is activity, never an infinite idle permit.
+      const quietMs = Number.isFinite(idleMs) ? Math.max(0, idleMs) : 0
+      pending = advance(quietMs).finally(() => {
         pending = undefined
       })
       return pending
@@ -193,6 +202,7 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
         ready,
         generation,
         acceptedTicks,
+        activity: { idleMs: lastIdleMs, playing: false, mode: 'merged-activity' },
         inFlight: Boolean(pending),
         disposed,
         error: error?.message ?? null,

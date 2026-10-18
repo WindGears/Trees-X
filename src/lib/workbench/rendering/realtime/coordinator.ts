@@ -22,6 +22,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     historyResets = 0,
     firstRasterMs: number | null = null,
     started = performance.now(),
+    lastActivity = started,
+    interacting = false,
     slug: string | null = null,
     revision = -1,
     generation = 0,
@@ -108,6 +110,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiLoading = false
     ddgiGraphDirty = false
     ddgiError = null
+    interacting = false
+    lastActivity = performance.now()
     materials.restore()
     reset = true
     phase = 'loading'
@@ -135,6 +139,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     },
     prepare() {
       if (disposed) return
+      lastActivity = performance.now()
       materials.install(scene)
       motion.reset(scene)
       const reuse = Boolean(signals)
@@ -148,17 +153,26 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     unload,
     invalidate(kind: RealtimeChange = 'all') {
       if (disposed) return
+      // Only real scene/input changes enter here. Scheduling another completed
+      // frame calls options.invalidate directly and must not keep GI busy.
+      lastActivity = performance.now()
       // Smooth camera/rigid motion is represented by true vectors, not a reset.
       if (kind !== 'camera' && kind !== 'pose') reset = true
       options.invalidate()
     },
     setInteracting(value: boolean) {
-      if (!disposed && !error && value) options.invalidate()
+      if (disposed || error || interacting === value) return
+      interacting = value
+      lastActivity = performance.now()
+      if (value) options.invalidate()
     },
     setActive(value: boolean) {
       if (disposed || active === value) return
       active = value
+      // Time spent hidden is not a safe rebuild window on the first resumed frame.
+      lastActivity = performance.now()
       if (!value) {
+        interacting = false
         clock.pause()
         phase = error ? 'error' : 'paused'
       } else {
@@ -189,7 +203,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         // Probe compute consumes the last completed pose. Scene animation and
         // shadow rendering remain exactly once inside the real frame below.
         void field
-          .tick()
+          .tick(interacting ? 0 : Math.max(0, performance.now() - lastActivity))
           .then(() => {
             if (disposed || token !== generation || !active) return
             if (ddgiGraphDirty && signals) {

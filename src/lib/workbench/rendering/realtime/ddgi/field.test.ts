@@ -287,7 +287,7 @@ describe('owned fixed-budget DDGI field', () => {
     await f.adapter.tick()
     expect(f.fake.api.resetFramePacing).toHaveBeenCalledTimes(3)
     for (const options of f.fake.tick.mock.calls)
-      expect(options[0]).toEqual({ idleMs: Infinity, playing: false })
+      expect(options[0]).toEqual({ idleMs: 0, playing: false })
     const targets = vi.mocked(f.fake.api.markTransformsDirty).mock.calls[0]![0]
     expect(Array.isArray(targets) && targets[0]).toBeInstanceOf(InstancedMesh)
     expect(f.fake.api.markMaterialValuesDirty).toHaveBeenCalledWith([f.material])
@@ -295,6 +295,61 @@ describe('owned fixed-budget DDGI field', () => {
     f.scene.environmentIntensity = 0.5
     await f.adapter.tick()
     expect(f.fake.api.setSky).toHaveBeenCalledTimes(2)
+  })
+
+  it('forwards finite quiet time while continuous solves and dirty instance/material packets stay live', async () => {
+    const f = fixture()
+    await f.adapter.tick(200)
+    await f.adapter.tick(300)
+    f.mesh.setMatrixAt(1, new Matrix4().makeTranslation(1, 0, 0))
+    f.mesh.instanceMatrix.needsUpdate = true
+    f.material.color.set('#665544')
+    await f.adapter.tick(12)
+    expect(f.fake.tick).toHaveBeenLastCalledWith({ idleMs: 12, playing: false })
+    expect(f.fake.api.markTransformsDirty).toHaveBeenCalledOnce()
+    expect(f.fake.api.markMaterialValuesDirty).toHaveBeenCalledWith([f.material])
+    expect(create.mock.calls[0]![0].continuous).toBe(true)
+    expect(f.adapter.snapshot()).toMatchObject({
+      ready: true,
+      activity: { idleMs: 12, playing: false, mode: 'merged-activity' },
+      actualRays: 64,
+      actualBudgetRays: 98304,
+    })
+    await f.adapter.tick(225)
+    expect(f.fake.tick).toHaveBeenLastCalledWith({ idleMs: 225, playing: false })
+    // Never enter the upstream playing->rest lane that reduces the fixed budget.
+    expect(f.fake.tick.mock.calls.every(([options]) => options?.playing === false)).toBe(true)
+    expect(f.fake.api.resetFramePacing).toHaveBeenCalledTimes(4)
+  })
+
+  it.each([NaN, Infinity, -Infinity, -20])(
+    'treats untrusted quiet time %s as activity rather than permission to rebuild',
+    async (idleMs) => {
+      const f = fixture()
+      await f.adapter.tick(idleMs)
+      expect(f.fake.tick).toHaveBeenCalledWith({ idleMs: 0, playing: false })
+      expect(f.adapter.snapshot().activity.idleMs).toBe(0)
+      expect(f.onError).not.toHaveBeenCalled()
+    },
+  )
+
+  it('retains a legitimate queued rebuild during motion and accepts its completion after quiet', async () => {
+    const f = fixture()
+    await f.adapter.tick(250)
+    await f.adapter.tick(250)
+    f.fake.state.dirty = f.fake.state.buildDirty = true
+    f.fake.tick.mockImplementationOnce(async () => {})
+    await f.adapter.tick(0)
+    expect(f.adapter.snapshot()).toMatchObject({ ready: false, error: null })
+    expect(f.fake.tick).toHaveBeenLastCalledWith({ idleMs: 0, playing: false })
+    f.fake.tick.mockImplementationOnce(async () => {
+      f.fake.state.dirty = f.fake.state.buildDirty = false
+      create.mock.calls[0]![0].onRebuilt()
+    })
+    await f.adapter.tick(250)
+    expect(f.adapter.snapshot()).toMatchObject({ ready: true, error: null })
+    expect(f.fake.tick).toHaveBeenLastCalledWith({ idleMs: 250, playing: false })
+    expect(f.onError).not.toHaveBeenCalled()
   })
 
   it('coalesces overlapping host ticks and discards a late completion after disposal', async () => {

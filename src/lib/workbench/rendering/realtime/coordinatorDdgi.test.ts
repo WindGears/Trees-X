@@ -4,6 +4,7 @@ import { float, texture, vec3 } from 'three/tsl'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { DdgiFieldOptions } from './ddgi/field'
 import type { RealtimeIrradiance } from './signals'
+import type { RealtimeChange } from './types'
 
 const factories = vi.hoisted(() => ({
   clock: vi.fn(),
@@ -34,7 +35,7 @@ function field() {
     ticks,
     receiver,
     api: {
-      tick: vi.fn(() => {
+      tick: vi.fn<(_idleMs?: number) => Promise<void>>(() => {
         const pending = deferred<void>()
         ticks.push(pending)
         return pending.promise
@@ -57,6 +58,7 @@ beforeEach(() => {
 afterEach(async () => {
   for (const cleanup of cleanups.splice(0)) cleanup()
   await vi.dynamicImportSettled()
+  vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
 
@@ -171,6 +173,117 @@ async function fixture(search = '?indirectLighting=ddgi') {
 }
 
 describe('optional DDGI coordinator asynchronous boundaries', () => {
+  it('lets quiet time advance across completed frames without inventing another activity event', async () => {
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = await fixture()
+    f.coordinator.prepare()
+    f.coordinator.ready('typewriter-study', 1)
+    const probe = await f.load()
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(0)
+    await f.finishTick(probe)
+    now = 1100
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(100)
+    await f.finishTick(probe)
+    now = 1350
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(350)
+    await f.finishTick(probe)
+    expect(f.signals.render).toHaveBeenCalledTimes(3)
+    expect(f.notify).toHaveBeenCalledTimes(3)
+  })
+
+  it('refreshes quiet time for every scene change channel without blocking its raster frame', async () => {
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = await fixture()
+    f.coordinator.prepare()
+    const probe = await f.load()
+    const changes: RealtimeChange[] = [
+      'camera',
+      'pose',
+      'camera-cut',
+      'pose-jump',
+      'materials',
+      'lights',
+      'environment',
+      'size',
+      'all',
+    ]
+    for (const kind of changes) {
+      now += 500
+      f.coordinator.invalidate(kind)
+      now += 25
+      f.coordinator.render(f.notify)
+      expect(probe.api.tick).toHaveBeenLastCalledWith(25)
+      await f.finishTick(probe)
+    }
+    expect(f.signals.render).toHaveBeenCalledTimes(changes.length)
+  })
+
+  it('holds quiet time at zero throughout an interaction and starts a fresh window on release', async () => {
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = await fixture()
+    f.coordinator.prepare()
+    const probe = await f.load()
+    f.coordinator.setInteracting(true)
+    now = 5000
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(0)
+    await f.finishTick(probe)
+    f.coordinator.setInteracting(false)
+    now = 5120
+    f.coordinator.setInteracting(false)
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(120)
+    await f.finishTick(probe)
+    now = 5250
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(250)
+    await f.finishTick(probe)
+  })
+
+  it('does not treat hidden time or a stale interaction hold as a resumed rebuild window', async () => {
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = await fixture()
+    f.coordinator.prepare()
+    const probe = await f.load()
+    f.coordinator.setInteracting(true)
+    f.coordinator.setActive(false)
+    now = 9000
+    f.coordinator.setActive(true)
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(0)
+    await f.finishTick(probe)
+    now = 9300
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(300)
+    await f.finishTick(probe)
+  })
+
+  it('keeps a new activity time that arrives while the serialized previous tick is pending', async () => {
+    let now = 1000
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = await fixture()
+    f.coordinator.prepare()
+    const probe = await f.load()
+    f.coordinator.render(f.notify)
+    now = 1450
+    f.coordinator.invalidate('pose')
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenCalledTimes(1)
+    expect(f.signals.render).not.toHaveBeenCalled()
+    await f.finishTick(probe)
+    now = 1500
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenLastCalledWith(50)
+    await f.finishTick(probe)
+  })
+
   it('keeps the ordinary SSGI path synchronous without importing the optional field', async () => {
     const f = await fixture('')
     f.coordinator.prepare()

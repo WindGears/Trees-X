@@ -7,6 +7,7 @@
 - `camera`／`pose` 表示连续变化；`camera-cut`／`pose-jump` 表示离散跳变。指定进度、复原、减弱动态的即时操作及键盘离散步进必须通知正确事件，在下一完整绘制前失效 SSR 历史并重建刚体／实例运动基线；连续输入不能每帧清历史。
 - `signedHistory.resetHistory()` 仅禁用历史有效性、取消未提交状态，不分配或销毁目标。姿态／镜头 cut 不重建 SSR、DOF、SMAA 或合成图；组合图只随模式或 receiver 绑定结构变化重建，保留完整帧提交规则。
 - cut 不代表清空全部渲染信号：DDGI 仍按上游自身时域求解；被反射物体的 hit-point 历史、主软箱动态自阴影与背景／HDR 匹配未在本节点解决。验证结果见 [一致性修补验收](rendering-consistency-validation.md)，待跑项目不能写为通过。
+- DDGI 必须接收真实有限安静时长；交互 hold 为零，连续动作与场景变更刷新，隐藏恢复重新计时。完整帧的再次绘制请求不能当作输入，未知时长不得变成无限静止。保持 continuous 求解、固定预算与串行 tick／draw；固定 0.8.0 用合并 idle 表达活动，playing=false 避开上游播放后预算缩减。首次构建和重建耗时仍单独记录，见 [活动门控验收](ddgi-activity-validation.md)。
 
 # 当前实时渲染约束（2026-10-16）
 
