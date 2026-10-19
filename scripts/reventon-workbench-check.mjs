@@ -1,15 +1,26 @@
-/* global fetch, URL, setTimeout */
+/* global fetch, URL, URLSearchParams, setTimeout, performance, MutationObserver */
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { bridge as attachWorkbench } from './demo/browser-check.mjs'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const lifecycle = process.env.REVENTON_LIFECYCLE === '1'
+const pipeline = process.env.REVENTON_PIPELINE || 'webgl'
+const indirectLighting = process.env.REVENTON_INDIRECT || 'ssgi'
+const assetLoading = process.env.REVENTON_LOADING || 'legacy'
+if (!['webgl', 'realtime'].includes(pipeline)) throw new Error('Invalid REVENTON_PIPELINE')
+if (!['ssgi', 'ddgi'].includes(indirectLighting)) throw new Error('Invalid REVENTON_INDIRECT')
+if (!['legacy', 'streaming'].includes(assetLoading)) throw new Error('Invalid REVENTON_LOADING')
 const output = process.env.REVENTON_CHECK_OUTPUT || 'artifacts/reventon-workbench/runtime'
 const timeout = 180000
 const report = {
   passed: false,
   fixture: false,
   lifecycle,
+  pipeline,
+  indirectLighting,
+  assetLoading,
+  presentedFrameBudgetValidated: false,
   checks: [],
   states: {},
   captures: [],
@@ -22,6 +33,7 @@ const report = {
 }
 await mkdir(output, { recursive: true })
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
+let page
 try {
   const api = await fetch(base + '/api/v1/products/reventon')
   expect(api.status).toBe(200)
@@ -56,12 +68,18 @@ try {
   ])
 
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
-  const page = await context.newPage()
+  page = await context.newPage()
   let injectingFault = false
+  let destroyingDevice = false
   page.on('pageerror', (error) => report.errors.push(error.message))
   page.on('console', (message) => {
     if (message.type() !== 'error') return
     if (injectingFault && /Failed to load resource|net::ERR_FAILED/.test(message.text()))
+      report.expectedFaultErrors.push(message.text())
+    else if (
+      destroyingDevice &&
+      /GPU.*device.*lost|device.*lost|WebGPU.*destroyed/i.test(message.text())
+    )
       report.expectedFaultErrors.push(message.text())
     else report.errors.push(message.text())
   })
@@ -70,30 +88,31 @@ try {
     report.failedRequests.push({ url: request.url(), reason: request.failure()?.errorText }),
   )
   const bridge = async () => {
+    await attachWorkbench(page)
     await page.evaluate(() => {
-      let component = document.querySelector('canvas').__vueParentComponent
-      let scene, motion, store
-      while (component) {
-        const values = Reflect.ownKeys(component.provides ?? {}).map(
-          (key) => component.provides[key],
-        )
-        const appValues = Reflect.ownKeys(component.appContext.provides).map(
-          (key) => component.appContext.provides[key],
-        )
-        scene ??= component.exposed?.context ?? values.find((value) => value?.scene?.value?.isScene)
-        motion ??= values.find(
-          (value) => value?.states?.value && typeof value.snapshot === 'function',
-        )
-        store ??= component.setupState?.store
-        if (typeof store?.motion !== 'function')
-          store = appValues.find((value) => value?._s?.get('workbench'))?._s.get('workbench')
-        component = component.parent
+      window.__carScene = window.__demo.scene
+      window.__carMotion = window.__demo.motion
+      window.__carStore = window.__demo.store
+      const seen = new Set()
+      const lighting = (vnode) => {
+        if (!vnode || typeof vnode !== 'object' || seen.has(vnode)) return
+        seen.add(vnode)
+        const current = vnode.component
+        if (current) {
+          const exposed = current.exposed?.realLighting
+          const value = exposed?.value ?? exposed
+          if (value?.snapshot && value?.setSignals) return value
+          const child = lighting(current.subTree)
+          if (child) return child
+        }
+        if (Array.isArray(vnode.children))
+          for (const child of vnode.children) {
+            const value = lighting(child)
+            if (value) return value
+          }
+        return lighting(vnode.suspense?.activeBranch)
       }
-      if (!scene || !motion || !store)
-        throw new Error('Actual Three / motion / Pinia bridge missing')
-      window.__carScene = scene
-      window.__carMotion = motion
-      window.__carStore = store
+      window.__carLighting = lighting(document.querySelector('#app')?._vnode)
     })
   }
   const ready = async (slug) => {
@@ -148,6 +167,7 @@ try {
         }
       })
       const camera = scene.camera.activeCamera.value
+      const adapterInfo = scene.renderer.instance.backend?.device?.adapterInfo
       return {
         slug: root.userData.workbenchProduct,
         source: root.userData.sourceKind,
@@ -163,7 +183,21 @@ try {
         selectedPart: window.__carStore.selectedPart,
         sameCanvas: document.querySelector('canvas') === window.__carCanvas,
         sameRenderer: scene.renderer.instance === window.__carRenderer,
+        rendererBackend: scene.renderer.instance.isWebGPURenderer ? 'webgpu' : 'webgl',
+        gpuAdapter: adapterInfo
+          ? {
+              vendor: adapterInfo.vendor,
+              architecture: adapterInfo.architecture,
+              device: adapterInfo.device,
+              description: adapterInfo.description,
+            }
+          : null,
+        output: {
+          width: document.querySelector('canvas').width,
+          height: document.querySelector('canvas').height,
+        },
         memory: { ...scene.renderer.instance.info.memory },
+        lighting: window.__carLighting?.snapshot() ?? null,
       }
     })
   const saved = async (name) => {
@@ -259,8 +293,11 @@ try {
     report.captures.push(name)
   }
   const openActions = async () => {
-    if (!(await controls().isVisible()))
-      await page.getByRole('button', { name: '结构与动作', exact: true }).click()
+    const trigger = page.getByRole('button', { name: '结构与动作', exact: true })
+    // A leaving panel is still visible during GSAP's transition. Its visibility
+    // cannot decide whether the store considers it open.
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click()
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
     await expect(controls()).toBeVisible()
   }
   const choose = async (slug, wait = true) => {
@@ -272,17 +309,73 @@ try {
       .click()
     if (wait) await ready(slug)
   }
+  const rememberHost = () =>
+    page.evaluate(() => {
+      window.__carCanvas = document.querySelector('canvas')
+      window.__carRenderer = window.__carScene.renderer.instance
+    })
 
-  await page.goto(base + '/?product=reventon', { waitUntil: 'domcontentloaded', timeout: 90000 })
+  const query = new URLSearchParams({ product: 'reventon', renderPipeline: pipeline })
+  if (pipeline === 'realtime') query.set('indirectLighting', indirectLighting)
+  if (assetLoading === 'streaming') query.set('assetLoading', 'streaming')
+  const navigationStarted = Date.now()
+  await page.goto(base + '/?' + query, { waitUntil: 'domcontentloaded', timeout: 90000 })
   await ready('reventon')
+  report.initialLoading = {
+    firstInteractiveReadyObservedMs: Date.now() - navigationStarted,
+    method:
+      'One fresh browser context; observed DOM ready after the real raster and read-only scene bridge. Not screen presentation timing or five-run loading acceptance. OS and driver caches were not cleared. Network durations overlap and do not isolate hashing, decoding, upload or compilation.',
+    resources: await page.evaluate(() =>
+      performance
+        .getEntriesByType('resource')
+        .filter((entry) => entry.name.includes('/models/reventon/'))
+        .map((entry) => ({
+          name: entry.name,
+          startTimeMs: entry.startTime,
+          responseEndMs: entry.responseEnd,
+          durationMs: entry.duration,
+          transferBytes: entry.transferSize,
+          encodedBodyBytes: entry.encodedBodySize,
+        })),
+    ),
+  }
   console.log('Reventon actual GLB first frame ready')
-  await page.evaluate(() => {
-    window.__carCanvas = document.querySelector('canvas')
-    window.__carRenderer = window.__carScene.renderer.instance
-  })
+  await rememberHost()
   const initial = await saved('initial')
   expect(initial.source).toBe('glb')
   expect(initial.adapter).toBe('reventon-v1')
+  expect(initial.rendererBackend).toBe(pipeline === 'realtime' ? 'webgpu' : 'webgl')
+  expect(initial.output).toEqual({ width: 1440, height: 1000 })
+  if (pipeline === 'realtime') {
+    expect(initial.lighting?.productProfile).toBe('reventon-v1')
+    expect(initial.lighting?.signals).toEqual({ ssr: true, ssgi: true, denoise: true })
+    if (indirectLighting === 'ddgi') {
+      await page.waitForFunction(
+        () => {
+          const status = window.__carLighting.snapshot()
+          return (
+            status.error ||
+            status.indirectLighting.error ||
+            status.indirectLighting.actual === 'ddgi'
+          )
+        },
+        null,
+        { timeout },
+      )
+      const enhanced = await state()
+      expect(enhanced.lighting.error).toBeNull()
+      expect(enhanced.lighting.indirectLighting.error).toBeNull()
+      expect(enhanced.lighting.indirectLighting.actual).toBe('ddgi')
+      await expect
+        .poll(async () => (await state()).lighting.frames, { timeout: 60000 })
+        .toBeGreaterThan(enhanced.lighting.frames)
+      report.fullLightingReadyObservedMs = Date.now() - navigationStarted
+      await saved('lighting-ready')
+      report.checks.push(
+        'Car DDGI becomes active and completes a subsequent real raster; SSGI fallback is not counted as enhancement success',
+      )
+    }
+  }
   expect(initial.triangles).toBe(1500363)
   expect(initial.sourceObjects).toBe(2998)
   expect(Object.keys(initial.motionNodes).sort()).toEqual([
@@ -501,6 +594,7 @@ try {
   )
 
   await page.getByRole('button', { name: '收起面板', exact: true }).click()
+  await expect(controls()).toBeHidden()
   poseNear((await state()).motionNodes, hidden.motionNodes)
   await openActions()
   poseNear((await state()).motionNodes, hidden.motionNodes)
@@ -549,30 +643,75 @@ try {
     await seek(doors.id, 0.61)
     await seek(parts.id, 0.437)
     const beforeLoss = await saved('before-context-loss')
-    await page.evaluate(() => {
-      window.__carLoss = window.__carRenderer.getContext().getExtension('WEBGL_lose_context')
-      if (!window.__carLoss) throw new Error('Actual context-loss extension unavailable')
-      window.__carLoss.loseContext()
-    })
-    await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'error')
-    await page.waitForTimeout(250)
-    await page.evaluate(() => window.__carLoss.restoreContext())
+    if (pipeline === 'realtime') {
+      destroyingDevice = true
+      await page.evaluate(() => {
+        const device = window.__carRenderer.backend?.device
+        if (!device?.destroy) throw new Error('Actual WebGPU device unavailable')
+        window.__carDeviceLoss = { reason: null, maxCanvases: 1 }
+        const observer = new MutationObserver(() => {
+          window.__carDeviceLoss.maxCanvases = Math.max(
+            window.__carDeviceLoss.maxCanvases,
+            document.querySelectorAll('canvas').length,
+          )
+        })
+        observer.observe(document.querySelector('#app'), { subtree: true, childList: true })
+        window.__carDeviceLoss.observer = observer
+        void device.lost.then((value) => {
+          window.__carDeviceLoss.reason = value.reason
+        })
+        device.destroy()
+      })
+      await page.waitForFunction(() => window.__carDeviceLoss.reason !== null)
+      await page.waitForFunction(() => document.querySelector('canvas') !== window.__carCanvas)
+    } else {
+      await page.evaluate(() => {
+        window.__carLoss = window.__carRenderer.getContext().getExtension('WEBGL_lose_context')
+        if (!window.__carLoss) throw new Error('Actual context-loss extension unavailable')
+        window.__carLoss.loseContext()
+      })
+      await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'error')
+      await page.waitForTimeout(250)
+      await page.evaluate(() => window.__carLoss.restoreContext())
+    }
     await ready('reventon')
     const recovered = await stable()
     poseNear(recovered.motionNodes, beforeLoss.motionNodes)
     expect(recovered.motion).toEqual(beforeLoss.motion)
-    expect(recovered.sameCanvas && recovered.sameRenderer).toBe(true)
+    if (pipeline === 'realtime') {
+      expect(recovered.sameCanvas || recovered.sameRenderer).toBe(false)
+      expect(recovered.rendererBackend).toBe('webgpu')
+      const loss = await page.evaluate(() => {
+        const value = window.__carDeviceLoss
+        value.observer.disconnect()
+        return { reason: value.reason, maxCanvases: value.maxCanvases }
+      })
+      expect(loss.reason).toBe('destroyed')
+      expect(loss.maxCanvases).toBeLessThanOrEqual(1)
+      report.deviceRecovery = loss
+      destroyingDevice = false
+      await rememberHost()
+    } else expect(recovered.sameCanvas && recovered.sameRenderer).toBe(true)
     report.checks.push(
-      'Real WebGL context loss/recovery retains both progress channels paused on the same Canvas and renderer',
+      pipeline === 'realtime'
+        ? 'Actual GPUDevice.destroy rebuilds the retired host without concurrent Canvases and restores both car progress channels paused'
+        : 'Real WebGL context loss/recovery retains both progress channels paused on the same Canvas and renderer',
     )
 
+    let previousBackend = recovered.rendererBackend
     for (const slug of ['typewriter-study', 'piano-cfx']) {
       await choose(slug)
       const value = await state()
-      expect(value.sameCanvas && value.sameRenderer).toBe(true)
+      const expectedBackend =
+        pipeline === 'realtime' && slug === 'typewriter-study' ? 'webgpu' : 'webgl'
+      expect(value.rendererBackend).toBe(expectedBackend)
+      expect(value.sameCanvas).toBe(previousBackend === expectedBackend)
+      expect(value.sameRenderer).toBe(previousBackend === expectedBackend)
       expect(value.adapter).toBe(slug === 'piano-cfx' ? 'piano-v1' : 'typewriter-v1')
       expect(Object.keys(value.motionNodes)).toHaveLength(0)
       report.memory.push({ slug, ...value.memory })
+      previousBackend = expectedBackend
+      await rememberHost()
     }
     let started, finished
     const pending = new Promise((resolve) => {
@@ -598,8 +737,9 @@ try {
     await page.waitForTimeout(250)
     await ready('typewriter-study')
     await page.unroute('**/api/v1/products/reventon')
+    await rememberHost()
     report.checks.push(
-      'Three-case identity transitions use the existing Canvas; a real delayed car response cannot replace the newer typewriter selection',
+      'Compatible backends reuse their host; crossing to piano replaces it after teardown; a real delayed car response cannot replace the newer typewriter selection',
     )
 
     injectingFault = true
@@ -644,11 +784,22 @@ try {
   expect(report.requests.some((url) => /\.glb$/.test(url))).toBe(true)
   expect(report.errors).toEqual([])
   report.checks.push(
-    'All requests stay same-origin; no unexpected browser errors; a single persistent Canvas and renderer handles this verification',
+    'All requests stay same-origin; no unexpected browser errors; compatible operations reuse one host and required device/backend replacements tear it down first',
   )
   report.passed = true
 } catch (error) {
   report.failure = String(error)
+  if (page) {
+    report.failurePage = await page
+      .evaluate(() => ({
+        status: document.querySelector('.workbench')?.dataset.status,
+        slug: document.querySelector('.workbench')?.dataset.slug,
+        text: document.body.innerText,
+        canvases: document.querySelectorAll('canvas').length,
+      }))
+      .catch((cause) => ({ unavailable: String(cause) }))
+    await page.screenshot({ path: output + '/failure.png', timeout: 5000 }).catch(() => {})
+  }
   throw error
 } finally {
   await browser.close()

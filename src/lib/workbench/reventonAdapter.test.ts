@@ -1,8 +1,19 @@
 import { readFileSync } from 'node:fs'
-import { BoxGeometry, Color, Group, Mesh, MeshStandardMaterial, Quaternion, Vector3 } from 'three'
+import {
+  BoxGeometry,
+  Color,
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  Quaternion,
+  Scene,
+  Texture,
+  Vector3,
+} from 'three'
+import { MeshPhysicalNodeMaterial, type WebGPURenderer } from 'three/webgpu'
 import { describe, expect, it, vi } from 'vitest'
 import { parseProduct } from './api'
-import { bindReventon } from './reventonAdapter'
+import { bindReventon, type ReventonGpuDependencies } from './reventonAdapter'
 import { progressActions } from './motionConfig'
 import type { GlbSource, MotionTrack } from './types'
 
@@ -97,6 +108,146 @@ function localProgress(track: MotionTrack, progress: number) {
 }
 
 describe('Reventon registered workbench adapter', () => {
+  it('canonicalizes exact borrowed maps before GPU bindings and restores them before loader release', () => {
+    const f = fixture(),
+      first = new Texture(),
+      clone = first.clone(),
+      stage = { render: vi.fn(), markDirty: vi.fn(), dispose: vi.fn() }
+    first.needsUpdate = true
+    f.paints[0]!.map = first
+    f.paints[1]!.map = clone
+    const release = vi.fn(() => {
+        expect(f.paints[0]!.map).toBe(first)
+        expect(f.paints[1]!.map).toBe(clone)
+        f.release()
+      }),
+      materials = {
+        sync: vi.fn(),
+        dispose: vi.fn(() => expect(f.paints[1]!.map).toBe(f.paints[0]!.map)),
+      },
+      gpu: ReventonGpuDependencies = {
+        prepareMaterials: vi.fn(() => {
+          expect(f.paints[1]!.map).toBe(f.paints[0]!.map)
+          return materials
+        }),
+        createStage: () => stage,
+      },
+      adapter = bindReventon(f.product, f.source, f.model, release, gpu)
+    // WebGL and pre-attach state keep original references.
+    expect(f.paints[1]!.map).toBe(clone)
+    adapter.attach?.(new Scene(), {
+      isWebGPURenderer: true,
+      getMaxAnisotropy: () => 16,
+    } as unknown as WebGPURenderer)
+    const firstDispose = vi.spyOn(first, 'dispose'),
+      cloneDispose = vi.spyOn(clone, 'dispose')
+    adapter.dispose()
+    adapter.dispose()
+    expect(release).toHaveBeenCalledTimes(1)
+    expect(materials.dispose).toHaveBeenCalledTimes(1)
+    expect(firstDispose).not.toHaveBeenCalled()
+    expect(cloneDispose).not.toHaveBeenCalled()
+    first.dispose()
+    clone.dispose()
+  })
+
+  it.each(['materials', 'stage'])(
+    'restores source texture references after failed GPU %s preparation',
+    (phase) => {
+      const f = fixture(),
+        first = new Texture(),
+        clone = first.clone(),
+        materials = { sync: vi.fn(), dispose: vi.fn() }
+      first.needsUpdate = true
+      f.paints[0]!.map = first
+      f.paints[1]!.map = clone
+      const gpu: ReventonGpuDependencies = {
+          prepareMaterials: () => {
+            expect(f.paints[1]!.map).toBe(f.paints[0]!.map)
+            if (phase === 'materials') throw new Error('failed materials')
+            return materials
+          },
+          createStage: () => {
+            throw new Error('failed stage')
+          },
+        },
+        adapter = bindReventon(f.product, f.source, f.model, f.release, gpu)
+      expect(() =>
+        adapter.attach?.(new Scene(), { isWebGPURenderer: true } as unknown as WebGPURenderer),
+      ).toThrow(`failed ${phase}`)
+      expect(f.paints[1]!.map).toBe(clone)
+      expect(f.release).not.toHaveBeenCalled()
+      adapter.dispose()
+      expect(f.release).toHaveBeenCalledTimes(1)
+      first.dispose()
+      clone.dispose()
+    },
+  )
+
+  it('selects the GPU dependencies once, preserves source selection through derived bindings, and disposes them before loader resources', () => {
+    const f = fixture(),
+      scene = new Scene(),
+      stage = { render: vi.fn(), markDirty: vi.fn(), dispose: vi.fn() },
+      materials = { sync: vi.fn(), dispose: vi.fn() },
+      selected = f.nodes[0]!.children.find((node): node is Mesh => node instanceof Mesh)!,
+      runtime = new MeshPhysicalNodeMaterial(),
+      gpu: ReventonGpuDependencies = {
+        createStage: vi.fn(() => stage),
+        prepareMaterials: vi.fn(() => {
+          selected.material = runtime
+          return materials
+        }),
+      },
+      renderer = {
+        isWebGPURenderer: true,
+        getMaxAnisotropy: () => 16,
+      } as unknown as WebGPURenderer,
+      adapter = bindReventon(f.product, f.source, f.model, f.release, gpu),
+      initial = f.paints[1]!.emissive.clone()
+    adapter.attach?.(scene, renderer)
+    adapter.attach?.(scene, renderer)
+    expect(gpu.prepareMaterials).toHaveBeenCalledExactlyOnceWith(f.model)
+    expect(gpu.createStage).toHaveBeenCalledExactlyOnceWith(renderer, scene, adapter.root)
+    adapter.select?.(f.nodes[0]!.name)
+    expect(f.paints[1]!.emissive.getHexString()).toBe('537382')
+    expect(f.paints[1]!.emissiveIntensity).toBe(0.13)
+    adapter.select?.()
+    expect(f.paints[1]!.emissive.equals(initial)).toBe(true)
+    adapter.beforeRender?.()
+    expect(materials.sync).toHaveBeenCalledTimes(1)
+    expect(stage.render).toHaveBeenCalledTimes(1)
+    adapter.apply()
+    expect(stage.markDirty).toHaveBeenCalledTimes(1)
+    adapter.dispose()
+    adapter.dispose()
+    expect(stage.dispose).toHaveBeenCalledTimes(1)
+    expect(materials.dispose).toHaveBeenCalledTimes(1)
+    expect(materials.dispose.mock.invocationCallOrder[0]).toBeLessThan(
+      f.release.mock.invocationCallOrder[0]!,
+    )
+    expect(f.release).toHaveBeenCalledTimes(1)
+    runtime.dispose()
+  })
+
+  it('restores and releases GPU material bindings after partial stage setup fails', () => {
+    const f = fixture(),
+      materials = { sync: vi.fn(), dispose: vi.fn() },
+      gpu: ReventonGpuDependencies = {
+        prepareMaterials: () => materials,
+        createStage: () => {
+          throw new Error('stage initialization failed')
+        },
+      },
+      adapter = bindReventon(f.product, f.source, f.model, f.release, gpu),
+      renderer = { isWebGPURenderer: true } as unknown as WebGPURenderer
+    expect(() => adapter.attach?.(new Scene(), renderer)).toThrow('stage initialization failed')
+    expect(materials.dispose).toHaveBeenCalledTimes(1)
+    expect(f.release).not.toHaveBeenCalled()
+    adapter.dispose()
+    expect(materials.dispose).toHaveBeenCalledTimes(1)
+    expect(f.release).toHaveBeenCalledTimes(1)
+  })
+
   it('combines both door rotations and all seven separation groups from their initial poses', () => {
     const f = fixture(),
       adapter = f.bind()

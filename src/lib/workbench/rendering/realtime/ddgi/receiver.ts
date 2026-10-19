@@ -1,6 +1,15 @@
 import { Matrix4 } from 'three'
 import type { Node, PerspectiveCamera, TextureNode } from 'three/webgpu'
-import { float, getViewPosition, uniform, unpackRGBToNormal, uv, vec3, vec4 } from 'three/tsl'
+import {
+  float,
+  getViewPosition,
+  smoothstep,
+  uniform,
+  unpackRGBToNormal,
+  uv,
+  vec3,
+  vec4,
+} from 'three/tsl'
 import type { SpeedballProbeNode } from 'speedball-gi'
 import type { createDdgiVolume } from './contract'
 
@@ -43,7 +52,11 @@ export function createDdgiReceiver(
       .and(worldPosition.y.lessThanEqual(max.y))
       .and(worldPosition.z.lessThanEqual(max.z)),
     validDepth = depth.greaterThanEqual(0).and(depth.lessThan(1)),
-    validity = inside.and(validDepth).select(float(1), float(0)),
+    distances = worldPosition.sub(min).min(max.sub(worldPosition)),
+    edgeDistance = distances.x.min(distances.y).min(distances.z),
+    boundaryWeight =
+      volume.blendWidth > 0 ? smoothstep(0, volume.blendWidth, edgeDistance) : float(1),
+    validity = inside.and(validDepth).select(boundaryWeight, float(0)),
     biased = worldPosition.add(
       normal.mul(probe.normalBiasNode[0]!.value).mul(probe.sampleBiasScaleNode.value),
     ),

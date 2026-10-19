@@ -10,6 +10,7 @@ import {
   type Texture,
   type Vector2,
 } from 'three'
+import { realtimeProductProfile } from '../productProfile'
 
 interface MeshEntry {
   source: Mesh
@@ -294,7 +295,10 @@ export function createDdgiProxyScene(sourceScene: Scene) {
       revision++
       sourceScene.updateMatrixWorld(true)
       for (const root of sourceScene.children) {
-        if (root.userData.workbenchProduct === 'typewriter-study') {
+        if (
+          root.userData.workbenchProduct === 'typewriter-study' ||
+          (root.userData.workbenchProduct && realtimeProductProfile(root.userData.adapter))
+        ) {
           selectedRoot = root
           root.traverseVisible(visit)
         } else if (root.userData.studio === true && root.userData.capture !== true) {
@@ -307,6 +311,11 @@ export function createDdgiProxyScene(sourceScene: Scene) {
           }
         }
       }
+      sourceScene.traverseVisible((node) => {
+        if (node.userData.traceSupport !== true) return
+        selectedRoot = sourceScene
+        node.traverseVisible(visit)
+      })
       sourceScene.traverseVisible(visitLight)
       for (const [source, entry] of meshes)
         if (entry.seen !== revision) {

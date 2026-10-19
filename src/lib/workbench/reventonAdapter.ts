@@ -4,9 +4,17 @@ import { prepareReventonMaterials } from '../reventon/materials'
 import { bindGlb } from './glbAdapter'
 import { createReventonStage } from './reventonStage'
 import { prepareReventonSurfaces } from './reventonSurfaceRepair'
+import { canonicalizeReventonTextures } from './reventonTextureBindings'
 import type { SceneAdapter } from './adapter'
 import type { GlbSource, WorkbenchProduct } from './types'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
+import type { WebGPURenderer } from 'three/webgpu'
+import type { ReventonStage } from './reventonStage'
+
+export interface ReventonGpuDependencies {
+  createStage(renderer: WebGPURenderer, scene: Scene, model: Group): ReventonStage
+  prepareMaterials(model: Group): { sync(): void; dispose(): void }
+}
 
 /** Reuse authored PBR surfaces; the shared v3 controller owns both motion channels. */
 export function bindReventon(
@@ -14,6 +22,7 @@ export function bindReventon(
   source: GlbSource,
   model: Group,
   release: () => void,
+  gpu?: ReventonGpuDependencies,
 ): SceneAdapter {
   const adapter = bindGlb(product, source, model, release)
   prepareReventonMaterials(model)
@@ -21,12 +30,17 @@ export function bindReventon(
   const finishes = new Map<MeshStandardMaterial, Color>()
   const emissive = new Map<MeshStandardMaterial, { color: Color; intensity: number }>()
   const textures = new Set<Texture>()
+  const meshMaterials = new Map<Mesh, MeshStandardMaterial[]>()
   let sourceObjects = 0
   model.traverse((object) => {
     if (!(object instanceof Mesh)) return
     const count: unknown = object.userData.source_object_count
     if (typeof count === 'number') sourceObjects += count
     const materials = Array.isArray(object.material) ? object.material : [object.material]
+    meshMaterials.set(
+      object,
+      materials.filter((m): m is MeshStandardMaterial => m instanceof MeshStandardMaterial),
+    )
     object.castShadow = !materials.some(
       (m) => m.transparent || (m instanceof MeshPhysicalMaterial && m.transmission > 0),
     )
@@ -44,6 +58,8 @@ export function bindReventon(
   adapter.root.userData.adapter = 'reventon-v1'
   adapter.root.userData.sourceObjects = sourceObjects
   let studio: ReturnType<typeof createReventonStage> | undefined
+  let gpuMaterials: ReturnType<ReventonGpuDependencies['prepareMaterials']> | undefined
+  let gpuTextures: ReturnType<typeof canonicalizeReventonTextures> | undefined
   let disposed = false
   const clearSelection = () => {
     for (const [material, original] of emissive) {
@@ -55,14 +71,31 @@ export function bindReventon(
     ...adapter,
     attach(scene: Scene, renderer: WorkbenchRenderer) {
       if (disposed || studio) return
-      if (isWebGpuRenderer(renderer)) throw new Error('汽车尚未通过 WebGPU 舞台与玻璃迁移验收')
-      studio = createReventonStage(renderer, scene, adapter.root)
+      if (isWebGpuRenderer(renderer)) {
+        if (!gpu) throw new Error('汽车 WebGPU 舞台依赖未装配')
+        try {
+          gpuTextures = canonicalizeReventonTextures(model)
+          gpuMaterials = gpu.prepareMaterials(model)
+          studio = gpu.createStage(renderer, scene, adapter.root)
+        } catch (error) {
+          gpuMaterials?.dispose()
+          gpuMaterials = undefined
+          gpuTextures?.dispose()
+          gpuTextures = undefined
+          throw error
+        }
+      } else studio = createReventonStage(renderer, scene, adapter.root)
       for (const texture of textures) {
-        texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+        texture.anisotropy = isWebGpuRenderer(renderer)
+          ? renderer.getMaxAnisotropy()
+          : renderer.capabilities.getMaxAnisotropy()
         texture.needsUpdate = true
       }
     },
-    beforeRender: () => studio?.render(),
+    beforeRender() {
+      gpuMaterials?.sync()
+      studio?.render()
+    },
     apply() {
       adapter.apply()
       studio?.markDirty()
@@ -79,10 +112,8 @@ export function bindReventon(
       if (!node) return
       adapter.nodes.get(node)?.traverse((object) => {
         if (!(object instanceof Mesh)) return
-        for (const material of Array.isArray(object.material)
-          ? object.material
-          : [object.material]) {
-          if (!(material instanceof MeshStandardMaterial)) continue
+        // Source identities survive the realtime coordinator's material bindings too.
+        for (const material of meshMaterials.get(object) ?? []) {
           material.emissive.set('#537382')
           material.emissiveIntensity = 0.13
         }
@@ -94,9 +125,14 @@ export function bindReventon(
       studio?.dispose()
       studio = undefined
       clearSelection()
+      gpuMaterials?.dispose()
+      gpuMaterials = undefined
+      gpuTextures?.dispose()
+      gpuTextures = undefined
       textures.clear()
       finishes.clear()
       emissive.clear()
+      meshMaterials.clear()
       adapter.dispose()
     },
   }

@@ -5,6 +5,7 @@ import type { WebGPURenderer } from 'three/webgpu'
 import type { DdgiFieldOptions } from './ddgi/field'
 import type { RealtimeIrradiance } from './signals'
 import type { RealtimeChange } from './types'
+import { reventonRealtimeProfile, typewriterRealtimeProfile } from './productProfile'
 
 const factories = vi.hoisted(() => ({
   clock: vi.fn(),
@@ -104,6 +105,7 @@ async function fixture(search = '?indirectLighting=ddgi') {
       resetHistory: vi.fn(),
       environment: vi.fn(),
       setSignals: vi.fn(),
+      setProfile: vi.fn(),
       snapshot: () => flags,
       sampling: () => null,
       ddgiInputs: vi.fn(() => inputs),
@@ -144,6 +146,21 @@ async function fixture(search = '?indirectLighting=ddgi') {
     for (const item of fields) for (const tick of item.ticks) tick.resolve()
     source.dispose()
   })
+  // Most asynchronous-boundary cases begin after the required first complete
+  // raster. Keep their assertions scoped to subsequent serialized tick/draws.
+  function firstRaster() {
+    coordinator.render(notify)
+    for (const call of [
+      signals.render,
+      signals.commitFrame,
+      motion.beginFrame,
+      motion.commitFrame,
+      beforeRaster,
+      clock.frame,
+      notify,
+    ])
+      call.mockClear()
+  }
   return {
     coordinator,
     moduleGate,
@@ -158,10 +175,12 @@ async function fixture(search = '?indirectLighting=ddgi') {
     invalidate,
     notify,
     inputs,
-    async load() {
+    firstRaster,
+    async load(warmFirstRaster = true) {
       moduleGate.resolve()
       await vi.dynamicImportSettled()
       expect(create).toHaveBeenCalledTimes(1)
+      if (warmFirstRaster && coordinator.snapshot().frames === 0) firstRaster()
       return fields[0]!
     },
     async finishTick(item: ReturnType<typeof field>, index = item.ticks.length - 1) {
@@ -173,6 +192,110 @@ async function fixture(search = '?indirectLighting=ddgi') {
 }
 
 describe('optional DDGI coordinator asynchronous boundaries', () => {
+  it('holds a native tick lease until settlement so host teardown or its successor cannot free inputs early', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const probe = await f.load()
+    const { waitForPreparations } = await import('../preparationLease')
+    f.coordinator.render(f.notify)
+    let settled = false
+    const quiescent = waitForPreparations(f.renderer).then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+    expect(settled).toBe(false)
+    f.coordinator.setActive(false)
+    await f.finishTick(probe)
+    await quiescent
+    expect(settled).toBe(true)
+    expect(f.signals.render).not.toHaveBeenCalled()
+    expect(f.notify).not.toHaveBeenCalled()
+  })
+  it('commits the first real raster before compute even when the optional module is already ready', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    f.coordinator.ready('reventon', 1)
+    const probe = await f.load(false)
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).not.toHaveBeenCalled()
+    expect(f.signals.render).toHaveBeenCalledOnce()
+    expect(f.signals.commitFrame).toHaveBeenCalledOnce()
+    expect(f.motion.commitFrame).toHaveBeenCalledOnce()
+    expect(f.notify).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot()).toMatchObject({ frames: 1, productProfile: 'reventon-v1' })
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).toHaveBeenCalledOnce()
+    expect(f.signals.render).toHaveBeenCalledOnce()
+    await f.finishTick(probe)
+    expect(f.signals.render).toHaveBeenCalledTimes(2)
+  })
+
+  it('passes and restores the registered profile on car/typewriter prepares without retaining the old field', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const car = await f.load(false)
+    expect(f.create.mock.calls[0]![0].profile?.adapterId).toBe('reventon-v1')
+    expect(factories.signals.mock.calls[0]![4]?.adapterId).toBe('reventon-v1')
+    expect(f.signals.setProfile).toHaveBeenLastCalledWith(reventonRealtimeProfile)
+    f.coordinator.render(f.notify)
+    f.coordinator.prepare(typewriterRealtimeProfile)
+    await vi.dynamicImportSettled()
+    expect(car.api.dispose).toHaveBeenCalledOnce()
+    expect(f.create.mock.calls[1]![0].profile?.adapterId).toBe('typewriter-v1')
+    expect(f.signals.setProfile).toHaveBeenLastCalledWith(typewriterRealtimeProfile)
+    const next = f.fields[1]!
+    f.coordinator.render(f.notify)
+    expect(next.api.tick).not.toHaveBeenCalled()
+    f.coordinator.render(f.notify)
+    expect(next.api.tick).toHaveBeenCalledOnce()
+    await f.finishTick(next)
+    expect(f.coordinator.snapshot().productProfile).toBe('typewriter-v1')
+    expect(factories.signals).toHaveBeenCalledOnce()
+  })
+
+  it('finishes an old pending compute before the successor first raster and only then solves its own field', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const car = await f.load()
+    f.coordinator.render(f.notify)
+    expect(car.api.tick).toHaveBeenCalledOnce()
+    f.coordinator.prepare(typewriterRealtimeProfile)
+    await vi.dynamicImportSettled()
+    const next = f.fields[1]!
+    f.coordinator.render(f.notify)
+    expect(next.api.tick).not.toHaveBeenCalled()
+    expect(f.signals.render).not.toHaveBeenCalled()
+    await f.finishTick(car)
+    f.coordinator.render(f.notify)
+    expect(next.api.tick).not.toHaveBeenCalled()
+    expect(f.signals.render).toHaveBeenCalledOnce()
+    f.coordinator.render(f.notify)
+    expect(next.api.tick).toHaveBeenCalledOnce()
+    await f.finishTick(next)
+    expect(f.signals.render).toHaveBeenCalledTimes(2)
+    expect(f.coordinator.snapshot().productProfile).toBe('typewriter-v1')
+  })
+
+  it('does not begin a probe solve after a failed first raster', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const probe = await f.load(false)
+    f.signals.render.mockImplementationOnce(() => {
+      throw new Error('first raster failed')
+    })
+    f.coordinator.render(f.notify)
+    f.coordinator.render(f.notify)
+    expect(probe.api.tick).not.toHaveBeenCalled()
+    expect(f.signals.commitFrame).not.toHaveBeenCalled()
+    expect(f.motion.commitFrame).not.toHaveBeenCalled()
+    expect(f.coordinator.snapshot()).toMatchObject({
+      phase: 'error',
+      frames: 0,
+      firstRasterMs: null,
+      error: 'first raster failed',
+    })
+  })
+
   it('lets quiet time advance across completed frames without inventing another activity event', async () => {
     let now = 1000
     vi.spyOn(performance, 'now').mockImplementation(() => now)
@@ -381,7 +504,7 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
     expect(f.signals.setWorldGi).not.toHaveBeenCalled()
     expect(f.notify).not.toHaveBeenCalled()
     expect(f.invalidate).not.toHaveBeenCalled()
-    expect(f.coordinator.snapshot()).toMatchObject({ active: false, frames: 0 })
+    expect(f.coordinator.snapshot()).toMatchObject({ active: false, frames: 1 })
     f.coordinator.setActive(true)
     f.coordinator.render(f.notify)
     await f.finishTick(probe)
@@ -527,6 +650,7 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
       error: null,
     })
     const next = f.fields[1]!
+    f.firstRaster()
     f.coordinator.render(f.notify)
     expect(next.api.tick).toHaveBeenCalledTimes(1)
     await f.finishTick(next)
@@ -545,7 +669,7 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
     expect(probe.api.tick).toHaveBeenCalledTimes(1)
     expect(f.clock.frame).not.toHaveBeenCalled()
     expect(f.beforeRaster).not.toHaveBeenCalled()
-    expect(f.coordinator.snapshot()).toMatchObject({ error: null, frames: 0 })
+    expect(f.coordinator.snapshot()).toMatchObject({ error: null, frames: 1 })
     await f.finishTick(probe)
     expect(f.clock.frame).toHaveBeenCalledTimes(1)
     expect(f.beforeRaster).toHaveBeenCalledTimes(1)
@@ -557,8 +681,7 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
     expect(f.coordinator.snapshot()).toMatchObject({
       phase: 'error',
       error: 'scene update rejected',
-      frames: 0,
-      firstRasterMs: null,
+      frames: 1,
     })
     f.coordinator.unload()
     f.coordinator.prepare()
@@ -566,16 +689,18 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
     await vi.dynamicImportSettled()
     const retry = f.fields[1]!
     f.coordinator.render(f.notify)
-    expect(retry.api.tick).toHaveBeenCalledTimes(1)
-    expect(f.beforeRaster).toHaveBeenCalledTimes(1)
-    await f.finishTick(retry)
-    expect(f.clock.frame).toHaveBeenCalledTimes(2)
+    expect(retry.api.tick).not.toHaveBeenCalled()
     expect(f.beforeRaster).toHaveBeenCalledTimes(2)
-    expect(f.signals.render).toHaveBeenCalledTimes(1)
-    expect(f.signals.commitFrame).toHaveBeenCalledTimes(1)
-    expect(f.motion.commitFrame).toHaveBeenCalledTimes(1)
-    expect(f.notify).toHaveBeenCalledTimes(1)
-    expect(f.coordinator.snapshot()).toMatchObject({ phase: 'ready', error: null, frames: 1 })
+    f.coordinator.render(f.notify)
+    expect(retry.api.tick).toHaveBeenCalledTimes(1)
+    await f.finishTick(retry)
+    expect(f.clock.frame).toHaveBeenCalledTimes(3)
+    expect(f.beforeRaster).toHaveBeenCalledTimes(3)
+    expect(f.signals.render).toHaveBeenCalledTimes(2)
+    expect(f.signals.commitFrame).toHaveBeenCalledTimes(2)
+    expect(f.motion.commitFrame).toHaveBeenCalledTimes(2)
+    expect(f.notify).toHaveBeenCalledTimes(2)
+    expect(f.coordinator.snapshot()).toMatchObject({ phase: 'ready', error: null, frames: 3 })
     expect(f.coordinator.snapshot().firstRasterMs).toBeGreaterThanOrEqual(0)
   })
 

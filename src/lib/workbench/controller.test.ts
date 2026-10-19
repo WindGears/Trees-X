@@ -116,6 +116,22 @@ it('requests numeric frames when OrbitControls changes at rest and unregisters t
   controls.dispatchEvent({ type: 'change' })
   expect(invalidate).toHaveBeenCalledTimes(calls)
 })
+it('stops input immediately without disposing a model still used by native preparation', async () => {
+  const item = await loadedStage()
+  try {
+    const dispose = vi.spyOn(item.adapter, 'dispose'),
+      before = item.camera.position.clone()
+    item.controller.cancelLoading()
+    expect(item.controls.enabled).toBe(false)
+    item.controller.command({ kind: 'zoom', direction: 1, revision: 1 })
+    expect(item.camera.position.equals(before)).toBe(true)
+    expect(dispose).not.toHaveBeenCalled()
+    item.controller.unload()
+    expect(dispose).toHaveBeenCalledOnce()
+  } finally {
+    item.dispose()
+  }
+})
 
 it('cancels the actual captured pointer when switching products and accepts a fresh drag with the same ID', async () => {
   const item = await loadedStage()

@@ -4,6 +4,11 @@ import { describe, expect, it } from 'vitest'
 import { Vector3 } from 'three'
 import { assertDdgiRevision, createDdgiVolume, ddgiBudget, ddgiSource } from './contract'
 import { loungeMotionBounds } from '../../loungeSpatialTable'
+import {
+  reventonMotionEnvelope,
+  reventonRealtimeProfile,
+  typewriterRealtimeProfile,
+} from '../productProfile'
 
 describe('reviewed fixed DDGI contract', () => {
   it('covers the audited complete layout and table with exactly sixteen probes on its longest axis', () => {
@@ -35,5 +40,39 @@ describe('reviewed fixed DDGI contract', () => {
       const bytes = await readFile(new URL(file!, entry))
       expect(createHash('sha256').update(bytes).digest('hex'), file).toBe(expected)
     }
+  })
+
+  it('keeps the exact typewriter range and resolution while giving the car its own grounded volume', () => {
+    const original = createDdgiVolume(),
+      explicit = createDdgiVolume(undefined, typewriterRealtimeProfile),
+      car = createDdgiVolume(undefined, reventonRealtimeProfile)
+    expect(explicit.box.equals(original.box)).toBe(true)
+    expect(original.box.min.toArray()).toEqual([-4.6000000000000005, -2.8792, -2.8])
+    expect(original.box.max.toArray()).toEqual([4.6000000000000005, 2.0148447646488843, 2.8])
+    expect(explicit.res.toArray()).toEqual([16, 9, 10])
+    expect(car.res.toArray()).toEqual([12, 8, 16])
+    expect(car.probes).toBe(1536)
+    expect(car.box.min.toArray()).toEqual([-1.935, -0.26, -2.984])
+    expect(car.box.max.toArray()).toEqual([1.935, 2.336, 2.216])
+    expect(car.box.containsPoint(new Vector3(4.2, -2.4792, 2.4))).toBe(false)
+    expect(createDdgiVolume(undefined, typewriterRealtimeProfile).box.equals(original.box)).toBe(
+      true,
+    )
+  })
+
+  it('fades only car volume padding and retains full support over the entire motion envelope', () => {
+    const car = createDdgiVolume(undefined, reventonRealtimeProfile)
+    expect(car.blendWidth).toBe(0.25)
+    expect(createDdgiVolume().blendWidth).toBe(0)
+    for (const x of [reventonMotionEnvelope.min[0], reventonMotionEnvelope.max[0]])
+      for (const y of [reventonMotionEnvelope.min[1], reventonMotionEnvelope.max[1]])
+        for (const z of [reventonMotionEnvelope.min[2], reventonMotionEnvelope.max[2]]) {
+          const point = new Vector3(x, y, z)
+          const faceDistances = point.clone().sub(car.box.min).min(car.box.max.clone().sub(point))
+          expect(Math.min(...faceDistances.toArray())).toBeGreaterThanOrEqual(
+            car.blendWidth - 1e-12,
+          )
+        }
+    expect(reventonRealtimeProfile.groundY - car.box.min.y).toBeCloseTo(car.blendWidth, 12)
   })
 })

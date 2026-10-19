@@ -1,5 +1,11 @@
 # Trees X
 
+## 汽车 WebGPU 迁移候选（2026-10-19）
+
+汽车新增显式 `?product=reventon&renderPipeline=realtime`，复用现有实时 SSR／间接光管线，保持摄影棚、原 EXR、自由观察、开门、座舱、七组分离及导览。汽车不继承打字机暖夜、桌台或景深；普通入口继续 WebGL，是否替换默认仍待完整验收与本人实机判断。
+
+仅原汽车包可追加 `assetLoading=streaming` 对照按文件校验、取消与有界解码；省略参数保留整包读取对照。原资源与管理员自定义包不改。6张原尺寸 KTX 样片和4组孤立材质对照包仍在制作／验证目录，没有成为正式 `runtime-v2`，不把文件压缩率当作画质、加载或帧率成绩。最新证据及未完成范围见 [.ai/reventon-webgpu-validation.md](.ai/reventon-webgpu-validation.md)。
+
 ## 当前黑漆与铭牌样片（2026-10-16）
 
 打字机新增显式 `typewriterAsset=paint-study` 对照资源，保留现有 v2 与所有交互。样片仅改变黑漆微表面分布、轻微擦拭粗糙度和清漆粗糙度，并将 WindGear 换为同金色、同位置的复古连笔字形。原几何、UV、机构和其他字符不修改；金属、铸铁与其他商品本轮不处理。

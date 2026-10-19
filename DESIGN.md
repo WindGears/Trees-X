@@ -221,6 +221,10 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 汽车实时候选（2026-10-19）
+
+显式汽车WebGPU入口保持现有摄影棚、EXR、取景和方案C浮动界面，不使用打字机暖夜与桌台。保留原2048²接触阴影、65tap过滤和0.8透明度；RT坐标转换必须让开门／分离阴影落在真实部件下。线性HDR统一输出与原WebGL的后映射透明阴影并非逐像素等价，背景、阴影浓淡、SSR颗粒需同取景实机对照；不以技术接通宣称画质通过。普通入口保持WebGL，候选与限制见 [.ai/reventon-webgpu-validation.md](.ai/reventon-webgpu-validation.md)。
+
 ## 黑漆与 WindGear 连笔铭牌样片（2026-10-16）
 
 显式 `typewriterAsset=paint-study` 保持黑金风格和当前摄影棚，不改变界面。黑漆沿用原 UV1、0.04 场景单位纹理周期及原 Physical 标量；新 2048² OpenGL 微法线以受控周期高度生成，ORM G 均值约 0.93、清漆粗糙度 G 均值约 0.94。无锈蚀、厚污垢、夸张划痕或烘死的装配阴影。

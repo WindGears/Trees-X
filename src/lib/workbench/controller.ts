@@ -203,7 +203,7 @@ export function createStageController(
     return loaded
   }
   function command(value: SceneCommand) {
-    if (!adapter || !product) return
+    if (!active || !interactive || !adapter || !product) return
     if (value.kind === 'view') {
       focusedPart = undefined
       adapter.select?.()
@@ -289,6 +289,15 @@ export function createStageController(
   return {
     load,
     unload,
+    cancelLoading() {
+      slot.cancelPending()
+      interactive = false
+      controls.enabled = false
+      cancelInteraction()
+      stopCamera()
+      progress?.pauseAll()
+      motion.forEach((t) => t.pause())
+    },
     command,
     beforeRender: () => adapter?.beforeRender?.(),
     setStudioMood: (update: StudioMoodUpdate) => adapter?.setStudioMood?.(update),
@@ -326,6 +335,7 @@ export function createStageController(
       if (active && interactive) progress?.command(command)
     },
     resetMotion() {
+      if (!active || !interactive) return
       motion.forEach((t) => t.kill())
       motion.clear()
       progress?.reset()
@@ -354,7 +364,12 @@ export function createStageController(
       } else animate(values)
     },
     pulse(id: string) {
-      if (adapter && product?.presentation.actions.some((a) => a.id === id && a.kind === 'pulse'))
+      if (
+        active &&
+        interactive &&
+        adapter &&
+        product?.presentation.actions.some((a) => a.id === id && a.kind === 'pulse')
+      )
         animate({ [id]: 1 }, true)
     },
     project(width: number, height: number, place: PlaceCallout, selectedPart?: string) {

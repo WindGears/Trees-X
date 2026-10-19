@@ -15,6 +15,7 @@ import { smaa } from 'three/addons/tsl/display/SMAANode.js'
 import { createOwnedRtt } from './ownedRtt'
 import { createReflectionResolve } from './reflectionResolve'
 import { createRealtimeSceneInputs } from './sceneInputs'
+import type { RealtimeProductProfile } from './productProfile'
 import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
 
 export interface RealtimeIrradiance {
@@ -30,9 +31,14 @@ export function createRealtimeSignals(
   scene: Scene,
   camera: PerspectiveCamera,
   motion: Node,
+  profile?: RealtimeProductProfile,
 ) {
   const inputs = createRealtimeSceneInputs(scene, camera, motion)
-  const loungeFocus = createLoungeDofFocus(scene, camera, resolveLoungeDof())
+  let loungeFocus = createLoungeDofFocus(
+    scene,
+    camera,
+    resolveLoungeDof() && (profile?.allowLoungeDof ?? true),
+  )
   // Explicit engineering comparison only; the realtime entry uses rotation.
   const reflectionKernel =
     new URLSearchParams(location.search).get('reflectionKernel') === 'static'
@@ -139,13 +145,19 @@ export function createRealtimeSignals(
       : vec4(0).rgb
     // The world-space field owns diffuse irradiance, including distant sky.
     // Replace captured native indirect diffuse; never add a second full IBL or
-    // combine SSGI with DDGI on the same pixel. Invalid volume keeps baseline.
+    // combine SSGI with DDGI on the same pixel. A fractional receiver weight
+    // fades only the signed replacement, retaining native IBL outside the volume.
     const diffuse =
       worldGi && ssgiEnabled
-        ? worldGi.validity
+        ? baseDiffuse.a
             .greaterThan(0)
-            .and(baseDiffuse.a.greaterThan(0))
-            .select(worldGi.irradiance.mul(diffuseResponse.rgb).sub(baseDiffuse.rgb), screenDiffuse)
+            .select(
+              worldGi.irradiance
+                .mul(diffuseResponse.rgb)
+                .sub(baseDiffuse.rgb)
+                .mul(worldGi.validity.clamp(0, 1)),
+              vec4(0).rgb,
+            )
         : screenDiffuse
     antialias?.dispose()
     composite?.dispose()
@@ -214,6 +226,15 @@ export function createRealtimeSignals(
       reflectionResolve?.cancelFrame()
     },
     resetHistory,
+    setProfile(next: RealtimeProductProfile) {
+      if (disposed) return
+      const enabled = resolveLoungeDof() && next.allowLoungeDof
+      if (enabled === loungeFocus.enabled) return
+      loungeFocus.dispose()
+      loungeFocus = createLoungeDofFocus(scene, camera, enabled)
+      resetHistory()
+      compose()
+    },
     ddgiInputs: () => ({ depth, normal, camera }),
     setWorldGi(receiver: RealtimeIrradiance | null) {
       if (disposed || receiver === worldGi) return

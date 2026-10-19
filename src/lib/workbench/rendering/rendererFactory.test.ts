@@ -4,6 +4,11 @@ import type { TresRendererSetupContext } from '@tresjs/core'
 import type { WebGPURenderer } from 'three/webgpu'
 import { gpuRendererFactory } from './rendererFactory'
 import { isRealtimeRenderer } from './realtimeMode'
+import {
+  afterPreparation,
+  withPreparationLease,
+  waitForRetiredPreparations,
+} from './preparationLease'
 
 interface DeviceLoss {
   reason: 'destroyed' | 'unknown'
@@ -56,6 +61,43 @@ beforeEach(() => {
 })
 
 describe('Tres-owned GPU host cancellation', () => {
+  it.each(['resolve', 'reject'] as const)(
+    'keeps an initialized renderer alive until native preparation settles by %s',
+    async (outcome) => {
+      const lost = vi.fn(),
+        renderer = gpuRendererFactory(lost, true)(context()) as WebGPURenderer
+      const init = renderer.init()
+      state.resolve!()
+      await init
+      let finish!: () => void, fail!: (error: Error) => void
+      const native = withPreparationLease(
+        renderer,
+        () =>
+          new Promise<void>((resolve, reject) => {
+            finish = resolve
+            fail = reject
+          }),
+      )
+      const failure = new Error('compile failed')
+      const settled = outcome === 'reject' ? expect(native).rejects.toBe(failure) : native
+      const cleanup = vi.fn(() => expect(state.releases).toBe(0))
+      afterPreparation(renderer, cleanup)
+      renderer.dispose()
+      renderer.dispose()
+      expect(state.releases).toBe(0)
+      expect(isRealtimeRenderer(renderer)).toBe(false)
+      state.resolveLoss!({ reason: 'destroyed', message: 'Retiring device loss' })
+      await state.nativeLoss
+      expect(lost).not.toHaveBeenCalled()
+      if (outcome === 'reject') fail(failure)
+      else finish()
+      await settled
+      await waitForRetiredPreparations()
+      expect(cleanup).toHaveBeenCalledOnce()
+      expect(state.releases).toBe(1)
+      expect(isRealtimeRenderer(renderer)).toBe(false)
+    },
+  )
   it('marks only realtime hosts and clears the mark before a late initialization finishes', async () => {
     const realtime = gpuRendererFactory(vi.fn(), true)(context()) as WebGPURenderer
     const reference = gpuRendererFactory(vi.fn())(context()) as WebGPURenderer

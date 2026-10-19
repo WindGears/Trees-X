@@ -4,6 +4,8 @@ import type { CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import { requestedBackend, recoveryBackend } from '@/lib/workbench/rendering/hostPolicy'
 import { supportsWebGL2 } from '@/lib/workbench/renderSupport'
 import { useWorkbenchStore } from '@/stores/workbench'
+import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
+import { waitForRetiredPreparations } from '@/lib/workbench/rendering/preparationLease'
 
 /** Replacement always unmounts the old Tres host before preparing its successor. */
 export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined) {
@@ -23,7 +25,7 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
     failedGpu = false
   const isRealtimeProduct = () => {
     const source = store.presentation?.source
-    return source?.kind === 'glb' && source.adapter === 'typewriter-v1'
+    return source?.kind === 'glb' && Boolean(realtimeProductProfile(source.adapter))
   }
   // Management previews install their configuration before mounting the host.
   // Do not briefly construct a GPU rigid-motion host for a morphing piano.
@@ -59,6 +61,7 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
     const token = ++hostGeneration
     hostPrepared.value = false
     await nextTick()
+    await waitForRetiredPreparations()
     if (disposed || token !== hostGeneration) return
     backend.value = next
     hostRevision.value++

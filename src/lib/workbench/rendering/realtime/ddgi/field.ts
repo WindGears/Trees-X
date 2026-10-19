@@ -5,10 +5,13 @@ import { assertDdgiRevision, createDdgiVolume, ddgiBudget, ddgiSource } from './
 import { createDdgiProxyScene } from './proxyScene'
 import { createDdgiReceiver, type DdgiReceiverInputs } from './receiver'
 import { projectEnvironmentSH, type EnvironmentSHMetadata } from './environmentSH'
+import { typewriterRealtimeProfile, type RealtimeProductProfile } from '../productProfile'
+import { afterPreparation } from '../../preparationLease'
 
 export interface DdgiFieldOptions {
   renderer: WebGPURenderer
   scene: Scene
+  profile?: RealtimeProductProfile
   onReadyChanged?: () => void
   onError?: (error: Error) => void
 }
@@ -21,8 +24,9 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
   assertDdgiRevision()
   if (speedballPackage.version !== ddgiSource.version)
     throw new Error('Speedball package version differs from the reviewed 0.8.0 source')
-  const proxy = createDdgiProxyScene(options.scene),
-    volume = createDdgiVolume(),
+  const profile = options.profile ?? typewriterRealtimeProfile,
+    proxy = createDdgiProxyScene(options.scene),
+    volume = createDdgiVolume(profile.groundY, profile),
     environmentRotation = options.scene.environmentRotation.clone()
   proxy.sync()
   let structureChanged = false
@@ -198,6 +202,7 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       const stats = field.getStats()
       return {
         source: ddgiSource,
+        profile: profile.adapterId,
         budget: ddgiBudget,
         ready,
         generation,
@@ -227,8 +232,16 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       if (disposed) return
       disposed = true
       ready = false
-      field.dispose()
-      proxy.dispose()
+      // The coordinator's native tick lease also owns borrowed source inputs.
+      // Reject publishing immediately, but keep its field/proxy live until the
+      // submitted asynchronous work has settled before freeing those owners.
+      afterPreparation(options.renderer, () => {
+        try {
+          field.dispose()
+        } finally {
+          proxy.dispose()
+        }
+      })
     },
   }
 }

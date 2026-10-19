@@ -3,10 +3,14 @@ export class ResourceSlot<T extends { dispose(): void }> {
   private revision = 0
   private abort?: AbortController
   private current?: T
-  clear() {
+  /** Cancels pending work without disposing a result still used by native preparation. */
+  cancelPending() {
     this.revision++
     this.abort?.abort()
     this.abort = undefined
+  }
+  clear() {
+    this.cancelPending()
     this.current?.dispose()
     this.current = undefined
   }

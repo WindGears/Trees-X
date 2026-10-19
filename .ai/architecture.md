@@ -1,5 +1,19 @@
 # 新版目标架构与当前实现
 
+## 加载与准备生命周期（2026-10-19）
+
+`assetSession` 提供 `read/release/dispose`，256MiB只计其持有的压缩字节预约，不包括已移交解析器的容器、几何、像素或GPU纹理。跨选择共享3下载／2重解码槽，旧解析宿主结清已提交任务并释放KTX／Draco池后才创建下一个宿主；默认保留整包兼容路径，仅摘要匹配的汽车在 `assetLoading=streaming` 开启流水线。不能把交叠阶段的顶层时间当纯下载或纯解码耗时。
+
+`preparationLease` 保活明确登记的原生init、启动环境、商品load／compile及DDGI tick。选择变更立即取消排队工作和停用输入，在新lease外等旧任务排空，再卸载并处理最新选择；scope退出先脱离Tres自动销毁图，再按局部owner→源资源→renderer释放，宿主替换等待退休lease排空。DDGI field立即逻辑关闭，物理资源延后；灯光及地面由 `workbenchLighting` 显式拥有，primitive不重复释放。等待异步准备／提交结清不等于GPU队列完成，hybrid异步采样未全部纳入；私有阴影预编译和纹理分帧预热尚未接入。
+
+汽车GPU绑定前规范化完全等价的普通／压缩Texture对象，保持Source、UV、颜色空间、采样、变换及mip identity；卸载恢复源引用，loader仍唯一释放。每灯阴影门控只对姿态／灯光／投影参数变化失效，不因观察相机移动重画。当前实机与边界见 [汽车迁移验收](reventon-webgpu-validation.md)。
+
+## 汽车实时迁移（2026-10-18）
+
+仅显式 realtime 入口增加已注册汽车适配器；内部 `realtimeProductProfile` 描述商品舞台能力、ground 和固定探针范围，不进入数据库或 ProductPresentation。汽车与打字机可复用同一 GPU 宿主，管理预览采用同一路由，钢琴继续 WebGL。汽车 GPU 舞台／玻璃依赖由 loadAdapter 动态装配，不将 NodeMaterial 模块静态拖入普通 WebGL 汽车块。
+
+协调器每次 prepare 接收当前商品 profile，首个完整实时帧提交前不运行探针，之后仍串行 tick/draw。汽车使用真实动作包络及独立探针体积，追踪包含汽车和显式地面，不追踪图像布景／阴影覆盖；汽车不得继承暖夜 DOF。派生玻璃与阴影由汽车 owner 释放，源几何、材质、纹理由 loader 继续拥有。资源压缩及文件流水线是后续独立节点，当前进展见 [汽车迁移验收](reventon-webgpu-validation.md)。
+
 ## DDGI 活动门控（2026-10-18）
 
 实时协调器局部维护真实场景活动时间，交互 hold、连续动作与相机、离散跳转、材质、灯光和环境变化均刷新；完整帧结束的绘制请求不刷新。传给 DDGI 的是有限非负安静时长，hold 为零，恢复前台重新计时。`loungeLook.setMood` 已在创建补间时立即通知环境变化，后续实际更新继续通知，不额外执行 `beforeRaster`。

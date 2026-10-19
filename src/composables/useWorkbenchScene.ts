@@ -1,4 +1,4 @@
-import { computed, nextTick, onMounted, onScopeDispose, watch } from 'vue'
+import { nextTick, onMounted, onScopeDispose, ref, shallowRef, watch } from 'vue'
 import { useLoop, useTres, useTresContext } from '@tresjs/core'
 import { PerspectiveCamera, Color, Fog } from 'three'
 import { createBaseEnvironment, type OwnedEnvironment } from '@/lib/workbench/rendering/environment'
@@ -7,6 +7,7 @@ import type { HybridCoordinator } from '@/lib/workbench/rendering/coordinator'
 import type { RefinementStatus, RefinementChange } from '@/lib/workbench/rendering/refinementTypes'
 import type { RealtimeCoordinator } from '@/lib/workbench/rendering/realtime/coordinator'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
+import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
 import type { ownGeometryAttributes } from '@/lib/workbench/rendering/realtime/geometryOwnership'
 import { createStageController } from '@/lib/workbench/controller'
 import { hasTypewriterStudio, resolveWorkbenchStage } from '@/lib/workbench/studioPreset'
@@ -16,6 +17,11 @@ import { useCameraCaptureSession, type CameraSnapshot } from '@/lib/workbench/ca
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
 import { createViewportFraming } from '@/lib/workbench/viewportFraming'
 import type { StudioMood, StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
+import {
+  afterPreparation,
+  waitForPreparations,
+  withPreparationLease,
+} from '@/lib/workbench/rendering/preparationLease'
 
 export interface WorkbenchSceneProps {
   active: boolean
@@ -42,6 +48,7 @@ export function useWorkbenchScene(
   let unregisterCapture: (() => void) | undefined
   let motionSlug = '',
     motionRevision = -1
+  const ownsCurrentSelection = () => motionSlug === store.slug && motionRevision === store.revision
   const { scene, camera, sizes, invalidate } = useTres()
   const context = useTresContext()
   const renderer = context.renderer.instance as WorkbenchRenderer
@@ -49,10 +56,16 @@ export function useWorkbenchScene(
   let currentRefinement: RefinementStatus['phase'] = 'raster'
   let hybrid: HybridCoordinator | undefined
   let realLighting: RealtimeCoordinator | undefined
+  let preparing = false,
+    loadTail: Promise<void> = Promise.resolve(),
+    disposed = false,
+    generation = 0
   const setupAbort = new AbortController()
   const requestFrame = () => {
     if (
       props.active &&
+      !disposed &&
+      !preparing &&
       !realLighting?.snapshot().error &&
       context.renderer.isInitialized.value &&
       !isActive.value
@@ -61,6 +74,7 @@ export function useWorkbenchScene(
     invalidate()
   }
   const dirty = (kind: RefinementChange = 'all') => {
+    if (disposed) return
     hybrid?.invalidate(kind)
     realLighting?.invalidate(kind)
     invalidate()
@@ -70,14 +84,30 @@ export function useWorkbenchScene(
   const fog = new Fog(background, 12, 38)
   scene.value.background = background
   scene.value.fog = fog
-  const studio = computed(() => hasTypewriterStudio(store.presentation))
-  const stage = computed(() =>
+  let committedPresentation = store.presentation
+  const studio = ref(hasTypewriterStudio(committedPresentation))
+  const stage = shallowRef(
     resolveWorkbenchStage(
-      store.presentation,
+      committedPresentation,
       Boolean(props.gallery),
       gpu && Boolean(props.realtimePipeline),
       props.studioMood,
     ),
+  )
+  function updateStage() {
+    studio.value = hasTypewriterStudio(committedPresentation)
+    stage.value = resolveWorkbenchStage(
+      committedPresentation,
+      Boolean(props.gallery),
+      gpu && Boolean(props.realtimePipeline),
+      props.studioMood,
+    )
+  }
+  watch(
+    () => [props.gallery, props.studioMood] as const,
+    () => {
+      if (!preparing) updateStage()
+    },
   )
   watch(
     stage,
@@ -91,8 +121,9 @@ export function useWorkbenchScene(
     { immediate: true },
   )
   let controller: ReturnType<typeof createStageController> | undefined
-  function applyStudioMood() {
-    if (disposed || !gpu || !props.realtimePipeline || !studio.value) return
+  function applyStudioMood(force = false) {
+    if (disposed || (preparing && !force) || !gpu || !props.realtimePipeline || !studio.value)
+      return
     const token = generation
     controller?.setStudioMood({
       mood: props.studioMood ?? 'dark',
@@ -104,84 +135,127 @@ export function useWorkbenchScene(
       },
     })
   }
-  watch(() => props.studioMood, applyStudioMood)
+  watch(
+    () => props.studioMood,
+    () => applyStudioMood(),
+  )
   onBeforeRender(() => {
-    if (!gpu) controller?.beforeRender()
+    if (!gpu && !preparing && !disposed) controller?.beforeRender()
   })
   let geometryOwnership: ReturnType<typeof ownGeometryAttributes> | undefined
-  let environment: OwnedEnvironment | undefined,
-    disposed = false,
-    generation = 0
+  let environment: OwnedEnvironment | undefined
   let removeFrame: (() => void) | undefined, removeListeners: (() => void) | undefined
-  async function load() {
+  function load(): Promise<void> {
     const request = ++generation
     removeFrame?.()
     removeFrame = undefined
-    hybrid?.unload()
-    realLighting?.unload()
-    controller?.unload()
+    // Stop input and the real drawing clock immediately, but never free resources
+    // that an already-submitted native compile still references.
+    preparing = true
+    controller?.cancelLoading()
+    framing.finish()
+    updateActive()
     const product = store.product,
       revision = store.revision
-    if (!controller || !product) return
-    // A failed frame pauses both clocks. Explicit retry clears that error above
-    // and must restore current visibility before waiting for its new first frame.
-    updateActive()
-    motionSlug = product.slug
-    motionRevision = revision
-    try {
-      const loaded = await controller.load(product, (phase) => {
-        if (!disposed && request === generation) store.loading(product.slug, revision, phase)
-      })
-      if (!loaded || disposed || request !== generation) return
-      applyStudioMood()
-      controller.sync(store.finishId, store.exploded, store.actions, true)
-      if (props.checkpoint?.slug === product.slug && props.checkpoint.revision === revision) {
-        controller.restoreCamera(props.checkpoint)
-        controller.restoreSelection(store.selectedPart)
-      }
-      if (!camera.value) return
-      store.loading(product.slug, revision, 'first-frame')
-      realLighting?.prepare()
-      await renderer.compileAsync(scene.value, camera.value)
-      if (disposed || request !== generation) return
-      const frame = context.renderer.onRender(() => {
-        if (
-          realLighting &&
-          (realLighting.snapshot().firstRasterMs === null || realLighting.snapshot().error)
-        )
-          return
-        if (hybrid) {
-          const status = hybrid.snapshot()
-          if (status.firstRasterMs === null || status.phase === 'error') return
-        }
-        frame.off()
+    const run = async () => {
+      // A stopped clock may still own an awaited probe build/dispatch. Wait
+      // outside our next lease, or the successor would wait for itself forever.
+      await waitForPreparations(renderer)
+      if (disposed || request !== generation || !controller || !product) return
+      try {
+        await withPreparationLease(renderer, async () => {
+          hybrid?.unload()
+          realLighting?.unload()
+          controller!.unload()
+          committedPresentation = product.presentation
+          updateStage()
+          // Commit the explicit lighting graph before attaching and compiling
+          // this product. New selection props cannot remove an old pass mid-await.
+          await nextTick()
+          if (disposed || request !== generation) return
+          await loadCurrent(product, revision, request)
+        })
+      } catch (cause) {
         if (!disposed && request === generation) {
-          controller?.enableInteraction()
-          store.ready(product.slug, revision)
-          hybrid?.ready(product.slug, revision)
-          realLighting?.ready(product.slug, revision)
-          void nextTick(() => {
-            if (!disposed && request === generation) invalidate()
-          })
+          hybrid?.unload()
+          realLighting?.unload()
+          controller?.unload()
+          store.failed(
+            product.slug,
+            revision,
+            cause instanceof Error ? cause.message : '三维模型加载失败，请重试。',
+          )
         }
-      })
-      removeFrame = frame.off
-      dirty('all')
-    } catch (cause) {
-      if (!disposed && request === generation) {
-        hybrid?.unload()
-        realLighting?.unload()
-        controller?.unload()
-        store.failed(
-          product.slug,
-          revision,
-          cause instanceof Error ? cause.message : '三维模型加载失败，请重试。',
-        )
+      } finally {
+        if (!disposed && request === generation) {
+          preparing = false
+          updateStage()
+          updateFraming()
+          updateActive()
+        }
       }
     }
+    // Queue callbacks are cheap; superseded selections skip without loading.
+    loadTail = loadTail.catch(() => {}).then(run)
+    return loadTail
+  }
+  async function loadCurrent(
+    product: NonNullable<typeof store.product>,
+    revision: number,
+    request: number,
+  ) {
+    motionSlug = product.slug
+    motionRevision = revision
+    const current = controller
+    if (!current) return
+    const loaded = await current.load(product, (phase) => {
+      if (!disposed && request === generation) store.loading(product.slug, revision, phase)
+    })
+    if (!loaded || disposed || request !== generation) return
+    applyStudioMood(true)
+    current.sync(store.finishId, store.exploded, store.actions, true)
+    if (props.checkpoint?.slug === product.slug && props.checkpoint.revision === revision) {
+      current.restoreCamera(props.checkpoint)
+      current.restoreSelection(store.selectedPart)
+    }
+    if (!camera.value) return
+    store.loading(product.slug, revision, 'first-frame')
+    realLighting?.prepare(
+      realtimeProductProfile(
+        product.presentation.source.kind === 'glb'
+          ? product.presentation.source.adapter
+          : undefined,
+      ),
+    )
+    await renderer.compileAsync(scene.value, camera.value)
+    if (disposed || request !== generation) return
+    const frame = context.renderer.onRender(() => {
+      if (
+        realLighting &&
+        (realLighting.snapshot().firstRasterMs === null || realLighting.snapshot().error)
+      )
+        return
+      if (hybrid) {
+        const status = hybrid.snapshot()
+        if (status.firstRasterMs === null || status.phase === 'error') return
+      }
+      frame.off()
+      if (!disposed && request === generation) {
+        controller?.enableInteraction()
+        store.ready(product.slug, revision)
+        hybrid?.ready(product.slug, revision)
+        realLighting?.ready(product.slug, revision)
+        void nextTick(() => {
+          if (!disposed && request === generation) invalidate()
+        })
+      }
+    })
+    removeFrame = frame.off
+    dirty('all')
   }
   function updateActive() {
-    const active = props.active && !realLighting?.snapshot().error
+    if (disposed) return
+    const active = props.active && !preparing && !realLighting?.snapshot().error
     controller?.setActive(active)
     hybrid?.setActive(active)
     realLighting?.setActive(active)
@@ -202,11 +276,14 @@ export function useWorkbenchScene(
         return
       }
       if (isWebGpuRenderer(renderer)) await renderer.init()
-      environment = await createBaseEnvironment(renderer, setupAbort.signal)
-      if (disposed) {
-        environment.dispose()
-        return
-      }
+      await withPreparationLease(renderer, async () => {
+        environment = await createBaseEnvironment(renderer, setupAbort.signal)
+        if (disposed) {
+          environment.dispose()
+          environment = undefined
+        }
+      })
+      if (disposed || !environment) return
       scene.value.environment = environment.texture
       scene.value.environmentIntensity = stage.value.environmentIntensity
       if (isWebGpuRenderer(renderer)) {
@@ -224,6 +301,7 @@ export function useWorkbenchScene(
             invalidate: requestFrame,
             beforeRaster: () => controller?.beforeRender(),
             report: (status) => {
+              if (disposed || (status.error && !ownsCurrentSelection())) return
               reportRealtime(status)
               if (status.error) {
                 store.failed(store.slug, store.revision, status.error)
@@ -231,7 +309,9 @@ export function useWorkbenchScene(
               }
             },
           })
-          context.renderer.replaceRenderFunction((notify) => realLighting?.render(notify))
+          context.renderer.replaceRenderFunction((notify) => {
+            if (!disposed && !preparing) realLighting?.render(notify)
+          })
           realLighting.setActive(props.active)
         } else {
           const { createHybridCoordinator } = await import('@/lib/workbench/rendering/coordinator')
@@ -243,6 +323,7 @@ export function useWorkbenchScene(
             invalidate: requestFrame,
             beforeRaster: () => controller?.beforeRender(),
             report: (status) => {
+              if (disposed || (status.error && !ownsCurrentSelection())) return
               currentRefinement = status.phase
               report(status)
               if (status.phase === 'error' && hybrid?.snapshot().firstRasterMs === null)
@@ -254,7 +335,9 @@ export function useWorkbenchScene(
             },
             reducedMotion: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
           })
-          context.renderer.replaceRenderFunction((notify) => hybrid?.render(notify))
+          context.renderer.replaceRenderFunction((notify) => {
+            if (!disposed && !preparing) hybrid?.render(notify)
+          })
           hybrid.setActive(props.active)
         }
       }
@@ -366,7 +449,9 @@ export function useWorkbenchScene(
   )
   watch(
     () => store.command,
-    (value) => controller?.command(value),
+    (value) => {
+      if (!preparing) controller?.command(value)
+    },
     { flush: 'post' },
   )
   watch(
@@ -375,24 +460,48 @@ export function useWorkbenchScene(
   )
   watch(
     () => store.motionCommand,
-    (value) => controller?.motionCommand(value),
+    (value) => {
+      if (!preparing) controller?.motionCommand(value)
+    },
     { flush: 'post' },
   )
   watch(
     () => store.resetMotionRequest,
-    () => controller?.resetMotion(),
+    () => {
+      if (!preparing) controller?.resetMotion()
+    },
   )
   watch(
     () => [store.finishId, store.exploded, store.actions],
-    () => controller?.sync(store.finishId, store.exploded, store.actions),
+    () => {
+      if (!preparing) controller?.sync(store.finishId, store.exploded, store.actions)
+    },
     { flush: 'post' },
   )
   watch(
     () => store.pulse,
-    (value) => controller?.pulse(value.id),
+    (value) => {
+      if (!preparing) controller?.pulse(value.id)
+    },
   )
   watch(() => props.active, updateActive)
   const framing = createViewportFraming(() => dirty('camera'))
+  function updateFraming() {
+    const current = camera.value,
+      width = sizes.width.value,
+      height = sizes.height.value
+    if (preparing || !(current instanceof PerspectiveCamera) || !width || !height) return
+    hybrid?.invalidate('size')
+    realLighting?.invalidate('size')
+    framing.update(
+      current,
+      width,
+      height,
+      Boolean(props.gallery),
+      Boolean(props.inspector),
+      Boolean(props.catalog),
+    )
+  }
   watch(
     () => props.active,
     (active) => {
@@ -409,12 +518,7 @@ export function useWorkbenchScene(
         props.inspector,
         props.catalog,
       ] as const,
-    ([width, height, current, gallery, inspector, catalog]) => {
-      if (!(current instanceof PerspectiveCamera) || !width || !height) return
-      hybrid?.invalidate('size')
-      realLighting?.invalidate('size')
-      framing.update(current, width, height, Boolean(gallery), Boolean(inspector), Boolean(catalog))
-    },
+    updateFraming,
     { immediate: true, flush: 'post' },
   )
   const projection = context.renderer.onRender(() => {
@@ -425,6 +529,7 @@ export function useWorkbenchScene(
   onScopeDispose(() => {
     framing.dispose()
     unregisterCapture?.()
+    unregisterCapture = undefined
     disposed = true
     setupAbort.abort()
     generation++
@@ -432,18 +537,40 @@ export function useWorkbenchScene(
     projection.off()
     readyListener.off()
     removeListeners?.()
-    hybrid?.dispose()
-    hybrid = undefined
-    realLighting?.dispose()
-    realLighting = undefined
-    controller?.dispose()
+    controller?.cancelLoading()
+    controller?.setActive(false)
+    hybrid?.setActive(false)
+    realLighting?.setActive(false)
     stop()
-    if (scene.value.environment === environment?.texture) scene.value.environment = null
-    if (scene.value.background === background) scene.value.background = null
-    if (scene.value.fog === fog) scene.value.fog = null
-    environment?.dispose()
-    geometryOwnership?.dispose()
-    geometryOwnership = undefined
+    // Tres recursively disposes any raw children left in its scene. Detach our
+    // manually-owned model/studio helpers now; release their resources later.
+    for (const child of [...scene.value.children])
+      if (!('__tres' in child)) child.removeFromParent()
+    afterPreparation(renderer, () => {
+      try {
+        hybrid?.dispose()
+      } finally {
+        hybrid = undefined
+        try {
+          realLighting?.dispose()
+        } finally {
+          realLighting = undefined
+          try {
+            controller?.dispose()
+          } finally {
+            if (scene.value.environment === environment?.texture) scene.value.environment = null
+            if (scene.value.background === background) scene.value.background = null
+            if (scene.value.fog === fog) scene.value.fog = null
+            try {
+              environment?.dispose()
+            } finally {
+              geometryOwnership?.dispose()
+              geometryOwnership = undefined
+            }
+          }
+        }
+      }
+    })
   })
 
   return {
@@ -462,6 +589,6 @@ export function useWorkbenchScene(
       const pose = controller?.snapshotCamera(true)
       return pose ? { ...pose, slug: motionSlug, revision: motionRevision } : undefined
     },
-    retryStudioEnvironment: applyStudioMood,
+    retryStudioEnvironment: () => applyStudioMood(),
   }
 }

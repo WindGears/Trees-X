@@ -3,8 +3,14 @@ import { createRealtimeClock } from './clock'
 import { createMotionHistory } from './motion'
 import { createRealtimeSignals } from './signals'
 import { createRealtimeMaterials } from './materials'
+import { withPreparationLease } from '../preparationLease'
 import type { RealtimeChange, RealtimeOptions, RealtimeSnapshot, RealtimeStatus } from './types'
 import type { RealtimeDdgi } from './ddgi/field'
+import {
+  realtimeSceneProfile,
+  typewriterRealtimeProfile,
+  type RealtimeProductProfile,
+} from './productProfile'
 
 /** Tres owns the renderer. This owner coordinates every auxiliary and final draw. */
 export function createRealtimeCoordinator(options: RealtimeOptions) {
@@ -19,6 +25,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     loaded = false,
     reset = true,
     frames = 0,
+    framesSincePrepare = 0,
+    productProfile = options.profile ?? typewriterRealtimeProfile,
     historyResets = 0,
     firstRasterMs: number | null = null,
     started = performance.now(),
@@ -51,6 +59,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         ddgi = createRealtimeDdgi({
           renderer,
           scene,
+          profile: productProfile,
           onReadyChanged: () => {
             if (!disposed && token === generation) ddgiGraphDirty = true
           },
@@ -116,6 +125,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     reset = true
     phase = 'loading'
     firstRasterMs = null
+    framesSincePrepare = 0
     motion.reset(scene)
     report(true)
   }
@@ -137,13 +147,31 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       report(true)
       if (!error) options.invalidate()
     },
-    prepare() {
+    prepare(
+      profile: RealtimeProductProfile = options.profile ??
+        realtimeSceneProfile(scene) ??
+        typewriterRealtimeProfile,
+    ) {
       if (disposed) return
+      if (profile !== productProfile) {
+        // A direct product handoff must not retain the previous volume or a
+        // receiver/late module callback belonging to the old profile.
+        generation++
+        signals?.setWorldGi(null)
+        ddgi?.dispose()
+        ddgi = undefined
+        ddgiLoading = false
+        ddgiGraphDirty = false
+        ddgiError = null
+      }
+      productProfile = profile
+      framesSincePrepare = 0
       lastActivity = performance.now()
       materials.install(scene)
       motion.reset(scene)
       const reuse = Boolean(signals)
-      signals ??= createRealtimeSignals(renderer, scene, camera, motion.node)
+      signals ??= createRealtimeSignals(renderer, scene, camera, motion.node, profile)
+      signals.setProfile?.(profile)
       signals.environment()
       prepareDdgi()
       started = performance.now()
@@ -194,7 +222,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals?.setWorldGi(null)
         ddgiGraphDirty = false
       }
-      if (ddgi && !ddgiError) {
+      if (ddgi && !ddgiError && framesSincePrepare > 0) {
         // Serialize asynchronous probe compute with every raster/auxiliary draw
         // on the existing renderer. Tres remains the sole scheduling clock.
         const token = generation,
@@ -202,8 +230,9 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         ddgiFramePending = true
         // Probe compute consumes the last completed pose. Scene animation and
         // shadow rendering remain exactly once inside the real frame below.
-        void field
-          .tick(interacting ? 0 : Math.max(0, performance.now() - lastActivity))
+        void withPreparationLease(renderer, () =>
+          field.tick(interacting ? 0 : Math.max(0, performance.now() - lastActivity)),
+        )
           .then(() => {
             if (disposed || token !== generation || !active) return
             if (ddgiGraphDirty && signals) {
@@ -241,6 +270,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals: signals?.snapshot() ?? { ssr: false, ssgi: false, denoise: false },
         reflectionKernel: signals?.sampling() ?? null,
         materialBranches: materials.stats(),
+        productProfile: productProfile.adapterId,
         indirectLighting: {
           ...indirectStatus(),
           details: ddgi?.snapshot() ?? null,
@@ -288,6 +318,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
           throw cause
         }
         frames++
+        framesSincePrepare++
         firstRasterMs ??= performance.now() - started
       })
       notify()

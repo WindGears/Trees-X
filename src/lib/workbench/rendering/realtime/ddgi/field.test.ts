@@ -24,6 +24,8 @@ import {
 } from 'speedball-gi'
 import { createRealtimeDdgi } from './field'
 import { ddgiBudget } from './contract'
+import { reventonRealtimeProfile, type RealtimeProductProfile } from '../productProfile'
+import { withPreparationLease } from '../../preparationLease'
 
 vi.mock('speedball-gi', () => ({ createProbeField: vi.fn() }))
 const create = vi.mocked(createProbeField),
@@ -106,7 +108,7 @@ function fakeField() {
   return { api, state, stats, tick }
 }
 
-function fixture() {
+function fixture(profile?: RealtimeProductProfile) {
   const scene = new Scene(),
     product = new Group(),
     geometry = new BoxGeometry(),
@@ -127,7 +129,7 @@ function fixture() {
   product.add(mesh)
   scene.add(product)
   const fake = fakeField(),
-    adapter = createRealtimeDdgi({ renderer, scene, onReadyChanged, onError })
+    adapter = createRealtimeDdgi({ renderer, scene, profile, onReadyChanged, onError })
   cleanups.push(() => {
     adapter.dispose()
     geometry.dispose()
@@ -158,6 +160,47 @@ afterEach(() => {
 })
 
 describe('owned fixed-budget DDGI field', () => {
+  it('defers physical field/proxy cleanup until a leased native tick settles while immediately rejecting stale output', async () => {
+    const f = fixture(),
+      proxyScene = create.mock.calls[0]![0].scene,
+      clear = vi.spyOn(proxyScene, 'clear')
+    let finish!: () => void
+    f.fake.tick.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)))
+    const tick = withPreparationLease(f.renderer, () => f.adapter.tick())
+    f.adapter.dispose()
+    f.adapter.dispose()
+    expect(f.adapter.snapshot()).toMatchObject({ ready: false, disposed: true, inFlight: true })
+    expect(f.fake.api.dispose).not.toHaveBeenCalled()
+    expect(clear).not.toHaveBeenCalled()
+    expect(proxyScene.children.length).toBeGreaterThan(0)
+    finish()
+    await tick
+    expect(f.fake.api.dispose).toHaveBeenCalledOnce()
+    expect(clear).toHaveBeenCalledOnce()
+    expect(f.onReadyChanged).not.toHaveBeenCalled()
+    expect(f.onError).not.toHaveBeenCalled()
+  })
+  it('uses the car profile volume with the same fixed solve budget and an independent field owner', async () => {
+    const f = fixture(reventonRealtimeProfile)
+    expect(f.fake.api.setVolumes).toHaveBeenCalledOnce()
+    const volume = vi.mocked(f.fake.api.setVolumes).mock.calls[0]![0][0]!
+    expect(volume.res.toArray()).toEqual([12, 8, 16])
+    expect(f.fake.api.setRayBudget).toHaveBeenCalledWith(98304)
+    await f.adapter.tick()
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({
+      profile: 'reventon-v1',
+      ready: true,
+      probes: 1536,
+      actualRays: 64,
+      actualBudgetRays: 98304,
+      reflectionQuality: 'off',
+    })
+    f.adapter.dispose()
+    f.adapter.dispose()
+    expect(f.fake.api.dispose).toHaveBeenCalledOnce()
+  })
+
   it.each(['setVolumes', 'setRayBudget', 'setSkyIntensity', 'setEnabled'] as const)(
     'releases the field and proxy once when construction %s throws while protecting borrowed sources',
     (setter) => {

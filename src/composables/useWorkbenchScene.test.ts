@@ -14,6 +14,10 @@ import type {
   HybridCoordinatorOptions,
   RefinementStatus,
 } from '@/lib/workbench/rendering/refinementTypes'
+import {
+  retirePreparedRenderer,
+  withPreparationLease,
+} from '@/lib/workbench/rendering/preparationLease'
 
 type Listener = () => void
 function hook() {
@@ -35,6 +39,7 @@ function controller() {
       .fn<(product: WorkbenchProduct, phase: (value: LoadPhase) => void) => Promise<object>>()
       .mockResolvedValue({}),
     unload: vi.fn(),
+    cancelLoading: vi.fn(),
     dispose: vi.fn(),
     sync: vi.fn(),
     enableInteraction: vi.fn(),
@@ -185,12 +190,13 @@ const samples: unknown[] = JSON.parse(
   readFileSync('server/src/main/resources/samples/products.json', 'utf8'),
 )
 let app: App | undefined
+let mountedScene: ReturnType<typeof useWorkbenchScene> | undefined
 function mount() {
   const props = reactive<WorkbenchSceneProps>({ active: true, place: vi.fn(), commit: vi.fn() })
   app = createApp(
     defineComponent({
       setup() {
-        useWorkbenchScene(props, vi.fn(), vi.fn())
+        mountedScene = useWorkbenchScene(props, vi.fn(), vi.fn())
         return () => h('div')
       },
     }),
@@ -209,6 +215,7 @@ async function awaitFrame() {
 beforeEach(() => {
   setActivePinia(createPinia())
   mocks.runtime = runtime()
+  mountedScene = undefined
   mocks.controllers = []
   mocks.coordinators = []
   mocks.environments = []
@@ -229,6 +236,162 @@ afterEach(() => {
 })
 
 describe('shared workbench scene setup and recovery', () => {
+  it.each(['switch', 'unmount'] as const)(
+    'keeps current source owners alive until a native probe tick settles during %s',
+    async (operation) => {
+      const host = mocks.runtime!,
+        store = useWorkbenchStore()
+      mount()
+      await awaitFrame()
+      const controller = mocks.controllers[0]!,
+        hybrid = mocks.coordinators[0]!,
+        env = mocks.environments[0]!,
+        unloads = controller.unload.mock.calls.length
+      let finish!: () => void
+      const tick = withPreparationLease(
+        host.renderer,
+        () => new Promise<void>((resolve) => (finish = resolve)),
+      )
+      if (operation === 'switch') {
+        store.preview(parseProduct(samples[1]))
+        await nextTick()
+        await Promise.resolve()
+        expect(controller.load).toHaveBeenCalledOnce()
+        expect(controller.unload).toHaveBeenCalledTimes(unloads)
+        expect(controller.cancelLoading).toHaveBeenCalled()
+      } else {
+        app!.unmount()
+        app = undefined
+        retirePreparedRenderer(host.renderer, host.renderer.dispose)
+        expect(controller.dispose).not.toHaveBeenCalled()
+        expect(hybrid.dispose).not.toHaveBeenCalled()
+        expect(env.dispose).not.toHaveBeenCalled()
+        expect(host.renderer.dispose).not.toHaveBeenCalled()
+      }
+      finish()
+      await tick
+      if (operation === 'switch') {
+        await vi.waitFor(() => expect(controller.load).toHaveBeenCalledTimes(2))
+        expect(controller.unload).toHaveBeenCalledTimes(unloads + 1)
+      } else {
+        expect(controller.dispose).toHaveBeenCalledOnce()
+        expect(hybrid.dispose).toHaveBeenCalledOnce()
+        expect(env.dispose).toHaveBeenCalledOnce()
+        expect(host.renderer.dispose).toHaveBeenCalledOnce()
+      }
+    },
+  )
+  it.each(['resolve', 'reject'] as const)(
+    'serializes A→B→C while an old native compile settles by %s and freezes lighting until handoff',
+    async (outcome) => {
+      const store = useWorkbenchStore(),
+        host = mocks.runtime!
+      const original = parseProduct(
+        JSON.parse(
+          readFileSync('server/src/main/resources/presentations/typewriter-kimi-v1.json', 'utf8'),
+        ) as unknown,
+      )
+      store.preview(original)
+      let finish!: () => void, fail!: (error: Error) => void
+      host.renderer.compileAsync.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            finish = resolve
+            fail = reject
+          }),
+      )
+      const failed = vi.spyOn(store, 'failed')
+      mount()
+      await vi.waitFor(() => expect(host.renderer.compileAsync).toHaveBeenCalledOnce())
+      const controller = mocks.controllers[0]!,
+        hybrid = mocks.coordinators[0]!
+      const unloads = controller.unload.mock.calls.length,
+        hybridUnloads = hybrid.unload.mock.calls.length
+      const syncs = controller.sync.mock.calls.length
+      expect(mountedScene!.studio.value).toBe(true)
+      store.preview(parseProduct(samples[1]))
+      await nextTick()
+      const latest = parseProduct(samples[2])
+      store.preview(latest)
+      await nextTick()
+      expect(controller.load).toHaveBeenCalledOnce()
+      expect(controller.unload).toHaveBeenCalledTimes(unloads)
+      expect(hybrid.unload).toHaveBeenCalledTimes(hybridUnloads)
+      expect(controller.sync).toHaveBeenCalledTimes(syncs)
+      expect(mountedScene!.studio.value).toBe(true)
+      expect(host.loop.isActive.value).toBe(false)
+      const notification = vi.fn()
+      host.draw(notification)
+      expect(notification).not.toHaveBeenCalled()
+      // Native renderer callbacks can arrive while the old compiler is still
+      // alive. They belong to A, not the newer selection C.
+      hybrid.options.report({
+        ...hybrid.snapshot(),
+        phase: 'error',
+        error: 'old renderer validation callback',
+      })
+      expect(failed).not.toHaveBeenCalled()
+      expect(store.status).not.toBe('error')
+      if (outcome === 'reject') fail(new Error('old compile failed'))
+      else finish()
+      await vi.waitFor(() => expect(host.renderer.compileAsync).toHaveBeenCalledTimes(2))
+      expect(controller.load).toHaveBeenCalledTimes(2)
+      expect(controller.load.mock.calls[1]?.[0]).toEqual(latest)
+      expect(mountedScene!.studio.value).toBe(false)
+      expect(failed).not.toHaveBeenCalled()
+      expect(store.available).toBe(false)
+      host.present()
+      await nextTick()
+      expect(store.available).toBe(true)
+      expect(hybrid.ready).toHaveBeenCalledWith(latest.slug, store.revision)
+      expect(controller.enableInteraction).toHaveBeenCalledOnce()
+    },
+  )
+
+  it.each(['resolve', 'reject'] as const)(
+    'defers every scene owner and native renderer disposal after unmount until compile %s',
+    async (outcome) => {
+      const host = mocks.runtime!,
+        store = useWorkbenchStore()
+      let finish!: () => void, fail!: (error: Error) => void
+      host.renderer.compileAsync.mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            finish = resolve
+            fail = reject
+          }),
+      )
+      const ready = vi.spyOn(store, 'ready'),
+        failed = vi.spyOn(store, 'failed')
+      mount()
+      await vi.waitFor(() => expect(host.renderer.compileAsync).toHaveBeenCalledOnce())
+      const controller = mocks.controllers[0]!,
+        hybrid = mocks.coordinators[0]!,
+        env = mocks.environments[0]!
+      app!.unmount()
+      app = undefined
+      retirePreparedRenderer(host.renderer, host.renderer.dispose)
+      expect(controller.dispose).not.toHaveBeenCalled()
+      expect(hybrid.dispose).not.toHaveBeenCalled()
+      expect(env.dispose).not.toHaveBeenCalled()
+      expect(host.renderer.dispose).not.toHaveBeenCalled()
+      expect(host.render.listeners.size).toBe(0)
+      expect(host.loop.isActive.value).toBe(false)
+      if (outcome === 'reject') fail(new Error('unmounted compile failed'))
+      else finish()
+      await vi.waitFor(() => expect(host.renderer.dispose).toHaveBeenCalledOnce())
+      expect(hybrid.dispose).toHaveBeenCalledOnce()
+      expect(controller.dispose).toHaveBeenCalledOnce()
+      expect(env.dispose).toHaveBeenCalledOnce()
+      const order = [hybrid.dispose, controller.dispose, env.dispose, host.renderer.dispose].map(
+        (spy) => spy.mock.invocationCallOrder[0]!,
+      )
+      expect(order).toEqual([...order].sort((a, b) => a - b))
+      expect(ready).not.toHaveBeenCalled()
+      expect(failed).not.toHaveBeenCalled()
+      expect(host.loop.isActive.value).toBe(false)
+    },
+  )
   it('cleans every partial GPU owner after capture registration fails and rebuilds on retry', async () => {
     mocks.registerCapture.mockImplementationOnce(() => {
       throw new Error('camera registration failed')

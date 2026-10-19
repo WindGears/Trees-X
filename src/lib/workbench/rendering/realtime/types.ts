@@ -2,6 +2,7 @@ import type { PerspectiveCamera, Scene } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { RefinementChange } from '../refinementTypes'
 import type { ReflectionSamplingSnapshot } from './reflectionSampling'
+import type { RealtimeProductProfile } from './productProfile'
 
 export interface RealtimeStatus {
   phase: 'loading' | 'ready' | 'paused' | 'error'
@@ -28,6 +29,7 @@ export interface RealtimeSnapshot extends RealtimeStatus {
   reflectionKernel?: ReflectionSamplingSnapshot | null
   resolution: { width: number; height: number }
   materialBranches: Record<string, number>
+  productProfile?: RealtimeProductProfile['adapterId']
   indirectLighting?: {
     requested: 'ssgi' | 'ddgi'
     actual: 'ssgi' | 'ddgi'
@@ -41,6 +43,7 @@ export interface RealtimeOptions {
   renderer: WebGPURenderer
   scene: Scene
   camera: PerspectiveCamera
+  profile?: RealtimeProductProfile
   beforeRaster(): void
   invalidate(): void
   report(status: RealtimeStatus): void

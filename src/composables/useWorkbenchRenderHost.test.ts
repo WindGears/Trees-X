@@ -2,6 +2,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, h, nextTick, reactive, type App } from 'vue'
 import { useWorkbenchRenderHost } from './useWorkbenchRenderHost'
+import {
+  retirePreparedRenderer,
+  withPreparationLease,
+} from '@/lib/workbench/rendering/preparationLease'
 
 const state = vi.hoisted(() => ({
   store: undefined as
@@ -83,7 +87,7 @@ describe('single Tres rendering host routing and recovery', () => {
     expect(state.factories).toBe(0)
   })
 
-  it.each(['piano-v1', 'reventon-v1'])(
+  it.each(['piano-v1', 'unregistered-v1'])(
     'starts an already configured %s preview directly in WebGL',
     async (adapter) => {
       state.store!.presentation = source(adapter)
@@ -94,6 +98,24 @@ describe('single Tres rendering host routing and recovery', () => {
       expect(state.factories).toBe(0)
     },
   )
+
+  it('starts a registered car preview in realtime GPU without recreating it for the typewriter', async () => {
+    state.store!.presentation = source('reventon-v1')
+    const { host } = mount()
+    await settle()
+    expect(host.backend.value).toBe('webgpu')
+    expect(state.factories).toBe(1)
+    const revision = host.hostRevision.value
+    state.store!.presentation = source('typewriter-v1')
+    await settle()
+    expect(host.backend.value).toBe('webgpu')
+    expect(host.hostRevision.value).toBe(revision)
+    expect(state.factories).toBe(1)
+    state.store!.presentation = source('reventon-v1')
+    await settle()
+    expect(host.hostRevision.value).toBe(revision)
+    expect(state.factories).toBe(1)
+  })
 
   it('unmounts before replacing and reconciles a selection made during teardown', async () => {
     const { host } = mount()
@@ -108,6 +130,35 @@ describe('single Tres rendering host routing and recovery', () => {
     expect(host.hostPrepared.value).toBe(true)
     expect(host.hostRevision.value).toBe(revision + 2)
     expect(host.notice.value).toBe('')
+  })
+  it('does not construct the successor while the unmounted predecessor is compiling', async () => {
+    const { host } = mount()
+    await settle()
+    const predecessor = {},
+      dispose = vi.fn()
+    let finish!: () => void
+    const compile = withPreparationLease(
+      predecessor,
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    retirePreparedRenderer(predecessor, dispose)
+    state.store!.presentation = source('piano-v1')
+    await settle()
+    expect(host.hostPrepared.value).toBe(false)
+    expect(host.backend.value).toBe('webgpu')
+    expect(host.hostRevision.value).toBe(0)
+    expect(state.factories).toBe(1)
+    expect(dispose).not.toHaveBeenCalled()
+    finish()
+    await compile
+    await settle()
+    expect(dispose).toHaveBeenCalledOnce()
+    expect(host.hostPrepared.value).toBe(true)
+    expect(host.backend.value).toBe('webgl')
+    expect(host.hostRevision.value).toBe(1)
   })
 
   it('rebuilds after one device loss, then falls back and ignores stale callbacks', async () => {

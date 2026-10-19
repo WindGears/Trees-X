@@ -1,5 +1,6 @@
 import type { BundleReference } from './types'
 import { hash, integer, list, object, relativePath, string, localPath } from './validation'
+import { downloadWork } from './decodeQueue'
 
 export interface BundleFile {
   path: string
@@ -70,7 +71,7 @@ export async function sha256(bytes: ArrayBuffer) {
     .map((v) => v.toString(16).padStart(2, '0'))
     .join('')
 }
-async function fetchBytes(url: string, signal: AbortSignal, maxBytes: number) {
+export async function fetchBundleBytes(url: string, signal: AbortSignal, maxBytes: number) {
   signal.throwIfAborted()
   const response = await fetch(localPath(url), {
     signal: AbortSignal.any([signal, AbortSignal.timeout(180_000)]),
@@ -84,18 +85,31 @@ async function fetchBytes(url: string, signal: AbortSignal, maxBytes: number) {
   if (bytes.byteLength > maxBytes) throw new Error('资源大小超过清单记录')
   return bytes
 }
-export async function loadBundle(
+export async function readBundleManifest(
   ref: BundleReference,
   signal: AbortSignal,
   phase: (p: LoadPhase) => void,
 ) {
   phase('manifest')
-  const manifest = await fetchBytes(ref.manifest, signal, 2 * 1024 * 1024)
+  const manifest = await downloadWork(signal, () =>
+    fetchBundleBytes(ref.manifest, signal, 2 * 1024 * 1024),
+  )
   if ((await sha256(manifest)) !== ref.sha256) throw new Error('资源清单校验失败，请重新加载。')
+  signal.throwIfAborted()
   const bundle = parseBundle(JSON.parse(new TextDecoder().decode(manifest)) as unknown)
   if (bundle.id !== ref.id || bundle.version !== ref.version)
     throw new Error('资源包与商品配置不一致')
   const base = ref.manifest.slice(0, ref.manifest.lastIndexOf('/') + 1)
+  return { bundle, base }
+}
+
+/** Compatibility path for renderlab consumers that explicitly need the complete package. */
+export async function loadBundle(
+  ref: BundleReference,
+  signal: AbortSignal,
+  phase: (p: LoadPhase) => void,
+) {
+  const { bundle, base } = await readBundleManifest(ref, signal, phase)
   const bytes = new Map<string, ArrayBuffer>()
   phase('download')
   // A small fixed pool bounds in-flight buffers. Nothing is requested outside this manifest.
@@ -107,7 +121,9 @@ export async function loadBundle(
       Array.from({ length: Math.min(3, bundle.files.length) }, async () => {
         while (next < bundle.files.length) {
           const file = bundle.files[next++]!
-          const data = await fetchBytes(base + file.path, transferSignal, file.bytes)
+          const data = await downloadWork(transferSignal, () =>
+            fetchBundleBytes(base + file.path, transferSignal, file.bytes),
+          )
           if (data.byteLength !== file.bytes || (await sha256(data)) !== file.sha256)
             throw new Error('资源校验失败：' + file.path)
           transferSignal.throwIfAborted()

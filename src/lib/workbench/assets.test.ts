@@ -259,6 +259,29 @@ describe('asynchronous selection', () => {
       }),
     ).rejects.toThrow('current failure')
   })
+  it('cancels pending selection work while retaining the current preparation owner', async () => {
+    const slot = new ResourceSlot<{ dispose(): void }>(),
+      current = { dispose: vi.fn() }
+    await slot.load(async () => current)
+    slot.cancelPending()
+    slot.cancelPending()
+    expect(current.dispose).not.toHaveBeenCalled()
+    slot.clear()
+    slot.clear()
+    expect(current.dispose).toHaveBeenCalledOnce()
+    let finish!: (value: typeof current) => void
+    const late = { dispose: vi.fn() }
+    const pending = slot.load(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    slot.cancelPending()
+    finish(late)
+    await expect(pending).resolves.toBeUndefined()
+    expect(late.dispose).toHaveBeenCalledOnce()
+  })
   it('fetches only checked same-origin files, detects corruption, and honors cancellation', async () => {
     const source = fixture().presentation.source
     if (source.kind !== 'glb') throw new Error('fixture')

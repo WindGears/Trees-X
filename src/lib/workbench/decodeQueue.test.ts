@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decodeQueue } from './decodeQueue'
+import { decodeQueue, heavyWork, taskSlots } from './decodeQueue'
 
 describe('bounded texture decoding', () => {
   it('keeps pending work below the limit, including after rejection', async () => {
@@ -42,5 +42,44 @@ describe('bounded texture decoding', () => {
     finish?.()
     expect((await Promise.allSettled([first, later]))[1]?.status).toBe('rejected')
     expect(started).toBe(1)
+  })
+  it('releases cancelled waiters immediately while keeping running work bounded', async () => {
+    const run = taskSlots(1),
+      signal = new AbortController().signal,
+      abort = new AbortController()
+    let finish!: () => void
+    const first = run(
+      signal,
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve
+        }),
+    )
+    await Promise.resolve()
+    const queued = run(abort.signal, async () => {
+      throw new Error('must not run')
+    })
+    const rejected = expect(queued).rejects.toThrow()
+    abort.abort()
+    await rejected
+    finish()
+    await first
+    await expect(run(signal, async () => 7)).resolves.toBe(7)
+  })
+  it('shares two heavy-work slots across different selection signals', async () => {
+    let active = 0,
+      maximum = 0
+    const signals = [new AbortController().signal, new AbortController().signal]
+    await Promise.all(
+      Array.from({ length: 10 }, (_, i) =>
+        heavyWork(signals[i % 2]!, async () => {
+          active++
+          maximum = Math.max(maximum, active)
+          await new Promise((resolve) => setTimeout(resolve, 1))
+          active--
+        }),
+      ),
+    )
+    expect(maximum).toBe(2)
   })
 })

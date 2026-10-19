@@ -4,6 +4,7 @@ import { vec2 } from 'three/tsl'
 import type { WebGPURenderer } from 'three/webgpu'
 import { createOwnedRtt } from './ownedRtt'
 import { createRealtimeSignals } from './signals'
+import { reventonRealtimeProfile, typewriterRealtimeProfile } from './productProfile'
 
 vi.mock('./ownedRtt', async (importOriginal) => {
   const source = await importOriginal<typeof import('./ownedRtt')>()
@@ -42,4 +43,42 @@ it('retains the complete reflection, DOF and presentation graph across repeated 
     signals.dispose()
   }
   expect(targetDisposals).toHaveBeenCalled()
+})
+
+it('does not apply lounge DOF to cars and changes it only on a registered product handoff', () => {
+  vi.stubGlobal('location', { search: '?loungeSpatial=box&loungeDof=1' })
+  vi.stubGlobal('window', { location })
+  vi.stubGlobal('Image', class {})
+  const renderer = {
+    getRenderTarget: () => null,
+    getActiveCubeFace: () => 0,
+    getActiveMipmapLevel: () => 0,
+    getRenderObjectFunction: () => null,
+    getPixelRatio: () => 1,
+    getMRT: () => null,
+    getClearColor: (value: Color) => value.set(0),
+    getClearAlpha: () => 0,
+    getScissorTest: () => false,
+  } as unknown as WebGPURenderer
+  const scene = new Scene(),
+    signals = createRealtimeSignals(
+      renderer,
+      scene,
+      new PerspectiveCamera(),
+      vec2(0),
+      reventonRealtimeProfile,
+    )
+  try {
+    expect(scene.userData.loungeDof.enabled).toBe(false)
+    const allocations = vi.mocked(createOwnedRtt).mock.calls.length
+    signals.setProfile(reventonRealtimeProfile)
+    expect(vi.mocked(createOwnedRtt).mock.calls).toHaveLength(allocations)
+    signals.setProfile(typewriterRealtimeProfile)
+    expect(scene.userData.loungeDof.enabled).toBe(true)
+    signals.setProfile(reventonRealtimeProfile)
+    expect(scene.userData.loungeDof.enabled).toBe(false)
+  } finally {
+    signals.dispose()
+  }
+  expect(scene.userData.loungeDof).toBeUndefined()
 })

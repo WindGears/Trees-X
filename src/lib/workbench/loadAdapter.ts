@@ -1,5 +1,6 @@
 import { createSampleAdapter, type SceneAdapter } from './adapter'
-import { loadBundle, type LoadPhase } from './assetBundle'
+import type { LoadPhase } from './assetBundle'
+import { openAssetSession, openLegacyAssetSession, useStreamingAssets } from './assetSession'
 import type { WorkbenchProduct } from './types'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 import { createProductEnvironment, type OwnedEnvironment } from './rendering/environment'
@@ -17,7 +18,10 @@ export async function loadAdapter(
     return createSampleAdapter(product)
   }
   const source = typewriterCandidate(product.presentation.source, location.search)
-  const { bundle, bytes } = await loadBundle(source.bundle, signal, phase)
+  const session = await (
+    useStreamingAssets(source, location.search) ? openAssetSession : openLegacyAssetSession
+  )(source.bundle, signal, phase)
+  const { bundle, signal: sessionSignal } = session
   let decoded: Awaited<ReturnType<(typeof import('./glbLoader'))['decodeGlb']>> | undefined
   let adapter: SceneAdapter | undefined, environment: OwnedEnvironment | undefined
   try {
@@ -27,35 +31,38 @@ export async function loadAdapter(
       import('./glbAdapter'),
     ])
     signal.throwIfAborted()
-    decoded = await decodeGlb(bundle, bytes, renderer, signal)
+    decoded = await decodeGlb(bundle, session, renderer, sessionSignal)
     phase('materials')
     if (source.adapter === 'typewriter-v1') {
       const program = product.presentation.actions.find((a) => a.motion?.program)?.motion?.program
       if (!program || !bundle.files.some((f) => f.path === program.file && f.role === 'motion'))
         throw new Error('打字机缺少登记的部件动作资源')
-      const data = bytes.get(program.file)
-      if (!data) throw new Error('打字机动作资源读取失败')
+      const data = await session.read(program.file)
+      let motion: unknown
+      try {
+        motion = JSON.parse(new TextDecoder().decode(data)) as unknown
+      } finally {
+        session.release(program.file)
+      }
       const { bindTypewriter } = await import('./typewriterAdapter')
       const studio = isWebGpuRenderer(renderer)
         ? (await import('./rendering/studio')).createWorkbenchStudio
         : undefined
       signal.throwIfAborted()
-      adapter = bindTypewriter(
-        product,
-        source,
-        decoded.root,
-        JSON.parse(new TextDecoder().decode(data)) as unknown,
-        decoded.dispose,
-        studio,
-      )
+      adapter = bindTypewriter(product, source, decoded.root, motion, decoded.dispose, studio)
     } else if (source.adapter === 'piano-v1') {
       const program = product.presentation.actions.find(
         (a) => a.motion?.program?.type === 'piano-sound-path-v1',
       )?.motion?.program
       if (!program || !bundle.files.some((f) => f.path === program.file && f.role === 'motion'))
         throw new Error('钢琴缺少登记的结构动作资源')
-      const data = bytes.get(program.file)
-      if (!data) throw new Error('钢琴动作资源读取失败')
+      const data = await session.read(program.file)
+      let motion: unknown
+      try {
+        motion = JSON.parse(new TextDecoder().decode(data)) as unknown
+      } finally {
+        session.release(program.file)
+      }
       const { bindPiano } = await import('./pianoAdapter')
       signal.throwIfAborted()
       adapter = bindPiano(
@@ -63,13 +70,16 @@ export async function loadAdapter(
         source,
         decoded.root,
         decoded.animations,
-        JSON.parse(new TextDecoder().decode(data)) as unknown,
+        motion,
         decoded.dispose,
       )
     } else if (source.adapter === 'reventon-v1') {
       const { bindReventon } = await import('./reventonAdapter')
+      const gpu = isWebGpuRenderer(renderer)
+        ? (await import('./rendering/reventon')).reventonGpuDependencies
+        : undefined
       signal.throwIfAborted()
-      adapter = bindReventon(product, source, decoded.root, decoded.dispose)
+      adapter = bindReventon(product, source, decoded.root, decoded.dispose, gpu)
     } else adapter = bindGlb(product, source, decoded.root, decoded.dispose)
     if (
       !adapter.root.userData.triangles ||
@@ -78,22 +88,25 @@ export async function loadAdapter(
       throw new Error('模型几何超出该资源包登记的预算')
     const envFile = product.presentation.stage?.environmentFile
     if (envFile) {
-      const envBytes = bytes.get(envFile)
       if (
-        !envBytes ||
         !bundle.files.some((f) => f.path === envFile && f.role === 'environment') ||
         !/\.(hdr|exr)$/.test(envFile)
       )
         throw new Error('商品光照资源未正确登记')
       signal.throwIfAborted()
-      environment = await createProductEnvironment(
-        renderer,
-        source.adapter,
-        product.presentation.stage?.groundY,
-        envFile,
-        envBytes,
-        signal,
-      )
+      const envBytes = await session.read(envFile)
+      try {
+        environment = await createProductEnvironment(
+          renderer,
+          source.adapter,
+          product.presentation.stage?.groundY,
+          envFile,
+          envBytes,
+          sessionSignal,
+        )
+      } finally {
+        session.release(envFile)
+      }
     } else
       environment = await createProductEnvironment(
         renderer,
@@ -125,6 +138,6 @@ export async function loadAdapter(
     environment?.dispose()
     throw error
   } finally {
-    bytes.clear()
+    session.dispose()
   }
 }

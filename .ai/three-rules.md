@@ -95,3 +95,5 @@
 - 静态场景按需渲染，GSAP 或 controls 改变相机必须 invalidate。
 - 相机、模型移动与 DOM UI 分层；Three 坐标变化不得触发逐帧 Pinia 更新。
 - 鼠标拖动旋转以外，提供命名视角按钮供键盘用户观察模型。
+- 2026-10-19 汽车显式realtime迁移保留摄影棚和原EXR，不继承打字机台桌／暖夜DOF；普通WebGL不替换。WebGPU的Texture对象去重必须严格保持Source、类型、采样、UV通道、变换、色彩空间和mip payload一致；不因共享图片就合并不同数据角色，不释放源loader纹理。GPU RT与普通UV坐标原点必须通过真实阴影定位对照，不直接照抄WebGL方向。
+- 原生compile及DDGI异步准备／提交不可伪取消。切换先停旧时钟，在自身新lease外等待旧任务排空；卸载先逻辑失效，保留模型／运行材质／灯光／field直到Promise结清再按owner释放。不得让Tres递归销毁抢先释放，代次检查不替代资源保活；Promise结清也不等于GPU队列耗时。新准备钩子／分帧预热尚未实现前，不将普通scene.compileAsync称为完整组合管线预热。

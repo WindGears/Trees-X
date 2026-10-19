@@ -52,6 +52,30 @@ function fixture() {
 }
 
 describe('borrowed Speedball tracing scene', () => {
+  it('traces registered cars and their explicit support without admitting image or unregistered roots', () => {
+    const f = fixture(),
+      support = new Mesh(f.geometry, f.material),
+      excluded = new Group(),
+      hiddenSupport = new Mesh(f.geometry, f.material)
+    f.product.userData.workbenchProduct = 'custom-car-slug'
+    f.product.userData.adapter = 'reventon-v1'
+    support.name = 'car ground support'
+    support.userData.traceSupport = true
+    hiddenSupport.name = 'excluded support'
+    hiddenSupport.userData.traceSupport = true
+    excluded.userData.traceExclude = true
+    excluded.add(hiddenSupport)
+    f.scene.add(support, excluded)
+    f.proxy.sync()
+    expect(f.proxy.scene.getObjectByName(f.mesh.name)).toBeInstanceOf(Mesh)
+    expect(f.proxy.scene.getObjectByName(support.name)).toBeInstanceOf(Mesh)
+    expect(f.proxy.scene.getObjectByName(hiddenSupport.name)).toBeUndefined()
+    f.product.userData.adapter = 'unregistered-v1'
+    f.proxy.sync()
+    expect(f.proxy.scene.getObjectByName(f.mesh.name)).toBeUndefined()
+    expect(f.proxy.scene.getObjectByName(support.name)).toBeInstanceOf(Mesh)
+  })
+
   it('borrows original geometry/materials and copies exact world transforms without reparenting source objects', () => {
     const f = fixture(),
       runtime = new MeshPhysicalNodeMaterial()
