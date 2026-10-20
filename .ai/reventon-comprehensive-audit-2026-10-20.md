@@ -2,6 +2,8 @@
 
 日期：2026-10-20。审查代码基线：`524711d`。这是问题诊断，未修改生产渲染、模型、数据库或系统设置；不能把本文的建议写成已经修复。
 
+清除其他应用负载后的40次加载、真实操作和生命周期复测另见 [后续复测记录](reventon-clean-audit-2026-10-20.md)。本文机器条件和计时属于首次诊断，不移作晚间无并行负载的正式成绩。
+
 结论：当前不达标由加载组织、准备门禁、多次绘制、动作阴影、拾取、历史与调度等问题叠加。4K/KTX2确实降低了纹理存储，但没有完成其余优化。实际机器还有并行GPU负载和功耗条件变化，必须与源码缺陷分开归因。尚不能给出每一项占总耗时的百分比，也不能宣布已找到唯一根因。
 
 ## 事实基线与证据级别
@@ -40,7 +42,7 @@
 
 ### 2. 首帧被CPU-GI与未预热增强阻挡
 
-`loadAdapter.ts:39–57`在GLB解码后等待`prepareCompressedTraceTextures`，完成后才绑定商品和准备环境。`compressedTraceTextures.ts:105–148`先收集所有材质Texture，再逐张读取/摘要/bitmap解码。当前74张中21张只供AO或specular使用，`traceMaterialViews.ts:4–11`的6个追踪通道不消费它们，实际请求报告却包括全部74张。
+`loadAdapter.ts:39–57`仅在汽车、WebGPU且明确请求DDGI时，在GLB解码后等待`prepareCompressedTraceTextures`，完成后才绑定商品和准备环境；不能把SSGI分支的parse等待归给这些CPU辅助图。`compressedTraceTextures.ts:105–148`先收集所有材质Texture，再逐张读取/摘要/bitmap解码。当前74张中21张只供AO或specular使用，`traceMaterialViews.ts:4–11`的6个追踪通道不消费它们，DDGI实际请求报告却包括全部74张。legacy整包预取则不区分是否使用DDGI，是上一节的另一层屏障。
 
 `useWorkbenchScene.ts:223–247`先prepare完整信号图、compileAsync主场景，然后等增强帧完成才开放互动。SSR、SSGI、过滤、SMAA、目标、PMREM及私有阴影不等同于已经被一次主场景compileAsync全部预热。`reventonShadow.ts:102–134`首个beforeRaster才进入私有深度/模糊场景。
 
@@ -105,7 +107,7 @@
 
 诊断浏览器退出后，Windows GPU Engine计数三次观察Lumin（PID7336）的3D占用73.9%/82.1%/84.4%；再次留档为62.8%/65.5%/68.0%，专用进程显存约2.59GB。用户确认它是自己正在使用的软件，身份用途不再推断。它是已确认并行负载，不是汽车内部泄漏，不代表它单独解释所有卡顿。
 
-显卡还记录30W上限、SW Power Cap Active，而历史测量曾约70W。应固定供电/功耗/热状态、控制并行GPU任务再做正式对照；本次没有更改系统设置或关闭用户应用。先前CPU profile约77.84% idle、GC约0.475%，不支持把所有秒级长帧归因于某个JS热函数，也不能把idle直接称GPU等待。
+首次诊断时驱动曾报告30W上限、SW Power Cap Active，而历史测量曾约70W；这是该时刻的运行条件，不是RTX5060型号规格或永久功率上限。清后台后的后续采样已观察到90W以上实际功耗，详见复测记录。应记录供电/功耗/热状态、控制并行GPU任务再做正式对照；本次没有更改系统设置或关闭用户应用。先前CPU profile约77.84% idle、GC约0.475%，不支持把所有秒级长帧归因于某个JS热函数，也不能把idle直接称GPU等待。
 
 本次公共商品API 5次本机顺序读取：首次约376ms，后4次约20.8–27.1ms，200/8846字节。方法是PowerShell暖HTTP，并非浏览器冷启动或SQL profiler；当前没有证据把几十秒加载的主要原因归给MySQL/商品JSON接口。
 
