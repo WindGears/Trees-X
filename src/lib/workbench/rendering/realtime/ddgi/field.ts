@@ -7,11 +7,15 @@ import { createDdgiReceiver, type DdgiReceiverInputs } from './receiver'
 import { projectEnvironmentSH, type EnvironmentSHMetadata } from './environmentSH'
 import { typewriterRealtimeProfile, type RealtimeProductProfile } from '../productProfile'
 import { afterPreparation } from '../../preparationLease'
+import { createDdgiScheduler } from './scheduler'
+import type { RealtimeChange } from '../types'
 
 export interface DdgiFieldOptions {
   renderer: WebGPURenderer
   scene: Scene
   profile?: RealtimeProductProfile
+  /** Internal A/B measurement only; the product profile remains the scope gate. */
+  legacySchedule?: boolean
   onReadyChanged?: () => void
   onError?: (error: Error) => void
 }
@@ -27,7 +31,11 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
   const profile = options.profile ?? typewriterRealtimeProfile,
     proxy = createDdgiProxyScene(options.scene),
     volume = createDdgiVolume(profile.groundY, profile),
-    environmentRotation = options.scene.environmentRotation.clone()
+    environmentRotation = options.scene.environmentRotation.clone(),
+    scheduler =
+      profile.adapterId === 'reventon-v1' && !options.legacySchedule
+        ? createDdgiScheduler(performance.now())
+        : null
   proxy.sync()
   let structureChanged = false
   const field = createProbeField({
@@ -131,16 +139,17 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
   }
 
   async function advance(idleMs: number) {
+    const work = scheduler?.begin(performance.now())
     try {
-      updateEnvironment()
-      const changes = proxy.sync()
-      if (changes.topology) {
+      if (!work || work.environment) updateEnvironment()
+      const changes = !work || work.scene ? proxy.sync() : null
+      if (changes?.topology) {
         field.markTopologyDirty()
         publish(false)
       }
-      if (changes.transforms.length) field.markTransformsDirty(changes.transforms)
-      if (changes.materials.length) field.markMaterialValuesDirty(changes.materials)
-      if (changes.lighting) field.forceLightingRefresh()
+      if (changes?.transforms.length) field.markTransformsDirty(changes.transforms)
+      if (changes?.materials.length) field.markMaterialValuesDirty(changes.materials)
+      if (changes?.lighting) field.forceLightingRefresh()
       // Audited 0.8.0 seam: resetting before each accepted tick clears lastTickAt
       // and its automatic budget controller. It does not reset probe history or
       // per-cascade solve time. No extra loop or synthetic time is introduced.
@@ -159,8 +168,10 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
       // rebuild inside tick (for example the first warm-night map binding).
       // Dirty alone is not an error. Preserve that rebuild lane while still
       // detecting build backoff and unsolicited swallowed solve failures.
-      const requestedChange =
-        changes.materials.length > 0 || changes.transforms.length > 0 || changes.lighting
+      const requestedChange = Boolean(
+        changes &&
+        (changes.materials.length > 0 || changes.transforms.length > 0 || changes.lighting),
+      )
       if (
         state.rebuildBackoff > 0 ||
         (!before.dirty && state.dirty && !state.buildDirty && !requestedChange)
@@ -170,6 +181,13 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
         )
       validateBudget()
       acceptedTicks++
+      const hasCompleteSolve =
+        field.hasData() &&
+        state.buildStage === 2 &&
+        !state.dirty &&
+        state.updatedCount >= volume.probes &&
+        state.cascadeState[0]?.needsClear === false
+      if (work) scheduler?.complete(work.revision, hasCompleteSolve)
       publish(
         field.hasData() &&
           state.buildStage === 2 &&
@@ -185,11 +203,22 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
   }
 
   return {
+    invalidate(kind: RealtimeChange) {
+      if (!disposed && !error) scheduler?.invalidate(kind, performance.now())
+    },
+    needsUpdate() {
+      return !disposed && !error && (!scheduler || scheduler.needsTick(performance.now(), ready))
+    },
     tick(idleMs = 0) {
       if (disposed || error) return Promise.resolve()
       if (pending) return pending
+      if (scheduler && !scheduler.needsTick(performance.now(), ready)) return Promise.resolve()
       // Unknown/non-finite input is activity, never an infinite idle permit.
-      const quietMs = Number.isFinite(idleMs) ? Math.max(0, idleMs) : 0
+      const quietMs = scheduler
+        ? scheduler.idleMs(performance.now())
+        : Number.isFinite(idleMs)
+          ? Math.max(0, idleMs)
+          : 0
       pending = advance(quietMs).finally(() => {
         pending = undefined
       })
@@ -207,7 +236,12 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
         ready,
         generation,
         acceptedTicks,
-        activity: { idleMs: lastIdleMs, playing: false, mode: 'merged-activity' },
+        activity: {
+          idleMs: lastIdleMs,
+          playing: false,
+          mode: scheduler ? 'world-activity' : 'merged-activity',
+        },
+        scheduling: scheduler?.snapshot() ?? null,
         inFlight: Boolean(pending),
         disposed,
         error: error?.message ?? null,
@@ -224,6 +258,11 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
           'SH9 is a low frequency projection of the real HDR.',
           'Speedball 0.8.0 traces RectAreaLight as a center point.',
           'Probe convergence is temporal; this is not a path-traced or measured irradiance solution.',
+          ...(scheduler
+            ? [
+                'Twelve full fixed-budget settling solves are a bounded heuristic, not a measured convergence guarantee.',
+              ]
+            : []),
           'The screen receiver uses the G-buffer shading normal for visibility as well as direction.',
         ],
       }

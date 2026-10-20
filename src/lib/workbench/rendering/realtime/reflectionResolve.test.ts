@@ -10,6 +10,44 @@ vi.mock('./signedSpatial', () => ({ createSignedReflectionSpatial: factories.spa
 vi.mock('./signedHistory', () => ({ createSignedReflectionHistory: factories.history }))
 
 describe('reflection resolver construction rollback', () => {
+  it('enables variance history only when explicitly requested and borrows the current raw guide', () => {
+    const source = new Texture(),
+      rawSource = new Texture(),
+      node = texture(source),
+      raw = texture(rawSource),
+      dispose = vi.fn()
+    factories.spatial.mockReturnValue({ raw, node, dispose })
+    factories.history.mockReturnValue({
+      node,
+      dispose,
+      snapshot: () => ({ varianceHistory: true }),
+    })
+    const owner = createReflectionResolve(
+      {} as WebGPURenderer,
+      node,
+      node,
+      node,
+      node,
+      node,
+      new PerspectiveCamera(),
+      'rotating',
+      true,
+    )
+    expect(factories.history).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.any(PerspectiveCamera),
+      node,
+      node,
+      node,
+      node,
+      { varianceHistory: true, raw },
+    )
+    expect(owner.historySnapshot()).toEqual({ varianceHistory: true })
+    owner.dispose()
+    source.dispose()
+    rawSource.dispose()
+  })
+
   it('releases the completed spatial owner when history initialization rejects', () => {
     const source = new Texture(),
       node = texture(source),

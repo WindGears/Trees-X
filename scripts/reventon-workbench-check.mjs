@@ -1,6 +1,6 @@
 /* global fetch, URL, URLSearchParams, setTimeout, performance, MutationObserver */
 import { chromium, expect } from '@playwright/test'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { bridge as attachWorkbench } from './demo/browser-check.mjs'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
@@ -8,9 +8,11 @@ const lifecycle = process.env.REVENTON_LIFECYCLE === '1'
 const pipeline = process.env.REVENTON_PIPELINE || 'webgl'
 const indirectLighting = process.env.REVENTON_INDIRECT || 'ssgi'
 const assetLoading = process.env.REVENTON_LOADING || 'legacy'
+const assetVariant = process.env.REVENTON_ASSET || 'original'
 if (!['webgl', 'realtime'].includes(pipeline)) throw new Error('Invalid REVENTON_PIPELINE')
 if (!['ssgi', 'ddgi'].includes(indirectLighting)) throw new Error('Invalid REVENTON_INDIRECT')
 if (!['legacy', 'streaming'].includes(assetLoading)) throw new Error('Invalid REVENTON_LOADING')
+if (!['original', 'runtime-v2'].includes(assetVariant)) throw new Error('Invalid REVENTON_ASSET')
 const output = process.env.REVENTON_CHECK_OUTPUT || 'artifacts/reventon-workbench/runtime'
 const timeout = 180000
 const report = {
@@ -20,6 +22,7 @@ const report = {
   pipeline,
   indirectLighting,
   assetLoading,
+  assetVariant,
   presentedFrameBudgetValidated: false,
   checks: [],
   states: {},
@@ -49,7 +52,13 @@ try {
   expect(parts.motion.tracks).toHaveLength(7)
   expect(doors.motion.tracks.every((track) => track.type === 'rotate')).toBe(true)
   expect(parts.motion.tracks.every((track) => track.type === 'translate')).toBe(true)
-  const manifestResponse = await fetch(new URL(p.source.bundle.manifest, base))
+  const selectedBundle =
+    assetVariant === 'runtime-v2'
+      ? JSON.parse(
+          await readFile('public/models/reventon-runtime-v2/bundle-reference.json', 'utf8'),
+        )
+      : p.source.bundle
+  const manifestResponse = await fetch(new URL(selectedBundle.manifest, base))
   expect(manifestResponse.status).toBe(200)
   const manifest = await manifestResponse.json()
   report.bundle = {
@@ -143,7 +152,8 @@ try {
       const scene = window.__carScene
       const root = scene.scene.value.children.find((node) => node.userData.workbenchProduct)
       const nodes = {},
-        motionNodes = {}
+        motionNodes = {},
+        modelTextures = new Set()
       let triangles = 0,
         sourceObjects = 0,
         meshes = 0
@@ -159,6 +169,9 @@ try {
         if (typeof node.userData.reventon_motion_id === 'string')
           motionNodes[node.userData.reventon_motion_id] = { name: node.name, ...value }
         if (node.isMesh) {
+          for (const material of Array.isArray(node.material) ? node.material : [node.material])
+            for (const value of Object.values(material))
+              if (value?.isTexture) modelTextures.add(value)
           meshes++
           triangles +=
             ((node.geometry.index?.count ?? node.geometry.attributes.position?.count ?? 0) / 3) *
@@ -172,6 +185,19 @@ try {
         slug: root.userData.workbenchProduct,
         source: root.userData.sourceKind,
         adapter: root.userData.adapter,
+        bundleVersion: root.userData.bundleVersion,
+        bundleSha256: root.userData.bundleSha256,
+        modelTextures: [...modelTextures].map((value) => {
+          const native = scene.renderer.instance.backend?.get(value)?.texture
+          return {
+            name: value.name,
+            width: value.image?.width ?? value.source?.data?.width,
+            height: value.image?.height ?? value.source?.data?.height,
+            compressed: value.isCompressedTexture === true,
+            mipCount: value.mipmaps?.length ?? 0,
+            gpuFormat: native?.format ?? null,
+          }
+        }),
         triangles,
         sourceObjects,
         meshes,
@@ -318,6 +344,7 @@ try {
   const query = new URLSearchParams({ product: 'reventon', renderPipeline: pipeline })
   if (pipeline === 'realtime') query.set('indirectLighting', indirectLighting)
   if (assetLoading === 'streaming') query.set('assetLoading', 'streaming')
+  if (assetVariant === 'runtime-v2') query.set('reventonAsset', 'runtime-v2')
   const navigationStarted = Date.now()
   await page.goto(base + '/?' + query, { waitUntil: 'domcontentloaded', timeout: 90000 })
   await ready('reventon')
@@ -344,6 +371,21 @@ try {
   const initial = await saved('initial')
   expect(initial.source).toBe('glb')
   expect(initial.adapter).toBe('reventon-v1')
+  expect(initial.bundleVersion).toBe(selectedBundle.version)
+  expect(initial.bundleSha256).toBe(selectedBundle.sha256)
+  if (assetVariant === 'runtime-v2') {
+    expect(initial.modelTextures.length).toBeGreaterThan(0)
+    for (const image of initial.modelTextures) {
+      expect(image.width).toBeLessThanOrEqual(4096)
+      expect(image.height).toBeLessThanOrEqual(4096)
+    }
+    expect(report.requests.some((url) => url.includes('texture-32c687a38bb17750f1ae.png'))).toBe(
+      false,
+    )
+    report.checks.push(
+      'The real candidate bundle is active; all loaded model textures are at most 4K and the original 8K AO is never requested',
+    )
+  }
   expect(initial.rendererBackend).toBe(pipeline === 'realtime' ? 'webgpu' : 'webgl')
   expect(initial.output).toEqual({ width: 1440, height: 1000 })
   if (pipeline === 'realtime') {
@@ -490,19 +532,34 @@ try {
   const chosenHotspot = p.hotspots.find((hotspot) => hotspot.id === movingAnchor.id)
   await page.locator(`.wb-hotspot[data-part="${chosenHotspot.id}"]`).click()
   await expect(page.locator('.wb-part-copy h3')).toHaveText(chosenHotspot.name)
-  await page.waitForTimeout(750)
-  const focusCheck = await page.evaluate((hotspot) => {
-    const root = window.__carScene.scene.value.children.find(
-      (node) => node.userData.workbenchProduct,
+  const readFocus = () =>
+    page.evaluate((hotspot) => {
+      const root = window.__carScene.scene.value.children.find(
+        (node) => node.userData.workbenchProduct,
+      )
+      const camera = window.__carScene.camera.activeCamera.value
+      const node = root.getObjectByName(hotspot.node)
+      const world = node.localToWorld(
+        camera.position.clone().fromArray(hotspot.anchor ?? [0, 0, 0]),
+      )
+      return {
+        actual: camera.position.toArray(),
+        expected: world.toArray().map((v, i) => v + hotspot.cameraOffset[i]),
+      }
+    }, chosenHotspot)
+  // Wait for the actual camera result. A wall-time sleep can sample halfway
+  // through a valid tween when a heavy GPU preparation frame delayed its clock.
+  await expect
+    .poll(
+      async () => {
+        const value = await readFocus()
+        report.focus = value
+        return Math.max(...value.actual.map((v, i) => Math.abs(v - value.expected[i])))
+      },
+      { timeout: 15000 },
     )
-    const camera = window.__carScene.camera.activeCamera.value
-    const node = root.getObjectByName(hotspot.node)
-    const world = node.localToWorld(camera.position.clone().fromArray(hotspot.anchor ?? [0, 0, 0]))
-    return {
-      actual: camera.position.toArray(),
-      expected: world.toArray().map((v, i) => v + hotspot.cameraOffset[i]),
-    }
-  }, chosenHotspot)
+    .toBeLessThan(1e-6)
+  const focusCheck = await readFocus()
   cameraNear(focusCheck.actual, focusCheck.expected)
   report.checks.push(
     'Expanded thin leader anchors match actual transformed node world positions within one pixel; selecting a label focuses the current pose',
@@ -511,7 +568,15 @@ try {
   await openActions()
   const beforeViewReset = await state()
   await page.getByRole('button', { name: '复位视角', exact: true }).click()
-  await page.waitForTimeout(750)
+  await expect
+    .poll(
+      async () => {
+        const value = await state()
+        return Math.max(...value.camera.map((v, i) => Math.abs(v - initial.camera[i])))
+      },
+      { timeout: 15000 },
+    )
+    .toBeLessThan(1e-6)
   poseNear((await state()).motionNodes, beforeViewReset.motionNodes)
   cameraNear((await state()).camera, initial.camera)
   await controls().getByRole('button', { name: '复原动作', exact: true }).click()
@@ -743,7 +808,7 @@ try {
     )
 
     injectingFault = true
-    await page.route('**' + p.source.bundle.manifest, (route) => route.abort('failed'))
+    await page.route('**' + selectedBundle.manifest, (route) => route.abort('failed'))
     await choose('reventon', false)
     await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'error', {
       timeout: 30000,
@@ -756,7 +821,7 @@ try {
             .length,
       ),
     ).toBe(0)
-    await page.unroute('**' + p.source.bundle.manifest)
+    await page.unroute('**' + selectedBundle.manifest)
     await page.getByRole('button', { name: '重新加载', exact: true }).click()
     await ready('reventon')
     injectingFault = false
@@ -778,7 +843,7 @@ try {
       .filter((url) => /^https?:/.test(url))
       .every((url) => new URL(url).origin === new URL(base).origin),
   ).toBe(true)
-  expect(report.requests.some((url) => url === new URL(p.source.bundle.manifest, base).href)).toBe(
+  expect(report.requests.some((url) => url === new URL(selectedBundle.manifest, base).href)).toBe(
     true,
   )
   expect(report.requests.some((url) => /\.glb$/.test(url))).toBe(true)

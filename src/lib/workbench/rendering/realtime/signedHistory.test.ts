@@ -11,14 +11,15 @@ import { texture } from 'three/tsl'
 import type { WebGPURenderer } from 'three/webgpu'
 import { createSignedReflectionHistory } from './signedHistory'
 
-function fixture() {
+function fixture(varianceHistory = false) {
   const camera = new PerspectiveCamera(40, 1.44, 0.1, 100)
   camera.position.set(0, 0, 8)
   camera.updateMatrixWorld()
   const depth = new DepthTexture(1440, 1000),
     normal = new Texture(),
     signal = new Texture(),
-    velocity = new Texture()
+    velocity = new Texture(),
+    raw = new Texture()
   normal.source = new Source({ width: 1440, height: 1000, depth: 1 })
   normal.isRenderTargetTexture = true
   const initRenderTarget = vi.fn<(target: RenderTarget) => void>(),
@@ -36,6 +37,7 @@ function fixture() {
     texture(depth),
     texture(normal),
     texture(velocity),
+    varianceHistory ? { varianceHistory: true, raw: texture(raw) } : {},
   )
   return {
     owner,
@@ -44,6 +46,7 @@ function fixture() {
     normal,
     signal,
     velocity,
+    raw,
     initRenderTarget,
     initTexture,
     copyTextureToTexture,
@@ -210,5 +213,106 @@ describe('complete-frame signed reflection history ownership', () => {
       ),
     ).toThrow('native depth')
     expect(dispose).not.toHaveBeenCalled()
+  })
+})
+
+describe('optional signed variance history attachments', () => {
+  it('keeps the legacy target count and history limit unchanged by default', () => {
+    const f = fixture()
+    f.owner.prepare(1440, 1000)
+    const previous = f.initRenderTarget.mock.calls[0]![0]
+    expect(previous.textures).toHaveLength(1)
+    expect(f.owner.node.renderTarget!.textures).toHaveLength(1)
+    expect(f.owner.snapshot()).toMatchObject({
+      varianceHistory: false,
+      maxHistory: 16,
+      statisticsBytes: 0,
+    })
+    f.owner.dispose()
+  })
+
+  it('owns full-resolution HalfFloat statistics in the same output draw and commits them atomically', () => {
+    const f = fixture(true)
+    f.owner.prepare(1440, 1000)
+    const previous = f.initRenderTarget.mock.calls[0]![0],
+      output = f.owner.node.renderTarget!,
+      statistics = output.textures[1]!
+    expect(previous.textures).toHaveLength(2)
+    expect(output.textures).toHaveLength(2)
+    expect(statistics.type).toBe(HalfFloatType)
+    expect(previous.textures[1]!.type).toBe(HalfFloatType)
+    expect(statistics.name).toBe('TreesX.Reflection.statistics')
+    expect(previous.textures[1]!.name).toBe('TreesSignedHistory.statistics')
+    expect(f.owner.snapshot()).toMatchObject({
+      varianceHistory: true,
+      maxHistory: 32,
+      statisticsBytes: 1440 * 1000 * 16,
+    })
+    expect(f.copyTextureToTexture).not.toHaveBeenCalled()
+    f.owner.cancelFrame()
+    expect(() => f.owner.commitFrame()).toThrow('no prepared frame')
+    expect(f.copyTextureToTexture).not.toHaveBeenCalled()
+    f.owner.prepare(1440, 1000)
+    f.owner.commitFrame()
+    expect(f.copyTextureToTexture.mock.calls[1]).toEqual([statistics, previous.textures[1]])
+    expect(f.copyTextureToTexture).toHaveBeenCalledTimes(4)
+    expect(f.owner.snapshot().valid).toBe(true)
+    f.owner.dispose()
+  })
+
+  it('invalidates every history signal if the statistics copy fails', () => {
+    const f = fixture(true)
+    f.owner.prepare(1440, 1000)
+    f.copyTextureToTexture
+      .mockImplementationOnce(() => {})
+      .mockImplementationOnce(() => {
+        throw new Error('statistics copy failed')
+      })
+    expect(() => f.owner.commitFrame()).toThrow('statistics copy failed')
+    expect(f.owner.snapshot()).toMatchObject({ prepared: false, valid: false, enabled: 0 })
+    f.owner.prepare(1440, 1000)
+    expect(f.owner.snapshot().enabled).toBe(0)
+    f.owner.commitFrame()
+    expect(f.owner.snapshot().valid).toBe(true)
+    f.owner.dispose()
+  })
+
+  it('resizes both outputs and releases the targets once without owning upstream ray guides', () => {
+    const f = fixture(true),
+      rawDispose = vi.spyOn(f.raw, 'dispose')
+    f.owner.prepare(1440, 1000)
+    f.owner.commitFrame()
+    f.owner.prepare(1280, 720)
+    const previous = f.initRenderTarget.mock.calls[1]![0],
+      output = f.owner.node.renderTarget!,
+      previousDispose = vi.spyOn(previous, 'dispose'),
+      outputDispose = vi.spyOn(output, 'dispose')
+    for (const image of previous.textures.map((entry) => entry.image))
+      expect(image).toMatchObject({ width: 1280, height: 720 })
+    expect(f.owner.snapshot()).toMatchObject({
+      enabled: 0,
+      statisticsBytes: 1280 * 720 * 16,
+    })
+    f.owner.dispose()
+    f.owner.dispose()
+    expect(previousDispose).toHaveBeenCalledTimes(1)
+    expect(outputDispose).toHaveBeenCalledTimes(1)
+    expect(rawDispose).not.toHaveBeenCalled()
+  })
+
+  it('requires raw hit-distance guides before allocating a variance history', () => {
+    const source = new Texture(),
+      depth = new DepthTexture()
+    expect(() =>
+      createSignedReflectionHistory(
+        {} as WebGPURenderer,
+        new PerspectiveCamera(),
+        texture(source),
+        texture(depth),
+        texture(source),
+        texture(source),
+        { varianceHistory: true },
+      ),
+    ).toThrow('raw reflection guides')
   })
 })

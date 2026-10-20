@@ -11,12 +11,10 @@ import {
   type Vector2,
 } from 'three'
 import { realtimeProductProfile } from '../productProfile'
+import { createTraceMaterialViews } from './traceMaterialViews'
 
 interface MeshEntry {
   source: Mesh
-  sourceBinding: Material | Material[]
-  sourceSlots: Material[]
-  traceBinding: unknown
   materialSlots: Material[]
   proxy: Mesh
   world: Matrix4
@@ -121,6 +119,7 @@ export function createDdgiProxyScene(sourceScene: Scene) {
     meshes = new Map<Mesh, MeshEntry>(),
     lights = new Map<Light, LightEntry>(),
     materialValues = new Map<Material, MaterialEntry>(),
+    materialViews = createTraceMaterialViews(),
     transforms: Object3D[] = [],
     materials: Material[] = []
   scene.name = 'Trees X / borrowed DDGI tracing view'
@@ -172,16 +171,7 @@ export function createDdgiProxyScene(sourceScene: Scene) {
     )
       return
     let entry = meshes.get(node)
-    const bindingChanged =
-      !entry ||
-      entry.sourceBinding !== node.material ||
-      entry.traceBinding !== node.userData.traceMaterial ||
-      (Array.isArray(node.userData.traceMaterial) &&
-        !sameMaterials(entry.materialSlots, node.userData.traceMaterial)) ||
-      (Array.isArray(node.material) &&
-        !sameMaterials(entry.sourceSlots, node.material) &&
-        node.userData.traceMaterial === undefined)
-    const material = !entry || bindingChanged ? borrowedMaterials(node) : entry.proxy.material
+    const material = materialViews.binding(borrowedMaterials(node))
     if (
       !entry ||
       entry.proxy.geometry !== node.geometry ||
@@ -207,9 +197,6 @@ export function createDdgiProxyScene(sourceScene: Scene) {
       scene.add(proxy)
       entry = {
         source: node,
-        sourceBinding: node.material,
-        sourceSlots: Array.isArray(node.material) ? node.material.slice() : [node.material],
-        traceBinding: node.userData.traceMaterial,
         materialSlots: Array.isArray(material) ? material.slice() : [material],
         proxy,
         world: node.matrixWorld.clone(),
@@ -241,10 +228,6 @@ export function createDdgiProxyScene(sourceScene: Scene) {
         transforms.push(entry.proxy)
       }
     }
-    if (bindingChanged)
-      entry.sourceSlots = Array.isArray(node.material) ? node.material.slice() : [node.material]
-    entry.sourceBinding = node.material
-    entry.traceBinding = node.userData.traceMaterial
     entry.seen = revision
     if (Array.isArray(entry.proxy.material)) entry.proxy.material.forEach(materialChanged)
     else materialChanged(entry.proxy.material)
@@ -299,6 +282,8 @@ export function createDdgiProxyScene(sourceScene: Scene) {
           root.userData.workbenchProduct === 'typewriter-study' ||
           (root.userData.workbenchProduct && realtimeProductProfile(root.userData.adapter))
         ) {
+          if (typeof root.userData.ddgiTextureError === 'string')
+            throw new Error(root.userData.ddgiTextureError)
           selectedRoot = root
           root.traverseVisible(visit)
         } else if (root.userData.studio === true && root.userData.capture !== true) {
@@ -331,6 +316,7 @@ export function createDdgiProxyScene(sourceScene: Scene) {
         }
       for (const [material, entry] of materialValues)
         if (entry.seen !== revision) materialValues.delete(material)
+      materialViews.prune(materialValues)
       scene.updateMatrixWorld(true)
       return { topology, lighting, transforms, materials }
     },
@@ -352,6 +338,7 @@ export function createDdgiProxyScene(sourceScene: Scene) {
       meshes.clear()
       lights.clear()
       materialValues.clear()
+      materialViews.dispose()
       transforms.length = materials.length = 0
     },
   }

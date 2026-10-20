@@ -48,6 +48,9 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
       ? 'ddgi'
       : 'ssgi'
+  const legacyCarSchedule =
+    typeof location !== 'undefined' &&
+    new URLSearchParams(location.search).get('carRenderTuning') === 'legacy'
 
   function prepareDdgi() {
     if (indirectRequested !== 'ddgi' || ddgi || ddgiLoading) return
@@ -60,6 +63,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
           renderer,
           scene,
           profile: productProfile,
+          legacySchedule: legacyCarSchedule,
           onReadyChanged: () => {
             if (!disposed && token === generation) ddgiGraphDirty = true
           },
@@ -163,10 +167,15 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         ddgiLoading = false
         ddgiGraphDirty = false
         ddgiError = null
+        // Product-specific source classification/history is captured at graph
+        // construction. Rebuild the graph, never the shared renderer, on handoff.
+        signals?.dispose()
+        signals = undefined
       }
       productProfile = profile
       framesSincePrepare = 0
       lastActivity = performance.now()
+      ddgi?.invalidate('all')
       materials.install(scene)
       motion.reset(scene)
       const reuse = Boolean(signals)
@@ -184,6 +193,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       // Only real scene/input changes enter here. Scheduling another completed
       // frame calls options.invalidate directly and must not keep GI busy.
       lastActivity = performance.now()
+      ddgi?.invalidate(kind)
       // Smooth camera/rigid motion is represented by true vectors, not a reset.
       if (kind !== 'camera' && kind !== 'pose') reset = true
       options.invalidate()
@@ -222,7 +232,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals?.setWorldGi(null)
         ddgiGraphDirty = false
       }
-      if (ddgi && !ddgiError && framesSincePrepare > 0) {
+      if (ddgi && !ddgiError && framesSincePrepare > 0 && ddgi.needsUpdate()) {
         // Serialize asynchronous probe compute with every raster/auxiliary draw
         // on the existing renderer. Tres remains the sole scheduling clock.
         const token = generation,
@@ -269,6 +279,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         resolution: { width: size.x, height: size.y },
         signals: signals?.snapshot() ?? { ssr: false, ssgi: false, denoise: false },
         reflectionKernel: signals?.sampling() ?? null,
+        reflectionHistory: signals?.history?.() ?? null,
         materialBranches: materials.stats(),
         productProfile: productProfile.adapterId,
         indirectLighting: {

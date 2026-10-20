@@ -16,6 +16,7 @@ export function createReflectionResolve(
   velocity: TextureNode,
   camera: PerspectiveCamera,
   kernel: ReflectionKernel = 'rotating',
+  varianceHistory = false,
 ) {
   const spatial = createSignedReflectionSpatial(
     reflection,
@@ -27,7 +28,15 @@ export function createReflectionResolve(
   )
   let history: ReturnType<typeof createSignedReflectionHistory>
   try {
-    history = createSignedReflectionHistory(renderer, camera, spatial.node, depth, normal, velocity)
+    history = createSignedReflectionHistory(
+      renderer,
+      camera,
+      spatial.node,
+      depth,
+      normal,
+      velocity,
+      varianceHistory ? { varianceHistory: true, raw: spatial.raw } : {},
+    )
   } catch (error) {
     spatial.dispose()
     throw error
@@ -62,6 +71,7 @@ export function createReflectionResolve(
       if (!disposed) history.resetHistory()
     },
     snapshot: spatial.snapshot,
+    historySnapshot: history.snapshot,
     dispose() {
       if (disposed) return
       disposed = true

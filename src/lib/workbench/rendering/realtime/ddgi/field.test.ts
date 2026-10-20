@@ -108,7 +108,7 @@ function fakeField() {
   return { api, state, stats, tick }
 }
 
-function fixture(profile?: RealtimeProductProfile) {
+function fixture(profile?: RealtimeProductProfile, legacySchedule = false) {
   const scene = new Scene(),
     product = new Group(),
     geometry = new BoxGeometry(),
@@ -129,7 +129,14 @@ function fixture(profile?: RealtimeProductProfile) {
   product.add(mesh)
   scene.add(product)
   const fake = fakeField(),
-    adapter = createRealtimeDdgi({ renderer, scene, profile, onReadyChanged, onError })
+    adapter = createRealtimeDdgi({
+      renderer,
+      scene,
+      profile,
+      legacySchedule,
+      onReadyChanged,
+      onError,
+    })
   cleanups.push(() => {
     adapter.dispose()
     geometry.dispose()
@@ -181,12 +188,15 @@ describe('owned fixed-budget DDGI field', () => {
     expect(f.onError).not.toHaveBeenCalled()
   })
   it('uses the car profile volume with the same fixed solve budget and an independent field owner', async () => {
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
     const f = fixture(reventonRealtimeProfile)
     expect(f.fake.api.setVolumes).toHaveBeenCalledOnce()
     const volume = vi.mocked(f.fake.api.setVolumes).mock.calls[0]![0][0]!
     expect(volume.res.toArray()).toEqual([12, 8, 16])
     expect(f.fake.api.setRayBudget).toHaveBeenCalledWith(98304)
     await f.adapter.tick()
+    now = 100
     await f.adapter.tick()
     expect(f.adapter.snapshot()).toMatchObject({
       profile: 'reventon-v1',
@@ -199,6 +209,88 @@ describe('owned fixed-budget DDGI field', () => {
     f.adapter.dispose()
     f.adapter.dispose()
     expect(f.fake.api.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('retains the old per-frame car schedule only behind the explicit comparison option', async () => {
+    vi.spyOn(performance, 'now').mockReturnValue(1000)
+    const f = fixture(reventonRealtimeProfile, true)
+    await f.adapter.tick(0)
+    await f.adapter.tick(0)
+    expect(f.adapter.snapshot()).toMatchObject({ ready: true, scheduling: null })
+    expect(f.adapter.needsUpdate()).toBe(true)
+    expect(f.fake.tick).toHaveBeenCalledTimes(2)
+  })
+
+  it('caches car GI after twelve full settling solves without rescanning on orbit frames', async () => {
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = fixture(reventonRealtimeProfile),
+      sceneSync = vi.spyOn(f.scene, 'updateMatrixWorld')
+    await f.adapter.tick()
+    for (let index = 1; index <= 12; index++) {
+      now = index * 100
+      expect(f.adapter.needsUpdate()).toBe(true)
+      await f.adapter.tick()
+    }
+    expect(sceneSync).toHaveBeenCalledOnce()
+    expect(f.adapter.snapshot()).toMatchObject({
+      ready: true,
+      acceptedTicks: 13,
+      scheduling: { remainingSolves: 0, cached: true, completed: 12 },
+    })
+    for (let index = 0; index < 50; index++) {
+      now += 100
+      f.adapter.invalidate('camera')
+      expect(f.adapter.needsUpdate()).toBe(false)
+      await f.adapter.tick()
+    }
+    expect(f.fake.tick).toHaveBeenCalledTimes(13)
+    expect(sceneSync).toHaveBeenCalledOnce()
+    f.mesh.setMatrixAt(1, new Matrix4().makeTranslation(1, 0, 0))
+    f.mesh.instanceMatrix.needsUpdate = true
+    f.adapter.invalidate('pose')
+    expect(f.adapter.needsUpdate()).toBe(true)
+    await f.adapter.tick()
+    expect(f.fake.api.markTransformsDirty).toHaveBeenCalledOnce()
+    expect(sceneSync).toHaveBeenCalledTimes(2)
+    expect(f.adapter.snapshot()).toMatchObject({
+      scheduling: { remainingSolves: 11, cached: false },
+      actualRays: 64,
+      actualBudgetRays: 98304,
+    })
+  })
+
+  it('advances car rebuilds while moving and uses world activity rather than camera quiet time', async () => {
+    let now = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => now)
+    const f = fixture(reventonRealtimeProfile)
+    await f.adapter.tick(0)
+    now = 100
+    f.adapter.invalidate('camera')
+    await f.adapter.tick(0)
+    expect(f.fake.tick).toHaveBeenLastCalledWith({ idleMs: 100, playing: false })
+    now = 200
+    f.scene.environmentIntensity = 0.5
+    f.adapter.invalidate('environment')
+    await f.adapter.tick(500)
+    expect(f.fake.api.setSky).toHaveBeenCalledTimes(2)
+    expect(f.fake.tick).toHaveBeenLastCalledWith({ idleMs: 0, playing: false })
+    now = 250
+    await f.adapter.tick()
+    expect(f.fake.tick).toHaveBeenCalledTimes(3)
+    now = 300
+    f.fake.state.dirty = f.fake.state.buildDirty = true
+    f.fake.tick.mockImplementationOnce(async () => {})
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({ ready: false, error: null })
+    now = 400
+    expect(f.adapter.needsUpdate()).toBe(true)
+    f.fake.tick.mockImplementationOnce(async () => {
+      f.fake.state.dirty = f.fake.state.buildDirty = false
+      create.mock.calls[0]![0].onRebuilt()
+    })
+    await f.adapter.tick()
+    expect(f.adapter.snapshot()).toMatchObject({ ready: true, error: null })
   })
 
   it.each(['setVolumes', 'setRayBudget', 'setSkyIntensity', 'setEnabled'] as const)(

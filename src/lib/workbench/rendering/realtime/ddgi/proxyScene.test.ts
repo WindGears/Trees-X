@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   BoxGeometry,
+  CompressedTexture,
   Group,
   InstancedMesh,
   Matrix4,
@@ -13,11 +14,17 @@ import {
 } from 'three'
 import { MeshPhysicalNodeMaterial } from 'three/webgpu'
 import { createDdgiProxyScene } from './proxyScene'
+import {
+  prepareCompressedTraceTextures,
+  resolveCompressedTraceTexture,
+} from './compressedTraceTextures'
+import type { VerifiedFiles } from '../../../assetSession'
 
 const cleanups: (() => void)[] = []
 afterEach(() => {
   for (const cleanup of cleanups.splice(0).reverse()) cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 
 function fixture() {
@@ -238,5 +245,90 @@ describe('borrowed Speedball tracing scene', () => {
     if (!(mesh instanceof Mesh)) throw new Error('Expected one-slot grouped proxy')
     expect(mesh.material).toEqual([f.material])
     expect(f.proxy.sync().topology).toBe(false)
+  })
+
+  it('redirects compressed maps through local views while finish and highlight values remain live', async () => {
+    const f = fixture(),
+      compressed = new CompressedTexture([], 4096, 2048),
+      bitmap = { width: 256, height: 128, close: vi.fn() },
+      files: VerifiedFiles = {
+        read: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
+        release: vi.fn(),
+        dispose: vi.fn(),
+      }
+    compressed.userData.treesTraceImage = 'trace/texture-000.png'
+    f.material.map = compressed
+    f.material.normalMap = compressed
+    f.material.roughnessMap = compressed
+    f.material.metalnessMap = compressed
+    f.material.emissiveMap = compressed
+    f.material.alphaMap = compressed
+    vi.stubGlobal('createImageBitmap', vi.fn().mockResolvedValue(bitmap))
+    const owner = await prepareCompressedTraceTextures(
+      f.product,
+      files,
+      new AbortController().signal,
+    )
+    cleanups.push(owner.dispose, () => compressed.dispose())
+    f.proxy.sync()
+    const mesh = f.proxy.scene.getObjectByName(f.mesh.name)
+    if (!(mesh instanceof Mesh) || !(mesh.material instanceof MeshStandardMaterial))
+      throw new Error('Expected inherited PBR tracing view')
+    const view = mesh.material,
+      cpu = resolveCompressedTraceTexture(compressed),
+      sourceDispose = vi.spyOn(f.material, 'dispose'),
+      compressedDispose = vi.spyOn(compressed, 'dispose'),
+      cpuDispose = vi.spyOn(cpu, 'dispose')
+    expect(view).not.toBe(f.material)
+    expect(view.color).toBe(f.material.color)
+    for (const field of [
+      'map',
+      'normalMap',
+      'roughnessMap',
+      'metalnessMap',
+      'emissiveMap',
+      'alphaMap',
+    ])
+      expect(Reflect.get(view, field)).toBe(cpu)
+    expect(f.material.map).toBe(compressed)
+    expect(f.proxy.sync()).toMatchObject({ topology: false, materials: [] })
+    f.material.color.set('#abcd12')
+    f.material.roughness = 0.21
+    f.material.emissiveIntensity = 0.5
+    f.material.opacity = 0.75
+    expect(view.roughness).toBe(0.21)
+    expect(view.opacity).toBe(0.75)
+    expect(view.emissiveIntensity).toBe(0.5)
+    expect(f.proxy.sync().materials).toEqual([view])
+    const replacement = compressed.clone()
+    cleanups.push(() => replacement.dispose())
+    replacement.repeat.set(3, 4)
+    f.material.map = replacement
+    expect(view.map).toBe(resolveCompressedTraceTexture(replacement))
+    expect(view.map?.repeat.equals(replacement.repeat)).toBe(true)
+    expect(f.proxy.sync()).toMatchObject({ topology: false, materials: [view] })
+    f.material.map = null
+    expect(view.map).toBeNull()
+    expect(f.proxy.sync().materials).toEqual([view])
+    f.proxy.dispose()
+    expect(sourceDispose).not.toHaveBeenCalled()
+    expect(compressedDispose).not.toHaveBeenCalled()
+    expect(cpuDispose).not.toHaveBeenCalled()
+    expect(bitmap.close).not.toHaveBeenCalled()
+    owner.dispose()
+    expect(cpuDispose).toHaveBeenCalledOnce()
+    expect(bitmap.close).toHaveBeenCalledOnce()
+  })
+
+  it('turns an unavailable compressed map into an explicit DDGI fallback error', () => {
+    const f = fixture(),
+      compressed = new CompressedTexture([], 4096, 2048)
+    cleanups.push(() => compressed.dispose())
+    compressed.userData.treesTraceImage = 'trace/missing.png'
+    f.material.map = compressed
+    expect(() => f.proxy.sync()).toThrow('缺少已登记的 CPU 追踪副本')
+    expect(f.material.map).toBe(compressed)
+    f.product.userData.ddgiTextureError = '追踪副本摘要不匹配：trace/missing.png'
+    expect(() => f.proxy.sync()).toThrow('追踪副本摘要不匹配')
   })
 })

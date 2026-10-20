@@ -1,5 +1,15 @@
 # 新版目标架构与当前实现
 
+## 汽车4K与事件调度候选（2026-10-19）
+
+`reventonCandidate`仅接受摘要、路径、版本均匹配的原汽车源，在显式runtime-v2参数下换用本地完整验证后登记的bundle；管理员自定义源不替换。未登记时明确失败，不回退原8K伪装候选。登记文件通过glob按需编入，缺少本机派生包不阻止普通入口构建。API、数据库和ProductPresentation版本不变。
+
+汽车DDGI由局部scheduler按世界变更唤醒，纯相机/尺寸事件不重算；最多15Hz、12个完整固定预算solve尾步后复用，异步求解和绘制仍串行且保留lease。只在真实场景dirty时扫描代理；打字机不启用此策略。反射当前/历史各增加RGBA16统计附件，保持同一fullscreen过滤draw及signed负修正。汽车adaptive将同表面随机miss作为零新样本积累，连续缺样32帧硬截止；unsupported、几何拒绝或cut立即失效。打字机和legacy保留原严格零规则。统计均值从历史RGB重算是近似，不声称无偏；r185 owned RTT局部转发MRT结构输出标识，不改全局原型。profile换场重建并释放信号图，renderer继续复用。
+
+Speedball 0.8.0的CPU图集不能直接读CompressedTexture。汽车候选离线派生74张256²辅助PNG（匹配上游采样尺寸），GLB image extras登记路径。`compressedTraceTextures`按源Source维护只供CPU代理借用的普通Texture视图，保留UV/色彩空间和动态材质标量；不替换可见4K KTX2，不上传这些视图。准备期取消处理迟到bitmap，成功后移交owner并解除下载session取消监听，避免session.dispose误释放仍使用的追踪副本。协调器先退役field/proxy，再由适配器释放视图/bitmap，loader继续拥有原GPU纹理。辅助失败明确报告SSGI降级，不默默丢贴图。
+
+`renderDiagnostics=1`才开启GPU查询；测试工具将GPU pass耗时、JS完整提交回调与真实呈现追踪分开，默认访客不持续读回。实际进展与未验收范围见 [4K运行候选验收](reventon-runtime-v2-validation.md)。
+
 ## 加载与准备生命周期（2026-10-19）
 
 `assetSession` 提供 `read/release/dispose`，256MiB只计其持有的压缩字节预约，不包括已移交解析器的容器、几何、像素或GPU纹理。跨选择共享3下载／2重解码槽，旧解析宿主结清已提交任务并释放KTX／Draco池后才创建下一个宿主；默认保留整包兼容路径，仅摘要匹配的汽车在 `assetLoading=streaming` 开启流水线。不能把交叠阶段的顶层时间当纯下载或纯解码耗时。

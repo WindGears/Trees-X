@@ -14,6 +14,8 @@ export function gpuRendererFactory(
       canvas: unref(canvas),
       antialias: true,
       powerPreference: 'high-performance',
+      // Explicit diagnostics only. Ordinary visitor rendering has no query readback.
+      trackTimestamp: new URLSearchParams(location.search).get('renderDiagnostics') === '1',
       // WebGPU charges aligned attachment costs, not texture storage bytes.
       // The six-signal G-buffer costs 44; unsupported adapters fail explicitly.
       requiredLimits: realtime ? { maxColorAttachmentBytesPerSample: 64 } : undefined,

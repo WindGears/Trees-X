@@ -8,6 +8,18 @@ import {
   reflectionRayGuideContribution,
 } from './signedSpatial'
 import {
+  reflectionDistanceConfidence,
+  reflectionMomentConfidence,
+  reflectionMomentLuminance,
+  reflectionMomentVariance,
+  reflectionAdaptiveBlend,
+  reflectionAdaptiveClip,
+  reflectionAdaptiveStatistics,
+  reflectionHasObservation,
+  reflectionHistoryAccepted,
+  reflectionMissingAge,
+} from './signedMoments'
+import {
   ConditionalNode,
   ConstNode,
   ConvertNode,
@@ -112,6 +124,169 @@ describe('bounded local reflection ray-distance guide', () => {
     expect(owner.snapshot().frames).toBe(1)
     owner.dispose()
     for (const resource of [reflection, native, depth, normal]) resource.dispose()
+  })
+})
+
+describe('signed reflection variance and hit confidence arithmetic', () => {
+  it('keeps black-hit corrections negative and all-miss corrections exactly zero', () => {
+    expect(evaluateNode(reflectionMomentLuminance(vec3(0)))).toBe(0)
+    expect(evaluateNode(reflectionMomentLuminance(vec3(-1)))).toBeCloseTo(-0.5)
+    expect(evaluateNode(reflectionMomentLuminance(vec3(1)))).toBeCloseTo(0.5)
+    expect(evaluateNode(reflectionMomentVariance(float(0), float(0)))).toBe(0)
+  })
+
+  it('keeps HDR statistics finite without altering the signed radiance payload', () => {
+    for (const value of [-65504, -10000, -1, 0, 1, 10000, 65504]) {
+      const moment = evaluateNode(reflectionMomentLuminance(vec3(value)))
+      expect(typeof moment).toBe('number')
+      expect(Math.abs(moment as number)).toBeLessThan(1)
+      if (value !== 0) expect(Math.sign(moment as number)).toBe(Math.sign(value))
+    }
+    // Half-float rounding may put E[x]^2 slightly above E[x^2].
+    expect(evaluateNode(reflectionMomentVariance(float(0.5), float(0.24999)))).toBe(0)
+  })
+
+  it('trusts stable neighborhood moments and rejects a low-variance signed change', () => {
+    expect(
+      evaluateNode(reflectionMomentConfidence(float(-0.5), float(0), float(-0.5), float(0.25))),
+    ).toBe(1)
+    expect(
+      evaluateNode(reflectionMomentConfidence(float(0.5), float(0), float(-0.5), float(0.25))),
+    ).toBe(0)
+    // A stochastic high-variance neighborhood can retain useful history.
+    expect(
+      evaluateNode(reflectionMomentConfidence(float(0.1), float(0.1), float(-0.1), float(0.11))),
+    ).toBe(1)
+  })
+
+  it('uses hit length consistency without rejecting an isolated stochastic miss', () => {
+    const confidence = (a: number, b: number, coverageA = 0.8, coverageB = 0.9, roughness = 0) =>
+      evaluateNode(
+        reflectionDistanceConfidence(
+          float(a),
+          float(b),
+          float(coverageA),
+          float(coverageB),
+          float(roughness),
+        ),
+      )
+    expect(confidence(2, 2)).toBe(1)
+    expect(confidence(2, 2, 0.1, 0.9)).toBe(1)
+    expect(confidence(2, 8, 1, 1)).toBe(0)
+    expect(confidence(2, 8, 0.1, 0.9)).toBeCloseTo(0.9)
+    expect(confidence(2, 8, 0.8, 0.9, 1)).toBe(1)
+    expect(confidence(2, 2, 0, 0.9)).toBe(1)
+    expect(confidence(2, 2, 0.9, 0)).toBe(1)
+  })
+})
+
+describe('adaptive sparse signed reflection history production arithmetic', () => {
+  it('accumulates alternating hit/miss samples instead of resetting history on each miss', () => {
+    let color = [-1, -1, -1],
+      count = 1,
+      age = 0
+    const counts: number[] = []
+    for (let frame = 1; frame <= 96; frame++) {
+      const hit = frame % 2 === 0,
+        current = hit ? vec3(-1) : vec3(0),
+        observed = reflectionHasObservation(current, float(hit ? 1 / 9 : 0))
+      age = scalar(evaluateNode(reflectionMissingAge(float(age), observed)))
+      const clipped = reflectionAdaptiveClip(
+          vec3(...(color as [number, number, number])),
+          current,
+          current,
+          float(hit ? 1 / 9 : 0),
+        ),
+        result = evaluateNode(reflectionAdaptiveBlend(clipped, current, float(count), float(age)))
+      if (!Array.isArray(result)) throw new Error('Expected signed history vector')
+      color = result.slice(0, 3)
+      count = result[3]!
+      counts.push(count)
+      expect(color[0]).toBeLessThan(0)
+    }
+    expect(count).toBe(32)
+    expect(Math.min(...counts.slice(32))).toBe(32)
+    expect(color[0]).toBeCloseTo(-0.5, 1)
+    expect(age).toBe(0)
+  })
+
+  it('decays missing samples, cuts the tail exactly at 32 and accepts new valid observations', () => {
+    let color = vec3(-1),
+      count = 32,
+      age = 0
+    for (let frame = 1; frame <= 32; frame++) {
+      age = scalar(
+        evaluateNode(reflectionMissingAge(float(age), reflectionHasObservation(vec3(0), float(0)))),
+      )
+      const result = evaluateNode(reflectionAdaptiveBlend(color, vec3(0), float(count), float(age)))
+      if (!Array.isArray(result)) throw new Error('Expected signed history vector')
+      color = vec3(result[0]!, result[1]!, result[2]!)
+      count = result[3]!
+      if (frame < 32) expect(result[0]).toBeLessThan(0)
+      else expect(result).toEqual([0, 0, 0, 1])
+    }
+    expect(age).toBe(32)
+    expect(
+      evaluateNode(reflectionMissingAge(float(age), reflectionHasObservation(vec3(-1), float(1)))),
+    ).toBe(0)
+    expect(evaluateNode(reflectionHasObservation(vec3(-0.01), float(0)))).toBe(true)
+  })
+
+  it('includes zero in mixed-sample clipping and preserves signed history on empty neighborhoods', () => {
+    expect(
+      evaluateNode(reflectionAdaptiveClip(vec3(-0.5), vec3(-1), vec3(-1), float(0.1))),
+    ).toEqual([-0.5, -0.5, -0.5])
+    expect(evaluateNode(reflectionAdaptiveClip(vec3(-0.5), vec3(0), vec3(0), float(0)))).toEqual([
+      -0.5, -0.5, -0.5,
+    ])
+    expect(evaluateNode(reflectionAdaptiveClip(vec3(-2), vec3(-1), vec3(-1), float(0.1)))).toEqual([
+      -1, -1, -1,
+    ])
+  })
+
+  it('uses hard rejection gates without turning ordinary confidence into a 1–3 frame ceiling', () => {
+    expect(evaluateNode(reflectionHistoryAccepted(float(1), float(0.2)))).toBe(true)
+    expect(evaluateNode(reflectionHistoryAccepted(float(0), float(1)))).toBe(false)
+    expect(evaluateNode(reflectionHistoryAccepted(float(1), float(0)))).toBe(false)
+    expect(evaluateNode(reflectionHistoryAccepted(float(Number.NaN), float(1)))).toBe(false)
+  })
+
+  it('smooths observed distances and coverage without injecting the no-hit radius into history', () => {
+    const previous = vec4(0, 0.25, 2, 1),
+      miss = evaluateNode(
+        reflectionAdaptiveStatistics(
+          previous,
+          float(0),
+          float(0.25),
+          float(0),
+          float(32),
+          float(1),
+        ),
+      ),
+      hit = evaluateNode(
+        reflectionAdaptiveStatistics(
+          previous,
+          float(0.25),
+          float(4),
+          float(0.5),
+          float(32),
+          float(0),
+        ),
+      )
+    expect(miss).toEqual([1, (0.25 * 31) / 32, 2, 31 / 32])
+    expect(hit).toEqual([0, 0.25, 2 + 2 / 32, 1 - 0.5 / 32])
+    expect(
+      evaluateNode(
+        reflectionAdaptiveStatistics(
+          previous,
+          float(0),
+          float(0.25),
+          float(0),
+          float(1),
+          float(32),
+        ),
+      ),
+    ).toEqual([32, 0, 0, 0])
   })
 })
 
@@ -224,10 +399,35 @@ export function evaluateNode(node: unknown): Value {
         return binary(a, 0, (x) => 1 - x)
       case 'sqrt':
         return binary(a, 0, (x) => Math.sqrt(x))
+      case 'clamp': {
+        const minimum = evaluateNode(node.bNode),
+          maximum = evaluateNode(node.cNode)
+        return binary(binary(a, minimum, Math.max), maximum, Math.min)
+      }
+      case 'mix': {
+        const b = evaluateNode(node.bNode),
+          alpha = evaluateNode(node.cNode)
+        return binary(
+          a,
+          binary(
+            binary(b, a, (x, y) => x - y),
+            alpha,
+            (x, y) => x * y,
+          ),
+          (x, y) => x + y,
+        )
+      }
       case 'min':
         return binary(a, evaluateNode(node.bNode), Math.min)
       case 'max':
         return binary(a, evaluateNode(node.bNode), Math.max)
+      case 'smoothstep': {
+        const lower = scalar(a),
+          upper = scalar(evaluateNode(node.bNode)),
+          value = scalar(evaluateNode(node.cNode)),
+          t = Math.max(0, Math.min(1, (value - lower) / (upper - lower)))
+        return t * t * (3 - 2 * t)
+      }
       case 'dot': {
         const b = evaluateNode(node.bNode)
         if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length)

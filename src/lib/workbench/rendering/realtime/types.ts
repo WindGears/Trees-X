@@ -27,6 +27,11 @@ export interface RealtimeSnapshot extends RealtimeStatus {
   motion: { objects: number; instances: number; historyBytes: number; frameOpen: boolean }
   signals: { ssr: boolean; ssgi: boolean; denoise: boolean }
   reflectionKernel?: ReflectionSamplingSnapshot | null
+  reflectionHistory?: {
+    varianceHistory: boolean
+    maxHistory: number
+    statisticsBytes: number
+  } | null
   resolution: { width: number; height: number }
   materialBranches: Record<string, number>
   productProfile?: RealtimeProductProfile['adapterId']

@@ -1,5 +1,11 @@
 # Trees X
 
+## 汽车4K运行候选（2026-10-20）
+
+汽车独立runtime-v2已完成制作与登记：74张运行KTX2最长边4096、UASTC q4／无RDO／完整mip，配套74张仅供间接光CPU图集读取的256²辅助图。只缩原8K AO；模型、UV、节点、轴心及动作保持。包大小473,608,445字节，原包1,744,549,649字节；文件缩小不等同帧率或画质通过。
+
+显式`?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2`使用候选；省略候选参数继续原包，普通入口仍WebGL。汽车增加世界变更驱动的15Hz间接光调度与32帧有界SSR历史；不降低输出尺寸或反射强度。公开API、数据库和展示配置版本不变。当前实机、性能及未通过项见[汽车4K验收](.ai/reventon-runtime-v2-validation.md)，默认替换仍待用户确认。
+
 ## 汽车 WebGPU 迁移候选（2026-10-19）
 
 汽车新增显式 `?product=reventon&renderPipeline=realtime`，复用现有实时 SSR／间接光管线，保持摄影棚、原 EXR、自由观察、开门、座舱、七组分离及导览。汽车不继承打字机暖夜、桌台或景深；普通入口继续 WebGL，是否替换默认仍待完整验收与本人实机判断。

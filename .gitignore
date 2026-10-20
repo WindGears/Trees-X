@@ -18,5 +18,10 @@ lamborghini-reventon-re-made-1.snapshot.2/
 __pycache__/
 *.pyc
 *.log
+# Local derived Reventon package: the supplied source has no redistribution license.
+/public/models/reventon-runtime-v2/*
+!/public/models/reventon-runtime-v2/README.md
+# Local generated registration: clean checkouts rebuild before enabling the candidate.
+/src/lib/workbench/reventonRuntimeBundle.json
 server/target/
 .impeccable/*.log

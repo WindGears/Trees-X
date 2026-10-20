@@ -9,6 +9,7 @@ import {
 import { verifiedByteResidency } from './assetResidency'
 import { downloadWork } from './decodeQueue'
 import type { BundleReference, GlbSource } from './types'
+import { isAuditedReventonSource } from './reventonCandidate'
 
 export interface VerifiedFiles {
   read(path: string): Promise<ArrayBuffer>
@@ -24,11 +25,7 @@ export interface VerifiedAssetSession extends VerifiedFiles {
 export function useStreamingAssets(source: GlbSource, search: string) {
   return (
     new URLSearchParams(search).get('assetLoading') === 'streaming' &&
-    source.adapter === 'reventon-v1' &&
-    source.bundle.id === 'reventon-workbench' &&
-    source.bundle.version === 1 &&
-    source.bundle.manifest === '/models/reventon/workbench-manifest.json' &&
-    source.bundle.sha256 === '28031a60c0e0ce12c6f9e6ba5fdb5ba5b9bf0f17ba0cd8890bba3a46d96f739d'
+    isAuditedReventonSource(source)
   )
 }
 

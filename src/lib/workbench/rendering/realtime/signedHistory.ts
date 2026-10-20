@@ -2,6 +2,7 @@ import { DepthTexture, HalfFloatType, Matrix4, REVISION, Source, Vector2 } from 
 import {
   RenderTarget,
   type PerspectiveCamera,
+  type Node,
   type TextureNode,
   type WebGPURenderer,
 } from 'three/webgpu'
@@ -14,7 +15,9 @@ import {
   int,
   ivec2,
   mix,
+  outputStruct,
   smoothstep,
+  struct,
   texture,
   textureLoad,
   uniform,
@@ -25,7 +28,29 @@ import {
   vec4,
 } from 'three/tsl'
 import { createOwnedRtt } from './ownedRtt'
-import { reflectionNeighborhoodCompatible } from './signedSpatial'
+import {
+  reflectionNeighborhoodCompatible,
+  reflectionRayGuide,
+  reflectionRayGuideContribution,
+} from './signedSpatial'
+import { createSignedHistoryOutput } from './signedHistoryOutput'
+import {
+  reflectionDistanceConfidence,
+  reflectionAdaptiveBlend,
+  reflectionAdaptiveClip,
+  reflectionAdaptiveStatistics,
+  reflectionHasObservation,
+  reflectionHistoryAccepted,
+  reflectionMissingAge,
+  reflectionMomentConfidence,
+  reflectionMomentLuminance,
+  reflectionMomentVariance,
+} from './signedMoments'
+
+export interface SignedHistoryOptions {
+  varianceHistory?: boolean
+  raw?: TextureNode
+}
 
 /** Signed delta history for the pinned r185 pipeline. Geometric four-tap
  * reprojection and the NDC velocity conversion follow Three's MIT-licensed
@@ -39,18 +64,25 @@ export function createSignedReflectionHistory(
   depth: TextureNode,
   normal: TextureNode,
   velocity: TextureNode,
+  options: SignedHistoryOptions = {},
 ) {
   if (REVISION !== '185') throw new Error('Signed reflection history requires reviewed Three r185')
   if (!(depth.value instanceof DepthTexture))
     throw new Error('Signed history requires native depth')
+  const adaptive = options.varianceHistory === true
+  if (adaptive && !options.raw) throw new Error('Variance history requires raw reflection guides')
+  const raw = adaptive ? options.raw : undefined
   const previousDepth = depth.value.clone()
   previousDepth.name = 'TreesSignedHistory.depth'
   const history = new RenderTarget(1, 1, {
     type: HalfFloatType,
     depthBuffer: false,
     depthTexture: previousDepth,
+    count: adaptive ? 2 : 1,
   })
   history.texture.name = 'TreesSignedHistory.previous'
+  const previousStatistics = adaptive ? history.textures[1] : undefined
+  if (previousStatistics) previousStatistics.name = 'TreesSignedHistory.statistics'
   const previousNormal = normal.value.clone()
   // Texture.copy shares Source and native MRT backreferences. Only this clone
   // owns its allocation/image dimensions, never the upstream normal attachment.
@@ -61,7 +93,8 @@ export function createSignedReflectionHistory(
   previousNormal.generateMipmaps = false
   const historyNode = texture(history.texture),
     previousDepthNode = texture(previousDepth),
-    previousNormalNode = texture(previousNormal)
+    previousNormalNode = texture(previousNormal),
+    previousStatisticsNode = previousStatistics ? texture(previousStatistics) : undefined
   const resolution = uniform(new Vector2(1, 1)),
     enabled = uniform(0)
   const inverseProjection = uniform(new Matrix4()),
@@ -75,6 +108,7 @@ export function createSignedReflectionHistory(
     disposed = false,
     width = 0,
     height = 0
+  const historyResult = struct({ signal: 'vec4', statistics: 'vec4' })
 
   const resolve = Fn(() => {
     const pixel = ivec2(uv().mul(resolution).floor()),
@@ -83,15 +117,30 @@ export function createSignedReflectionHistory(
       currentDepth = textureLoad(depth, pixel).r
     const currentNormalRoughness = textureLoad(normal, pixel).toConst()
     const result = vec4(0).toVar()
+    const resultStatistics = adaptive ? vec4(0).toVar() : undefined
     If(current.a.greaterThan(0).and(currentDepth.lessThan(1)), () => {
       const viewPosition = getViewPosition(coord, currentDepth, inverseProjection).toConst(),
         viewNormal = unpackRGBToNormal(currentNormalRoughness.rgb).normalize().toConst(),
         viewZ = viewPosition.z.abs().max(1e-6),
         minimum = current.rgb.toVar(),
         maximum = current.rgb.toVar()
+      const firstMoment = adaptive ? reflectionMomentLuminance(current.rgb).toVar() : undefined,
+        secondMoment = firstMoment ? firstMoment.mul(firstMoment).toVar() : undefined,
+        sampleCount = adaptive ? float(1).toVar() : undefined,
+        raySum = raw
+          ? reflectionRayGuideContribution(textureLoad(raw, pixel).a).toVar()
+          : undefined,
+        hitCount = raw
+          ? textureLoad(raw, pixel)
+              .a.greaterThan(0)
+              .and(textureLoad(raw, pixel).a.lessThan(9999))
+              .select(float(1), float(0))
+              .toVar()
+          : undefined
       // Only same-surface neighbors may widen history clipping bounds. An
-      // adjacent valid surface is still a different history signal. A zero
-      // same-surface neighborhood clips stale delta exactly to zero.
+      // adjacent valid surface is still a different history signal. Legacy
+      // history retains its strict current-frame zero clamp. Adaptive history
+      // treats stochastic no-hit neighborhoods as absent, bounded observations.
       for (const [x, y] of [
         [-1, -1],
         [0, -1],
@@ -129,6 +178,16 @@ export function createSignedReflectionHistory(
               () => {
                 minimum.assign(minimum.min(neighbor.rgb))
                 maximum.assign(maximum.max(neighbor.rgb))
+                if (firstMoment && secondMoment && sampleCount && raw && raySum && hitCount) {
+                  const value = reflectionMomentLuminance(neighbor.rgb),
+                    ray = textureLoad(raw, tap).a,
+                    hit = ray.greaterThan(0).and(ray.lessThan(9999))
+                  firstMoment.addAssign(value)
+                  secondMoment.addAssign(value.mul(value))
+                  sampleCount.addAssign(1)
+                  raySum.addAssign(reflectionRayGuideContribution(ray))
+                  hitCount.addAssign(hit.select(1, 0))
+                }
               },
             )
           })
@@ -136,7 +195,15 @@ export function createSignedReflectionHistory(
       }
       const historySum = vec3(0).toVar(),
         historyCount = float(0).toVar(),
-        weights = float(0).toVar()
+        weights = float(0).toVar(),
+        missingAge = adaptive ? float(0).toVar() : undefined
+      const localMean =
+          firstMoment && sampleCount ? firstMoment.div(sampleCount).toConst() : undefined,
+        localSecond =
+          secondMoment && sampleCount ? secondMoment.div(sampleCount).toConst() : undefined,
+        currentRay = raySum ? reflectionRayGuide(raySum).toConst() : undefined,
+        currentCoverage = hitCount && sampleCount ? hitCount.div(sampleCount).toConst() : undefined,
+        statisticsSum = adaptive ? vec4(0).toVar() : undefined
       If(enabled.greaterThan(0), () => {
         const worldPosition = world.mul(vec4(viewPosition, 1)).xyz.toConst()
         const worldNormal = world.mul(vec4(viewNormal, 0)).xyz.normalize().toConst()
@@ -189,24 +256,125 @@ export function createSignedReflectionHistory(
               const bilinear = (x === 0 ? fraction.x.oneMinus() : fraction.x).mul(
                 y === 0 ? fraction.y.oneMinus() : fraction.y,
               )
-              const weight = geometry.mul(bilinear)
+              const confidence = float(1).toVar()
+              const oldStatistics = previousStatisticsNode
+                ? textureLoad(previousStatisticsNode, tap).toConst()
+                : undefined
+              if (oldStatistics && localMean && localSecond && currentRay && currentCoverage) {
+                const reliability = currentCoverage.min(oldStatistics.w).clamp(0, 1)
+                confidence.assign(
+                  mix(
+                    float(1),
+                    reflectionMomentConfidence(
+                      localMean,
+                      reflectionMomentVariance(localMean, localSecond),
+                      reflectionMomentLuminance(old.rgb),
+                      oldStatistics.y,
+                    ),
+                    reliability,
+                  ).mul(
+                    reflectionDistanceConfidence(
+                      currentRay,
+                      oldStatistics.z,
+                      currentCoverage,
+                      oldStatistics.w,
+                      currentNormalRoughness.a,
+                    ),
+                  ),
+                )
+              }
+              const accepted = reflectionHistoryAccepted(geometry, confidence),
+                weight =
+                  adaptive && oldStatistics
+                    ? accepted.and(oldStatistics.x.lessThan(32)).select(bilinear, float(0))
+                    : geometry.mul(bilinear).mul(confidence)
               historySum.addAssign(old.rgb.mul(weight))
-              historyCount.addAssign(old.a.min(16).mul(weight))
+              historyCount.addAssign(old.a.min(adaptive ? 32 : 16).mul(weight))
               weights.addAssign(weight)
+              if (statisticsSum && oldStatistics) statisticsSum.addAssign(oldStatistics.mul(weight))
+              if (missingAge && oldStatistics)
+                If(weight.greaterThan(1e-5), () => {
+                  missingAge.assign(missingAge.max(oldStatistics.x))
+                })
             })
           })
         }
       })
       result.assign(vec4(current.rgb, 1))
+      if (resultStatistics && localMean && localSecond && currentRay && currentCoverage) {
+        const age = reflectionMissingAge(
+          float(0),
+          reflectionHasObservation(current.rgb, currentCoverage),
+        )
+        resultStatistics.assign(
+          vec4(
+            age,
+            localSecond,
+            currentCoverage.greaterThan(0).select(currentRay, float(0)),
+            currentCoverage,
+          ),
+        )
+      }
       If(weights.greaterThan(1e-5), () => {
-        const oldDelta = historySum.div(weights).clamp(minimum, maximum)
-        const count = historyCount.div(weights).mul(weights.min(1)).add(1).min(16)
-        result.assign(vec4(mix(oldDelta, current.rgb, float(1).div(count)), count))
+        const oldDelta = historySum.div(weights),
+          oldCount = historyCount.div(weights)
+        let count: Node<'float'>
+        if (adaptive && currentCoverage && missingAge) {
+          const age = reflectionMissingAge(
+              missingAge,
+              reflectionHasObservation(current.rgb, currentCoverage),
+            ).toConst(),
+            blended = reflectionAdaptiveBlend(
+              reflectionAdaptiveClip(oldDelta, minimum, maximum, currentCoverage),
+              current.rgb,
+              oldCount,
+              age,
+            ).toConst()
+          result.assign(blended)
+          missingAge.assign(age)
+          count = blended.a
+        } else {
+          count = oldCount.mul(weights.min(1)).add(1).min(16)
+          result.assign(
+            vec4(mix(oldDelta.clamp(minimum, maximum), current.rgb, float(1).div(count)), count),
+          )
+        }
+        if (
+          resultStatistics &&
+          statisticsSum &&
+          localMean &&
+          localSecond &&
+          currentRay &&
+          currentCoverage
+        ) {
+          const oldStatistics = statisticsSum.div(weights)
+          resultStatistics.assign(
+            reflectionAdaptiveStatistics(
+              oldStatistics,
+              localSecond,
+              currentRay,
+              currentCoverage,
+              count,
+              missingAge ?? float(0),
+            ),
+          )
+        }
       })
     })
-    return result
+    return resultStatistics ? historyResult(result, resultStatistics) : result
   })()
-  const output = createOwnedRtt(resolve)
+  let adaptiveOutput: ReturnType<typeof createSignedHistoryOutput> | undefined,
+    output: ReturnType<typeof createOwnedRtt>
+  try {
+    adaptiveOutput = adaptive
+      ? createSignedHistoryOutput(outputStruct(resolve.get('signal'), resolve.get('statistics')))
+      : undefined
+    output = adaptiveOutput ?? createOwnedRtt(resolve)
+  } catch (error) {
+    history.dispose()
+    previousNormal.dispose()
+    throw error
+  }
   output.node.value.name = 'TreesX.Reflection.filteredDelta'
 
   return {
@@ -258,6 +426,8 @@ export function createSignedReflectionHistory(
       valid = false
       try {
         renderer.copyTextureToTexture(output.node.value, history.texture)
+        if (adaptiveOutput && previousStatistics)
+          renderer.copyTextureToTexture(adaptiveOutput.statistics.value, previousStatistics)
         renderer.copyTextureToTexture(depth.value, previousDepth)
         renderer.copyTextureToTexture(normal.value, previousNormal)
         previousInverseProjection.value.copy(capturedInverseProjection)
@@ -278,7 +448,16 @@ export function createSignedReflectionHistory(
       valid = false
       enabled.value = 0
     },
-    snapshot: () => ({ prepared, valid, enabled: enabled.value, width, height }),
+    snapshot: () => ({
+      prepared,
+      valid,
+      enabled: enabled.value,
+      width,
+      height,
+      varianceHistory: adaptive,
+      maxHistory: adaptive ? 32 : 16,
+      statisticsBytes: adaptive ? width * height * 16 : 0,
+    }),
     dispose() {
       if (disposed) return
       disposed = true

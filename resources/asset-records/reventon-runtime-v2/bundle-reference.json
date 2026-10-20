@@ -1,0 +1,6 @@
+{
+  "id": "reventon-workbench",
+  "version": 2,
+  "manifest": "/models/reventon-runtime-v2/workbench-manifest.json",
+  "sha256": "0bd2a01fb6f1edc1ddd8a2fa906b8b32981b907b0ab0f651d07a94d688b08ed1"
+}

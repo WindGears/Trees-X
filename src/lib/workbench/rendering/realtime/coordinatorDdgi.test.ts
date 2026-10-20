@@ -36,6 +36,8 @@ function field() {
     ticks,
     receiver,
     api: {
+      invalidate: vi.fn(),
+      needsUpdate: vi.fn(() => true),
       tick: vi.fn<(_idleMs?: number) => Promise<void>>(() => {
         const pending = deferred<void>()
         ticks.push(pending)
@@ -192,6 +194,52 @@ async function fixture(search = '?indirectLighting=ddgi') {
 }
 
 describe('optional DDGI coordinator asynchronous boundaries', () => {
+  it('rebuilds product-specific signal owners on handoff while reusing the renderer', async () => {
+    const f = await fixture('?indirectLighting=ssgi')
+    f.coordinator.prepare(typewriterRealtimeProfile)
+    expect(factories.signals).toHaveBeenCalledTimes(1)
+    f.coordinator.prepare(typewriterRealtimeProfile)
+    expect(factories.signals).toHaveBeenCalledTimes(1)
+    f.coordinator.prepare(reventonRealtimeProfile)
+    expect(f.signals.dispose).toHaveBeenCalledTimes(1)
+    expect(factories.signals).toHaveBeenCalledTimes(2)
+    expect(factories.signals.mock.calls[1]?.[4]).toBe(reventonRealtimeProfile)
+    f.coordinator.prepare(typewriterRealtimeProfile)
+    expect(f.signals.dispose).toHaveBeenCalledTimes(2)
+    expect(factories.signals).toHaveBeenCalledTimes(3)
+    expect(f.renderer.dispose).not.toHaveBeenCalled()
+  })
+
+  it('passes the explicit legacy car scheduling comparison without changing the profile', async () => {
+    const f = await fixture('?indirectLighting=ddgi&carRenderTuning=legacy')
+    f.coordinator.prepare(reventonRealtimeProfile)
+    await f.load()
+    expect(f.create.mock.calls[0]![0]).toMatchObject({
+      profile: reventonRealtimeProfile,
+      legacySchedule: true,
+    })
+  })
+  it('draws cached car frames synchronously while the optional field has no due solve', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const probe = await f.load()
+    probe.api.needsUpdate.mockReturnValue(false)
+    f.coordinator.invalidate('camera')
+    f.coordinator.render(f.notify)
+    expect(probe.api.invalidate).toHaveBeenLastCalledWith('camera')
+    expect(probe.api.tick).not.toHaveBeenCalled()
+    expect(f.signals.render).toHaveBeenCalledOnce()
+    expect(f.notify).toHaveBeenCalledOnce()
+    probe.api.needsUpdate.mockReturnValue(true)
+    f.coordinator.invalidate('pose')
+    f.coordinator.render(f.notify)
+    expect(probe.api.invalidate).toHaveBeenLastCalledWith('pose')
+    expect(probe.api.tick).toHaveBeenCalledOnce()
+    expect(f.signals.render).toHaveBeenCalledOnce()
+    await f.finishTick(probe)
+    expect(f.signals.render).toHaveBeenCalledTimes(2)
+  })
+
   it('holds a native tick lease until settlement so host teardown or its successor cannot free inputs early', async () => {
     const f = await fixture()
     f.coordinator.prepare(reventonRealtimeProfile)
@@ -250,7 +298,8 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
     expect(next.api.tick).toHaveBeenCalledOnce()
     await f.finishTick(next)
     expect(f.coordinator.snapshot().productProfile).toBe('typewriter-v1')
-    expect(factories.signals).toHaveBeenCalledOnce()
+    expect(factories.signals).toHaveBeenCalledTimes(2)
+    expect(f.renderer.dispose).not.toHaveBeenCalled()
   })
 
   it('finishes an old pending compute before the successor first raster and only then solves its own field', async () => {

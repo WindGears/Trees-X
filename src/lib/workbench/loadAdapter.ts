@@ -5,6 +5,7 @@ import type { WorkbenchProduct } from './types'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 import { createProductEnvironment, type OwnedEnvironment } from './rendering/environment'
 import { typewriterCandidate } from './typewriterCandidate'
+import { reventonCandidate } from './reventonCandidate'
 
 export async function loadAdapter(
   product: WorkbenchProduct,
@@ -17,13 +18,17 @@ export async function loadAdapter(
     phase('parse')
     return createSampleAdapter(product)
   }
-  const source = typewriterCandidate(product.presentation.source, location.search)
+  const source = reventonCandidate(
+    typewriterCandidate(product.presentation.source, location.search),
+    location.search,
+  )
   const session = await (
     useStreamingAssets(source, location.search) ? openAssetSession : openLegacyAssetSession
   )(source.bundle, signal, phase)
   const { bundle, signal: sessionSignal } = session
   let decoded: Awaited<ReturnType<(typeof import('./glbLoader'))['decodeGlb']>> | undefined
   let adapter: SceneAdapter | undefined, environment: OwnedEnvironment | undefined
+  let traceTextures: { dispose(): void } | undefined
   try {
     phase('parse')
     const [{ decodeGlb }, { bindGlb }] = await Promise.all([
@@ -32,6 +37,23 @@ export async function loadAdapter(
     ])
     signal.throwIfAborted()
     decoded = await decodeGlb(bundle, session, renderer, sessionSignal)
+    if (
+      source.adapter === 'reventon-v1' &&
+      isWebGpuRenderer(renderer) &&
+      new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
+    ) {
+      const { prepareCompressedTraceTextures } =
+        await import('./rendering/realtime/ddgi/compressedTraceTextures')
+      try {
+        traceTextures = await prepareCompressedTraceTextures(decoded.root, session, sessionSignal)
+      } catch (cause) {
+        sessionSignal.throwIfAborted()
+        // Visible KTX materials remain usable. The strict DDGI proxy will reject
+        // missing CPU maps and report its SSGI fallback instead of dropping maps.
+        decoded.root.userData.ddgiTextureError =
+          cause instanceof Error ? cause.message : String(cause)
+      }
+    }
     phase('materials')
     if (source.adapter === 'typewriter-v1') {
       const program = product.presentation.actions.find((a) => a.motion?.program)?.motion?.program
@@ -128,11 +150,13 @@ export async function loadAdapter(
       dispose() {
         if (disposed) return
         disposed = true
+        traceTextures?.dispose()
         current.dispose()
         environment?.dispose()
       },
     }
   } catch (error) {
+    traceTextures?.dispose()
     if (adapter) adapter.dispose()
     else decoded?.dispose()
     environment?.dispose()

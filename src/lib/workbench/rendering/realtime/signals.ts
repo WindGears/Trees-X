@@ -16,6 +16,7 @@ import { createOwnedRtt } from './ownedRtt'
 import { createReflectionResolve } from './reflectionResolve'
 import { createRealtimeSceneInputs } from './sceneInputs'
 import type { RealtimeProductProfile } from './productProfile'
+import { classifySsrSources } from './ssrSourceClassification'
 import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
 
 export interface RealtimeIrradiance {
@@ -34,6 +35,9 @@ export function createRealtimeSignals(
   profile?: RealtimeProductProfile,
 ) {
   const inputs = createRealtimeSceneInputs(scene, camera, motion)
+  const carOptimization =
+    profile?.adapterId === 'reventon-v1' &&
+    new URLSearchParams(location.search).get('carRenderTuning') !== 'legacy'
   let loungeFocus = createLoungeDofFocus(
     scene,
     camera,
@@ -76,6 +80,9 @@ export function createRealtimeSignals(
   // Resolve owns hit/miss blending. Native edge fade changes only RGB, so
   // leave it disabled to keep raywise replacement and native IBL consistent.
   reflection.screenEdgeFade.value = 0
+  const releaseClassification = carOptimization
+    ? classifySsrSources(reflection, baseSpecular)
+    : undefined
   const gi = ssgi(beauty, depth, signedNormal, camera)
   gi.useTemporalFiltering = false
   gi.sliceCount.value = 4
@@ -121,6 +128,7 @@ export function createRealtimeSignals(
     velocity,
     camera,
     reflectionKernel,
+    carOptimization,
   )
 
   function compose() {
@@ -260,6 +268,7 @@ export function createRealtimeSignals(
     },
     snapshot: () => ({ ssr: ssrEnabled, ssgi: ssgiEnabled, denoise: denoiseEnabled }),
     sampling: () => reflectionResolve?.snapshot() ?? null,
+    history: () => reflectionResolve?.historySnapshot() ?? null,
     dispose() {
       if (disposed) return
       disposed = true
@@ -271,6 +280,7 @@ export function createRealtimeSignals(
       reflectionResolve?.dispose()
       spatialGi.dispose()
       giInput.dispose()
+      releaseClassification?.()
       reflection.dispose()
       gi.dispose()
       inputs.dispose()
