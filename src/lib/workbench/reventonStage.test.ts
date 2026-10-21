@@ -1,8 +1,28 @@
-import { DirectionalLight, Scene } from 'three'
+import { DirectionalLight, RectAreaLight, Scene } from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { createReventonStageWithShadow } from './reventonStage'
+import { carStudioLighting } from './carStudioQuality'
 
 describe('car shared native and contact shadow ownership', () => {
+  it('keeps the baseline lights and applies the frozen studio look only explicitly', () => {
+    const scene = new Scene(),
+      createShadow = () => ({ render: vi.fn(), markDirty: vi.fn(), dispose: vi.fn() })
+    const base = createReventonStageWithShadow(scene, createShadow)
+    let lights = scene.children.filter((o): o is RectAreaLight => o instanceof RectAreaLight)
+    expect(lights.map((light) => light.intensity)).toEqual([7, 4])
+    expect(lights[0]!.position.toArray()).toEqual([-1, 4, -3])
+    base.dispose()
+    const studio = createReventonStageWithShadow(scene, createShadow, { quality: 'studio' })
+    lights = scene.children.filter((o): o is RectAreaLight => o instanceof RectAreaLight)
+    for (const [index, profile] of [carStudioLighting.key, carStudioLighting.strip].entries()) {
+      expect(lights[index]!.intensity).toBe(profile.intensity)
+      expect(lights[index]!.position.toArray()).toEqual(profile.position)
+      expect(lights[index]!.width).toBe(profile.width)
+      expect(lights[index]!.height).toBe(profile.height)
+    }
+    studio.dispose()
+    expect(scene.children).toEqual([])
+  })
   it('refreshes before auxiliary passes and shares pose dirtiness without camera churn', () => {
     const scene = new Scene(),
       light = new DirectionalLight(),

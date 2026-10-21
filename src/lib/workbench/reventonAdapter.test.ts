@@ -4,6 +4,7 @@ import {
   Color,
   Group,
   Mesh,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Quaternion,
   Scene,
@@ -16,6 +17,7 @@ import { parseProduct } from './api'
 import { bindReventon, type ReventonGpuDependencies } from './reventonAdapter'
 import { progressActions } from './motionConfig'
 import type { GlbSource, MotionTrack } from './types'
+import { isCarStudioScene } from './carStudioQuality'
 
 function fixture() {
   const raw: unknown = JSON.parse(
@@ -108,6 +110,90 @@ function localProgress(track: MotionTrack, progress: number) {
 }
 
 describe('Reventon registered workbench adapter', () => {
+  it.each([false, true])('owns studio look restoration after GPU attach (failure=%s)', (fail) => {
+    vi.stubGlobal('location', { search: '?carQuality=studio' })
+    const f = fixture(),
+      material = new MeshPhysicalMaterial({ roughness: 0.451 }),
+      scene = new Scene(),
+      stage = {
+        render: vi.fn(),
+        markDirty: vi.fn(),
+        dispose: vi.fn(),
+        prepare: vi.fn(async () => {}),
+      }
+    material.name = f.source.finishMaterials[0]!
+    f.model.add(new Mesh(f.geometry, material))
+    const release = vi.fn(() => {
+        expect(material.roughness).toBe(0.451)
+        expect(material.clearcoat).toBe(0)
+        f.release()
+      }),
+      gpu: ReventonGpuDependencies = {
+        prepareMaterials: vi.fn(() => {
+          expect(material.roughness).toBe(0.34)
+          return { sync: vi.fn(), dispose: vi.fn() }
+        }),
+        createStage: vi.fn((_renderer, _scene, root, options) => {
+          expect(root.userData.carStudioQuality).toBe('studio')
+          expect(options).toEqual({ quality: 'studio' })
+          if (fail) throw new Error('studio setup failed')
+          return stage
+        }),
+      },
+      adapter = bindReventon(f.product, f.source, f.model, release, gpu)
+    scene.add(adapter.root)
+    try {
+      const renderer = {
+        isWebGPURenderer: true,
+        getMaxAnisotropy: () => 16,
+      } as unknown as WebGPURenderer
+      if (fail) expect(() => adapter.attach?.(scene, renderer)).toThrow('studio setup failed')
+      else adapter.attach?.(scene, renderer)
+      expect(isCarStudioScene(scene)).toBe(!fail)
+      adapter.dispose()
+      adapter.dispose()
+      expect(isCarStudioScene(scene)).toBe(false)
+      expect(release).toHaveBeenCalledTimes(1)
+    } finally {
+      adapter.dispose()
+      material.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('does not apply studio material or stage options to administrator resource references', () => {
+    vi.stubGlobal('location', { search: '?carQuality=studio' })
+    const f = fixture(),
+      material = new MeshPhysicalMaterial({ roughness: 0.451 }),
+      scene = new Scene(),
+      stage = {
+        render: vi.fn(),
+        markDirty: vi.fn(),
+        dispose: vi.fn(),
+        prepare: vi.fn(async () => {}),
+      }
+    material.name = f.source.finishMaterials[0]!
+    f.model.add(new Mesh(f.geometry, material))
+    f.source.bundle = { ...f.source.bundle, sha256: 'f'.repeat(64) }
+    const gpu: ReventonGpuDependencies = {
+        prepareMaterials: () => ({ sync: vi.fn(), dispose: vi.fn() }),
+        createStage: vi.fn(() => stage),
+      },
+      adapter = bindReventon(f.product, f.source, f.model, f.release, gpu),
+      renderer = { isWebGPURenderer: true, getMaxAnisotropy: () => 16 } as unknown as WebGPURenderer
+    try {
+      scene.add(adapter.root)
+      adapter.attach?.(scene, renderer)
+      expect(material.roughness).toBe(0.451)
+      expect(isCarStudioScene(scene)).toBe(false)
+      expect(gpu.createStage).toHaveBeenCalledExactlyOnceWith(renderer, scene, adapter.root)
+    } finally {
+      adapter.dispose()
+      material.dispose()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('canonicalizes exact borrowed maps before GPU bindings and restores them before loader release', () => {
     const f = fixture(),
       first = new Texture(),

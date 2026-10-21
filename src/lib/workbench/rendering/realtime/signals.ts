@@ -8,7 +8,6 @@ import {
   type WebGPURenderer,
 } from 'three/webgpu'
 import { renderOutput, sample, unpackRGBToNormal, vec4 } from 'three/tsl'
-import { ssr } from 'three/addons/tsl/display/SSRNode.js'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { recurrentDenoise } from 'three/addons/tsl/display/RecurrentDenoiseNode.js'
 import { smaa } from 'three/addons/tsl/display/SMAANode.js'
@@ -16,7 +15,8 @@ import { createOwnedRtt } from './ownedRtt'
 import { createReflectionResolve } from './reflectionResolve'
 import { createRealtimeSceneInputs } from './sceneInputs'
 import type { RealtimeProductProfile } from './productProfile'
-import { classifySsrSources } from './ssrSourceClassification'
+import { createReflectionRays } from './reflectionRays'
+import { isCarStudioScene } from '../../carStudioQuality'
 import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
 
 export interface RealtimeIrradiance {
@@ -59,30 +59,20 @@ export function createRealtimeSignals(
     diffuseResponse,
   } = inputs
   const signedNormal = sample((uv) => unpackRGBToNormal(normal.sample(uv).rgb))
-  const reflection = ssr(beauty, depth, signedNormal, {
-    stochastic: true,
-    diffuseNode: albedo,
-    metalnessNode: albedo.a,
-    roughnessNode: normal.a,
-    binaryRefine: true,
-    camera,
-  })
-  reflection.resolutionScale = 1
-  reflection.quality.value = 1
-  reflection.maxDistance.value = 8
-  reflection.thickness.value = 0.035
-  reflection.maxLuminance.value = Infinity
-  reflection.intensity.value = 1
-  // A screen-space miss must retain the stable native PMREM, not replace it
-  // with one stochastic HDR sample. r185 still requires the loaded HDR node.
-  reflection.environmentIntensity.value = 0
-  reflection.screenEdgeFadeBlack = true
-  // Resolve owns hit/miss blending. Native edge fade changes only RGB, so
-  // leave it disabled to keep raywise replacement and native IBL consistent.
-  reflection.screenEdgeFade.value = 0
-  const releaseClassification = carOptimization
-    ? classifySsrSources(reflection, baseSpecular)
-    : undefined
+  const studio = profile?.adapterId === 'reventon-v1' && isCarStudioScene(scene)
+  const reflection = createReflectionRays(
+    {
+      beauty,
+      depth,
+      normal: signedNormal,
+      roughness: normal.a,
+      albedo,
+      nativeSingle: baseSpecular,
+      camera,
+    },
+    studio && new URLSearchParams(location.search).get('carStudioReflections') !== '1' ? 2 : 1,
+    carOptimization || studio,
+  )
   const gi = ssgi(beauty, depth, signedNormal, camera)
   gi.useTemporalFiltering = false
   gi.sliceCount.value = 4
@@ -121,7 +111,7 @@ export function createRealtimeSignals(
   const frameSize = new Vector2()
   const reflectionResolve = createReflectionResolve(
     renderer,
-    reflection.getTextureNode(),
+    reflection.textures,
     baseSpecular,
     depth,
     normal,
@@ -215,6 +205,7 @@ export function createRealtimeSignals(
       try {
         renderer.getDrawingBufferSize(frameSize)
         loungeFocus.prepare()
+        reflection.prepare()
         reflectionResolve?.prepare(frameSize.x, frameSize.y)
         pipeline.render()
       } finally {
@@ -230,9 +221,11 @@ export function createRealtimeSignals(
     },
     commitFrame() {
       if (!disposed && ssrEnabled && denoiseEnabled) reflectionResolve?.commitFrame()
+      if (!disposed && ssrEnabled) reflection.commitFrame()
     },
     cancelFrame() {
       reflectionResolve?.cancelFrame()
+      reflection.cancelFrame()
     },
     resetHistory,
     setProfile(next: RealtimeProductProfile) {
@@ -254,7 +247,7 @@ export function createRealtimeSignals(
       const next = scene.environment,
         version = next?.version ?? -1
       if (next !== environment || version !== environmentVersion) {
-        reflection.setEnvMap(next)
+        reflection.setEnvironment(next)
         environment = next
         environmentVersion = version
       }
@@ -267,7 +260,12 @@ export function createRealtimeSignals(
       resetHistory()
       compose()
     },
-    snapshot: () => ({ ssr: ssrEnabled, ssgi: ssgiEnabled, denoise: denoiseEnabled }),
+    snapshot: () => ({
+      ssr: ssrEnabled,
+      ssgi: ssgiEnabled,
+      denoise: denoiseEnabled,
+      ...(studio ? { reflectionRays: reflection.snapshot() } : {}),
+    }),
     sampling: () => reflectionResolve?.snapshot() ?? null,
     history: () => reflectionResolve?.historySnapshot() ?? null,
     dispose() {
@@ -281,7 +279,6 @@ export function createRealtimeSignals(
       reflectionResolve?.dispose()
       spatialGi.dispose()
       giInput.dispose()
-      releaseClassification?.()
       reflection.dispose()
       gi.dispose()
       inputs.dispose()

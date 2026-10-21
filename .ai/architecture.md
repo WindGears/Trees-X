@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 汽车 studio 局部能力（2026-10-21）
+
+`carStudioQuality` 在精确资产匹配及真实WebGPU attach后发布局部能力；材质数值覆盖由专属owner恢复，舞台沿用原来的唯一所有者。`reflectionRays`拥有一／两套原生SSR目标及分类桥接，双射线由受检r185 `_noiseIndex`桥接按完整成功帧推进。每条命中先计算signed修正，再平均，不能混合原始RGBA后判定命中。`realtimeSignalIdentity` 将候选能力／射线选项纳入图复用键，保持renderer复用并隔离同profile自定义资源。失败保留单射线并报告，不释放借用纹理。见[验收记录](reventon-studio-quality-validation.md)。
+
 ## 汽车PSO准备与采样复用（2026-10-21）
 
 场景本地`SceneAdapter.prepare(signal)`经controller委托，注册汽车WebGPU在装配最终运行材质后串行准备私有depth／两种depth布局blur及surface／beauty真实MRT；打字机实时入口共享MRT准备，普通WebGL／hybrid保持。host为选择持独立AbortController，停止绘制并等待旧lease后，在新lease外卸载旧owners，随后取得新lease准备。lease仅保活，不是renderer互斥锁。取消只能停止后续任务／发布，不撤销已提交compile，资源仍至结算后释放。

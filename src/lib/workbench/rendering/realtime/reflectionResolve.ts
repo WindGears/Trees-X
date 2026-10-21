@@ -9,7 +9,7 @@ import type { ReflectionKernel } from './reflectionSampling'
  */
 export function createReflectionResolve(
   renderer: WebGPURenderer,
-  reflection: TextureNode,
+  reflection: TextureNode | readonly TextureNode[],
   nativeSingle: TextureNode,
   depth: TextureNode,
   normal: TextureNode,

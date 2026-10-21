@@ -3,6 +3,7 @@ import { Group, PerspectiveCamera, Scene, Vector2 } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import { createRealtimeCoordinator } from './coordinator'
 import type { RealtimeStatus } from './types'
+import { reventonRealtimeProfile } from './productProfile'
 
 const factories = vi.hoisted(() => ({
   clock: vi.fn(),
@@ -122,6 +123,25 @@ function fixture() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('realtime complete-frame coordinator lifecycle', () => {
+  it('rebuilds only the local graph when audited and custom cars share an adapter profile', () => {
+    const f = fixture()
+    f.root.userData.adapter = 'reventon-v1'
+    f.root.userData.carStudioQuality = 'studio'
+    f.coordinator.prepare(reventonRealtimeProfile)
+    expect(factories.signals).toHaveBeenCalledTimes(1)
+    f.coordinator.unload()
+    delete f.root.userData.carStudioQuality
+    f.coordinator.prepare(reventonRealtimeProfile)
+    expect(factories.signals).toHaveBeenCalledTimes(2)
+    expect(f.signals.dispose).toHaveBeenCalledTimes(1)
+    f.coordinator.unload()
+    f.root.userData.carStudioQuality = 'studio'
+    f.coordinator.prepare(reventonRealtimeProfile)
+    expect(factories.signals).toHaveBeenCalledTimes(3)
+    expect(f.signals.dispose).toHaveBeenCalledTimes(2)
+    expect(f.renderer.dispose).not.toHaveBeenCalled()
+    f.coordinator.dispose()
+  })
   it('exposes the scene-owned sampling snapshot separately from enabled signal flags', () => {
     const f = fixture()
     expect(f.coordinator.snapshot().reflectionKernel).toBeNull()

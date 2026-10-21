@@ -10,9 +10,17 @@ import type { GlbSource, WorkbenchProduct } from './types'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 import type { WebGPURenderer } from 'three/webgpu'
 import type { ReventonStage } from './reventonStage'
+import type { ReventonStageOptions } from './reventonStage'
+import { resolveCarStudioQuality } from './carStudioQuality'
+import { applyCarStudioMaterials } from './carStudioMaterials'
 
 export interface ReventonGpuDependencies {
-  createStage(renderer: WebGPURenderer, scene: Scene, model: Group): ReventonStage
+  createStage(
+    renderer: WebGPURenderer,
+    scene: Scene,
+    model: Group,
+    options?: ReventonStageOptions,
+  ): ReventonStage
   prepareMaterials(model: Group): { sync(): void; dispose(): void }
 }
 
@@ -60,6 +68,7 @@ export function bindReventon(
   let studio: ReturnType<typeof createReventonStage> | undefined
   let gpuMaterials: ReturnType<ReventonGpuDependencies['prepareMaterials']> | undefined
   let gpuTextures: ReturnType<typeof canonicalizeReventonTextures> | undefined
+  let studioMaterials: ReturnType<typeof applyCarStudioMaterials> | undefined
   let disposed = false
   const clearSelection = () => {
     for (const [material, original] of emissive) {
@@ -74,14 +83,27 @@ export function bindReventon(
       if (isWebGpuRenderer(renderer)) {
         if (!gpu) throw new Error('汽车 WebGPU 舞台依赖未装配')
         try {
+          const quality = resolveCarStudioQuality(
+            source,
+            typeof location === 'undefined' ? '' : location.search,
+          )
+          if (quality) {
+            studioMaterials = applyCarStudioMaterials(model, source.finishMaterials)
+            adapter.root.userData.carStudioQuality = quality
+          }
           gpuTextures = canonicalizeReventonTextures(model)
           gpuMaterials = gpu.prepareMaterials(model)
-          studio = gpu.createStage(renderer, scene, adapter.root)
+          studio = quality
+            ? gpu.createStage(renderer, scene, adapter.root, { quality })
+            : gpu.createStage(renderer, scene, adapter.root)
         } catch (error) {
           gpuMaterials?.dispose()
           gpuMaterials = undefined
           gpuTextures?.dispose()
           gpuTextures = undefined
+          studioMaterials?.dispose()
+          studioMaterials = undefined
+          delete adapter.root.userData.carStudioQuality
           throw error
         }
       } else studio = createReventonStage(renderer, scene, adapter.root)
@@ -136,6 +158,9 @@ export function bindReventon(
       gpuMaterials = undefined
       gpuTextures?.dispose()
       gpuTextures = undefined
+      studioMaterials?.dispose()
+      studioMaterials = undefined
+      delete adapter.root.userData.carStudioQuality
       textures.clear()
       finishes.clear()
       emissive.clear()

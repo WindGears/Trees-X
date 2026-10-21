@@ -221,6 +221,10 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 汽车写实摄影棚候选（2026-10-21）
+
+`carQuality=studio` 只调整已核验汽车在 WebGPU 下的材质数值与两块摄影棚软箱，保持背景、EXR、曝光、UI 和原相机。车身采用独立清漆高光、金属与软质座舱保留材质区分；玻璃试调反射强度，不用不透明度伪造透射。双射线与单射线对照必须使用相同灯光／材质，画质由实机观察确认，不以像素变化或工程 PASS 代替。主软箱自阴影尚未实现，原入口继续保留。见[样片记录](.ai/reventon-studio-quality-validation.md)。
+
 ## 汽车实时候选（2026-10-19）
 
 显式汽车WebGPU入口保持现有摄影棚、EXR、取景和方案C浮动界面，不使用打字机暖夜与桌台。保留原2048²接触阴影、65tap过滤和0.8透明度；RT坐标转换必须让开门／分离阴影落在真实部件下。线性HDR统一输出与原WebGL的后映射透明阴影并非逐像素等价，背景、阴影浓淡、SSR颗粒需同取景实机对照；不以技术接通宣称画质通过。普通入口保持WebGL，候选与限制见 [.ai/reventon-webgpu-validation.md](.ai/reventon-webgpu-validation.md)。

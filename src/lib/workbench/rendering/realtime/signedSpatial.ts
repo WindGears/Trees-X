@@ -69,13 +69,15 @@ export function reflectionRayGuide(sum: Node<'vec2'>) {
  * positive radiance clamp or inverse-luminance payload weighting.
  */
 export function createSignedReflectionSpatial(
-  reflection: TextureNode,
+  reflection: TextureNode | readonly TextureNode[],
   nativeSingle: TextureNode,
   depth: TextureNode,
   normal: TextureNode,
   camera: PerspectiveCamera,
   kernel: ReflectionKernel = 'rotating',
 ) {
+  const rays = Array.isArray(reflection) ? reflection : [reflection as TextureNode]
+  if (rays.length < 1 || rays.length > 2) throw new Error('Reflection requires one or two rays')
   const sampling = createReflectionSampling(kernel)
   const resolution = uniform(new Vector2(1, 1)).onRenderUpdate(({ renderer }, self) => {
     if (!renderer) throw new Error('Signed reflection needs the existing render frame')
@@ -91,7 +93,6 @@ export function createSignedReflectionSpatial(
     const pixel = ivec2(coord.mul(resolution).floor()),
       pixelUv = vec2(pixel).add(0.5).div(resolution),
       native = textureLoad(nativeSingle, pixel).toConst(),
-      ray = textureLoad(reflection, pixel).toConst(),
       z = textureLoad(depth, pixel).r.toConst(),
       packed = textureLoad(normal, pixel).toConst()
     const inside = coord.x
@@ -100,16 +101,30 @@ export function createSignedReflectionSpatial(
       .and(coord.y.greaterThanEqual(0))
       .and(coord.y.lessThan(1))
     const supported = inside.and(z.lessThan(1)).and(native.a.greaterThan(0))
-    const hit = ray.a.greaterThan(0).and(ray.a.lessThan(9999))
+    // Resolve each independent ray before averaging. Averaging RGBA first
+    // would classify hit+miss incorrectly and subtract native IBL on misses.
+    const rayValues = rays.map((ray) => textureLoad(ray, pixel).toConst())
+    const deltas = rayValues.map((ray) => {
+      const hit = ray.a.greaterThan(0).and(ray.a.lessThan(9999))
+      return supported.and(hit).select(ray.rgb.mul(native.a).sub(native.rgb), vec3(0))
+    })
+    const delta = deltas.reduce((sum, next) => sum.add(next)).div(rays.length)
+    const statistics = rayValues
+      .map((ray) => reflectionRayGuideContribution(ray.a))
+      .reduce<Node<'vec2'>>((sum, next) => sum.add(next), vec2(0))
+    const distance =
+      rays.length === 1
+        ? rayValues[0]!.a
+        : statistics.y.greaterThan(0).select(reflectionRayGuide(statistics), 10000)
     return {
       pixel,
       uv: pixelUv,
       z,
       packed,
-      ray,
+      ray: { a: distance },
       supported,
       nativeLuma: luminance(native.rgb),
-      delta: supported.and(hit).select(ray.rgb.mul(native.a).sub(native.rgb), vec3(0)),
+      delta,
     }
   }
   const raw = createOwnedRtt(

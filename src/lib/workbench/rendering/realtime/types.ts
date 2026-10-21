@@ -3,6 +3,7 @@ import type { WebGPURenderer } from 'three/webgpu'
 import type { RefinementChange } from '../refinementTypes'
 import type { ReflectionSamplingSnapshot } from './reflectionSampling'
 import type { RealtimeProductProfile } from './productProfile'
+import type { ReflectionRaySnapshot } from './reflectionRays'
 
 export interface RealtimeStatus {
   phase: 'loading' | 'ready' | 'paused' | 'error'
@@ -10,6 +11,7 @@ export interface RealtimeStatus {
   revision: number
   generation: number
   error: string | null
+  reflectionRays?: ReflectionRaySnapshot
   indirectLighting?: {
     requested: 'ssgi' | 'ddgi'
     actual: 'ssgi' | 'ddgi'
@@ -25,7 +27,7 @@ export interface RealtimeSnapshot extends RealtimeStatus {
   disposed: boolean
   historyResets: number
   motion: { objects: number; instances: number; historyBytes: number; frameOpen: boolean }
-  signals: { ssr: boolean; ssgi: boolean; denoise: boolean }
+  signals: { ssr: boolean; ssgi: boolean; denoise: boolean; reflectionRays?: ReflectionRaySnapshot }
   reflectionKernel?: ReflectionSamplingSnapshot | null
   reflectionHistory?: {
     varianceHistory: boolean

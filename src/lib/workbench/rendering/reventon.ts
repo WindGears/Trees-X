@@ -6,10 +6,14 @@ import { prepareGpuReventonMaterials } from './reventonGlass'
 
 /** Dynamically imported only for a car on the existing WebGPU renderer. */
 export const reventonGpuDependencies: ReventonGpuDependencies = {
-  createStage: (renderer, scene, model) =>
-    createReventonStageWithShadow(scene, () => {
-      bindGpuAreaLights()
-      return createGpuReventonShadow(renderer, scene, model)
-    }),
+  createStage: (renderer, scene, model, options) =>
+    createReventonStageWithShadow(
+      scene,
+      () => {
+        bindGpuAreaLights()
+        return createGpuReventonShadow(renderer, scene, model)
+      },
+      options,
+    ),
   prepareMaterials: prepareGpuReventonMaterials,
 }

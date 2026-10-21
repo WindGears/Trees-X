@@ -2,6 +2,7 @@ import { RectAreaLight, type Group, type Scene, type WebGLRenderer } from 'three
 import { createContactShadow } from '@/lib/reventon/contactShadow'
 import { acquireRectAreaUniforms } from '@/lib/three/rectAreaUniforms'
 import { createShadowRefresh } from './rendering/shadowRefresh'
+import { carStudioLighting, type CarStudioQuality } from './carStudioQuality'
 
 /** Local lighting and live ground projection; the workbench keeps its renderer and camera. */
 export function createReventonStage(renderer: WebGLRenderer, scene: Scene, model: Group) {
@@ -17,8 +18,16 @@ interface ReventonShadow {
   prepare?(signal?: AbortSignal): Promise<void>
 }
 
+export interface ReventonStageOptions {
+  quality?: CarStudioQuality
+}
+
 /** Both backends retain the car's authored lights and the same unique owners. */
-export function createReventonStageWithShadow(scene: Scene, createShadow: () => ReventonShadow) {
+export function createReventonStageWithShadow(
+  scene: Scene,
+  createShadow: () => ReventonShadow,
+  options: ReventonStageOptions = {},
+) {
   const key = new RectAreaLight('#ffffff', 7, 6, 3)
   const strip = new RectAreaLight('#ffffff', 4, 4, 1.2)
   key.name = 'Reventon / key softbox'
@@ -27,6 +36,18 @@ export function createReventonStageWithShadow(scene: Scene, createShadow: () => 
   strip.position.set(3, 2, 1)
   key.lookAt(0, 0.5, 0)
   strip.lookAt(0, 0.5, 0)
+  if (options.quality === 'studio') {
+    for (const [light, profile] of [
+      [key, carStudioLighting.key],
+      [strip, carStudioLighting.strip],
+    ] as const) {
+      light.intensity = profile.intensity
+      light.width = profile.width
+      light.height = profile.height
+      light.position.set(profile.position[0], profile.position[1], profile.position[2])
+      light.lookAt(profile.target[0], profile.target[1], profile.target[2])
+    }
+  }
   const releaseUniforms = acquireRectAreaUniforms(),
     shadowRefresh = createShadowRefresh(scene)
   let shadow: ReventonShadow | undefined

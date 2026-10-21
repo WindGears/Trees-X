@@ -3,6 +3,7 @@ import { createRealtimeClock } from './clock'
 import { createMotionHistory } from './motion'
 import { createRealtimeSignals } from './signals'
 import { createRealtimeMaterials } from './materials'
+import { realtimeSignalIdentity } from './signalIdentity'
 import { withPreparationLease } from '../preparationLease'
 import type { RealtimeChange, RealtimeOptions, RealtimeSnapshot, RealtimeStatus } from './types'
 import type { RealtimeDdgi } from './ddgi/field'
@@ -44,6 +45,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiError: string | null = null,
     ddgiFramePending = false,
     preparedPasses = false
+  let signalIdentity: string | undefined
   const indirectRequested: 'ssgi' | 'ddgi' =
     typeof location !== 'undefined' &&
     new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
@@ -108,6 +110,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         revision,
         generation,
         indirectLighting: indirectStatus(),
+        reflectionRays: signals?.snapshot().reflectionRays,
       })
     }
   }
@@ -159,7 +162,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         typewriterRealtimeProfile,
     ) {
       if (disposed) return
-      if (profile !== productProfile) {
+      const identity = realtimeSignalIdentity(scene, profile)
+      if (profile !== productProfile || (signals && identity !== signalIdentity)) {
         // A direct product handoff must not retain the previous volume or a
         // receiver/late module callback belonging to the old profile.
         generation++
@@ -183,6 +187,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       motion.reset(scene)
       const reuse = Boolean(signals)
       signals ??= createRealtimeSignals(renderer, scene, camera, motion.node, profile)
+      signalIdentity = identity
       signals.setProfile?.(profile)
       signals.environment()
       prepareDdgi()
