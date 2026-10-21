@@ -61,6 +61,7 @@ export function useWorkbenchScene(
     disposed = false,
     generation = 0
   const setupAbort = new AbortController()
+  let selectionAbort: AbortController | undefined
   const requestFrame = () => {
     if (
       props.active &&
@@ -147,6 +148,8 @@ export function useWorkbenchScene(
   let removeFrame: (() => void) | undefined, removeListeners: (() => void) | undefined
   function load(): Promise<void> {
     const request = ++generation
+    selectionAbort?.abort()
+    const abort = (selectionAbort = new AbortController())
     removeFrame?.()
     removeFrame = undefined
     // Stop input and the real drawing clock immediately, but never free resources
@@ -163,17 +166,20 @@ export function useWorkbenchScene(
       await waitForPreparations(renderer)
       if (disposed || request !== generation || !controller || !product) return
       try {
+        // Release the previous singleton while the renderer is quiescent. Its
+        // disposal uses afterPreparation: placing it inside the successor's
+        // lease would defer the real release until after the new field creates.
+        hybrid?.unload()
+        realLighting?.unload()
+        controller.unload()
         await withPreparationLease(renderer, async () => {
-          hybrid?.unload()
-          realLighting?.unload()
-          controller!.unload()
           committedPresentation = product.presentation
           updateStage()
           // Commit the explicit lighting graph before attaching and compiling
           // this product. New selection props cannot remove an old pass mid-await.
           await nextTick()
           if (disposed || request !== generation) return
-          await loadCurrent(product, revision, request)
+          await loadCurrent(product, revision, request, abort.signal)
         })
       } catch (cause) {
         if (!disposed && request === generation) {
@@ -203,6 +209,7 @@ export function useWorkbenchScene(
     product: NonNullable<typeof store.product>,
     revision: number,
     request: number,
+    signal: AbortSignal,
   ) {
     motionSlug = product.slug
     motionRevision = revision
@@ -220,14 +227,22 @@ export function useWorkbenchScene(
     }
     if (!camera.value) return
     store.loading(product.slug, revision, 'first-frame')
-    realLighting?.prepare(
-      realtimeProductProfile(
-        product.presentation.source.kind === 'glb'
-          ? product.presentation.source.adapter
-          : undefined,
-      ),
+    const profile = realtimeProductProfile(
+      product.presentation.source.kind === 'glb' ? product.presentation.source.adapter : undefined,
     )
-    await renderer.compileAsync(scene.value, camera.value)
+    realLighting?.prepare(profile)
+    const car = profile?.adapterId === 'reventon-v1'
+    if (
+      realLighting &&
+      (!car || new URLSearchParams(location.search).get('carPrewarm') !== 'off')
+    ) {
+      // Same renderer, stopped drawing clock and current preparation lease.
+      // These tasks warm the actual private shadow and HDR MRT variants, not
+      // the unrelated default Canvas PSO. Post effects still gate on a real frame.
+      if (car) await current.prepare(signal)
+      if (disposed || request !== generation) return
+      await realLighting.preparePasses(signal)
+    } else await renderer.compileAsync(scene.value, camera.value)
     if (disposed || request !== generation) return
     const frame = context.renderer.onRender(() => {
       if (
@@ -532,6 +547,7 @@ export function useWorkbenchScene(
     unregisterCapture = undefined
     disposed = true
     setupAbort.abort()
+    selectionAbort?.abort()
     generation++
     removeFrame?.()
     projection.off()

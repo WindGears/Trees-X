@@ -1,10 +1,23 @@
-import { HalfFloatType, MaterialBlending, RGFormat, UnsignedByteType } from 'three'
+import {
+  ColorManagement,
+  FloatType,
+  HalfFloatType,
+  MaterialBlending,
+  Mesh,
+  NoToneMapping,
+  RGFormat,
+  UnsignedByteType,
+  Vector2,
+  type Object3D,
+  type Material,
+} from 'three'
 import {
   BlendMode,
   type Node,
   type NodeBuilder,
   type PerspectiveCamera,
   type Scene,
+  type WebGPURenderer,
 } from 'three/webgpu'
 import {
   diffuseColor,
@@ -23,6 +36,7 @@ import {
   physicalRoughnessNode,
   specularCaptureNode,
 } from './materials'
+import { preservePreparationState } from '../preparationState'
 
 // In this attachment alpha means material opacity, not roughness or a BRDF
 // weight. Opaque surfaces write 1; each native transparent fragment leaves
@@ -79,6 +93,71 @@ export function createRealtimeSceneInputs(scene: Scene, camera: PerspectiveCamer
     baseSpecular: surface.getTextureNode('baseSpecular'),
     baseDiffuse: surface.getTextureNode('baseDiffuse'),
     diffuseResponse: surface.getTextureNode('output'),
+    async prepare(renderer: WebGPURenderer, signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (disposed) throw new Error('Cannot prepare disposed scene inputs')
+      const restore = preservePreparationState(renderer, scene, camera),
+        size = renderer.getDrawingBufferSize(new Vector2()),
+        culled = new Map<Object3D, boolean>(),
+        deferredMaterials = new Map<Material, boolean>()
+      try {
+        // Compile registered model variants outside the current frustum too.
+        // Mesh visibility, layers, assets and the observation camera stay intact.
+        scene.traverse((object) => {
+          // r185 compileAsync runs viewport updateBefore outside the original
+          // render context. Prebinding its framebuffer may lock in Canvas BGRA
+          // instead of HDR. Let only these materials compile in the real first
+          // draw, where their native copy context exists. Ordinary alpha decals
+          // and opaque groups on the same mesh still receive MRT prewarming.
+          if (object instanceof Mesh)
+            for (const material of Array.isArray(object.material)
+              ? object.material
+              : [object.material]) {
+              const transmission = Reflect.get(material, 'transmission')
+              if (
+                (typeof transmission === 'number' && transmission > 0) ||
+                Reflect.get(material, 'transmissionNode') ||
+                Reflect.get(material, 'backdropNode')
+              ) {
+                if (!deferredMaterials.has(material))
+                  deferredMaterials.set(material, material.visible)
+                material.visible = false
+              }
+            }
+          if (object.userData.workbenchProduct)
+            object.traverse((child) => {
+              if (!culled.has(child)) culled.set(child, child.frustumCulled)
+              child.frustumCulled = false
+            })
+        })
+        renderer.toneMapping = NoToneMapping
+        renderer.outputColorSpace = ColorManagement.workingColorSpace
+        renderer.xr.enabled = false
+        renderer.autoClear = true
+        // Match PassNode.setup before compiling: output type/sample count must
+        // already match the actual linear HDR graph, not the default Canvas.
+        for (const input of [surface, beauty]) {
+          signal?.throwIfAborted()
+          if (disposed) throw new Error('Scene inputs disposed during preparation')
+          input.renderTarget.samples = 0
+          input.renderTarget.texture.type = renderer.getOutputBufferType()
+          if (renderer.reversedDepthBuffer && input.renderTarget.depthTexture)
+            input.renderTarget.depthTexture.type = FloatType
+          input.setSize(size.x, size.y)
+          renderer.opaque = input.opaque
+          renderer.transparent = input.transparent
+          renderer.depth = input.renderTarget.depthBuffer
+          renderer.stencil = input.renderTarget.stencilBuffer
+          await input.compileAsync(renderer)
+          signal?.throwIfAborted()
+          if (disposed) throw new Error('Scene inputs disposed during preparation')
+        }
+      } finally {
+        for (const [object, value] of culled) object.frustumCulled = value
+        for (const [material, visible] of deferredMaterials) material.visible = visible
+        restore()
+      }
+    },
     dispose() {
       if (disposed) return
       disposed = true

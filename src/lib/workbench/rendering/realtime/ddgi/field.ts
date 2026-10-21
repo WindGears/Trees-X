@@ -29,49 +29,56 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
   if (speedballPackage.version !== ddgiSource.version)
     throw new Error('Speedball package version differs from the reviewed 0.8.0 source')
   const profile = options.profile ?? typewriterRealtimeProfile,
-    proxy = createDdgiProxyScene(options.scene),
     volume = createDdgiVolume(profile.groundY, profile),
     environmentRotation = options.scene.environmentRotation.clone(),
     scheduler =
       profile.adapterId === 'reventon-v1' && !options.legacySchedule
         ? createDdgiScheduler(performance.now())
-        : null
-  proxy.sync()
+        : null,
+    proxy = createDdgiProxyScene(options.scene)
   let structureChanged = false
-  const field = createProbeField({
-    renderer: options.renderer,
-    scene: proxy.scene,
-    intensity: 1,
-    hysteresis: 0.6,
-    jitterMode: 'gated',
-    onRebuilt: () => {
-      structureChanged = true
-    },
-    divisions: ddgiBudget.longestAxis,
-    autoPadding: 0,
-    rays: ddgiBudget.raysPerProbe,
-    cascades: 1,
-    continuous: true,
-    roughReflections: false,
-    reflectionQuality: 'off',
-    reflectionIntensity: 0,
-    reflectionSkyFallback: false,
-    clusteredLighting: false,
-    autoDetectChanges: false,
-  })
-  try {
-    if (!field.isSupported()) {
-      throw new Error('The existing renderer cannot run the fixed DDGI field')
+  const field = (() => {
+    let owned: ReturnType<typeof createProbeField> | undefined
+    try {
+      proxy.sync()
+      owned = createProbeField({
+        renderer: options.renderer,
+        scene: proxy.scene,
+        intensity: 1,
+        hysteresis: 0.6,
+        jitterMode: 'gated',
+        onRebuilt: () => {
+          structureChanged = true
+        },
+        divisions: ddgiBudget.longestAxis,
+        autoPadding: 0,
+        rays: ddgiBudget.raysPerProbe,
+        cascades: 1,
+        continuous: true,
+        roughReflections: false,
+        reflectionQuality: 'off',
+        reflectionIntensity: 0,
+        reflectionSkyFallback: false,
+        clusteredLighting: false,
+        autoDetectChanges: false,
+      })
+      if (!owned.isSupported()) {
+        throw new Error('The existing renderer cannot run the fixed DDGI field')
+      }
+      owned.setVolumes([{ box: volume.box, res: volume.res }])
+      owned.setRayBudget(ddgiBudget.maxRaysPerTick)
+      owned.setSkyIntensity(1)
+      owned.setEnabled(true)
+      return owned
+    } catch (cause) {
+      try {
+        owned?.dispose()
+      } finally {
+        proxy.dispose()
+      }
+      throw cause
     }
-    field.setVolumes([{ box: volume.box, res: volume.res }])
-    field.setRayBudget(ddgiBudget.maxRaysPerTick)
-    field.setSkyIntensity(1)
-    field.setEnabled(true)
-  } catch (cause) {
-    field.dispose()
-    proxy.dispose()
-    throw cause
-  }
+  })()
   let disposed = false,
     ready = false,
     generation = 0,

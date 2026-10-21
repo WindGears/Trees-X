@@ -20,6 +20,8 @@ import {
   type WebGPURenderer,
 } from 'three/webgpu'
 import { positionWorld, screenUV, texture, uniform, uv, vec4 } from 'three/tsl'
+import { preservePreparationState } from './preparationState'
+import { gaussianTaps } from './gaussianPairs'
 
 /** The car's existing 12 m / 2048² / 65-tap projection, with no studio retuning. */
 export function createGpuReventonShadow(renderer: WebGPURenderer, scene: Scene, model: Group) {
@@ -55,13 +57,15 @@ export function createGpuReventonShadow(renderer: WebGPURenderer, scene: Scene, 
   // Original ortho camera: y=0.001, looking +Y, near=0, far=2.4.
   // Its WebGL fragCoordZ is (worldY - 0.001) / 2.4 inside the clipped volume.
   depth.fragmentNode = vec4(0, 0, 0, positionWorld.y.sub(0.001).div(2.4).oneMinus().pow(2))
-  const kernel = Array.from({ length: 65 }, (_, i) => Math.exp(-0.5 * ((i - 32) / 13) ** 2)),
-    total = kernel.reduce((sum, value) => sum + value, 0),
+  const paired =
+      typeof location === 'undefined' ||
+      new URLSearchParams(location.search).get('carShadowKernel') !== 'legacy',
+    kernel = gaussianTaps(32, 13, paired),
     source = texture(target.texture),
     axis = uniform(new Vector2(1 / resolution, 0))
   let sum: Node<'vec4'> = vec4(0)
-  for (let i = 0; i < 65; i++)
-    sum = sum.add(source.sample(screenUV.add(axis.mul(i - 32))).mul(kernel[i]! / total))
+  for (const tap of kernel)
+    sum = sum.add(source.sample(screenUV.add(axis.mul(tap.offset))).mul(tap.weight))
   blur.fragmentNode = sum
   blur.name = 'Reventon / contact Gaussian TSL'
   const blurScene = new Scene(),
@@ -88,6 +92,14 @@ export function createGpuReventonShadow(renderer: WebGPURenderer, scene: Scene, 
   // Leaving the receiver on material.map mirrors the projection along world Z.
   planeMaterial.colorNode = texture(target.texture, uv().flipY())
   plane.name = 'Reventon / live contact shadow'
+  plane.userData.shadowKernel = {
+    mode: paired ? 'paired' : 'legacy',
+    reads: kernel.length,
+    radius: 32,
+    sigma: 13,
+    resolution,
+  }
+  plane.userData.pipelinesPrepared = false
   plane.userData.traceExclude = true
   plane.position.y = 0
   scene.add(plane)
@@ -96,6 +108,68 @@ export function createGpuReventonShadow(renderer: WebGPURenderer, scene: Scene, 
   let dirty = true,
     disposed = false
   return {
+    async prepare(signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (disposed) throw new Error('Cannot prepare disposed car shadow')
+      const restore = preservePreparationState(renderer, scene, camera),
+        previousSource = source.value,
+        axisX = axis.value.x,
+        axisY = axis.value.y,
+        culled = casters.map(({ mesh }) => mesh.frustumCulled)
+      try {
+        renderer.autoClear = true
+        renderer.xr.enabled = false
+        renderer.shadowMap.enabled = false
+        renderer.opaque = true
+        renderer.transparent = false
+        renderer.setMRT(null)
+        renderer.setRenderObjectFunction(null)
+        renderer.setScissorTest(false)
+        renderer.setClearColor(0x000000, 0)
+        scene.background = null
+        scene.backgroundNode = null
+        scene.overrideMaterial = depth
+        casters.forEach(({ mesh }) => {
+          mesh.frustumCulled = false
+        })
+        renderer.depth = target.depthBuffer
+        renderer.stencil = target.stencilBuffer
+        renderer.setRenderTarget(target)
+        await renderer.compileAsync(scene, camera)
+        signal?.throwIfAborted()
+        if (disposed) throw new Error('Car shadow disposed during preparation')
+        scene.overrideMaterial = null
+        source.value = target.texture
+        axis.value.set(1 / resolution, 0)
+        renderer.depth = temporary.depthBuffer
+        renderer.stencil = temporary.stencilBuffer
+        renderer.setRenderTarget(temporary)
+        await renderer.compileAsync(blurScene, blurCamera)
+        signal?.throwIfAborted()
+        if (disposed) throw new Error('Car shadow disposed during preparation')
+        // Shader/uniforms are shared, but the vertical destination has a depth
+        // attachment. r185 compileAsync reads renderer.depth/stencil instead
+        // of the target flags, so explicitly prepare both real PSO variants.
+        source.value = temporary.texture
+        axis.value.set(0, 1 / resolution)
+        renderer.depth = target.depthBuffer
+        renderer.stencil = target.stencilBuffer
+        renderer.setRenderTarget(target)
+        await renderer.compileAsync(blurScene, blurCamera)
+        signal?.throwIfAborted()
+        if (disposed) throw new Error('Car shadow disposed during preparation')
+        plane.userData.pipelinesPrepared = true
+      } finally {
+        casters.forEach(({ mesh }, index) => {
+          mesh.frustumCulled = culled[index]!
+        })
+        source.value = previousSource
+        axis.value.set(axisX, axisY)
+        restore()
+      }
+      // Compiling does not populate the projection. Only all three successful
+      // real draws below are allowed to clear dirty.
+    },
     markDirty() {
       if (!disposed) dirty = true
     },

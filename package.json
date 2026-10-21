@@ -93,6 +93,8 @@
     "asset:reventon-register": "node scripts/reventon-runtime-v2/register-runtime.mjs",
     "test:reventon-runtime-tools": "node --test scripts/reventon-runtime-v2/*.test.mjs scripts/reventon-performance/*.test.mjs scripts/reventon-clean-load/*.test.mjs scripts/reventon-clean-stress/*.test.mjs",
     "test:reventon-performance": "node scripts/reventon-performance-check.mjs",
+    "test:reventon-pipelines": "node scripts/reventon-pipeline-check.mjs",
+    "test:reventon-shadow-kernel": "node scripts/reventon-shadow-kernel-check.mjs",
     "test:reventon-clean-load": "node scripts/reventon-clean-load-check.mjs",
     "test:reventon-clean-stress": "node scripts/reventon-clean-stress-check.mjs",
     "test:reventon-workbench-visual": "node scripts/reventon-workbench-visual-check.mjs",

@@ -202,6 +202,7 @@ export function createRealtimeSignals(
   // Build once; pose cuts invalidate its history without rebuilding DOF/SMAA.
   compose()
   return {
+    prepare: (signal?: AbortSignal) => inputs.prepare(renderer, signal),
     render() {
       RendererUtils.saveRendererState(renderer, savedState)
       const xr = renderer.xr.enabled,

@@ -10,11 +10,15 @@ export function createReventonStage(renderer: WebGLRenderer, scene: Scene, model
 
 export type ReventonStage = ReturnType<typeof createReventonStageWithShadow>
 
+interface ReventonShadow {
+  render(): void
+  markDirty(): void
+  dispose(): void
+  prepare?(signal?: AbortSignal): Promise<void>
+}
+
 /** Both backends retain the car's authored lights and the same unique owners. */
-export function createReventonStageWithShadow(
-  scene: Scene,
-  createShadow: () => ReturnType<typeof createContactShadow>,
-) {
+export function createReventonStageWithShadow(scene: Scene, createShadow: () => ReventonShadow) {
   const key = new RectAreaLight('#ffffff', 7, 6, 3)
   const strip = new RectAreaLight('#ffffff', 4, 4, 1.2)
   key.name = 'Reventon / key softbox'
@@ -25,7 +29,7 @@ export function createReventonStageWithShadow(
   strip.lookAt(0, 0.5, 0)
   const releaseUniforms = acquireRectAreaUniforms(),
     shadowRefresh = createShadowRefresh(scene)
-  let shadow: ReturnType<typeof createContactShadow> | undefined
+  let shadow: ReventonShadow | undefined
   let disposed = false
   const dispose = () => {
     if (disposed) return
@@ -50,6 +54,12 @@ export function createReventonStageWithShadow(
     throw error
   }
   return {
+    async prepare(signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (disposed) throw new Error('Car stage has been disposed')
+      await shadow?.prepare?.(signal)
+      signal?.throwIfAborted()
+    },
     markDirty() {
       if (disposed) return
       shadowRefresh.markDirty()

@@ -42,7 +42,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiLoading = false,
     ddgiGraphDirty = false,
     ddgiError: string | null = null,
-    ddgiFramePending = false
+    ddgiFramePending = false,
+    preparedPasses = false
   const indirectRequested: 'ssgi' | 'ddgi' =
     typeof location !== 'undefined' &&
     new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
@@ -130,6 +131,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     phase = 'loading'
     firstRasterMs = null
     framesSincePrepare = 0
+    preparedPasses = false
     motion.reset(scene)
     report(true)
   }
@@ -173,6 +175,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals = undefined
       }
       productProfile = profile
+      preparedPasses = false
       framesSincePrepare = 0
       lastActivity = performance.now()
       ddgi?.invalidate('all')
@@ -186,6 +189,18 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       started = performance.now()
       firstRasterMs = null
       reset = reuse
+    },
+    async preparePasses(signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (disposed || !signals) throw new Error('Realtime scene is not prepared')
+      const token = generation
+      await signals.prepare(signal)
+      signal?.throwIfAborted()
+      if (disposed || token !== generation) throw new Error('Realtime preparation was superseded')
+      // Native async pipeline errors can be reported through renderer.onError
+      // even when the compile Promise resolves. A real frame still gates ready.
+      if (error) throw new Error(error)
+      preparedPasses = true
     },
     unload,
     invalidate(kind: RealtimeChange = 'all') {
@@ -282,6 +297,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         reflectionHistory: signals?.history?.() ?? null,
         materialBranches: materials.stats(),
         productProfile: productProfile.adapterId,
+        preparation: { sceneInputs: preparedPasses },
         indirectLighting: {
           ...indirectStatus(),
           details: ddgi?.snapshot() ?? null,

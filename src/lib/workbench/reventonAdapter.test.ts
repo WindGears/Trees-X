@@ -112,7 +112,12 @@ describe('Reventon registered workbench adapter', () => {
     const f = fixture(),
       first = new Texture(),
       clone = first.clone(),
-      stage = { render: vi.fn(), markDirty: vi.fn(), dispose: vi.fn() }
+      stage = {
+        render: vi.fn(),
+        markDirty: vi.fn(),
+        dispose: vi.fn(),
+        prepare: vi.fn(async () => {}),
+      }
     first.needsUpdate = true
     f.paints[0]!.map = first
     f.paints[1]!.map = clone
@@ -187,7 +192,12 @@ describe('Reventon registered workbench adapter', () => {
   it('selects the GPU dependencies once, preserves source selection through derived bindings, and disposes them before loader resources', () => {
     const f = fixture(),
       scene = new Scene(),
-      stage = { render: vi.fn(), markDirty: vi.fn(), dispose: vi.fn() },
+      stage = {
+        render: vi.fn(),
+        markDirty: vi.fn(),
+        dispose: vi.fn(),
+        prepare: vi.fn(async () => {}),
+      },
       materials = { sync: vi.fn(), dispose: vi.fn() },
       selected = f.nodes[0]!.children.find((node): node is Mesh => node instanceof Mesh)!,
       runtime = new MeshPhysicalNodeMaterial(),

@@ -1,7 +1,9 @@
 import {
   BoxGeometry,
+  ClampToEdgeWrapping,
   Color,
   Group,
+  LinearFilter,
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
@@ -33,6 +35,11 @@ function fixture() {
       toneMappingExposure: 1.3,
       outputColorSpace: 'srgb',
       autoClear: false,
+      opaque: true,
+      depth: true,
+      stencil: false,
+      transparent: true,
+      contextNode: null,
       xr: { enabled: true },
       shadowMap: { enabled: true },
       getRenderTarget: () => retained,
@@ -55,6 +62,9 @@ function fixture() {
       setClearColor: vi.fn(),
       setRenderTarget: vi.fn<(target: RenderTarget | null, face?: number, mip?: number) => void>(),
       render: vi.fn<(scene: Scene, camera: unknown) => void>(),
+      compileAsync: vi
+        .fn<(scene: Scene, camera: unknown) => Promise<void>>()
+        .mockResolvedValue(undefined),
     }
   return {
     retained,
@@ -72,7 +82,60 @@ function fixture() {
 }
 
 describe('car WebGPU contact projection', () => {
-  it('retains the authored camera, 2048 targets, 65 taps, and pose-only redraw ownership', () => {
+  it.each(['success', 'failure', 'cancel'] as const)(
+    'prepares actual depth and shared blur PSOs with owned state and keeps shadow dirty on %s',
+    async (mode) => {
+      const f = fixture(),
+        abort = new AbortController(),
+        background = f.scene.background,
+        shadow = createGpuReventonShadow(f.gpu, f.scene, f.model)
+      f.renderer.compileAsync.mockImplementation(async (scene) => {
+        expect(f.renderer.xr.enabled).toBe(false)
+        expect(f.renderer.shadowMap.enabled).toBe(false)
+        expect(f.renderer.transparent).toBe(false)
+        const target = f.renderer.setRenderTarget.mock.lastCall![0]!
+        expect(f.renderer.depth).toBe(target.depthBuffer)
+        expect(f.renderer.stencil).toBe(target.stencilBuffer)
+        if (scene === f.scene) {
+          expect(scene.overrideMaterial).toBeInstanceOf(NodeMaterial)
+          expect(f.opaque.frustumCulled).toBe(false)
+        }
+        if (mode === 'failure') throw new Error('compile failed')
+        if (mode === 'cancel') abort.abort()
+      })
+      try {
+        const result = shadow.prepare(abort.signal)
+        if (mode === 'success') {
+          await result
+          expect(f.renderer.compileAsync).toHaveBeenCalledTimes(3)
+        } else {
+          await expect(result).rejects.toThrow()
+          expect(f.renderer.compileAsync).toHaveBeenCalledTimes(1)
+        }
+        expect(f.renderer.render).not.toHaveBeenCalled()
+        expect(f.scene.background).toBe(background)
+        expect(f.scene.overrideMaterial).toBe(f.original)
+        expect(f.opaque.frustumCulled).toBe(true)
+        expect(f.renderer.xr.enabled).toBe(true)
+        expect(f.renderer.shadowMap.enabled).toBe(true)
+        expect(f.renderer.transparent).toBe(true)
+        expect(f.renderer.depth).toBe(true)
+        expect(f.renderer.stencil).toBe(false)
+        expect(f.renderer.setMRT).toHaveBeenLastCalledWith(f.mrt)
+        expect(f.renderer.setRenderTarget).toHaveBeenLastCalledWith(f.retained, 2, 1)
+        shadow.render()
+        expect(f.renderer.render).toHaveBeenCalledTimes(3)
+      } finally {
+        shadow.dispose()
+        f.geometry.dispose()
+        f.original.dispose()
+        f.glazing.material.dispose()
+        f.retained.dispose()
+      }
+    },
+  )
+
+  it('retains the authored camera, 2048 targets, paired Gaussian, and pose-only redraw ownership', () => {
     const f = fixture(),
       sourceDispose = vi.spyOn(f.geometry, 'dispose'),
       shadow = createGpuReventonShadow(f.gpu, f.scene, f.model),
@@ -98,11 +161,20 @@ describe('car WebGPU contact projection', () => {
     expect(target).toMatchObject({ width: 2048, height: 2048 })
     expect(temporary).toMatchObject({ width: 2048, height: 2048, depthBuffer: false })
     expect(target.texture.type).toBe(UnsignedByteType)
+    // Pairing is equivalent only on the unchanged texel grid with a linear
+    // LOD0 sampler. A future nearest/mip/repeat change must not silently reuse it.
+    for (const texture of [target.texture, temporary.texture]) {
+      expect(texture.minFilter).toBe(LinearFilter)
+      expect(texture.magFilter).toBe(LinearFilter)
+      expect(texture.generateMipmaps).toBe(false)
+      expect(texture.wrapS).toBe(ClampToEdgeWrapping)
+      expect(texture.wrapT).toBe(ClampToEdgeWrapping)
+    }
     blur.fragmentNode?.traverse((node) => {
       if (Reflect.get(node, 'isTextureNode') === true && Reflect.get(node, 'uvNode') !== null)
         samples.add(node)
     })
-    expect(samples.size).toBe(65)
+    expect(samples.size).toBe(33)
     shadow.render()
     expect(f.renderer.render).toHaveBeenCalledTimes(3)
     shadow.markDirty()

@@ -1,4 +1,4 @@
-/* global fetch, URL, URLSearchParams, setTimeout, performance, MutationObserver */
+/* global fetch, URL, URLSearchParams, setTimeout, setInterval, performance, MutationObserver */
 import { chromium, expect } from '@playwright/test'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { bridge as attachWorkbench } from './demo/browser-check.mjs'
@@ -30,6 +30,7 @@ const report = {
   requests: [],
   failedRequests: [],
   errors: [],
+  errorEvents: [],
   expectedFaultErrors: [],
   anchors: [],
   memory: [],
@@ -78,9 +79,63 @@ try {
 
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } })
   page = await context.newPage()
+  if (process.env.REVENTON_COPY_DIAGNOSTICS === '1')
+    await page.addInitScript(() => {
+      window.__carCopyFaults = []
+      const seenRenderers = new WeakSet()
+      setInterval(() => {
+        const seen = new Set()
+        const visit = (vnode) => {
+          if (!vnode || typeof vnode !== 'object' || seen.has(vnode)) return
+          seen.add(vnode)
+          const component = vnode.component
+          if (component) {
+            for (const key of Reflect.ownKeys(component.provides ?? {})) {
+              const value = component.provides[key]
+              const renderer = value?.scene?.value?.isScene && value?.renderer?.instance
+              if (!renderer?.isWebGPURenderer || seenRenderers.has(renderer)) continue
+              seenRenderers.add(renderer)
+              const backend = renderer.backend,
+                copy = backend.copyFramebufferToTexture
+              backend.copyFramebufferToTexture = function (texture, context, rectangle) {
+                const source = context.renderTarget
+                    ? backend.get(context.textures[0])?.texture
+                    : null,
+                  destination = backend.get(texture)?.texture
+                if (source && destination && source.format !== destination.format)
+                  window.__carCopyFaults.push({
+                    atMs: performance.now(),
+                    slug: document.querySelector('.workbench')?.dataset.slug,
+                    status: document.querySelector('.workbench')?.dataset.status,
+                    source: source.format,
+                    destination: destination.format,
+                    texture: texture.id,
+                    type: texture.type,
+                    version: texture.version,
+                    contextTarget: context.renderTarget?.texture?.id,
+                    activeTarget: renderer.getRenderTarget()?.texture?.id,
+                    compiling: renderer._compilationPromises !== null,
+                    stack: new Error('Framebuffer format diagnostic').stack,
+                  })
+                return copy.call(this, texture, context, rectangle)
+              }
+            }
+            visit(component.subTree)
+          }
+          if (Array.isArray(vnode.children)) vnode.children.forEach(visit)
+          visit(vnode.suspense?.activeBranch)
+        }
+        visit(document.querySelector('#app')?._vnode)
+      }, 50)
+    })
   let injectingFault = false
   let destroyingDevice = false
-  page.on('pageerror', (error) => report.errors.push(error.message))
+  let phase = 'initial-load'
+  const unexpected = (message, location) => {
+    report.errors.push(message)
+    report.errorEvents.push({ message, phase, atMs: performance.now(), url: page.url(), location })
+  }
+  page.on('pageerror', (error) => unexpected(error.message))
   page.on('console', (message) => {
     if (message.type() !== 'error') return
     if (injectingFault && /Failed to load resource|net::ERR_FAILED/.test(message.text()))
@@ -90,7 +145,7 @@ try {
       /GPU.*device.*lost|device.*lost|WebGPU.*destroyed/i.test(message.text())
     )
       report.expectedFaultErrors.push(message.text())
-    else report.errors.push(message.text())
+    else unexpected(message.text(), message.location())
   })
   page.on('request', (request) => report.requests.push(request.url()))
   page.on('requestfailed', (request) =>
@@ -704,6 +759,7 @@ try {
   )
 
   if (lifecycle) {
+    phase = 'device-recovery'
     await openActions()
     await seek(doors.id, 0.61)
     await seek(parts.id, 0.437)
@@ -765,6 +821,7 @@ try {
 
     let previousBackend = recovered.rendererBackend
     for (const slug of ['typewriter-study', 'piano-cfx']) {
+      phase = 'switch-to-' + slug
       await choose(slug)
       const value = await state()
       const expectedBackend =
@@ -795,8 +852,10 @@ try {
         finished()
       }
     })
+    phase = 'late-response-car'
     await choose('reventon', false)
     await pending
+    phase = 'late-response-typewriter'
     await choose('typewriter-study')
     await completed
     await page.waitForTimeout(250)
@@ -808,6 +867,7 @@ try {
     )
 
     injectingFault = true
+    phase = 'manifest-failure'
     await page.route('**' + selectedBundle.manifest, (route) => route.abort('failed'))
     await choose('reventon', false)
     await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'error', {
@@ -822,6 +882,7 @@ try {
       ),
     ).toBe(0)
     await page.unroute('**' + selectedBundle.manifest)
+    phase = 'manifest-retry'
     await page.getByRole('button', { name: '重新加载', exact: true }).click()
     await ready('reventon')
     injectingFault = false
@@ -867,6 +928,8 @@ try {
   }
   throw error
 } finally {
+  if (process.env.REVENTON_COPY_DIAGNOSTICS === '1' && page)
+    report.copyFaults = await page.evaluate(() => window.__carCopyFaults ?? []).catch(() => [])
   await browser.close()
   await writeFile(output + '/report.json', JSON.stringify(report, null, 2) + '\n')
 }

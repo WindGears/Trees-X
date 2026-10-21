@@ -92,6 +92,13 @@ export function bindReventon(
         texture.needsUpdate = true
       }
     },
+    async prepare(signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      if (disposed) throw new Error('Car adapter has been disposed')
+      gpuMaterials?.sync()
+      await studio?.prepare(signal)
+      signal?.throwIfAborted()
+    },
     beforeRender() {
       gpuMaterials?.sync()
       studio?.render()

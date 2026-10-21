@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 汽车PSO准备与采样复用（2026-10-21）
+
+场景本地`SceneAdapter.prepare(signal)`经controller委托，注册汽车WebGPU在装配最终运行材质后串行准备私有depth／两种depth布局blur及surface／beauty真实MRT；打字机实时入口共享MRT准备，普通WebGL／hybrid保持。host为选择持独立AbortController，停止绘制并等待旧lease后，在新lease外卸载旧owners，随后取得新lease准备。lease仅保活，不是renderer互斥锁。取消只能停止后续任务／发布，不撤销已提交compile，资源仍至结算后释放。
+
+`preparationState`完整保存临时pass状态；预编译按实际线性HDR／附件／sample及r185读取的depth／stencil，编译不消耗有效历史或清除阴影dirty。真实完整首帧继续作为交互门禁，后效及DDGI未全部预热。Gaussian仅将同核相邻权重按线性插值配对，固定目标／范围／sigma；严格像素与生命周期证据见 [效率节点一](reventon-efficiency-node1-validation.md)。
+
+Three r185的异步编译会在恢复原context后执行节点更新，透射viewport可能提前分配为Canvas BGRA而实际copy来自HDR。只在MRT准备期间按唯一材质暂时排除transmission／transmissionNode／backdropNode，成功、拒绝、取消与同步异常均恢复；普通alpha字符继续预热。透射PSO与快照留在加载遮罩下的真实首帧建立，不改可见材质或私自修改Three全局原型；不得称全部玻璃已异步预热。
+
 ## 汽车4K与事件调度候选（2026-10-19）
 
 `reventonCandidate`仅接受摘要、路径、版本均匹配的原汽车源，在显式runtime-v2参数下换用本地完整验证后登记的bundle；管理员自定义源不替换。未登记时明确失败，不回退原8K伪装候选。登记文件通过glob按需编入，缺少本机派生包不阻止普通入口构建。API、数据库和ProductPresentation版本不变。

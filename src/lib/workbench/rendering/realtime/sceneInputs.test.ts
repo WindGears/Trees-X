@@ -1,10 +1,14 @@
 import {
   BoxGeometry,
+  Color,
+  ColorManagement,
+  Group,
   HalfFloatType,
   MaterialBlending,
   Mesh,
   MeshPhysicalMaterial,
   NoBlending,
+  NoToneMapping,
   PerspectiveCamera,
   RenderTarget,
   RGFormat,
@@ -12,13 +16,159 @@ import {
   Texture,
   UnsignedByteType,
   Vector2,
+  Vector4,
 } from 'three'
-import { mrt, output, vec2, vec4 } from 'three/tsl'
+import { MeshBasicNodeMaterial, MeshPhysicalNodeMaterial, type WebGPURenderer } from 'three/webgpu'
+import { float, mrt, output, vec2, vec3, vec4 } from 'three/tsl'
 import { describe, expect, it, vi } from 'vitest'
 import { createRealtimeSceneInputs } from './sceneInputs'
 import { diffuseResponseNode } from './materials'
 
+function preparingRenderer() {
+  const retained = new RenderTarget(8, 8),
+    originalMrt = mrt({ output: vec4(0) })
+  let target: RenderTarget | null = retained,
+    activeMrt = originalMrt
+  const renderer = {
+    toneMapping: 4,
+    toneMappingExposure: 1.2,
+    outputColorSpace: 'srgb',
+    autoClear: false,
+    opaque: false,
+    transparent: true,
+    contextNode: null,
+    xr: { enabled: true },
+    shadowMap: { enabled: true },
+    getRenderTarget: () => target,
+    getActiveCubeFace: () => 2,
+    getActiveMipmapLevel: () => 1,
+    getMRT: () => activeMrt,
+    setMRT: (value: typeof originalMrt) => {
+      activeMrt = value
+    },
+    setRenderTarget: vi.fn((value: RenderTarget | null) => {
+      target = value
+    }),
+    getRenderObjectFunction: () => null,
+    setRenderObjectFunction: vi.fn(),
+    getPixelRatio: () => 1,
+    setPixelRatio: vi.fn(),
+    getClearColor: (value: Color) => value.set('#123456'),
+    getClearAlpha: () => 0.7,
+    setClearColor: vi.fn(),
+    getScissorTest: () => true,
+    setScissorTest: vi.fn(),
+    getViewport: (value: Vector4) => value.set(1, 2, 3, 4),
+    getScissor: (value: Vector4) => value.set(5, 6, 7, 8),
+    setViewport: vi.fn(),
+    setScissor: vi.fn(),
+    getDrawingBufferSize: (value: Vector2) => value.set(1440, 1000),
+    getOutputBufferType: () => HalfFloatType,
+    compileAsync: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    render: vi.fn(),
+  }
+  return { renderer, gpu: renderer as unknown as WebGPURenderer, retained, originalMrt }
+}
+
 describe('opaque surface and native transparent beauty inputs', () => {
+  it.each(['success', 'failure', 'cancel'] as const)(
+    'precompiles real HDR MRT variants serially and restores state on %s without publishing a frame',
+    async (mode) => {
+      const f = preparingRenderer(),
+        scene = new Scene(),
+        camera = new PerspectiveCamera(),
+        root = new Group(),
+        mesh = new Mesh(new BoxGeometry(), new MeshPhysicalMaterial()),
+        glass = new MeshPhysicalMaterial({ transmission: 1 }),
+        nodeGlass = new MeshPhysicalNodeMaterial(),
+        backdrop = new MeshBasicNodeMaterial(),
+        hiddenGlass = new MeshPhysicalMaterial({ transmission: 1, visible: false }),
+        decal = new MeshPhysicalMaterial({ transparent: true }),
+        abort = new AbortController()
+      nodeGlass.transmissionNode = float(1)
+      backdrop.backdropNode = vec3(1)
+      root.userData.workbenchProduct = 'reventon'
+      root.add(mesh)
+      // Shared materials, mixed groups, Node materials and initially hidden
+      // surfaces all return to their exact state even on rejection/cancel.
+      const mixed = new Mesh(mesh.geometry, [glass, decal])
+      mixed.add(new Mesh(mesh.geometry, nodeGlass))
+      root.add(mixed, new Mesh(mesh.geometry, [glass, backdrop, hiddenGlass]))
+      scene.add(root)
+      const inputs = createRealtimeSceneInputs(scene, camera, vec2(0)),
+        seen: object[] = []
+      f.renderer.compileAsync.mockImplementation(async () => {
+        expect(f.renderer.toneMapping).toBe(NoToneMapping)
+        expect(f.renderer.outputColorSpace).toBe(ColorManagement.workingColorSpace)
+        expect(f.renderer.xr.enabled).toBe(false)
+        expect(mesh.frustumCulled).toBe(false)
+        expect(mixed.visible).toBe(true)
+        expect(decal.visible).toBe(true)
+        for (const material of [glass, nodeGlass, backdrop, hiddenGlass])
+          expect(material.visible).toBe(false)
+        const target = f.renderer.getRenderTarget()!
+        expect(target).toMatchObject({ width: 1440, height: 1000, samples: 0 })
+        expect(target.texture.type).toBe(HalfFloatType)
+        seen.push({
+          target,
+          opaque: f.renderer.opaque,
+          transparent: f.renderer.transparent,
+          mrt: f.renderer.getMRT(),
+        })
+        if (mode === 'failure') throw new Error('native preparation rejected')
+        if (mode === 'cancel') abort.abort()
+      })
+      try {
+        const result = inputs.prepare(f.gpu, abort.signal)
+        if (mode === 'success') {
+          await result
+          expect(seen).toEqual([
+            {
+              target: inputs.surface.renderTarget,
+              opaque: true,
+              transparent: false,
+              mrt: inputs.surface.getMRT(),
+            },
+            {
+              target: inputs.beauty.renderTarget,
+              opaque: true,
+              transparent: true,
+              mrt: inputs.beauty.getMRT(),
+            },
+          ])
+        } else {
+          await expect(result).rejects.toThrow()
+          expect(f.renderer.compileAsync).toHaveBeenCalledTimes(1)
+        }
+        expect(mesh.frustumCulled).toBe(true)
+        expect(mesh.material).toBeInstanceOf(MeshPhysicalMaterial)
+        for (const material of [glass, nodeGlass, backdrop, decal])
+          expect(material.visible).toBe(true)
+        expect(hiddenGlass.visible).toBe(false)
+        expect(f.renderer.render).not.toHaveBeenCalled()
+        expect(f.renderer.getRenderTarget()).toBe(f.retained)
+        expect(f.renderer.getMRT()).toBe(f.originalMrt)
+        expect(f.renderer).toMatchObject({
+          toneMapping: 4,
+          toneMappingExposure: 1.2,
+          outputColorSpace: 'srgb',
+          opaque: false,
+          transparent: true,
+          autoClear: false,
+        })
+        expect(f.renderer.xr.enabled).toBe(true)
+        expect(f.renderer.setViewport).toHaveBeenLastCalledWith(new Vector4(1, 2, 3, 4))
+        expect(f.renderer.setScissor).toHaveBeenLastCalledWith(new Vector4(5, 6, 7, 8))
+      } finally {
+        inputs.dispose()
+        mesh.geometry.dispose()
+        mesh.material.dispose()
+        for (const material of [glass, nodeGlass, backdrop, hiddenGlass, decal]) material.dispose()
+        f.retained.dispose()
+      }
+    },
+  )
+
   it('stores native diffuse response in the existing surface output without a seventh attachment', () => {
     const inputs = createRealtimeSceneInputs(new Scene(), new PerspectiveCamera(), vec2(0)),
       surfaceMrt = inputs.surface.getMRT()!,

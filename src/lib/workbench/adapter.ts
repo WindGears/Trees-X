@@ -18,6 +18,9 @@ export interface SceneAdapter {
   dispose(): void
   attach?(scene: Scene, renderer: WorkbenchRenderer): void
   beforeRender?(): void
+  /** Native preparation is serialized by the scene host; the adapter keeps
+   * ownership until the awaited work settles, even after cancellation. */
+  prepare?(signal?: AbortSignal): Promise<void>
   setStudioMood?(update: StudioMoodUpdate): void
   select?(node?: string): void
   nodeForHit?(object: Object3D, instanceId?: number): Object3D | undefined

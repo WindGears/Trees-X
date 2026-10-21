@@ -160,6 +160,32 @@ function fixture(profile?: RealtimeProductProfile, legacySchedule = false) {
   }
 }
 
+function constructionSource() {
+  const scene = new Scene(),
+    product = new Group(),
+    geometry = new BoxGeometry(),
+    map = new Texture(),
+    material = new MeshStandardMaterial({ map }),
+    mesh = new InstancedMesh(geometry, material, 2),
+    renderer = { backend: { isWebGPUBackend: true } } as unknown as WebGPURenderer
+  product.userData.workbenchProduct = 'typewriter-study'
+  product.add(mesh)
+  scene.add(product)
+  const borrowedReleases = [
+    vi.spyOn(geometry, 'dispose'),
+    vi.spyOn(material, 'dispose'),
+    vi.spyOn(map, 'dispose'),
+    vi.spyOn(mesh, 'dispose'),
+  ]
+  cleanups.push(() => {
+    geometry.dispose()
+    material.dispose()
+    map.dispose()
+    mesh.dispose()
+  })
+  return { scene, product, mesh, renderer, borrowedReleases }
+}
+
 beforeEach(() => create.mockReset())
 afterEach(() => {
   for (const cleanup of cleanups.splice(0).reverse()) cleanup()
@@ -167,6 +193,61 @@ afterEach(() => {
 })
 
 describe('owned fixed-budget DDGI field', () => {
+  it('releases a partially synchronized proxy when source validation throws before field creation', () => {
+    const f = constructionSource(),
+      broken = new Group(),
+      clear = vi.spyOn(Scene.prototype, 'clear')
+    broken.userData.workbenchProduct = 'typewriter-study'
+    broken.userData.ddgiTextureError = 'unavailable tracing image'
+    f.scene.add(broken)
+    expect(() => createRealtimeDdgi(f)).toThrow('unavailable tracing image')
+    expect(create).not.toHaveBeenCalled()
+    expect(clear).toHaveBeenCalledOnce()
+    expect(clear.mock.contexts[0]).not.toBe(f.scene)
+    expect(clear.mock.contexts[0]).toHaveProperty('children', [])
+    expect(f.mesh.parent).toBe(f.product)
+    for (const release of f.borrowedReleases) expect(release).not.toHaveBeenCalled()
+  })
+
+  it('cleans the proxy after a synchronous low-level constructor error and allows retry', () => {
+    const f = constructionSource(),
+      failure = new Error('strict singleton rejected construction'),
+      clear = vi.spyOn(Scene.prototype, 'clear')
+    create.mockImplementationOnce(() => {
+      throw failure
+    })
+    expect(() => createRealtimeDdgi(f)).toThrow(failure)
+    const failedProxy = create.mock.calls[0]![0].scene
+    expect(failedProxy.children).toHaveLength(0)
+    expect(clear).toHaveBeenCalledOnce()
+    for (const release of f.borrowedReleases) expect(release).not.toHaveBeenCalled()
+    const fake = fakeField(),
+      retried = createRealtimeDdgi(f)
+    retried.dispose()
+    retried.dispose()
+    expect(fake.api.dispose).toHaveBeenCalledOnce()
+    expect(clear).toHaveBeenCalledTimes(2)
+    expect(f.mesh.parent).toBe(f.product)
+    for (const release of f.borrowedReleases) expect(release).not.toHaveBeenCalled()
+  })
+
+  it('still releases the proxy once if failed initialization also throws during field disposal', () => {
+    const f = constructionSource(),
+      fake = fakeField(),
+      clear = vi.spyOn(Scene.prototype, 'clear')
+    vi.mocked(fake.api.setEnabled).mockImplementationOnce(() => {
+      throw new Error('initialization failed')
+    })
+    vi.mocked(fake.api.dispose).mockImplementationOnce(() => {
+      throw new Error('native field disposal failed')
+    })
+    expect(() => createRealtimeDdgi(f)).toThrow('native field disposal failed')
+    expect(fake.api.dispose).toHaveBeenCalledOnce()
+    expect(clear).toHaveBeenCalledOnce()
+    expect(create.mock.calls[0]![0].scene.children).toHaveLength(0)
+    for (const release of f.borrowedReleases) expect(release).not.toHaveBeenCalled()
+  })
+
   it('defers physical field/proxy cleanup until a leased native tick settles while immediately rejecting stale output', async () => {
     const f = fixture(),
       proxyScene = create.mock.calls[0]![0].scene,

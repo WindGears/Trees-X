@@ -35,6 +35,7 @@ export interface RealtimeSnapshot extends RealtimeStatus {
   resolution: { width: number; height: number }
   materialBranches: Record<string, number>
   productProfile?: RealtimeProductProfile['adapterId']
+  preparation?: { sceneInputs: boolean }
   indirectLighting?: {
     requested: 'ssgi' | 'ddgi'
     actual: 'ssgi' | 'ddgi'

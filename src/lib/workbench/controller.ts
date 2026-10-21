@@ -300,6 +300,14 @@ export function createStageController(
     },
     command,
     beforeRender: () => adapter?.beforeRender?.(),
+    async prepare(signal?: AbortSignal) {
+      signal?.throwIfAborted()
+      const current = adapter
+      if (disposed || !current) throw new Error('No current model to prepare')
+      await current.prepare?.(signal)
+      signal?.throwIfAborted()
+      if (disposed || current !== adapter) throw new Error('Model preparation was superseded')
+    },
     setStudioMood: (update: StudioMoodUpdate) => adapter?.setStudioMood?.(update),
     enableInteraction() {
       if (disposed) return
