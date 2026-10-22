@@ -44,7 +44,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiGraphDirty = false,
     ddgiError: string | null = null,
     ddgiFramePending = false,
-    preparedPasses = false
+    preparedPasses = false,
+    shadowPreparationPending = false
   let signalIdentity: string | undefined
   const indirectRequested: 'ssgi' | 'ddgi' =
     typeof location !== 'undefined' &&
@@ -94,7 +95,12 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     previousError.call(renderer, event)
     if (disposed) return
     // @types r185 declares a string; r185 backend sends a structured event.
-    error = typeof event === 'string' ? event : String(Reflect.get(event, 'message'))
+    const message = typeof event === 'string' ? event : String(Reflect.get(event, 'message'))
+    if (signals?.keyShadowCompiling?.()) {
+      signals.keyShadowCompilationFailed(message)
+      return
+    }
+    error = message
     phase = 'error'
     report(true)
   }
@@ -111,6 +117,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         generation,
         indirectLighting: indirectStatus(),
         reflectionRays: signals?.snapshot().reflectionRays,
+        keyShadow: signals?.keyShadow?.(),
       })
     }
   }
@@ -130,6 +137,11 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     interacting = false
     lastActivity = performance.now()
     materials.restore()
+    if (signals?.keyShadow?.().requested) {
+      signals.dispose()
+      signals = undefined
+      signalIdentity = undefined
+    }
     reset = true
     phase = 'loading'
     firstRasterMs = null
@@ -214,6 +226,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       // frame calls options.invalidate directly and must not keep GI busy.
       lastActivity = performance.now()
       ddgi?.invalidate(kind)
+      signals?.invalidateKeyShadow?.(kind)
       // Smooth camera/rigid motion is represented by true vectors, not a reset.
       if (kind !== 'camera' && kind !== 'pose') reset = true
       options.invalidate()
@@ -227,6 +240,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     setActive(value: boolean) {
       if (disposed || active === value) return
       active = value
+      signals?.setKeyShadowActive?.(value)
       // Time spent hidden is not a safe rebuild window on the first resumed frame.
       lastActivity = performance.now()
       if (!value) {
@@ -247,7 +261,24 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       options.invalidate()
     },
     render(notify: () => void) {
-      if (ddgiFramePending || disposed || !active || error) return
+      if (ddgiFramePending || shadowPreparationPending || disposed || !active || error) return
+      if (signals?.keyShadowNeedsPreparation?.() && framesSincePrepare > 0) {
+        const token = generation,
+          owner = signals
+        shadowPreparationPending = true
+        void withPreparationLease(renderer, () => owner.prepareKeyShadow())
+          .catch((cause: unknown) => {
+            if (!disposed && token === generation) owner.failKeyShadow(cause)
+          })
+          .finally(() => {
+            shadowPreparationPending = false
+            if (!disposed && token === generation) {
+              report(true)
+              if (active) options.invalidate()
+            }
+          })
+        return
+      }
       if (ddgiError && ddgiGraphDirty) {
         signals?.setWorldGi(null)
         ddgiGraphDirty = false
@@ -303,6 +334,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         materialBranches: materials.stats(),
         productProfile: productProfile.adapterId,
         preparation: { sceneInputs: preparedPasses },
+        keyShadow: signals?.keyShadow?.(),
         indirectLighting: {
           ...indirectStatus(),
           details: ddgi?.snapshot() ?? null,

@@ -21,6 +21,7 @@ import {
 } from 'three/webgpu'
 import {
   diffuseColor,
+  context,
   Fn,
   materialMetalness,
   mrt,
@@ -37,6 +38,16 @@ import {
   specularCaptureNode,
 } from './materials'
 import { preservePreparationState } from '../preparationState'
+import { isCarShadowReceiver, type CarShadowBinding } from './carShadow/light'
+
+function flowContext(node: unknown): Record<string, unknown> {
+  if (!node || typeof node !== 'object') return {}
+  const read: unknown = Reflect.get(node, 'getFlowContextData')
+  if (typeof read !== 'function') throw new Error('Pass preparation requires audited r185 context')
+  const value: unknown = read.call(node)
+  if (!value || typeof value !== 'object') throw new Error('Invalid pass context data')
+  return value as Record<string, unknown>
+}
 
 // In this attachment alpha means material opacity, not roughness or a BRDF
 // weight. Opaque surfaces write 1; each native transparent fragment leaves
@@ -50,12 +61,26 @@ const correctionThroughput = Fn((builder: NodeBuilder) =>
  * their native alpha in complete HDR beauty, never into lighting geometry MRTs.
  * Each pass owns a distinct depth target; neither clears the other's textures.
  */
-export function createRealtimeSceneInputs(scene: Scene, camera: PerspectiveCamera, motion: Node) {
+export function createRealtimeSceneInputs(
+  scene: Scene,
+  camera: PerspectiveCamera,
+  motion: Node,
+  keyShadow = false,
+) {
   const surface = pass(scene, camera, { samples: 0 })
   surface.transparent = false
   surface.setMRT(
     mrt({
-      output: diffuseResponseNode,
+      // Its RGB remains the original diffuse response. Only the car-shadow
+      // experiment repurposes otherwise-unread alpha as a ray receiver mask.
+      output: keyShadow
+        ? vec4(
+            diffuseResponseNode.rgb,
+            Fn((builder: NodeBuilder) =>
+              isCarShadowReceiver(builder.object, builder.material) ? 1 : 0,
+            )(),
+          )
+        : diffuseResponseNode,
       normal: vec4(packNormalToRGB(normalView), physicalRoughnessNode),
       albedo: vec4(diffuseColor.rgb, materialMetalness),
       motion,
@@ -93,10 +118,27 @@ export function createRealtimeSceneInputs(scene: Scene, camera: PerspectiveCamer
     baseSpecular: surface.getTextureNode('baseSpecular'),
     baseDiffuse: surface.getTextureNode('baseDiffuse'),
     diffuseResponse: surface.getTextureNode('output'),
+    setKeyShadow(binding?: CarShadowBinding) {
+      // No surface dependency on its own derived visibility. Only beauty reads it.
+      surface.contextNode = binding ? context({ treesCarKeyShadowPass: 'surface' }) : null
+      beauty.contextNode = binding
+        ? context({ treesCarKeyShadowPass: 'beauty', treesCarKeyShadow: binding })
+        : null
+      surface.needsUpdate = true
+      beauty.needsUpdate = true
+      scene.traverse((object) => {
+        if (object instanceof Mesh)
+          for (const material of Array.isArray(object.material)
+            ? object.material
+            : [object.material])
+            material.needsUpdate = true
+      })
+    },
     async prepare(renderer: WebGPURenderer, signal?: AbortSignal) {
       signal?.throwIfAborted()
       if (disposed) throw new Error('Cannot prepare disposed scene inputs')
       const restore = preservePreparationState(renderer, scene, camera),
+        initialContext = renderer.contextNode,
         size = renderer.getDrawingBufferSize(new Vector2()),
         culled = new Map<Object3D, boolean>(),
         deferredMaterials = new Map<Material, boolean>()
@@ -148,6 +190,11 @@ export function createRealtimeSceneInputs(scene: Scene, camera: PerspectiveCamer
           renderer.transparent = input.transparent
           renderer.depth = input.renderTarget.depthBuffer
           renderer.stencil = input.renderTarget.stencilBuffer
+          // r185 PassNode.compileAsync omits the context applied by updateBefore.
+          // Never inherit the previous surface context when compiling beauty.
+          renderer.contextNode = input.contextNode
+            ? context({ ...flowContext(initialContext), ...flowContext(input.contextNode) })
+            : initialContext
           await input.compileAsync(renderer)
           signal?.throwIfAborted()
           if (disposed) throw new Error('Scene inputs disposed during preparation')

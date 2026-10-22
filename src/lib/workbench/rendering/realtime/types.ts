@@ -4,6 +4,7 @@ import type { RefinementChange } from '../refinementTypes'
 import type { ReflectionSamplingSnapshot } from './reflectionSampling'
 import type { RealtimeProductProfile } from './productProfile'
 import type { ReflectionRaySnapshot } from './reflectionRays'
+import type { CarKeyShadowSnapshot } from './carShadow/runtime'
 
 export interface RealtimeStatus {
   phase: 'loading' | 'ready' | 'paused' | 'error'
@@ -12,6 +13,7 @@ export interface RealtimeStatus {
   generation: number
   error: string | null
   reflectionRays?: ReflectionRaySnapshot
+  keyShadow?: CarKeyShadowSnapshot
   indirectLighting?: {
     requested: 'ssgi' | 'ddgi'
     actual: 'ssgi' | 'ddgi'

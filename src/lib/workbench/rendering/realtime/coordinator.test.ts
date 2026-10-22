@@ -123,6 +123,158 @@ function fixture() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('realtime complete-frame coordinator lifecycle', () => {
+  it('retires a requested car shadow graph before loading another car with identical capabilities', () => {
+    const f = fixture()
+    Object.assign(f.signals, { keyShadow: vi.fn(() => ({ requested: true })) })
+    f.root.userData.adapter = 'reventon-v1'
+    f.root.userData.carStudioQuality = 'studio'
+    f.coordinator.prepare(reventonRealtimeProfile)
+    f.coordinator.ready('reventon', 1)
+    f.coordinator.render(f.notify)
+    f.coordinator.unload()
+    expect(f.signals.dispose).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot().keyShadow).toBeUndefined()
+
+    // The graph's capability identity is unchanged; its captured model owner is not.
+    const successor = new Group(),
+      nextSignals = { ...f.signals, dispose: vi.fn() }
+    successor.userData.adapter = 'reventon-v1'
+    successor.userData.carStudioQuality = 'studio'
+    f.root.removeFromParent()
+    f.scene.add(successor)
+    factories.signals.mockReturnValueOnce(nextSignals)
+    f.coordinator.prepare(reventonRealtimeProfile)
+    f.coordinator.ready('reventon', 2)
+    f.coordinator.render(f.notify)
+    expect(factories.signals).toHaveBeenCalledTimes(2)
+    expect(f.signals.dispose).toHaveBeenCalledOnce()
+    expect(nextSignals.dispose).not.toHaveBeenCalled()
+    expect(f.coordinator.snapshot()).toMatchObject({ revision: 2, error: null, frames: 2 })
+    expect(factories.clock).toHaveBeenCalledOnce()
+    expect(f.renderer.dispose).not.toHaveBeenCalled()
+    f.coordinator.dispose()
+    expect(nextSignals.dispose).toHaveBeenCalledOnce()
+  })
+
+  it('starts shadow preparation after the first raster and blocks drawing until it settles', async () => {
+    const f = fixture()
+    let finish = () => {},
+      needsPreparation = true
+    const pending = new Promise<void>((resolve) => (finish = resolve)),
+      prepareKeyShadow = vi.fn(() => pending),
+      shadow = Object.assign(f.signals, {
+        keyShadowNeedsPreparation: vi.fn(() => needsPreparation),
+        prepareKeyShadow,
+        failKeyShadow: vi.fn(),
+      })
+    f.coordinator.prepare()
+    f.coordinator.ready('reventon', 1)
+    expect(prepareKeyShadow).not.toHaveBeenCalled()
+    f.coordinator.render(f.notify)
+    expect(f.coordinator.snapshot().frames).toBe(1)
+    expect(prepareKeyShadow).not.toHaveBeenCalled()
+    f.coordinator.render(f.notify)
+    expect(prepareKeyShadow).toHaveBeenCalledOnce()
+    f.beforeRaster.mockClear()
+    f.notify.mockClear()
+    f.invalidate.mockClear()
+    for (let tick = 0; tick < 3; tick++) f.coordinator.render(f.notify)
+    expect(f.clock.frame).toHaveBeenCalledOnce()
+    expect(f.beforeRaster).not.toHaveBeenCalled()
+    expect(f.notify).not.toHaveBeenCalled()
+    expect(f.coordinator.snapshot().frames).toBe(1)
+    needsPreparation = false
+    finish()
+    await vi.waitFor(() => expect(f.invalidate).toHaveBeenCalledOnce())
+    expect(shadow.failKeyShadow).not.toHaveBeenCalled()
+    f.coordinator.render(f.notify)
+    expect(f.clock.frame).toHaveBeenCalledTimes(2)
+    expect(f.beforeRaster).toHaveBeenCalledOnce()
+    expect(f.notify).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot()).toMatchObject({ error: null, frames: 2 })
+    f.coordinator.dispose()
+  })
+
+  it('routes native shadow compilation errors to its owner and continues the base frame after rollback', async () => {
+    const f = fixture()
+    let finish = () => {},
+      needsPreparation = true,
+      compiling = false,
+      compilationError: string | null = null
+    const pending = new Promise<void>((resolve) => (finish = resolve)),
+      failKeyShadow = vi.fn(() => {
+        needsPreparation = false
+        compiling = false
+      }),
+      shadow = Object.assign(f.signals, {
+        keyShadowNeedsPreparation: vi.fn(() => needsPreparation),
+        keyShadowCompiling: vi.fn(() => compiling),
+        keyShadowCompilationFailed: vi.fn((message: string) => {
+          compilationError = message
+        }),
+        failKeyShadow,
+        prepareKeyShadow: vi.fn(async () => {
+          compiling = true
+          await pending
+          if (compilationError) throw new Error(compilationError)
+          compiling = false
+        }),
+      })
+    f.coordinator.prepare()
+    f.coordinator.ready('reventon', 1)
+    f.coordinator.render(f.notify)
+    f.coordinator.render(f.notify)
+    const emit = f.renderer.onError as unknown as (event: { message: string }) => void
+    emit({ message: 'shadow visibility pipeline rejected' })
+    expect(f.originalError).toHaveBeenCalledWith({ message: 'shadow visibility pipeline rejected' })
+    expect(shadow.keyShadowCompilationFailed).toHaveBeenCalledWith(
+      'shadow visibility pipeline rejected',
+    )
+    expect(f.coordinator.snapshot()).toMatchObject({ phase: 'ready', error: null, frames: 1 })
+    f.invalidate.mockClear()
+    finish()
+    await vi.waitFor(() => {
+      expect(failKeyShadow).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'shadow visibility pipeline rejected' }),
+      )
+      expect(f.invalidate).toHaveBeenCalledOnce()
+    })
+    f.coordinator.render(f.notify)
+    expect(f.signals.render).toHaveBeenCalledTimes(2)
+    expect(f.motion.cancelFrame).not.toHaveBeenCalled()
+    expect(f.coordinator.snapshot()).toMatchObject({ phase: 'ready', error: null, frames: 2 })
+    expect(f.notify).toHaveBeenCalledTimes(2)
+    f.coordinator.dispose()
+  })
+
+  it('forwards visibility gating to the shadow owner without running actions when visibility resumes', () => {
+    const f = fixture(),
+      setKeyShadowActive = vi.fn()
+    Object.assign(f.signals, { setKeyShadowActive })
+    f.coordinator.prepare()
+    f.coordinator.ready('reventon', 1)
+    f.coordinator.render(f.notify)
+    f.beforeRaster.mockClear()
+    f.signals.render.mockClear()
+    const pose = f.root.matrix.toArray(),
+      completedFrames = f.coordinator.snapshot().frames
+    f.coordinator.setActive(false)
+    f.coordinator.setActive(false)
+    f.coordinator.render(f.notify)
+    expect(setKeyShadowActive.mock.calls).toEqual([[false]])
+    expect(f.beforeRaster).not.toHaveBeenCalled()
+    expect(f.signals.render).not.toHaveBeenCalled()
+    f.coordinator.setActive(true)
+    expect(setKeyShadowActive.mock.calls).toEqual([[false], [true]])
+    expect(f.beforeRaster).not.toHaveBeenCalled()
+    expect(f.root.matrix.toArray()).toEqual(pose)
+    expect(f.coordinator.snapshot()).toMatchObject({ frames: completedFrames, active: true })
+    f.coordinator.render(f.notify)
+    expect(f.beforeRaster).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot().frames).toBe(completedFrames + 1)
+    f.coordinator.dispose()
+  })
+
   it('rebuilds only the local graph when audited and custom cars share an adapter profile', () => {
     const f = fixture()
     f.root.userData.adapter = 'reventon-v1'

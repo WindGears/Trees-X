@@ -7,6 +7,9 @@ const message = computed(() => {
   if (props.notice) return props.notice
   if (props.status?.error) return '实时光影暂不可用，请重新加载'
   if (props.status?.reflectionRays?.error) return '实时光影 · 精细反射不可用，已保留基础反射'
+  if (props.status?.keyShadow?.error) return '实时光影 · 自阴影不可用，已保留基础画面'
+  if (props.status?.keyShadow?.requested && props.status.keyShadow.phase === 'loading')
+    return '实时光影 · 准备柔和自阴影'
   if (detail.value?.error) return '实时光影 · 空间增强不可用，已用基础光照'
   if (detail.value?.preparing) return '实时光影 · 准备空间增强'
   if (detail.value?.actual === 'ddgi') return 'WebGPU · 实时光影与空间增强'
@@ -17,7 +20,9 @@ const message = computed(() => {
 <template>
   <p v-if="status || notice" class="wb-lighting-status" role="status">
     <span
-      :title="detail?.error ?? status?.reflectionRays?.error ?? undefined"
+      :title="
+        detail?.error ?? status?.reflectionRays?.error ?? status?.keyShadow?.error ?? undefined
+      "
       :data-indirect-lighting="detail?.actual"
       >{{ message }}</span
     >

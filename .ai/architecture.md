@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 汽车逐光源可见性（2026-10-22）
+
+`realtime/carShadow` 独立拥有派生几何、Worker BLAS、GPU BVH、全分辨率可见性及最多八帧历史。105个不透明刚体代理各一个TLAS叶；开门与分离仅更新世界变换。`CarKeyAreaLight` 在当前renderer局部注册专用节点；surface写汽车接收掩码，beauty才读取可见性并调制该灯直接贡献，深度不匹配／透明／地面不应用。既有六MRT中diffuseResponse未读取的alpha用作实验掩码，不增加附件。
+
+准备在首个完整帧后由现有协调器串行取得lease，不占用第二时钟。r185 PassNode.compileAsync不应用context，sceneInputs明确合并本pass上下文；carShadow两张单附件RTT局部隔离MRT／稳定context，实际quad必须完成初始化与真实PSO编译。BVH 0.9.16的tagged pointer参数与r185函数解析存在差异，局部Node保持明确双参数调用和WGSL函数局部结果变量，不修改依赖。原生编译错误在准备期退回基础光照，不能假报ready。
+
+切换商品即退役旧阴影owner，即使适配器／能力相同也不能复用旧root；实际释放遵守preparation lease。移动遮挡体可影响屏幕外接收者，不能可靠限定影响时保守清空阴影历史；相机连续移动保留通过几何／运动检查的历史。细节与证据见[自阴影记录](reventon-key-shadow-validation.md)。
+
 ## 汽车 studio 局部能力（2026-10-21）
 
 `carStudioQuality` 在精确资产匹配及真实WebGPU attach后发布局部能力；材质数值覆盖由专属owner恢复，舞台沿用原来的唯一所有者。`reflectionRays`拥有一／两套原生SSR目标及分类桥接，双射线由受检r185 `_noiseIndex`桥接按完整成功帧推进。每条命中先计算signed修正，再平均，不能混合原始RGBA后判定命中。`realtimeSignalIdentity` 将候选能力／射线选项纳入图复用键，保持renderer复用并隔离同profile自定义资源。失败保留单射线并报告，不释放借用纹理。见[验收记录](reventon-studio-quality-validation.md)。

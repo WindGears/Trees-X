@@ -20,6 +20,7 @@ interface ReventonShadow {
 
 export interface ReventonStageOptions {
   quality?: CarStudioQuality
+  createKeyLight?: () => RectAreaLight
 }
 
 /** Both backends retain the car's authored lights and the same unique owners. */
@@ -28,7 +29,7 @@ export function createReventonStageWithShadow(
   createShadow: () => ReventonShadow,
   options: ReventonStageOptions = {},
 ) {
-  const key = new RectAreaLight('#ffffff', 7, 6, 3)
+  const key = options.createKeyLight?.() ?? new RectAreaLight('#ffffff', 7, 6, 3)
   const strip = new RectAreaLight('#ffffff', 4, 4, 1.2)
   key.name = 'Reventon / key softbox'
   strip.name = 'Reventon / reflection strip'

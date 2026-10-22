@@ -17,6 +17,7 @@ import { createRealtimeSceneInputs } from './sceneInputs'
 import type { RealtimeProductProfile } from './productProfile'
 import { createReflectionRays } from './reflectionRays'
 import { isCarStudioScene } from '../../carStudioQuality'
+import { createCarKeyShadow } from './carShadow/runtime'
 import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
 
 export interface RealtimeIrradiance {
@@ -34,7 +35,12 @@ export function createRealtimeSignals(
   motion: Node,
   profile?: RealtimeProductProfile,
 ) {
-  const inputs = createRealtimeSceneInputs(scene, camera, motion)
+  const keyShadowRequested =
+    profile?.adapterId === 'reventon-v1' &&
+    isCarStudioScene(scene) &&
+    new URLSearchParams(location.search).get('carKeyShadow') === '1'
+  const inputs = createRealtimeSceneInputs(scene, camera, motion, keyShadowRequested)
+  const keyShadow = createCarKeyShadow(renderer, scene, camera, inputs, keyShadowRequested)
   const carOptimization =
     profile?.adapterId === 'reventon-v1' &&
     new URLSearchParams(location.search).get('carRenderTuning') !== 'legacy'
@@ -205,6 +211,7 @@ export function createRealtimeSignals(
       try {
         renderer.getDrawingBufferSize(frameSize)
         loungeFocus.prepare()
+        keyShadow.prepareFrame(frameSize.x, frameSize.y)
         reflection.prepare()
         reflectionResolve?.prepare(frameSize.x, frameSize.y)
         pipeline.render()
@@ -222,12 +229,25 @@ export function createRealtimeSignals(
     commitFrame() {
       if (!disposed && ssrEnabled && denoiseEnabled) reflectionResolve?.commitFrame()
       if (!disposed && ssrEnabled) reflection.commitFrame()
+      if (!disposed) {
+        keyShadow.commitFrame()
+        keyShadow.start()
+      }
     },
     cancelFrame() {
       reflectionResolve?.cancelFrame()
       reflection.cancelFrame()
+      keyShadow.cancelFrame()
     },
     resetHistory,
+    keyShadow: keyShadow.snapshot,
+    keyShadowNeedsPreparation: keyShadow.needsPreparation,
+    keyShadowCompiling: keyShadow.isCompiling,
+    keyShadowCompilationFailed: keyShadow.compilationFailed,
+    failKeyShadow: keyShadow.fail,
+    prepareKeyShadow: keyShadow.prepare,
+    invalidateKeyShadow: keyShadow.invalidate,
+    setKeyShadowActive: keyShadow.setActive,
     setProfile(next: RealtimeProductProfile) {
       if (disposed) return
       const enabled = resolveLoungeDof() && next.allowLoungeDof
@@ -271,6 +291,7 @@ export function createRealtimeSignals(
     dispose() {
       if (disposed) return
       disposed = true
+      keyShadow.dispose()
       antialias?.dispose()
       composite?.dispose()
       loungeDof?.dispose()
