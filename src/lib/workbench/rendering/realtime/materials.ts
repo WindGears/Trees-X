@@ -25,6 +25,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
+import { bindShowroomMaterials } from '../carShowroom/materialBinding'
 
 type PbrSource = MeshStandardMaterial
 type SignalContext = {
@@ -280,6 +281,7 @@ export function createRealtimeMaterials(root?: Object3D) {
   const meshes: { mesh: Mesh; original: Material | Material[]; runtime: Material | Material[] }[] =
     []
   let disposed = false
+  let restoreEnvironment: (() => void) | undefined
 
   function convert(source: Material): Material {
     const supported = realtimeMaterialSupported(source)
@@ -301,6 +303,8 @@ export function createRealtimeMaterials(root?: Object3D) {
   }
 
   function restore() {
+    restoreEnvironment?.()
+    restoreEnvironment = undefined
     for (const { mesh, original, runtime } of meshes)
       if (mesh.material === runtime) mesh.material = original
     for (const { runtime } of bindings.values()) runtime.dispose()
@@ -320,6 +324,7 @@ export function createRealtimeMaterials(root?: Object3D) {
       object.material = runtime
       meshes.push({ mesh: object, original, runtime })
     })
+    restoreEnvironment = bindShowroomMaterials(value)
   }
 
   if (root) install(root)

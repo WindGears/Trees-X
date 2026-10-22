@@ -1,5 +1,19 @@
 /* Only text drawn directly over the dark live studio changes. The glass tools
    retain their established light palette, including in management previews. */
+.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) {
+  --wb-stage-ink: #f1f3f6;
+  --wb-stage-muted: #bdc2ca;
+}
+.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-intro {
+  color: #f1f3f6;
+}
+.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-intro p,
+.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-sample-label {
+  color: #bdc2ca;
+}
+.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-input-hint {
+  color: #c7ccd3;
+}
 .wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-intro {
   color: #f1f3ee;
 }

@@ -185,7 +185,7 @@ export function createStageController(
     product = snapshot
     adapter = loaded
     scene.add(loaded.root)
-    loaded.attach?.(scene, renderer)
+    loaded.attach?.(scene, renderer, camera)
     progress = createMotionPlayback(
       loaded,
       progressActions(snapshot.presentation),

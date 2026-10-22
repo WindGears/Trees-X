@@ -14,6 +14,7 @@ export interface RealtimeStatus {
   error: string | null
   reflectionRays?: ReflectionRaySnapshot
   keyShadow?: CarKeyShadowSnapshot
+  showroom?: { phase: string; error: string | null }
   indirectLighting?: {
     requested: 'ssgi' | 'ddgi'
     actual: 'ssgi' | 'ddgi'

@@ -9,6 +9,7 @@ import { typewriterRealtimeProfile, type RealtimeProductProfile } from '../produ
 import { afterPreparation } from '../../preparationLease'
 import { createDdgiScheduler } from './scheduler'
 import type { RealtimeChange } from '../types'
+import { getShowroomEnvironment } from '../../carShowroom/binding'
 
 export interface DdgiFieldOptions {
   renderer: WebGPURenderer
@@ -107,7 +108,7 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
 
   function updateEnvironment() {
     const scene = options.scene,
-      next = scene.environment
+      next = getShowroomEnvironment(scene)?.irradiance ?? scene.environment
     if (
       next === environment &&
       (next?.version ?? 0) === environmentVersion &&

@@ -1,5 +1,6 @@
 import { Vector2 } from 'three'
 import { createRealtimeClock } from './clock'
+import { getShowroomStatus } from '../carShowroom/binding'
 import { createMotionHistory } from './motion'
 import { createRealtimeSignals } from './signals'
 import { createRealtimeMaterials } from './materials'
@@ -117,6 +118,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         generation,
         indirectLighting: indirectStatus(),
         reflectionRays: signals?.snapshot().reflectionRays,
+        showroom: getShowroomStatus(scene),
         keyShadow: signals?.keyShadow?.(),
       })
     }
@@ -332,6 +334,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         reflectionKernel: signals?.sampling() ?? null,
         reflectionHistory: signals?.history?.() ?? null,
         materialBranches: materials.stats(),
+        showroom: getShowroomStatus(scene),
         productProfile: productProfile.adapterId,
         preparation: { sceneInputs: preparedPasses },
         keyShadow: signals?.keyShadow?.(),

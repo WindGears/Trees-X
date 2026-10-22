@@ -49,11 +49,19 @@ const studioPalette = computed(() =>
 )
 const stageBackground = computed(
   () =>
+    (coldShowroom.value ? '#15171a' : undefined) ??
     studioPalette.value?.background ??
     (props.gallery ? '#e7e9e5' : (store.presentation?.stage?.background ?? '#151c25')),
 )
 const refinement = shallowRef<RefinementStatus>()
 const lighting = shallowRef<RealtimeStatus>()
+const coldShowroom = computed(
+  () =>
+    backend.value === 'webgpu' &&
+    store.presentation?.source.kind === 'glb' &&
+    store.presentation.source.adapter === 'reventon-v1' &&
+    Boolean(lighting.value?.showroom),
+)
 const studioEnvironment = shallowRef<StudioEnvironmentStatus>({ phase: 'idle' })
 function changeStudioMood(mood: 'light' | 'dark') {
   if (mood === studioMood.value && studioEnvironment.value.phase === 'error')
@@ -151,6 +159,7 @@ onErrorCaptured(() => {
     class="wb-stage"
     :data-render-backend="backend"
     :data-studio-mood="studioPalette?.mood"
+    :data-car-showroom="coldShowroom ? 'cold-studio' : undefined"
     :data-studio-environment="supportsStudioMood ? studioEnvironment.phase : undefined"
     :data-lighting-phase="lighting?.phase"
     :data-refinement-phase="refinement?.phase ?? 'raster'"

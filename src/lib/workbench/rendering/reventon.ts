@@ -4,20 +4,40 @@ import { bindGpuAreaLights } from './studioEnvironment'
 import { createGpuReventonShadow } from './reventonShadow'
 import { prepareGpuReventonMaterials } from './reventonGlass'
 import { createCarKeyAreaLight } from './realtime/carShadow/light'
+import { coldStudioRequested, createColdShowroomStage } from './carShowroom/stage'
+import { coldStudioConfig } from './carShowroom/config'
+import { createShowroomAreaLight } from './carShowroom/lights'
 
 /** Dynamically imported only for a car on the existing WebGPU renderer. */
 export const reventonGpuDependencies: ReventonGpuDependencies = {
-  createStage: (renderer, scene, model, options) =>
-    createReventonStageWithShadow(
+  createStage: (renderer, scene, model, options) => {
+    const showroom = coldStudioRequested(options, location.search) && Boolean(options?.camera)
+    const base = createReventonStageWithShadow(
       scene,
       () => {
         bindGpuAreaLights()
         return createGpuReventonShadow(renderer, scene, model)
       },
-      options?.quality === 'studio' &&
-        new URLSearchParams(location.search).get('carKeyShadow') === '1'
-        ? { ...options, createKeyLight: () => createCarKeyAreaLight(renderer) }
-        : options,
-    ),
+      showroom
+        ? {
+            ...options,
+            createKeyLight: () => createShowroomAreaLight(renderer, coldStudioConfig.lights.key),
+            createStripLight: () =>
+              createShowroomAreaLight(renderer, coldStudioConfig.lights.strip),
+          }
+        : options?.quality === 'studio' &&
+            new URLSearchParams(location.search).get('carKeyShadow') === '1'
+          ? { ...options, createKeyLight: () => createCarKeyAreaLight(renderer) }
+          : options,
+    )
+    try {
+      return showroom && options?.camera
+        ? createColdShowroomStage(renderer, scene, model, options.camera, base)
+        : base
+    } catch (cause) {
+      base.dispose()
+      throw cause
+    }
+  },
   prepareMaterials: prepareGpuReventonMaterials,
 }

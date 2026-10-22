@@ -24,7 +24,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
-import { compileOwnedRtt, createOwnedRtt, isolateOwnedRttMrt } from '../ownedRtt'
+import { compileOwnedRtt, createOwnedRtt, isolateOwnedRttMrt, resizeOwnedRtt } from '../ownedRtt'
 import { createCarShadowHistory } from './history'
 
 export interface CarShadowSurfaceInputs {
@@ -156,6 +156,8 @@ export function createCarShadowVisibility(
       if (disposed) throw new Error('Car shadow visibility has been disposed')
       prepared = false
       history.prepare(width, height)
+      resizeOwnedRtt(renderer, raw.node, width, height)
+      resizeOwnedRtt(renderer, history.node, width, height)
       resolution.value.set(width, height)
       inverseProjection.value.copy(camera.projectionMatrixInverse)
       world.value.copy(camera.matrixWorld)

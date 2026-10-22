@@ -17,15 +17,20 @@ const args = new Map()
 for (let index = 2; index < process.argv.length; index += 2) {
   const key = process.argv[index],
     value = process.argv[index + 1]
-  assert.ok(['--output', '--device'].includes(key) && value, 'Expected --output or --device value')
+  assert.ok(
+    ['--output', '--device', '--showroom'].includes(key) && value,
+    'Expected --output, --device or --showroom value',
+  )
   assert.ok(!args.has(key), 'Duplicate option')
   args.set(key, value)
 }
 assert.ok(['0', '1'].includes(args.get('--device') ?? '0'), '--device requires 0 or 1')
+assert.ok(['0', '1'].includes(args.get('--showroom') ?? '0'), '--showroom requires 0 or 1')
 const config = readDemoConfig(),
   base = localAuditOrigin(process.env.CHECK_URL ?? config.baseUrl),
   output = resolve(args.get('--output') ?? 'artifacts/car-key-shadow/flow'),
   deviceTest = args.get('--device') === '1',
+  showroomTest = args.get('--showroom') === '1',
   detailUrl = new URL('/api/v1/admin/products/reventon', base).href,
   digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex'),
   timeout = 240000
@@ -38,6 +43,7 @@ const report = {
   headless: true,
   viewport: { width: 1440, height: 1000 },
   deviceTest,
+  showroomTest,
   checks: [],
   snapshots: {},
   errors: [],
@@ -100,6 +106,13 @@ async function snapshot() {
       renderer = scene.renderer.instance,
       camera = scene.camera.activeCamera.value,
       root = scene.scene.value.children.find((node) => node.userData.workbenchProduct)
+    const architecture = [],
+      showroomRoots = []
+    scene.scene.value.traverse((node) => {
+      if (node.userData.carShowroom === 'cold-studio') showroomRoots.push(node.uuid)
+      if (node.isMesh && node.userData.carShowroom === true)
+        architecture.push({ id: node.userData.showroomId, uuid: node.uuid })
+    })
     return {
       atMs: performance.now(),
       status: store.status,
@@ -109,6 +122,10 @@ async function snapshot() {
       sha256: root?.userData.bundleSha256,
       rootUuid: root?.uuid,
       studio: root?.userData.carStudioQuality,
+      showroom: root?.userData.carShowroom ?? null,
+      showroomRoots,
+      architecture,
+      environment: scene.scene.value.environment?.uuid ?? null,
       backend: renderer.backend.isWebGPUBackend ? 'webgpu' : 'other',
       canvases: document.querySelectorAll('canvas').length,
       sameCanvas: renderer.domElement === window.__demo.canvas,
@@ -157,6 +174,27 @@ function verify(value) {
   assert.equal(shadow.error, null)
   assert.ok(shadow.generation > 0 && shadow.frames > 0 && shadow.blasBuilds > 0)
   assert.ok(value.lighting.signals.reflectionRays.actual === 2)
+  if (showroomTest) {
+    assert.equal(value.showroom?.requested, true)
+    assert.equal(value.showroom.phase, 'ready', 'Actual cold studio must be ready')
+    assert.equal(value.showroom.error, null)
+    assert.equal(value.showroom.probe?.captures, 6)
+    assert.equal(value.showroom.probe?.resolution, 1024)
+    assert.equal(value.showroomRoots.length, 1, 'One actual showroom per scene host')
+    const ids = value.architecture.map((entry) => entry.id)
+    assert.equal(new Set(ids).size, ids.length, 'No duplicate architectural geometry')
+    for (const id of [
+      'floor',
+      'ceiling',
+      'back wall',
+      'front wall',
+      'left wall',
+      'right wall',
+      'key softbox',
+      'strip softbox',
+    ])
+      assert.ok(ids.includes(id), 'Actual showroom geometry required: ' + id)
+  }
   assert.deepEqual(value.gpuErrors, [])
 }
 
@@ -184,12 +222,16 @@ async function ready() {
         const value = await snapshot(),
           lighting = value.lighting
         const failure =
-          lighting.error || lighting.indirectLighting?.error || lighting.keyShadow?.error
+          lighting.error ||
+          lighting.indirectLighting?.error ||
+          lighting.keyShadow?.error ||
+          (showroomTest && value.showroom?.error)
         if (failure) throw new Error(failure)
         return (
           lighting.phase === 'ready' &&
           lighting.indirectLighting?.actual === 'ddgi' &&
-          lighting.keyShadow?.phase === 'ready'
+          lighting.keyShadow?.phase === 'ready' &&
+          (!showroomTest || value.showroom?.phase === 'ready')
         )
       },
       { timeout, intervals: [250, 500] },
@@ -337,6 +379,7 @@ try {
   const url = new URL(keyShadowUrl(base, 'shadow'))
   url.pathname = '/admin'
   url.searchParams.delete('product')
+  if (showroomTest) url.searchParams.set('carShowroom', 'cold-studio')
   await page.goto(url.href, { waitUntil: 'domcontentloaded' })
   await expect
     .poll(
@@ -398,6 +441,15 @@ try {
   assert.equal(moved.lighting.keyShadow.generation, before.lighting.keyShadow.generation)
   assert.equal(moved.lighting.keyShadow.blasBuilds, before.lighting.keyShadow.blasBuilds)
   assert.ok(moved.lighting.keyShadow.frames > before.lighting.keyShadow.frames)
+  if (showroomTest) {
+    assert.equal(
+      moved.environment,
+      before.environment,
+      'Camera pan must reuse the static room probe',
+    )
+    assert.equal(moved.showroom.probe.captures, before.showroom.probe.captures)
+    assert.deepEqual(moved.showroomRoots, before.showroomRoots)
+  }
   report.snapshots.panned = moved
   await page.screenshot({ path: resolve(output, 'admin-shadow-panned.png') })
   await page.getByRole('button', { name: '使用此取景并返回', exact: true }).click()
@@ -429,6 +481,30 @@ try {
   assert.deepEqual(perspective.target, captured.camera.target)
   assert.deepEqual(captured.actions, original.presentation.actions)
   report.snapshots.returnedCamera = { camera: captured.camera, perspective }
+  if (showroomTest) {
+    await tab('镜头')
+    const returnedPreview = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/admin/products/preview' &&
+        response.request().method() === 'POST',
+    )
+    await page.getByRole('button', { name: '为默认取景采集镜头', exact: true }).click()
+    assert.equal((await returnedPreview).status(), 200)
+    const restored = await ready()
+    restored.camera.position.forEach((value, index) =>
+      assert.ok(
+        Math.abs(value - captured.camera.position[index]) < 1e-4,
+        'Returned draft camera must be used by the actual new preview',
+      ),
+    )
+    report.snapshots.returnedPreview = restored
+    await page.screenshot({ path: resolve(output, 'admin-showroom-returned.png') })
+    await page.getByRole('button', { name: '返回编辑', exact: true }).click()
+    await expect(page.locator('canvas')).toHaveCount(0)
+    report.checks.push(
+      'Cold showroom stays ready in actual admin preview, native device recovery when requested, and a fresh preview using the returned unsaved camera; no overlapping scene/Canvas or persistent write',
+    )
+  }
   const persistedResponse = await page.request.get(detailUrl)
   assert.equal(persistedResponse.status(), 200)
   const persisted = await persistedResponse.json()
@@ -489,6 +565,7 @@ console.log(
       output,
       checks: report.checks.length,
       deviceTest,
+      showroomTest,
       failure: report.failure?.message,
     },
     null,

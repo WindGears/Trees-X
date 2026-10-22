@@ -8,6 +8,7 @@ import type { RefinementStatus, RefinementChange } from '@/lib/workbench/renderi
 import type { RealtimeCoordinator } from '@/lib/workbench/rendering/realtime/coordinator'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
 import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
+import { getShowroomEnvironment } from '@/lib/workbench/rendering/carShowroom/binding'
 import type { ownGeometryAttributes } from '@/lib/workbench/rendering/realtime/geometryOwnership'
 import { createStageController } from '@/lib/workbench/controller'
 import { hasTypewriterStudio, resolveWorkbenchStage } from '@/lib/workbench/studioPreset'
@@ -115,8 +116,9 @@ export function useWorkbenchScene(
     (value) => {
       background.set(value.background)
       fog.color.copy(background)
-      scene.value.environmentIntensity = value.environmentIntensity
-      renderer.toneMappingExposure = value.exposure
+      const showroom = getShowroomEnvironment(scene.value)
+      scene.value.environmentIntensity = showroom ? 1 : value.environmentIntensity
+      renderer.toneMappingExposure = showroom?.config.exposure ?? value.exposure
       dirty('environment')
     },
     { immediate: true },
@@ -230,8 +232,17 @@ export function useWorkbenchScene(
     const profile = realtimeProductProfile(
       product.presentation.source.kind === 'glb' ? product.presentation.source.adapter : undefined,
     )
-    realLighting?.prepare(profile)
     const car = profile?.adapterId === 'reventon-v1'
+    // A captured showroom must exist before material/environment graph binding.
+    // The stopped host and preparation lease still own the only renderer here.
+    const carPrepare =
+      car &&
+      realLighting &&
+      (new URLSearchParams(location.search).get('carPrewarm') !== 'off' ||
+        new URLSearchParams(location.search).get('carShowroom') === 'cold-studio')
+    if (carPrepare) await current.prepare(signal)
+    if (disposed || request !== generation) return
+    realLighting?.prepare(profile)
     if (
       realLighting &&
       (!car || new URLSearchParams(location.search).get('carPrewarm') !== 'off')
@@ -239,8 +250,6 @@ export function useWorkbenchScene(
       // Same renderer, stopped drawing clock and current preparation lease.
       // These tasks warm the actual private shadow and HDR MRT variants, not
       // the unrelated default Canvas PSO. Post effects still gate on a real frame.
-      if (car) await current.prepare(signal)
-      if (disposed || request !== generation) return
       await realLighting.preparePasses(signal)
     } else await renderer.compileAsync(scene.value, camera.value)
     if (disposed || request !== generation) return

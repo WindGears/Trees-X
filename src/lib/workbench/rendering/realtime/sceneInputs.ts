@@ -105,6 +105,7 @@ export function createRealtimeSceneInputs(
   // This separate RGBA8 attachment adds four bytes/pixel. Its RGB tracks
   // transmittance; standard material blending uses its genuine opacity alpha.
   beauty.getTexture('correctionThroughput').type = UnsignedByteType
+  const scenePasses = [surface, beauty] as const
   let disposed = false
   return {
     surface,
@@ -118,6 +119,20 @@ export function createRealtimeSceneInputs(
     baseSpecular: surface.getTextureNode('baseSpecular'),
     baseDiffuse: surface.getTextureNode('baseDiffuse'),
     diffuseResponse: surface.getTextureNode('output'),
+    resize(width: number, height: number, renderer: WebGPURenderer) {
+      // Allocate shared scene attachments before any dependent beauty draw
+      // updates its texture bindings. PassNode's lazy resize can otherwise
+      // destroy a surface depth texture halfway through that same draw.
+      for (const input of scenePasses) {
+        const target = input.renderTarget
+        if (target.width === width && target.height === height) continue
+        input.setSize(width, height)
+        // RenderTarget.setSize only resizes color images. Eager native init
+        // also resolves depth dimensions/generation before a nested dependency
+        // can bind the previous depth allocation inside the beauty encoder.
+        renderer.initRenderTarget(target)
+      }
+    },
     setKeyShadow(binding?: CarShadowBinding) {
       // No surface dependency on its own derived visibility. Only beauty reads it.
       surface.contextNode = binding ? context({ treesCarKeyShadowPass: 'surface' }) : null
@@ -178,7 +193,7 @@ export function createRealtimeSceneInputs(
         renderer.autoClear = true
         // Match PassNode.setup before compiling: output type/sample count must
         // already match the actual linear HDR graph, not the default Canvas.
-        for (const input of [surface, beauty]) {
+        for (const input of scenePasses) {
           signal?.throwIfAborted()
           if (disposed) throw new Error('Scene inputs disposed during preparation')
           input.renderTarget.samples = 0

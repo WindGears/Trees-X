@@ -26,10 +26,32 @@ function fixture(receiverMask?: Texture) {
     light,
     { occluded: () => bool(false) },
   )
-  return { owner, copyTextureToTexture }
+  return { owner, copyTextureToTexture, renderer }
 }
 
 describe('car rectangular softbox visibility sequence', () => {
+  it('preallocates both nested visibility outputs on resize, before beauty can bind them', () => {
+    const f = fixture()
+    f.owner.prepare(1440, 1000)
+    f.owner.commitFrame()
+    const init = vi.mocked(f.renderer.initRenderTarget)
+    init.mockClear()
+    f.owner.prepare(1280, 720)
+    const nested = init.mock.calls
+      .map(([target]) => target)
+      .filter((target) =>
+        ['TreesX.CarShadow.rawVisibility', 'TreesX.CarShadow.filteredVisibility'].includes(
+          target.texture.name,
+        ),
+      )
+    expect(nested).toHaveLength(2)
+    for (const target of nested) expect(target).toMatchObject({ width: 1280, height: 720 })
+    expect(f.owner.snapshot().valid).toBe(false)
+    init.mockClear()
+    f.owner.prepare(1280, 720)
+    expect(init).not.toHaveBeenCalled()
+    f.owner.dispose()
+  })
   it('accepts the optional opaque-car receiver mask as a borrowed texture', () => {
     const receiverMask = new Texture(),
       dispose = vi.spyOn(receiverMask, 'dispose')

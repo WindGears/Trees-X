@@ -1,4 +1,4 @@
-import { Vector3, type Group, type Object3D, type Texture, type Scene } from 'three'
+import { Vector3, type Group, type Object3D, type Texture, type Scene, type Camera } from 'three'
 import { modelKit } from './modelKit'
 import { sampleBuilders } from './samples'
 import type { Vec3, WorkbenchProduct } from './types'
@@ -16,7 +16,7 @@ export interface SceneAdapter {
   setFinish(color: string): void
   point(node: string, result: Vector3, anchor?: Vec3): Vector3 | undefined
   dispose(): void
-  attach?(scene: Scene, renderer: WorkbenchRenderer): void
+  attach?(scene: Scene, renderer: WorkbenchRenderer, camera?: Camera): void
   beforeRender?(): void
   /** Native preparation is serialized by the scene host; the adapter keeps
    * ownership until the awaited work settles, even after cancellation. */

@@ -71,6 +71,46 @@ function preparingRenderer() {
 }
 
 describe('opaque surface and native transparent beauty inputs', () => {
+  it('resizes both shared scene targets before dependants and leaves lazy pass sizing allocation-free', () => {
+    const inputs = createRealtimeSceneInputs(new Scene(), new PerspectiveCamera(), vec2(0)),
+      depth = inputs.depth,
+      initRenderTarget = vi.fn((target: RenderTarget) => {
+        if (target.depthTexture) {
+          target.depthTexture.image.width = target.width
+          target.depthTexture.image.height = target.height
+        }
+      }),
+      renderer = { initRenderTarget } as unknown as WebGPURenderer,
+      surfaceDispose = vi.spyOn(inputs.surface.renderTarget, 'dispose'),
+      beautyDispose = vi.spyOn(inputs.beauty.renderTarget, 'dispose')
+    try {
+      for (const [width, height] of [
+        [1440, 1000],
+        [1280, 720],
+        [390, 844],
+      ]) {
+        inputs.resize(width!, height!, renderer)
+        expect(inputs.surface.renderTarget).toMatchObject({ width, height })
+        expect(inputs.beauty.renderTarget).toMatchObject({ width, height })
+        expect(inputs.depth).toBe(depth)
+        expect(inputs.surface.renderTarget.depthTexture?.image.width).toBe(width)
+        expect(inputs.surface.renderTarget.depthTexture?.image.height).toBe(height)
+        const allocations = initRenderTarget.mock.calls.length
+        const surfaceCalls = surfaceDispose.mock.calls.length,
+          beautyCalls = beautyDispose.mock.calls.length
+        // Native updateBefore repeats setSize. It must not destroy an attachment
+        // after a dependent beauty material has resolved its shared depth binding.
+        inputs.surface.setSize(width!, height!)
+        inputs.beauty.setSize(width!, height!)
+        expect(surfaceDispose).toHaveBeenCalledTimes(surfaceCalls)
+        expect(beautyDispose).toHaveBeenCalledTimes(beautyCalls)
+        inputs.resize(width!, height!, renderer)
+        expect(initRenderTarget).toHaveBeenCalledTimes(allocations)
+      }
+    } finally {
+      inputs.dispose()
+    }
+  })
   it.each(['success', 'failure', 'cancel'] as const)(
     'precompiles real HDR MRT variants serially and restores state on %s without publishing a frame',
     async (mode) => {

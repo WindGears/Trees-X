@@ -1,5 +1,5 @@
 import { Color, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Texture } from 'three'
-import type { Group, Scene } from 'three'
+import type { Camera, Group, Scene } from 'three'
 import { prepareReventonMaterials } from '../reventon/materials'
 import { bindGlb } from './glbAdapter'
 import { createReventonStage } from './reventonStage'
@@ -78,7 +78,7 @@ export function bindReventon(
   }
   return {
     ...adapter,
-    attach(scene: Scene, renderer: WorkbenchRenderer) {
+    attach(scene: Scene, renderer: WorkbenchRenderer, camera?: Camera) {
       if (disposed || studio) return
       if (isWebGpuRenderer(renderer)) {
         if (!gpu) throw new Error('汽车 WebGPU 舞台依赖未装配')
@@ -93,9 +93,15 @@ export function bindReventon(
           }
           gpuTextures = canonicalizeReventonTextures(model)
           gpuMaterials = gpu.prepareMaterials(model)
-          studio = quality
-            ? gpu.createStage(renderer, scene, adapter.root, { quality })
-            : gpu.createStage(renderer, scene, adapter.root)
+          const showroom =
+            quality &&
+            camera &&
+            new URLSearchParams(location.search).get('carShowroom') === 'cold-studio'
+          studio = showroom
+            ? gpu.createStage(renderer, scene, adapter.root, { quality, camera, source })
+            : quality
+              ? gpu.createStage(renderer, scene, adapter.root, { quality })
+              : gpu.createStage(renderer, scene, adapter.root)
         } catch (error) {
           gpuMaterials?.dispose()
           gpuMaterials = undefined

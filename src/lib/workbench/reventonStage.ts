@@ -1,4 +1,5 @@
-import { RectAreaLight, type Group, type Scene, type WebGLRenderer } from 'three'
+import { RectAreaLight, type Camera, type Group, type Scene, type WebGLRenderer } from 'three'
+import type { GlbSource } from './types'
 import { createContactShadow } from '@/lib/reventon/contactShadow'
 import { acquireRectAreaUniforms } from '@/lib/three/rectAreaUniforms'
 import { createShadowRefresh } from './rendering/shadowRefresh'
@@ -20,7 +21,10 @@ interface ReventonShadow {
 
 export interface ReventonStageOptions {
   quality?: CarStudioQuality
+  camera?: Camera
+  source?: GlbSource
   createKeyLight?: () => RectAreaLight
+  createStripLight?: () => RectAreaLight
 }
 
 /** Both backends retain the car's authored lights and the same unique owners. */
@@ -30,7 +34,7 @@ export function createReventonStageWithShadow(
   options: ReventonStageOptions = {},
 ) {
   const key = options.createKeyLight?.() ?? new RectAreaLight('#ffffff', 7, 6, 3)
-  const strip = new RectAreaLight('#ffffff', 4, 4, 1.2)
+  const strip = options.createStripLight?.() ?? new RectAreaLight('#ffffff', 4, 4, 1.2)
   key.name = 'Reventon / key softbox'
   strip.name = 'Reventon / reflection strip'
   key.position.set(-1, 4, -3)

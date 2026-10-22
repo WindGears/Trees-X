@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 汽车同场景冷白摄影棚（2026-10-22）
+
+`rendering/carShowroom` 独立拥有配置、建筑、主相机cutaway、双信号捕获及盒投影节点。控制器attach仅新增可选实际camera参数；汽车精确候选将其传给专属舞台。舞台在既有lease中先准备完整镜面／低频间接环境，再由realtime.materials安装运行材质和scene-local投影hook；卸载先恢复hook再释放适配器。普通WebGL和其他商品不引入新的宿主。
+
+完整1024²六面源保留灯板辐射，额外256²六面源将灯板置黑、保留面光照墙地，分别服务specular与irradiance/DDGI SH，避免重复直射。面光专用Node在当前renderer局部屏蔽它的base/coat specular累加，保留原生diffuse与主灯可见性；Basic/深度等编译不要求Physical字段。投影只更改环境方向，不设置envMap或退出现有SSR支持。房间可见性用主相机材质uniform，原traceMaterial与独立捕获场景保持完整；地面仍不透明。全程复用唯一renderer/绘制时钟，无逐帧像素读回。细节、近似与证据见[冷白棚验收](reventon-cold-showroom-validation.md)。
+
+尺寸改变先预置scene表面／beauty附件和嵌套阴影RTT，并用公开initRenderTarget解决深度尺寸／GPU代次，不能在beauty绑定后懒销毁。投影hook同时登记真实envNode，避免r185 NodeMaterialObserver漏掉函数返回的节点图而跳过静态部件绑定刷新；销毁恢复原字段与方法。修复保留既有图、Canvas和renderer，五尺寸实际GPU回归通过。
+
 ## 汽车逐光源可见性（2026-10-22）
 
 `realtime/carShadow` 独立拥有派生几何、Worker BLAS、GPU BVH、全分辨率可见性及最多八帧历史。105个不透明刚体代理各一个TLAS叶；开门与分离仅更新世界变换。`CarKeyAreaLight` 在当前renderer局部注册专用节点；surface写汽车接收掩码，beauty才读取可见性并调制该灯直接贡献，深度不匹配／透明／地面不应用。既有六MRT中diffuseResponse未读取的alpha用作实验掩码，不增加附件。

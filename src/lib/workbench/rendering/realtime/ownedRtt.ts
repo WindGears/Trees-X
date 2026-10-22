@@ -12,6 +12,22 @@ import { context, rtt } from 'three/tsl'
 type OwnedRttNode = ReturnType<typeof rtt>
 const isolatedContexts = new WeakMap<OwnedRttNode, ReturnType<typeof context>>()
 
+/** A texture sampled by a scene material must be resized before that scene's
+ * bindings are resolved, rather than lazily inside the material's nested draw.
+ */
+export function resizeOwnedRtt(
+  renderer: WebGPURenderer,
+  node: OwnedRttNode,
+  width: number,
+  height: number,
+) {
+  const target = node.renderTarget
+  if (!target) throw new Error('Owned RTT has no render target to prepare')
+  if (target.width === width && target.height === height) return
+  node.setSize(width, height)
+  renderer.initRenderTarget(target)
+}
+
 /** A shadow RTT nested in a beauty material must not inherit beauty's MRT.
  * This per-node bridge is opt-in; other RTT owners keep their existing behavior.
  */

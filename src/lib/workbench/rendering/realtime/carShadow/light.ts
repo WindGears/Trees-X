@@ -41,7 +41,7 @@ export function isCarShadowReceiver(object: Object3D, material: object) {
 }
 
 type RectDirect = NonNullable<ReturnType<RectAreaLightNode['setupDirectRectArea']>>
-class CarKeyAreaLightNode extends RectAreaLightNode {
+export class CarKeyAreaLightNode extends RectAreaLightNode {
   setupDirectRectArea(builder: NodeBuilder) {
     const method: unknown = Reflect.get(RectAreaLightNode.prototype, 'setupDirectRectArea')
     if (REVISION !== '185' || typeof method !== 'function')

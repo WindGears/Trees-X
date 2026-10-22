@@ -210,6 +210,7 @@ export function createRealtimeSignals(
         override = scene.overrideMaterial
       try {
         renderer.getDrawingBufferSize(frameSize)
+        inputs.resize(frameSize.x, frameSize.y, renderer)
         loungeFocus.prepare()
         keyShadow.prepareFrame(frameSize.x, frameSize.y)
         reflection.prepare()
