@@ -8,6 +8,7 @@ import {
 import { vec3 } from 'three/tsl'
 import { CarKeyAreaLight, CarKeyAreaLightNode } from '../realtime/carShadow/light'
 import type { CarShowroomLight } from './config'
+import { usesLocalAreaSpecular } from './receiver'
 
 class ShowroomKeyLight extends CarKeyAreaLight {}
 class ShowroomFillLight extends RectAreaLight {}
@@ -52,6 +53,10 @@ class ShowroomAreaLightNode extends RectAreaLightNode {
     const context = builder.context && typeof builder.context === 'object' ? builder.context : {}
     const model: unknown = Reflect.get(context, 'lightingModel')
     if (REVISION !== '185') throw new Error('Cold studio requires audited r185 lighting')
+    // Walls/coves are at the capture boundary: native LTC places their
+    // highlights from the actual light geometry. Their environment binding
+    // excludes emitter pixels so this does not double the specular energy.
+    if (usesLocalAreaSpecular(builder.object)) return super.setup(builder)
     // Shadow/depth and Basic passes do not use a Physical lighting model. They
     // must not fail while the same room is captured or the host prewarms them.
     if (

@@ -96,6 +96,13 @@ async function settled(camera, progress = {}) {
     .poll(
       async () => {
         const current = await state()
+        activeRun.lastSettling = {
+          expected: camera,
+          actual: current.camera,
+          firstFrame: first,
+          frames: current.lighting.frames,
+          motion: current.motion,
+        }
         if (current.lighting.error || current.showroom?.error)
           throw new Error(current.lighting.error || current.showroom?.error)
         const complete =

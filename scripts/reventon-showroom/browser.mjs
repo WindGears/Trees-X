@@ -1,4 +1,4 @@
-/* global window, document, performance, requestAnimationFrame */
+/* global window, document, performance, requestAnimationFrame, WheelEvent */
 import { bridge } from '../demo/browser-check.mjs'
 import { withAuditDeadline } from '../reventon-performance/audit-deadline.mjs'
 
@@ -117,9 +117,38 @@ export async function selectShowroomView(page, id, custom) {
     // The controller owns an immutable configuration snapshot. Do not mutate
     // Pinia presets and pretend that it changed that snapshot. Additional
     // camera-range shots set the existing real camera after its tween ends.
-    await selectShowroomView(page, 'perspective')
-    await page.waitForTimeout(900)
+    const expected = await selectShowroomView(page, 'perspective')
+    // Consume the Vue intent watcher before checking a pose that might already
+    // equal perspective; otherwise the newly queued tween starts after the shot.
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    )
+    // GSAP may lag wall time during background shader preparation. Wait for
+    // the actual endpoint so its remaining tween cannot overwrite the shot.
+    await page.waitForFunction(
+      ({ position, target }) => {
+        const camera = window.__demo.scene.camera.activeCamera.value,
+          direction = camera.getWorldDirection(camera.position.clone()),
+          expectedDirection = camera.position
+            .clone()
+            .fromArray(target)
+            .sub(camera.position)
+            .normalize()
+        return (
+          camera.position.distanceTo(camera.position.clone().fromArray(position)) < 1e-9 &&
+          direction.distanceTo(expectedDirection) < 1e-9
+        )
+      },
+      expected,
+      { timeout },
+    )
     return page.evaluate(({ position, target }) => {
+      // A repeated view can have the right pose throughout a live zero-distance
+      // tween. The existing controls' wheel-start path relinquishes its writer;
+      // zero delta does not alter zoom or bypass the production takeover logic.
+      window.__demo.canvas.dispatchEvent(
+        new WheelEvent('wheel', { deltaY: 0, bubbles: true, cancelable: true }),
+      )
       const camera = window.__demo.scene.camera.activeCamera.value
       camera.position.fromArray(position)
       camera.lookAt(camera.position.clone().fromArray(target))

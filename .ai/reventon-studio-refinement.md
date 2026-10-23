@@ -60,3 +60,17 @@
 48项摄影棚测试通过，包含真实开缝射线、墙板深度、倒角法线、灯具无遮挡、角落唯一承托面、贴图借用与释放。恰好命中共边的相邻三角形允许返回两次同深度命中，但仍要求唯一网格和相同物理深度。生产前后端构建通过，typecheck与ESLint通过；完整check仍仅被用户原有PERFORMANCE_OPTIMIZATION.md格式阻断。
 
 最终后台真实WebGPU证据为 `artifacts/car-showroom/wall-architecture/report.json`：14个取景及短段绕行、开门、分离通过，唯一Canvas／renderer、同源资源和静态捕获不随动作重拍的断言通过，无GPU或请求错误。全景已能读出墙板分区与转角收边；墙角近景的横向底色跳变减轻。墙脚亮带及整车暗部光比仍有调整余地，不把本次结构改善称为概念图复原或完整画质通过。未补做重载长测、不抢焦点，也不宣称实际呈现30FPS。局部光追第二节点保持暂停。
+
+## 墙脚反射分流（2026-10-23，revision 8）
+
+后台同机位分离环境与直接光：`artifacts/car-showroom/wall-lighting-audit/` 中 all／direct-only／environment-only／no-normal 四图确认白色墙脚环主要来自环境项，移除法线没有消除。诊断通过 `scene.environmentIntensity` 切换，不能用没有独立envMap的材质envMapIntensity冒充该对照。
+
+墙、弧面、顶棚及灯壳改用真实面积光LTC直接高光；它们的环境镜面输入改为已有的灯板置黑捕获，保留墙地反弹，不重复加入灯板直接辐射。汽车与地板继续使用完整灯板环境及原有镜面分流；曝光、灯光数值、材质参数、纹理与几何保持。`receiver.ts` 集中判定，光源节点和材质绑定共用，避免两端分支不一致。不增加pass、renderer、探针捕获次数或纹理所有者。中央探针仍是位置近似，本次不宣称全房间物理等效。
+
+51项摄影棚单测通过，新增真实节点分派检查墙面保留LTC镜面、汽车和地板继续抑制重复直接镜面。typecheck、ESLint及生产前后端构建通过；完整check仍被用户未跟踪的 `PERFORMANCE_OPTIMIZATION.md` 格式阻断，文件未改。
+
+短回归发现测试辅助器的取景竞争，失败证据保留在 `artifacts/car-showroom/wall-local-light/`、`wall-local-light-confirmed/`、`wall-local-light-final/`。实际相机回到了默认位置，动作已暂停、GPU无报错、帧数仍从144增长到5678，不能将超时归为渲染卡死。重复选择同一视角会创建零位移GSAP补间：即使相机已经处于终点，补间仍可能写入默认姿态。辅助器先等待Vue操作被消费及真实终点，再触发现有controls的零位移滚轮接管以停止旧镜头写入，之后设置特殊检查取景；未修改生产相机控制或放宽最终断言。失败报告增加最后的预期/实际相机、动作与帧数，方便复核。
+
+墙角实机已消除整圈白边，但暗侧墙面和汽车暗部仍偏弱；本批不作为整体画质通过或默认入口切换，第二节点继续暂停。
+
+最终后台回归 `artifacts/car-showroom/wall-local-light-takeover-final/report.json` 通过：14个固定取景、绕行/开门/分离各4秒操作检查，无页面/GPU/HTTP错误，唯一Canvas/renderer与静态捕获保持。墙角、侧面和分离截图已人工检查，墙脚亮环消除；不把通过工程断言当作概念画质或显示器30FPS认证。中途执行环境中断造成的一次服务连接失败另存 `wall-local-light-takeover/`；尝试经组件读取checkpoint未成功的桥接实验保留在 `wall-local-light-verified/`，没有纳入最终工具。

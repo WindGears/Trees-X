@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 冷白棚建筑高光分流（2026-10-23）
+
+`carShowroom/receiver.ts` 统一区分建筑边界与汽车/地板接收者。revision 8 的墙、弧面、顶棚和灯壳恢复原生面积光LTC镜面，环境hook同时改用既有灯板置黑的捕获，避免中央探针直接灯板像造成墙脚整圈发白。汽车与地板保留完整环境及原镜面策略；不增加pass、捕获或资源所有者。后台测试触发既有controls零位移滚轮接管后设置特殊视角，不能以固定900ms等待假设GSAP已停。证据与剩余视觉限制见[摄影棚修整](reventon-studio-refinement.md)。
+
 ## 汽车同场景冷白摄影棚（2026-10-22）
 
 `rendering/carShowroom` 独立拥有配置、建筑、主相机cutaway、双信号捕获及盒投影节点。控制器attach仅新增可选实际camera参数；汽车精确候选将其传给专属舞台。舞台在既有lease中先准备完整镜面／低频间接环境，再由realtime.materials安装运行材质和scene-local投影hook；卸载先恢复hook再释放适配器。普通WebGL和其他商品不引入新的宿主。

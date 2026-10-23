@@ -2,6 +2,7 @@ import { Mesh, type Material, type Object3D } from 'three'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
 import { getShowroomEnvironment } from './binding'
 import { installColdStudioProjection } from './projection'
+import { usesLocalAreaSpecular } from './receiver'
 
 /** Realtime coordinator owns these material hooks, before adapter resource cleanup. */
 export function bindShowroomMaterials(scene: Object3D) {
@@ -17,12 +18,14 @@ export function bindShowroomMaterials(scene: Object3D) {
         restores.push(
           installColdStudioProjection(
             material,
-            binding.texture,
+            // Architectural receivers use spatial LTC highlights instead of
+            // the central probe's emitter image. Keep only bounced radiance.
+            usesLocalAreaSpecular(object) ? binding.irradiance : binding.texture,
             binding.config,
             binding.irradiance,
             // The capture boundary is not an interior receiver. Reprojecting
             // the walls back onto their own proxy causes self-reflection seams.
-            !object.userData.carShowroom || object.userData.showroomId === 'floor',
+            !usesLocalAreaSpecular(object),
           ),
         )
       }

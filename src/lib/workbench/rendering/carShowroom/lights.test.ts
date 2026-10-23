@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { RectAreaLight } from 'three'
+import { Mesh, RectAreaLight } from 'three'
 import {
   LightsNode,
   PhysicalLightingModel,
@@ -42,6 +42,40 @@ function inputs(): Parameters<PhysicalLightingModel['directRectArea']>[0] {
 }
 
 describe('same-room visible panels and diffuse-only area lights', () => {
+  it.each(['wall', 'floor', 'car'])(
+    'routes %s specular consistently with its environment source',
+    (receiver) => {
+      const f = fixture(),
+        light = createShowroomAreaLight(f.renderer, coldStudioConfig.lights.strip),
+        NodeClass = f.mappings.get(light.constructor) as new (
+          value: RectAreaLight,
+        ) => RectAreaLightNode,
+        node = new NodeClass(light),
+        input = inputs(),
+        model = new PhysicalLightingModel(true),
+        object = new Mesh(),
+        native = vi.fn<PhysicalLightingModel['directRectArea']>()
+      object.userData = { carShowroom: receiver !== 'car', showroomId: receiver }
+      model.directRectArea = native
+      const builder = {
+        object,
+        context: { lightingModel: model, reflectedLight: input.reflectedLight },
+        lightsNode: new LightsNode(),
+      } as unknown as NodeBuilder
+      const data = vi.spyOn(node, 'setupDirectRectArea').mockReturnValue(input)
+      try {
+        node.setup(builder)
+        const actual = native.mock.calls[0]![0].reflectedLight.directSpecular
+        expect(actual === input.reflectedLight.directSpecular).toBe(receiver === 'wall')
+        expect(model.directRectArea).toBe(native)
+      } finally {
+        data.mockRestore()
+        object.geometry.dispose()
+        for (const material of Array.isArray(object.material) ? object.material : [object.material])
+          material.dispose()
+      }
+    },
+  )
   it('registers distinct local key/fill constructors without replacing ordinary lights or another renderer', () => {
     const f = fixture(),
       second = fixture()
