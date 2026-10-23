@@ -38,7 +38,7 @@ describe('cold studio authored geometry', () => {
     expect(room.root.children.filter((child) => child.name.includes('floor cove'))).toHaveLength(4)
     expect(room.panels).toHaveLength(Object.values(coldStudioConfig.lights).length)
     expect(room.floor.position.y).toBe(coldStudioConfig.groundY)
-    expect(bounds.min.x).toBeCloseTo(-9)
+    expect(bounds.min.x).toBeCloseTo(coldStudioConfig.roomBox.min[0])
     expect(bounds.max.y).toBeCloseTo(coldStudioConfig.roomBox.max[1])
     for (const panel of room.panels) {
       const light = Object.values(coldStudioConfig.lights).find(
@@ -87,14 +87,14 @@ describe('cold studio authored geometry', () => {
     for (const panel of room.panels) {
       const bounds = new Box3().setFromObject(panel)
       if (panel.userData.showroomLightId === 'rim') {
-        expect(bounds.min.z).toBeCloseTo(10.86)
+        expect(bounds.min.z).toBeCloseTo(coldStudioConfig.lights.rim.position[2])
         expect(bounds.max.y).toBeLessThan(coldStudioConfig.roomBox.max[1])
       } else if (panel.userData.showroomLightId === 'fill') {
-        expect(Math.abs(bounds.min.x)).toBeCloseTo(8.86)
+        expect(bounds.min.x).toBeCloseTo(coldStudioConfig.lights.fill.position[0])
         expect(bounds.max.y).toBeLessThan(coldStudioConfig.roomBox.max[1])
       } else {
-        expect(bounds.min.y).toBeCloseTo(5.06)
-        expect(bounds.max.y).toBeCloseTo(5.06)
+        expect(bounds.min.y).toBeCloseTo(coldStudioConfig.roomBox.max[1] - 0.14)
+        expect(bounds.max.y).toBeCloseTo(coldStudioConfig.roomBox.max[1] - 0.14)
       }
     }
     room.dispose()

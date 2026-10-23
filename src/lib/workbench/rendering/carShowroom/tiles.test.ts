@@ -23,9 +23,17 @@ describe('real stone slabs', () => {
     const room = createColdStudioGeometry()
     const ceiling = room.root.children.find((n) => n.userData.showroomId === 'ceiling')!
     const ray = new Raycaster()
-    for (let x = -7.31; x < 8; x += 1.13)
-      for (let z = -9.71; z < 10; z += 1.27) {
-        ray.set(new Vector3(x, 5, z), new Vector3(0, 1, 0))
+    for (
+      let x = coldStudioConfig.roomBox.min[0] + 1.31;
+      x < coldStudioConfig.roomBox.max[0] - 1;
+      x += 1.13
+    )
+      for (
+        let z = coldStudioConfig.roomBox.min[2] + 1.29;
+        z < coldStudioConfig.roomBox.max[2] - 1;
+        z += 1.27
+      ) {
+        ray.set(new Vector3(x, coldStudioConfig.roomBox.max[1] - 0.2, z), new Vector3(0, 1, 0))
         const hits = ray.intersectObject(ceiling)
         expect(hits).toHaveLength(1)
         expect(hits[0]!.point.y).toBeCloseTo(coldStudioConfig.roomBox.max[1])

@@ -65,7 +65,7 @@ export function createWallPanels(config: CarShowroomConfig) {
     return merged
   }
   return sides.flatMap((side) => {
-    const bayCount = Math.max(1, Math.round(side.length / 3.2)),
+    const bayCount = Math.max(1, Math.round(side.length / 2.4)),
       span = (side.length - 0.28) / bayCount,
       paint = Array.from({ length: bayCount }, (_, i) =>
         box(

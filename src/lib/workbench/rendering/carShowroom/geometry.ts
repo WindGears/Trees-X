@@ -19,6 +19,7 @@ import { coldStudioConfig, type CarShowroomConfig } from './config'
 import { createStudioShell } from './shell'
 import { createStoneTiles } from './tiles'
 import { createWallPanels } from './wallPanels'
+import { createCeilingFrame } from './ceilingFrame'
 
 export interface ShowroomSurfaceMaps {
   readonly map: Texture
@@ -102,7 +103,8 @@ export function createColdStudioGeometry(config: CarShowroomConfig = coldStudioC
     mesh.userData.showroomSurface = 'wall'
   }
   add('ceiling', shell.ceiling, ceiling, 0, config.roomBox.max[1], 0, true)
-  const rim = new MeshStandardMaterial({ color: '#16181c', roughness: 0.55, metalness: 0.65 })
+  const rim = new MeshStandardMaterial({ color: '#3b3d40', roughness: 0.45, metalness: 0.1 })
+  add('ceiling mounting frame', createCeilingFrame(config), rim, 0, 0, 0, true)
   for (const part of createWallPanels(config)) {
     const mesh = add(part.id, part.geometry, part.surface === 'wall' ? wall : rim, 0, 0, 0, true)
     if (part.surface === 'wall') mesh.userData.showroomSurface = 'wall'

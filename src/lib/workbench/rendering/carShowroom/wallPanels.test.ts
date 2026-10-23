@@ -21,15 +21,18 @@ describe('studio architectural wall cladding', () => {
     }
     const front = panels.find((m) => m.userData.showroomId === 'front wall panels')!,
       wall = room.root.children.find((m) => m.userData.showroomId === 'front wall') as Mesh,
-      length = 18 - coldStudioConfig.coveRadius * 4,
-      bays = Math.round(length / 3.2),
+      length = coldStudioConfig.floor.width - coldStudioConfig.coveRadius * 4,
+      bays = Math.round(length / 2.4),
       span = (length - 0.28) / bays,
       localJoint = -length / 2 + 0.14 + span
     ray.set(new Vector3(-localJoint, 2, 0), new Vector3(0, 0, 1))
     expect(ray.intersectObject(front)).toHaveLength(0)
-    expect(ray.intersectObject(wall)[0]?.distance).toBeCloseTo(11)
+    expect(ray.intersectObject(wall)[0]?.distance).toBeCloseTo(coldStudioConfig.roomBox.max[2])
     ray.set(new Vector3(-localJoint - span / 2, 2, 0), new Vector3(0, 0, 1))
-    expect(ray.intersectObject(front)[0]?.distance).toBeCloseTo(10.915, 4)
+    expect(ray.intersectObject(front)[0]?.distance).toBeCloseTo(
+      coldStudioConfig.roomBox.max[2] - 0.085,
+      4,
+    )
     room.dispose()
   })
 })

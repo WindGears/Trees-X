@@ -220,8 +220,8 @@ async function visual() {
   await capture(
     'room-junction',
     await view('room-junction', {
-      position: [-5.4, 1.2, -6.8],
-      target: [-7.8, 0.5, -9.8],
+      position: [-3.6, 1.6, -5],
+      target: [-6.2, 0.45, -8.2],
     }),
     zero,
   )

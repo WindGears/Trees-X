@@ -11,7 +11,7 @@ import {
 describe('cold-studio box-projected environment', () => {
   it('projects a translated surface toward the same finite wall point', () => {
     const result = projectBoxDirection([2, 1, 0], [0, 0, 1], coldStudioConfig),
-      expected = new Vector3(2, 1, 11)
+      expected = new Vector3(2, 1, coldStudioConfig.roomBox.max[2])
         .sub(new Vector3(...coldStudioConfig.capture.position))
         .normalize()
     expect(new Vector3(...result).distanceTo(expected)).toBeLessThan(1e-12)

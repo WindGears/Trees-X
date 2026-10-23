@@ -12,8 +12,8 @@ describe('studio floor and cove boundary', () => {
       for (const sz of [-1, 1]) {
         for (let i = 1; i < 20; i++) {
           const t = ((i / 20) * Math.PI) / 2,
-            x = sx * (9 - radius * 2 + radius * 1.5 * Math.cos(t)),
-            z = sz * (11 - radius * 2 + radius * 1.5 * Math.sin(t))
+            x = sx * (coldStudioConfig.roomBox.max[0] - radius * 2 + radius * 1.5 * Math.cos(t)),
+            z = sz * (coldStudioConfig.roomBox.max[2] - radius * 2 + radius * 1.5 * Math.sin(t))
           ray.set(new Vector3(x, 6, z), new Vector3(0, -1, 0))
           const hits = ray.intersectObjects([
             room.floor,
