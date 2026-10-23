@@ -1,6 +1,5 @@
 import {
   Box3,
-  DataTexture,
   Group,
   Material,
   Mesh,
@@ -10,6 +9,7 @@ import {
   PerspectiveCamera,
   Raycaster,
   Scene,
+  Texture,
   Vector3,
   type WebGLRenderer,
 } from 'three'
@@ -36,10 +36,10 @@ describe('cold studio authored geometry', () => {
     const room = createColdStudioGeometry(),
       bounds = new Box3().setFromObject(room.root)
     expect(room.root.children.filter((child) => child.name.includes('floor cove'))).toHaveLength(4)
-    expect(room.panels).toHaveLength(2)
+    expect(room.panels).toHaveLength(Object.values(coldStudioConfig.lights).length)
     expect(room.floor.position.y).toBe(coldStudioConfig.groundY)
     expect(bounds.min.x).toBeCloseTo(-9)
-    expect(bounds.max.y).toBeCloseTo(7)
+    expect(bounds.max.y).toBeCloseTo(coldStudioConfig.roomBox.max[1])
     for (const panel of room.panels) {
       const light = Object.values(coldStudioConfig.lights).find(
           (item) => item.id === panel.userData.showroomLightId,
@@ -56,18 +56,48 @@ describe('cold studio authored geometry', () => {
     room.dispose()
   })
 
-  it('keeps tile microstructure deterministic, linear and shared only inside one room', () => {
-    const first = createColdStudioGeometry(),
-      second = createColdStudioGeometry(),
-      a = first.floor.material as MeshStandardMaterial,
-      b = second.floor.material as MeshStandardMaterial
-    expect(a.normalMap).not.toBe(b.normalMap)
-    expect((a.normalMap as DataTexture).image.data).toEqual((b.normalMap as DataTexture).image.data)
-    expect(a.normalMap!.colorSpace).toBe('')
-    expect(a.roughnessMap!.colorSpace).toBe('')
-    expect(a.normalMap!.generateMipmaps).toBe(true)
-    first.dispose()
-    second.dispose()
+  it('borrows generated surfaces and updates derived cutaway plus opaque trace materials', () => {
+    const room = createColdStudioGeometry(),
+      maps = () => ({ map: new Texture(), normalMap: new Texture(), roughnessMap: new Texture() }),
+      pack = { floor: maps(), wall: maps() },
+      disposes = [...Object.values(pack.floor), ...Object.values(pack.wall)].map((texture) =>
+        vi.spyOn(texture, 'dispose'),
+      ),
+      cutaway = createShowroomCutaway(
+        room.fadeMeshes,
+        new PerspectiveCamera(),
+        new Box3(new Vector3(-1, 0, -1), new Vector3(1, 2, 1)),
+      )
+    room.applySurfaces(pack)
+    expect((room.floor.material as MeshStandardMaterial).map).toBe(pack.floor.map)
+    for (const mesh of room.fadeMeshes.filter((mesh) => mesh.userData.showroomSurface === 'wall')) {
+      expect((mesh.material as MeshStandardNodeMaterial).normalMap).toBe(pack.wall.normalMap)
+      expect((mesh.userData.traceMaterial as MeshStandardMaterial).map).toBe(pack.wall.map)
+    }
+    cutaway.dispose()
+    room.dispose()
+    for (const dispose of disposes) expect(dispose).not.toHaveBeenCalled()
+    for (const texture of [...Object.values(pack.floor), ...Object.values(pack.wall)])
+      texture.dispose()
+  })
+
+  it('mounts neutral panels near the ceiling and side wall without floating suspension', () => {
+    const room = createColdStudioGeometry()
+    expect(room.root.children.some((child) => child.name.includes('suspension'))).toBe(false)
+    for (const panel of room.panels) {
+      const bounds = new Box3().setFromObject(panel)
+      if (panel.userData.showroomLightId === 'rim') {
+        expect(bounds.min.z).toBeCloseTo(10.86)
+        expect(bounds.max.y).toBeLessThan(coldStudioConfig.roomBox.max[1])
+      } else if (panel.userData.showroomLightId === 'fill') {
+        expect(Math.abs(bounds.min.x)).toBeCloseTo(8.86)
+        expect(bounds.max.y).toBeLessThan(coldStudioConfig.roomBox.max[1])
+      } else {
+        expect(bounds.min.y).toBeCloseTo(5.06)
+        expect(bounds.max.y).toBeCloseTo(5.06)
+      }
+    }
+    room.dispose()
   })
 
   it('disposes each authored geometry, texture and shared material once', () => {
@@ -148,7 +178,9 @@ describe('showroom main-camera cutaway', () => {
       camera = new PerspectiveCamera(),
       target = new Box3(new Vector3(-1.7, 0, -2.8), new Vector3(1.7, 2.1, 2)),
       cutaway = createShowroomCutaway(room.fadeMeshes, camera, target)
-    expect(room.fadeMeshes.filter((mesh) => mesh.name.includes('housing'))).toHaveLength(2)
+    expect(room.fadeMeshes.filter((mesh) => mesh.name.includes('housing'))).toHaveLength(
+      Object.values(coldStudioConfig.lights).length,
+    )
     expect(room.fadeMeshes).not.toContain(room.floor)
     expect(room.floor.material).toBe(floorMaterial)
     expect((floorMaterial as Material).transparent).toBe(false)
@@ -165,7 +197,7 @@ describe('showroom main-camera cutaway', () => {
     f.cutaway.tick(0, true)
     f.drawStart()
     expect(f.opacity.value).toBe(0)
-    expect(f.runtime.depthWrite).toBe(false)
+    expect(f.runtime.depthWrite).toBe(true)
     expect(f.wall.visible).toBe(true)
     expect(f.wall.userData.traceMaterial).toBe(f.material)
     f.drawEnd()

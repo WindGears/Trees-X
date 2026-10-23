@@ -21,6 +21,7 @@ import { configureShowroomLight, createShowroomAreaLight } from './lights'
 import { createColdStudioProbe } from './probe'
 import { setShowroomEnvironment, setShowroomStatus } from './binding'
 import { ownShowroomNativeMaterials } from './nativeMaterials'
+import { loadShowroomAssets } from './assets'
 
 export function coldStudioRequested(options: ReventonStageOptions | undefined, search: string) {
   return (
@@ -58,6 +59,8 @@ export function createColdShowroomStage(
       exposure: renderer.toneMappingExposure,
     },
     lights: { light: Light; intensity: number }[] = [],
+    additionalLights: RectAreaLight[] = [],
+    lifecycle = new AbortController(),
     hidden: { object: Object3D; visible: boolean }[] = [],
     status = {
       requested: true,
@@ -68,6 +71,7 @@ export function createColdShowroomStage(
       fade: [] as ReturnType<typeof cutaway.snapshot>,
     }
   let full: Awaited<ReturnType<typeof createColdStudioProbe>> | undefined,
+    assets: Awaited<ReturnType<typeof loadShowroomAssets>> | undefined,
     indirect: Awaited<ReturnType<typeof createColdStudioProbe>> | undefined,
     native: ReturnType<typeof ownShowroomNativeMaterials> | undefined,
     oldEnvironment = scene.environment,
@@ -118,6 +122,11 @@ export function createColdShowroomStage(
     native?.dispose()
     cutaway.dispose()
     room.dispose()
+    for (const light of additionalLights) {
+      light.removeFromParent()
+      light.dispose()
+    }
+    assets?.dispose()
     for (const entry of lights) entry.light.intensity = entry.intensity
     for (const entry of hidden) entry.object.visible = entry.visible
     scene.background = previous.background
@@ -141,6 +150,7 @@ export function createColdShowroomStage(
   }
   return {
     async prepare(signal?: AbortSignal) {
+      signal = signal ? AbortSignal.any([signal, lifecycle.signal]) : lifecycle.signal
       signal?.throwIfAborted()
       if (disposed) throw new Error('Cold studio has been disposed')
       if (prepared) return
@@ -149,7 +159,17 @@ export function createColdShowroomStage(
         captureLights: RectAreaLight[] = []
       let captureRoom: ReturnType<typeof createColdStudioGeometry> | undefined
       try {
+        assets = await loadShowroomAssets(signal)
+        signal.throwIfAborted()
+        if (disposed) throw new Error('Cold studio assets were superseded')
+        room.applySurfaces(assets)
         captureRoom = createColdStudioGeometry(config)
+        captureRoom.applySurfaces(assets)
+        for (const input of [config.lights.fill, config.lights.rim]) {
+          const light = createShowroomAreaLight(renderer, input)
+          additionalLights.push(light)
+          scene.add(light)
+        }
         for (const input of Object.values(config.lights))
           captureLights.push(createShowroomAreaLight(renderer, input))
         captureScene.add(captureRoom.root, ...captureLights)
@@ -183,6 +203,10 @@ export function createColdShowroomStage(
         }
         status.phase = 'ready'
       } catch (cause) {
+        for (const light of additionalLights.splice(0)) {
+          light.removeFromParent()
+          light.dispose()
+        }
         full?.dispose()
         full = undefined
         indirect?.dispose()
@@ -230,6 +254,7 @@ export function createColdShowroomStage(
     dispose() {
       if (!disposed) {
         disposed = true
+        lifecycle.abort(new DOMException('Cold studio disposed', 'AbortError'))
         cleanup()
       }
     },

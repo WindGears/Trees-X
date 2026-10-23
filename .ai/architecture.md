@@ -318,3 +318,7 @@ scripts/demo.mjs 只编排诊断、准备、生产启动和停止；scripts/demo
 本地check/build、契约/生命周期和真实API浏览器测试；正式模型单独测量。后台阶段另加授权、CSRF、冲突、分类约束、上下架和配置更新。主桌面三个尺寸，移动基础兼容。拟6—8人形成性任务测试，手势不进入核心完成条件。
 
 新路线见 implementation-roadmap.md。历史旧测试只说明过去特定构建，不直接证明新版质量或安全。
+
+## 冷白棚资源与边界（2026-10-23）
+
+`carShowroom/assets`校验六张同源PNG的字节、SHA256与真实尺寸，独占bitmap/Texture释放；geometry/cutaway/capture仅借用。shell用共享圆角周界定义连续墙脚、墙体和顶棚；tiles将相同floor轮廓裁切为真实独立砖面后合为一个geometry，下沉接缝床单独拥有。摄影棚局部盒投影将边界容差内的起点向盒内偏置0.1毫米，避免浮点符号抖动导致交替回退；显著盒外仍使用原方向。参数和来源见[摄影棚修补](reventon-studio-refinement.md)。

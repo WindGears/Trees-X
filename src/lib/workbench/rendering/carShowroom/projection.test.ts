@@ -33,6 +33,26 @@ describe('cold-studio box-projected environment', () => {
     )
   })
 
+  it('keeps face-boundary projection continuous across raster interpolation error', () => {
+    for (let axis = 0; axis < 3; axis++)
+      for (const side of ['min', 'max'] as const) {
+        const center: [number, number, number] = [0.31, 1.7, -0.47]
+        center[axis] = coldStudioConfig.roomBox[side][axis]!
+        for (const sign of [-1, 1]) {
+          const direction: [number, number, number] = [0.31, 0.43, 0.57]
+          direction[axis] = sign * 0.8
+          const below: [number, number, number] = [...center],
+            above: [number, number, number] = [...center]
+          below[axis] = below[axis]! - 5e-7
+          above[axis] = above[axis]! + 5e-7
+          const a = new Vector3(...projectBoxDirection(below, direction, coldStudioConfig))
+          const b = new Vector3(...projectBoxDirection(above, direction, coldStudioConfig))
+          expect(a.toArray().every(Number.isFinite)).toBe(true)
+          expect(a.distanceTo(b)).toBeLessThan(1e-9)
+        }
+      }
+  })
+
   it('hooks only one runtime material, leaves envMap null and restores its exact original descriptor', () => {
     const material = new MeshPhysicalNodeMaterial(),
       texture = new Texture(),

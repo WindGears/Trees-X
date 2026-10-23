@@ -148,3 +148,7 @@ Vue 3 Composition API、TypeScript strict、npm 锁文件；Vue ≤300 行，App
 当前锁定 Boot 4.1.1、Java 17、JPA、Flyway、MySQL 8；保留独立 trees_x / trees_x_test 和 5181/8089。凭据用本地忽略文件/环境变量，追加迁移、不改历史迁移、不清库重开。
 
 修改前说明位置、职责、性能和扩展。先验收当前阶段再扩展；运行 check/build 和相关测试，持久化用真实 MySQL。视觉/Three/动画改动读取对应规则。不得编造商品结构、许可或测试成绩。
+
+## 冷白棚概念素材与几何修补（2026-10-23）
+
+摄影棚候选采用用户概念图指导的image_gen底色与受控技术贴图、真实分块石砖、共享周界连续弧墙和表面安装软箱。资源位于 `public/studio/cold-studio/concept-v2`；原件及提示词位于 `assets-source/cold-studio/concept-v2`。顶棚盒投影边界误差已修补，普通入口与车漆保持；先完成摄影棚视觉确认，再进入局部光追第二节点。详见[本轮记录](reventon-studio-refinement.md)。

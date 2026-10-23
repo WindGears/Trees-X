@@ -33,48 +33,73 @@ export interface CarShowroomConfig {
   readonly wallColor: string
   readonly ceilingColor: string
   readonly coveRadius: number
-  readonly lights: { readonly key: CarShowroomLight; readonly strip: CarShowroomLight }
+  readonly lights: {
+    readonly key: CarShowroomLight
+    readonly strip: CarShowroomLight
+    readonly fill: CarShowroomLight
+    readonly rim: CarShowroomLight
+  }
 }
 
 /** Frozen inputs for the first same-room reflection comparison; white is neutral. */
 export const coldStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
   id: 'cold-studio',
-  revision: 2,
+  revision: 6,
   groundY: -0.01,
   exposure: 1,
-  roomBox: { min: [-9, -0.01, -11], max: [9, 7, 11] },
+  roomBox: { min: [-9, -0.01, -11], max: [9, 5.2, 11] },
   capture: { size: 1024, position: [0, 0.8, -0.35] },
   floor: {
-    color: '#3a3d42',
-    roughness: 0.48,
-    metalness: 0.04,
+    color: '#ffffff',
+    roughness: 1,
+    metalness: 0,
     width: 18,
     depth: 22,
-    tileSize: 2.2,
+    tileSize: 1.8,
   },
-  wallColor: '#4b4f55',
+  wallColor: '#dddddd',
   ceilingColor: '#303339',
   coveRadius: 0.9,
   lights: {
     key: {
       id: 'key',
       color: '#ffffff',
-      intensity: 8.5,
-      radiance: 8.5,
+      intensity: 7,
+      radiance: 7,
       width: 5.5,
       height: 3.2,
-      position: [-1.5, 4.3, -1.8],
-      target: [0, 0.55, -0.2],
+      position: [-3.15, 5.06, -0.6],
+      target: [-3.15, 0.55, -0.6],
     },
     strip: {
       id: 'strip',
       color: '#ffffff',
       intensity: 4.8,
       radiance: 4.8,
-      width: 6,
-      height: 2.2,
-      position: [4.4, 3.4, 1.6],
-      target: [0, 0.55, 0],
+      width: 5.5,
+      height: 3.2,
+      position: [3.15, 5.06, -0.6],
+      target: [3.15, 0.55, -0.6],
+    },
+    rim: {
+      id: 'rim',
+      color: '#ffffff',
+      intensity: 8,
+      radiance: 8,
+      width: 5,
+      height: 2.8,
+      position: [5.5, 2.6, 10.86],
+      target: [5.5, 2.6, 0],
+    },
+    fill: {
+      id: 'fill',
+      color: '#ffffff',
+      intensity: 5,
+      radiance: 5,
+      width: 1.4,
+      height: 4.1,
+      position: [8.86, 2.65, -3.4],
+      target: [0, 2.65, -3.4],
     },
   },
 })

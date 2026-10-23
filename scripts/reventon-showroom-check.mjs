@@ -210,6 +210,30 @@ async function sequence(kind, seconds) {
 async function visual() {
   const zero = { 'open-doors': 0, 'explore-parts': 0 }
   await capture('whole', await reset(), zero)
+  await capture(
+    'room-junction',
+    await view('room-junction', {
+      position: [-5.4, 1.2, -6.8],
+      target: [-7.8, 0.5, -9.8],
+    }),
+    zero,
+  )
+  await capture(
+    'room-rig',
+    await view('room-rig', {
+      position: [0, 1.8, 6],
+      target: [0, 4.8, -0.6],
+    }),
+    zero,
+  )
+  await capture(
+    'floor-surface',
+    await view('floor-surface', {
+      position: [4, 1.1, 3.5],
+      target: [3, -0.01, 0.8],
+    }),
+    zero,
+  )
   for (const id of ['side', 'rear']) await capture(id, await view(id), zero)
   await capture(
     'top',

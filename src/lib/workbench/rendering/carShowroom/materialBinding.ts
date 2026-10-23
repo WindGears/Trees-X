@@ -20,6 +20,9 @@ export function bindShowroomMaterials(scene: Object3D) {
             binding.texture,
             binding.config,
             binding.irradiance,
+            // The capture boundary is not an interior receiver. Reprojecting
+            // the walls back onto their own proxy causes self-reflection seams.
+            !object.userData.carShowroom || object.userData.showroomId === 'floor',
           ),
         )
       }

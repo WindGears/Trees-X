@@ -36,10 +36,26 @@ export function projectBoxDirection(
   direction: ShowroomVector3,
   config: CarShowroomConfig,
 ): [number, number, number] {
+  // Raster interpolation can put a box-face fragment a few ULPs outside.
+  // Keep boundary rays inside by 0.1mm instead of alternating between a local
+  // hit and the uncorrected environment at neighbouring pixels.
+  const epsilon = 1e-4
+  const boundary = point.every(
+    (p, axis) =>
+      p >= config.roomBox.min[axis]! - epsilon && p <= config.roomBox.max[axis]! + epsilon,
+  )
+  const start = point.map((p, axis) =>
+    boundary
+      ? Math.max(
+          config.roomBox.min[axis]! + epsilon,
+          Math.min(config.roomBox.max[axis]! - epsilon, p),
+        )
+      : p,
+  ) as [number, number, number]
   let entry = -Infinity,
     exit = Infinity
   for (let axis = 0; axis < 3; axis++) {
-    const p = point[axis]!,
+    const p = start[axis]!,
       d = direction[axis]!,
       lower = config.roomBox.min[axis]!,
       upper = config.roomBox.max[axis]!
@@ -53,7 +69,7 @@ export function projectBoxDirection(
     exit = Math.min(exit, Math.max(a, b))
   }
   if (!Number.isFinite(exit) || exit < Math.max(entry, 0)) return [...direction]
-  const result = new Vector3(...direction).multiplyScalar(exit).add(new Vector3(...point))
+  const result = new Vector3(...direction).multiplyScalar(exit).add(new Vector3(...start))
   result.sub(new Vector3(...config.capture.position)).normalize()
   return result.toArray() as [number, number, number]
 }
@@ -62,14 +78,19 @@ function boxDirection(direction: Node<'vec3'>, config: CarShowroomConfig) {
   const lower = vec3(...config.roomBox.min),
     upper = vec3(...config.roomBox.max),
     origin = vec3(...config.capture.position),
+    boundary = positionWorld
+      .greaterThanEqual(lower.sub(1e-4))
+      .all()
+      .and(positionWorld.lessThanEqual(upper.add(1e-4)).all()),
+    start = boundary.select(positionWorld.clamp(lower.add(1e-4), upper.sub(1e-4)), positionWorld),
     safe = direction.lessThan(0).select(vec3(-1), vec3(1)).mul(direction.abs().max(1e-6)),
-    a = lower.sub(positionWorld).div(safe),
-    b = upper.sub(positionWorld).div(safe),
+    a = lower.sub(start).div(safe),
+    b = upper.sub(start).div(safe),
     near = a.min(b),
     far = a.max(b),
     entry = near.x.max(near.y).max(near.z),
     exit = far.x.min(far.y).min(far.z),
-    corrected = positionWorld.add(direction.mul(exit)).sub(origin).normalize()
+    corrected = start.add(direction.mul(exit)).sub(origin).normalize()
   return exit.greaterThanEqual(entry.max(0)).select(corrected, direction)
 }
 
@@ -79,6 +100,7 @@ class ColdStudioEnvironmentNode extends EnvironmentNode {
     private readonly source: Texture,
     private readonly config: CarShowroomConfig,
     readonly irradianceSource: Texture = source,
+    readonly projectSpecular = true,
   ) {
     super(textureNode(source))
   }
@@ -116,7 +138,7 @@ class ColdStudioEnvironmentNode extends EnvironmentNode {
                   .mix(reflected, normalNode)
                   .normalize()
                   .transformDirection(cameraWorldMatrix)
-              direction = boxDirection(native, this.config)
+              direction = this.projectSpecular ? boxDirection(native, this.config) : native
             }
             return direction
           },
@@ -148,9 +170,10 @@ export function createColdStudioEnvironmentNode(
   texture: Texture,
   config: CarShowroomConfig,
   irradianceTexture: Texture = texture,
+  projectSpecular = true,
 ) {
   if (REVISION !== '185') throw new Error('冷白摄影棚环境投影仅支持受检 Three r185')
-  return new ColdStudioEnvironmentNode(texture, config, irradianceTexture)
+  return new ColdStudioEnvironmentNode(texture, config, irradianceTexture, projectSpecular)
 }
 
 /** Instance-only hook. Does not set envMap, so supported materials remain in the SSR branch. */
@@ -159,10 +182,11 @@ export function installColdStudioProjection(
   texture: Texture,
   config: CarShowroomConfig,
   irradianceTexture: Texture = texture,
+  projectSpecular = true,
 ) {
   const descriptor = Object.getOwnPropertyDescriptor(material, 'setupEnvironment'),
     previousEnvironmentNode = material.envNode,
-    node = createColdStudioEnvironmentNode(texture, config, irradianceTexture)
+    node = createColdStudioEnvironmentNode(texture, config, irradianceTexture, projectSpecular)
   // r185's NodeMaterialObserver scans public node fields, not the return value
   // of setupEnvironment(). Register this real environment input so every
   // reused static mesh refreshes dynamic light/texture bindings after resize.

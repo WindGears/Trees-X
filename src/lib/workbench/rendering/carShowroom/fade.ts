@@ -47,10 +47,11 @@ export function createShowroomCutaway(
         before = mesh.onBeforeRender,
         after = mesh.onAfterRender,
         traceDescriptor = Object.getOwnPropertyDescriptor(mesh.userData, 'traceMaterial')
-      // This layer is composited after the opaque car. Its fading surfaces must
-      // not keep writing depth and hide the object they are yielding to.
+      // Fully faded fragments discard before writing depth; visible architecture
+      // retains depth so overlapping wall/cove silhouettes stay correctly ordered.
       material.transparent = true
-      material.depthWrite = false
+      material.depthWrite = true
+      material.alphaTest = 0.01
       material.forceSinglePass = true
       material.opacityNode = opacity
       material.name = `${source.name || mesh.name} / camera cutaway`

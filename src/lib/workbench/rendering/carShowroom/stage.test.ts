@@ -24,8 +24,10 @@ import * as geometryModule from './geometry'
 import * as lightsModule from './lights'
 import { createColdStudioProbe } from './probe'
 import { coldStudioRequested, createColdShowroomStage } from './stage'
+import { loadShowroomAssets } from './assets'
 
 vi.mock('./probe', () => ({ createColdStudioProbe: vi.fn() }))
+vi.mock('./assets', () => ({ loadShowroomAssets: vi.fn() }))
 
 type Probe = Awaited<ReturnType<typeof createColdStudioProbe>>
 
@@ -154,6 +156,16 @@ const make = () => {
 
 beforeEach(() => {
   vi.mocked(createColdStudioProbe).mockReset()
+  const surface = () => ({
+    map: new Texture(),
+    normalMap: new Texture(),
+    roughnessMap: new Texture(),
+  })
+  vi.mocked(loadShowroomAssets).mockReset().mockResolvedValue({
+    floor: surface(),
+    wall: surface(),
+    dispose: vi.fn(),
+  })
   vi.stubGlobal('matchMedia', () => ({ matches: false }))
 })
 afterEach(() => {
@@ -232,9 +244,9 @@ describe('cold studio audited gate and static scene ownership', () => {
     expect(calls).toHaveLength(2)
     expect(calls[0]!.scene).toBe(calls[1]!.scene)
     expect(calls.every((entry) => !entry.carPresent)).toBe(true)
-    expect(calls[0]!.panels).toHaveLength(2)
+    expect(calls[0]!.panels).toHaveLength(4)
     expect(calls[0]!.panels.every((value) => value > 1)).toBe(true)
-    expect(calls[1]!.panels).toEqual([0, 0])
+    expect(calls[1]!.panels).toEqual([0, 0, 0, 0])
     expect(calls[0]!.scene.children).toHaveLength(0)
     expect(f.scene.environment).toBe(full.texture)
     expect(f.scene.userData.traceBackground).toBe(indirect.texture)
@@ -398,6 +410,7 @@ describe('cold studio audited gate and static scene ownership', () => {
     const f = make(),
       preparing = f.stage.prepare(),
       failure = expect(preparing).rejects.toThrow()
+    await vi.waitFor(() => expect(createColdStudioProbe).toHaveBeenCalledOnce())
     const captureRoom = vi.mocked(createColdStudioProbe).mock.calls[0]![1].children[0]!
     f.stage.dispose()
     expect(captureRoom.children.length).toBeGreaterThan(0)
@@ -458,6 +471,7 @@ describe('cold studio audited gate and static scene ownership', () => {
     const f = make(),
       preparing = f.stage.prepare(abort.signal)
     const failure = expect(preparing).rejects.toThrow()
+    await vi.waitFor(() => expect(createColdStudioProbe).toHaveBeenCalledOnce())
     expect(captureRoom?.children.length).toBeGreaterThan(0)
     abort.abort()
     f.stage.dispose()
