@@ -19,7 +19,11 @@ describe('studio floor and cove boundary', () => {
             room.floor,
             ...room.fadeMeshes.filter((m) => m.name.includes('floor cove')),
           ])
-          expect(hits).toHaveLength(1)
+          // A ray exactly on a shared triangle edge may return both adjacent
+          // faces. They must belong to one mesh at one physical surface depth.
+          expect(hits.length).toBeGreaterThan(0)
+          expect(new Set(hits.map((hit) => hit.object.uuid)).size).toBe(1)
+          for (const hit of hits) expect(hit.distance).toBeCloseTo(hits[0]!.distance, 6)
           expect(hits[0]!.face!.normal.y).toBeGreaterThan(0)
         }
       }

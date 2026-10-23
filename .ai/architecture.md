@@ -322,3 +322,5 @@ scripts/demo.mjs 只编排诊断、准备、生产启动和停止；scripts/demo
 ## 冷白棚资源与边界（2026-10-23）
 
 `carShowroom/assets`校验六张同源PNG的字节、SHA256与真实尺寸，独占bitmap/Texture释放；geometry/cutaway/capture仅借用。shell用共享圆角周界定义连续墙脚、墙体和顶棚；tiles将相同floor轮廓裁切为真实独立砖面后合为一个geometry，下沉接缝床单独拥有。摄影棚局部盒投影将边界容差内的起点向盒内偏置0.1毫米，避免浮点符号抖动导致交替回退；显著盒外仍使用原方向。参数和来源见[摄影棚修补](reventon-studio-refinement.md)。
+
+`wallPanels`按现有房间边界生成倒角墙板与收边，合并为8个静态网格，合并后立即释放中间几何。room拥有最终几何／材质，新增墙板借用同一wall贴图，加入现有cutaway、capture与DDGI；不增加逐帧创建、渲染器或时钟。墙面底色的镜像包装不用于法线，以保留技术贴图切线方向。

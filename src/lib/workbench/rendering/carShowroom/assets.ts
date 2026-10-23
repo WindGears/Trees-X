@@ -1,6 +1,7 @@
 import {
   Texture,
   RepeatWrapping,
+  MirroredRepeatWrapping,
   SRGBColorSpace,
   NoColorSpace,
   LinearMipmapLinearFilter,
@@ -48,7 +49,13 @@ export async function loadShowroomAssets(signal: AbortSignal) {
       texture.name = `Cold studio / ${record.file}`
       texture.flipY = false
       texture.colorSpace = record.channel === 'basecolor' ? SRGBColorSpace : NoColorSpace
-      texture.wrapS = texture.wrapT = RepeatWrapping
+      // The generated albedo is not a measured seamless scan. Mirror its edge
+      // samples so long walls do not acquire a hard horizontal repeat seam.
+      // Periodic technical maps keep RepeatWrapping and their tangent signs.
+      texture.wrapS = texture.wrapT =
+        record.role === 'wall' && record.channel === 'basecolor'
+          ? MirroredRepeatWrapping
+          : RepeatWrapping
       texture.generateMipmaps = true
       texture.minFilter = LinearMipmapLinearFilter
       texture.anisotropy = 8

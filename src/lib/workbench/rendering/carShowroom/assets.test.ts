@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loadShowroomAssets } from './assets'
 import { showroomAssetRecords } from './assetRecords'
 import { readFile } from 'node:fs/promises'
+import { MirroredRepeatWrapping, RepeatWrapping } from 'three'
 afterEach(() => vi.unstubAllGlobals())
 describe('showroom generated texture ownership', () => {
   it('checks six source bytes and releases every decoded bitmap once', async () => {
@@ -15,6 +16,9 @@ describe('showroom generated texture ownership', () => {
     const pack = await loadShowroomAssets(new AbortController().signal)
     expect(pack.floor.map.colorSpace).toBe('srgb')
     expect(pack.wall.normalMap.colorSpace).toBe('')
+    expect(pack.wall.map.wrapS).toBe(MirroredRepeatWrapping)
+    expect(pack.wall.map.wrapT).toBe(MirroredRepeatWrapping)
+    expect(pack.wall.normalMap.wrapS).toBe(RepeatWrapping)
     pack.dispose()
     pack.dispose()
     expect(close).toHaveBeenCalledTimes(6)

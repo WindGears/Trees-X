@@ -18,6 +18,7 @@ import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu
 import { coldStudioConfig, type CarShowroomConfig } from './config'
 import { createStudioShell } from './shell'
 import { createStoneTiles } from './tiles'
+import { createWallPanels } from './wallPanels'
 
 export interface ShowroomSurfaceMaps {
   readonly map: Texture
@@ -102,6 +103,10 @@ export function createColdStudioGeometry(config: CarShowroomConfig = coldStudioC
   }
   add('ceiling', shell.ceiling, ceiling, 0, config.roomBox.max[1], 0, true)
   const rim = new MeshStandardMaterial({ color: '#16181c', roughness: 0.55, metalness: 0.65 })
+  for (const part of createWallPanels(config)) {
+    const mesh = add(part.id, part.geometry, part.surface === 'wall' ? wall : rim, 0, 0, 0, true)
+    if (part.surface === 'wall') mesh.userData.showroomSurface = 'wall'
+  }
   for (const light of Object.values(config.lights)) {
     const material = new MeshBasicMaterial({
       color: new Color(light.color).multiplyScalar(light.radiance),
