@@ -7,6 +7,7 @@ import { useWorkbenchRenderHost } from '@/composables/useWorkbenchRenderHost'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
 import WorkbenchRealtimeStatus from './WorkbenchRealtimeStatus.vue'
 import WorkbenchStudioMood from './WorkbenchStudioMood.vue'
+import WorkbenchShowroomDebug from './WorkbenchShowroomDebug.vue'
 import type { StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
 import type { RefinementStatus } from '@/lib/workbench/rendering/refinementTypes'
 import WorkbenchRefinement from './WorkbenchRefinement.vue'
@@ -217,6 +218,11 @@ onErrorCaptured(() => {
       v-if="store.available && realtimeRequest"
       :status="backend === 'webgpu' ? lighting : undefined"
       :notice="notice"
+    />
+    <WorkbenchShowroomDebug
+      v-if="coldShowroom && store.available && lighting?.showroom?.phase === 'ready'"
+      :key="`${store.revision}:${hostRevision}:${revision}`"
+      :apply="(value) => sceneHost?.setPanelBrightness(value)"
     />
     <WorkbenchRefinement
       v-if="store.available && !realtimeRequest"

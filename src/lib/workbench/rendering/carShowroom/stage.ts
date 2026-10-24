@@ -22,6 +22,7 @@ import { createColdStudioProbe } from './probe'
 import { setShowroomEnvironment, setShowroomStatus } from './binding'
 import { ownShowroomNativeMaterials } from './nativeMaterials'
 import { loadShowroomAssets } from './assets'
+import { ownShowroomPanelBrightness } from './panelBrightness'
 
 export function coldStudioRequested(options: ReventonStageOptions | undefined, search: string) {
   return (
@@ -67,6 +68,7 @@ export function createColdShowroomStage(
       phase: 'preparing',
       error: null as string | null,
       revision: config.revision,
+      panelBrightness: 1,
       probe: null as unknown,
       fade: [] as ReturnType<typeof cutaway.snapshot>,
     }
@@ -86,6 +88,14 @@ export function createColdShowroomStage(
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
   model.userData.carShowroom = status
   setShowroomStatus(scene, status)
+  const panelBrightness = ownShowroomPanelBrightness(
+    scene,
+    room.panels,
+    () => prepared && !disposed && status.phase === 'ready',
+    (value) => {
+      status.panelBrightness = value
+    },
+  )
   scene.add(room.root)
   scene.background = new Color('#15171a')
   scene.fog = null
@@ -119,6 +129,7 @@ export function createColdShowroomStage(
     cleaned = true
     setShowroomEnvironment(scene)
     setShowroomStatus(scene)
+    panelBrightness.dispose()
     native?.dispose()
     cutaway.dispose()
     room.dispose()

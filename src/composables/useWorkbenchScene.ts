@@ -18,6 +18,7 @@ import { useCameraCaptureSession, type CameraSnapshot } from '@/lib/workbench/ca
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
 import { createViewportFraming } from '@/lib/workbench/viewportFraming'
 import type { StudioMood, StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
+import { setShowroomPanelBrightness } from '@/lib/workbench/rendering/carShowroom/panelBrightness'
 import {
   afterPreparation,
   waitForPreparations,
@@ -615,5 +616,11 @@ export function useWorkbenchScene(
       return pose ? { ...pose, slug: motionSlug, revision: motionRevision } : undefined
     },
     retryStudioEnvironment: () => applyStudioMood(),
+    setPanelBrightness(value: number) {
+      if (disposed || preparing || !ownsCurrentSelection() || !store.available) return
+      const applied = setShowroomPanelBrightness(scene.value, value)
+      if (applied !== undefined) requestFrame()
+      return applied
+    },
   }
 }

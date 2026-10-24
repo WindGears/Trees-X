@@ -103,3 +103,13 @@
 后台实机测试使用现有 headless 脚本，无窗口抢焦点；输出 1440×1000。Bloom 增加一个 HDR 中间目标及原生降采样模糊链，未降低主输出或贴图精度，未增加 renderer/时钟。本轮不做实际呈现帧率认证，也没有进入世界空间反射第二节点。
 
 最终生产实机结果：`smooth-bloom-final/report.json` 的 passed=true，14 个固定取景、3 段连续操作完成，errors/httpErrors 均为 0，实际 signals.showroomBloom=true。脚本核对唯一 Canvas/renderer、同源请求、静态捕获不随绕行/开门/分离重拍，以及真实商品身份；这不是显示器呈现 30 FPS 的证据。当前本地演示已启动最终构建，用户可刷新显式冷白棚入口查看。
+
+## 2026-10-24：灯板亮度调试滑条
+
+新增独立 `WorkbenchShowroomDebug.vue`，仅冷白棚且当前商品首帧就绪时显示。范围0—300%、步长5%、默认100%，数字反馈与复原；只调整可见灯板及其 Bloom，保留原 area light、captured environment、trace source 和 DDGI。现有 SSR 对看到的灯板仍可动态响应，不宣称所有镜面像素冻结。切商品或重建宿主后回到默认，不持久化到数据库。
+
+`panelBrightness.ts` 用 scene-local WeakMap 保存局部控制器；scene composable 检查当前选择代次及准备状态。运行时仅原位更新现有 cutaway 克隆 Color；无额外shader编译/环境捕获/目标分配/绘制时钟。注销检查owner身份，迟到的旧owner不注销新owner。恢复源颜色后由原stage处理材质释放。
+
+11文件53项摄影棚测试通过，包含数值夹取、非有限输入、就绪门控、trace源保持、幂等销毁与迟到owner。生产构建通过。首次lint发现新测试脚本重复声明浏览器globals，已删除多余声明；之后typecheck、ESLint通过。完整check仍仅受原有未跟踪PERFORMANCE_OPTIMIZATION.md格式阻断。
+
+后台实机工具 `scripts/reventon-showroom-slider-check.mjs` 通过，证据 `artifacts/car-showroom/brightness-slider/report.json`：真实四灯板0/3倍颜色核对、trace颜色不变、Home/End/方向键、复原、镜头不动、环境身份/捕获统计不变、唯一Canvas。1440×1000、390×844、320×844截图检查，控件无视口溢出；测试无焦点切换。主光照尚可异步准备，滑条不等待BVH增强。未执行额外重载长测或性能达标认证。

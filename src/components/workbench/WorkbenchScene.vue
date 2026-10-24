@@ -28,6 +28,7 @@ defineExpose({
   retry: runtime.retry,
   checkpoint: runtime.checkpoint,
   retryStudioEnvironment: runtime.retryStudioEnvironment,
+  setPanelBrightness: runtime.setPanelBrightness,
 })
 </script>
 <template>
