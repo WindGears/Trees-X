@@ -1,0 +1,152 @@
+/* global URL */
+import assert from 'node:assert/strict'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { chromium, expect } from '@playwright/test'
+import { showroomUrl } from './reventon-showroom/model.mjs'
+import {
+  attachShowroomBridge,
+  showroomState,
+  selectShowroomView,
+  seekShowroomMotion,
+  flushShowroomGpu,
+} from './reventon-showroom/browser.mjs'
+
+const output = 'artifacts/car-showroom/baked-floor'
+await mkdir(output, { recursive: true })
+const report = {
+  passed: false,
+  errors: [],
+  warnings: [],
+  runs: [],
+  limitations: [
+    'Static raster probe persistence, not path-traced lightmaps.',
+    'No baked car reflection. No displayed FPS measurement. Default remains unchanged.',
+  ],
+}
+let browser, activePage
+try {
+  const variants = process.env.TREES_FLOOR_VARIANTS?.split(',') ?? ['baseline', 'baked']
+  assert.ok(variants.every((variant) => ['baseline', 'baked'].includes(variant)))
+  for (const variant of variants) {
+    browser = await chromium.launch({ channel: 'msedge', headless: true })
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 1000 },
+      deviceScaleFactor: 1,
+    })
+    const page = await context.newPage()
+    activePage = page
+    const requests = []
+    page.on('pageerror', (error) => report.errors.push(error.message))
+    page.on('console', (message) => {
+      if (message.type() === 'error') report.errors.push(message.text())
+      if (message.type() === 'warning') report.warnings.push(message.text())
+    })
+    page.on('request', (request) => {
+      if (request.url().includes('baked-r10')) requests.push(request.url())
+    })
+    page.on('requestfailed', (request) =>
+      report.errors.push({ url: request.url(), failure: request.failure() }),
+    )
+    const url = new URL(showroomUrl('http://127.0.0.1:5181', 'showroom'))
+    if (variant === 'baked') url.searchParams.set('carFloor', 'baked')
+    await page.goto(url.href, { waitUntil: 'domcontentloaded' })
+    console.log(`Opened ${variant}`)
+    await expect
+      .poll(
+        async () => {
+          const fallback = report.warnings.find((message) =>
+            message.includes('cold studio fallback'),
+          )
+          return (
+            report.errors.length > 0 ||
+            Boolean(fallback) ||
+            page.getByRole('slider', { name: '灯板亮度 · 调试' }).isVisible()
+          )
+        },
+        { timeout: 240000 },
+      )
+      .toBe(true)
+    assert.deepEqual(report.errors, [], 'Browser/network error')
+    assert.ok(
+      !report.warnings.some((message) => message.includes('cold studio fallback')),
+      report.warnings.join('\n'),
+    )
+    await attachShowroomBridge(page)
+    console.log(`Loaded ${variant}`)
+    await expect
+      .poll(
+        async () => {
+          const s = await page.evaluate(showroomState)
+          report.lastState = s
+          assert.equal(s.showroom.error, null)
+          return (
+            s.lighting.phase === 'ready' &&
+            s.lighting.indirectLighting.actual === 'ddgi' &&
+            s.lighting.keyShadow?.phase === 'ready'
+          )
+        },
+        { timeout: 240000 },
+      )
+      .toBe(true)
+    const initial = await page.evaluate(showroomState)
+    assert.equal(initial.showroom.probe.totalFaceDraws, variant === 'baked' ? 0 : 12)
+    assert.equal(requests.length, variant === 'baked' ? 2 : 0)
+    const floor = await page.evaluate(() => {
+      const mesh = window.__demo.scene.scene.value.getObjectByName('Trees X / cold studio floor')
+      return {
+        baked: mesh.userData.bakedFloorReflection === true,
+        hasEnvironment: !!mesh.material.envNode,
+        materialType: mesh.material.type,
+        roughness: mesh.material.roughness,
+      }
+    })
+    assert.equal(floor.baked, variant === 'baked')
+    const shots = []
+    for (const view of ['perspective', 'side', 'rear']) {
+      await selectShowroomView(page, view)
+      await page.waitForTimeout(1800)
+      await flushShowroomGpu(page)
+      await page.screenshot({ path: `${output}/${variant}-${view}.png` })
+      shots.push(await page.evaluate(showroomState))
+    }
+    await seekShowroomMotion(page, 'open-doors', 1)
+    await selectShowroomView(page, 'perspective')
+    await page.waitForTimeout(1800)
+    await flushShowroomGpu(page)
+    await page.screenshot({ path: `${output}/${variant}-doors.png` })
+    await seekShowroomMotion(page, 'explore-parts', 0.6)
+    await flushShowroomGpu(page)
+    await page.screenshot({ path: `${output}/${variant}-separated.png` })
+    await seekShowroomMotion(page, 'open-doors', 0)
+    await seekShowroomMotion(page, 'explore-parts', 0)
+    const final = await page.evaluate(showroomState)
+    assert.equal(final.canvases, 1)
+    assert.ok(final.sameRenderer && final.sameCanvas)
+    assert.deepEqual(
+      final.showroom.probe,
+      initial.showroom.probe,
+      'No recapture during observation/actions',
+    )
+    assert.deepEqual(await page.evaluate(() => window.__carShowroomErrors), [])
+    report.runs.push({ variant, url: url.href, initial, final, floor, requests, shots })
+    await context.close()
+    await browser.close()
+    browser = undefined
+  }
+  assert.deepEqual(report.errors, [])
+  report.passed = true
+} catch (error) {
+  report.failure = error.stack
+  if (activePage && !activePage.isClosed()) {
+    report.pageText = await activePage
+      .locator('body')
+      .innerText()
+      .catch(() => '')
+    await activePage.screenshot({ path: `${output}/failure.png` }).catch(() => {})
+  }
+} finally {
+  await browser?.close()
+  await writeFile(`${output}/report.json`, JSON.stringify(report, null, 2))
+}
+console.log(JSON.stringify({ passed: report.passed, failure: report.failure, output }))
+if (!report.passed) process.exitCode = 1

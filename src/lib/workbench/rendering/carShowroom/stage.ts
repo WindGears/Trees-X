@@ -23,6 +23,7 @@ import { setShowroomEnvironment, setShowroomStatus } from './binding'
 import { ownShowroomNativeMaterials } from './nativeMaterials'
 import { loadShowroomAssets } from './assets'
 import { ownShowroomPanelBrightness } from './panelBrightness'
+import { loadBakedStudioProbe } from './bakedProbe'
 
 export function coldStudioRequested(options: ReventonStageOptions | undefined, search: string) {
   return (
@@ -43,6 +44,10 @@ export function createColdShowroomStage(
   base: ReventonStage,
 ): ReventonStage {
   const config = coldStudioConfig,
+    bakedFloor =
+      new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
+        'carFloor',
+      ) === 'baked',
     room = createColdStudioGeometry(config),
     cutaway = createShowroomCutaway(
       room.fadeMeshes,
@@ -69,6 +74,7 @@ export function createColdShowroomStage(
       error: null as string | null,
       revision: config.revision,
       panelBrightness: 1,
+      floorReflection: 'screen-space+room-probe',
       probe: null as unknown,
       fade: [] as ReturnType<typeof cutaway.snapshot>,
     }
@@ -174,29 +180,43 @@ export function createColdShowroomStage(
         signal.throwIfAborted()
         if (disposed) throw new Error('Cold studio assets were superseded')
         room.applySurfaces(assets)
-        captureRoom = createColdStudioGeometry(config)
-        captureRoom.applySurfaces(assets)
+        if (!bakedFloor) {
+          captureRoom = createColdStudioGeometry(config)
+          captureRoom.applySurfaces(assets)
+        }
         for (const input of [config.lights.fill, config.lights.rim]) {
           const light = createShowroomAreaLight(renderer, input)
           additionalLights.push(light)
           scene.add(light)
         }
-        for (const input of Object.values(config.lights))
-          captureLights.push(createShowroomAreaLight(renderer, input))
-        captureScene.add(captureRoom.root, ...captureLights)
+        if (captureRoom) {
+          for (const input of Object.values(config.lights))
+            captureLights.push(createShowroomAreaLight(renderer, input))
+          captureScene.add(captureRoom.root, ...captureLights)
+        }
         oldEnvironment = scene.environment
         oldTrace = scene.userData.traceBackground
         traceDescriptor = Object.getOwnPropertyDescriptor(scene.userData, 'traceBackground')
-        full = await createColdStudioProbe(renderer, captureScene, config, signal)
+        full = bakedFloor
+          ? await loadBakedStudioProbe(renderer, config, 'specular', signal)
+          : await createColdStudioProbe(renderer, captureScene, config, signal)
         signal?.throwIfAborted()
         if (disposed) throw new Error('Cold studio capture was superseded')
-        for (const panel of captureRoom.panels)
+        for (const panel of captureRoom?.panels ?? [])
           if (panel.material instanceof MeshBasicMaterial) panel.material.color.set(0)
-        indirect = await createColdStudioProbe(renderer, captureScene, config, signal, {
-          role: 'indirect',
-        })
+        indirect = bakedFloor
+          ? await loadBakedStudioProbe(renderer, config, 'indirect', signal)
+          : await createColdStudioProbe(renderer, captureScene, config, signal, {
+              role: 'indirect',
+            })
         signal?.throwIfAborted()
         if (disposed) throw new Error('Cold studio capture was superseded')
+        if (bakedFloor) {
+          room.root.traverse((object) => {
+            if (object.userData.showroomId === 'floor') object.userData.bakedFloorReflection = true
+          })
+          status.floorReflection = 'baked-room-probe; no-car-reflection'
+        }
         native = ownShowroomNativeMaterials(model)
         scene.environment = full.texture
         scene.userData.traceBackground = indirect.texture
@@ -210,7 +230,8 @@ export function createColdShowroomStage(
           resolution: full.snapshot.faceResolution,
           ...full.snapshot,
           indirect: indirect.snapshot,
-          totalFaceDraws: 12,
+          totalFaceDraws: bakedFloor ? 0 : 12,
+          source: bakedFloor ? 'baked-r10' : 'runtime-capture',
         }
         status.phase = 'ready'
       } catch (cause) {

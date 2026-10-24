@@ -25,9 +25,11 @@ import * as lightsModule from './lights'
 import { createColdStudioProbe } from './probe'
 import { coldStudioRequested, createColdShowroomStage } from './stage'
 import { loadShowroomAssets } from './assets'
+import { loadBakedStudioProbe } from './bakedProbe'
 
 vi.mock('./probe', () => ({ createColdStudioProbe: vi.fn() }))
 vi.mock('./assets', () => ({ loadShowroomAssets: vi.fn() }))
+vi.mock('./bakedProbe', () => ({ loadBakedStudioProbe: vi.fn() }))
 
 type Probe = Awaited<ReturnType<typeof createColdStudioProbe>>
 
@@ -156,6 +158,7 @@ const make = () => {
 
 beforeEach(() => {
   vi.mocked(createColdStudioProbe).mockReset()
+  vi.mocked(loadBakedStudioProbe).mockReset()
   const surface = () => ({
     map: new Texture(),
     normalMap: new Texture(),
@@ -174,6 +177,64 @@ afterEach(() => {
 })
 
 describe('cold studio audited gate and static scene ownership', () => {
+  it('loads both baked signals without capture draws and excludes only floor SSR origins', async () => {
+    vi.stubGlobal('location', { search: '?carFloor=baked' })
+    const full = probe(),
+      indirect = probe('indirect')
+    vi.mocked(loadBakedStudioProbe).mockResolvedValueOnce(full).mockResolvedValueOnce(indirect)
+    const f = make()
+    await f.stage.prepare()
+    expect(createColdStudioProbe).not.toHaveBeenCalled()
+    expect(loadBakedStudioProbe).toHaveBeenCalledTimes(2)
+    expect(f.model.userData.carShowroom).toMatchObject({
+      phase: 'ready',
+      floorReflection: 'baked-room-probe; no-car-reflection',
+      probe: { totalFaceDraws: 0 },
+    })
+    const floor = f.scene.getObjectByName('Trees X / cold studio floor')!
+    expect(floor.userData.bakedFloorReflection).toBe(true)
+    expect(f.car.userData.bakedFloorReflection).toBeUndefined()
+    expect(f.scene.environment).toBe(full.texture)
+    f.stage.dispose()
+    f.stage.dispose()
+    expect(full.dispose).toHaveBeenCalledOnce()
+    expect(indirect.dispose).toHaveBeenCalledOnce()
+    expect(f.scene.environment).toBe(f.oldEnvironment)
+  })
+
+  it('preserves the base environment and disposes a partial bake when indirect loading fails', async () => {
+    vi.stubGlobal('location', { search: '?carFloor=baked' })
+    const full = probe()
+    vi.mocked(loadBakedStudioProbe)
+      .mockResolvedValueOnce(full)
+      .mockRejectedValueOnce(new Error('corrupt bake'))
+    const f = make()
+    await f.stage.prepare()
+    expect(f.model.userData.carShowroom).toMatchObject({ phase: 'error', error: 'corrupt bake' })
+    expect(f.scene.environment).toBe(f.oldEnvironment)
+    expect(
+      f.scene.getObjectByName('Trees X / cold studio floor')!.userData.bakedFloorReflection,
+    ).toBeUndefined()
+    expect(full.dispose).toHaveBeenCalledOnce()
+    expect(createColdStudioProbe).not.toHaveBeenCalled()
+  })
+
+  it('disposes a late baked probe and never publishes it after cancellation', async () => {
+    vi.stubGlobal('location', { search: '?carFloor=baked' })
+    const pending = deferred<Probe>(),
+      full = probe()
+    vi.mocked(loadBakedStudioProbe).mockReturnValueOnce(pending.promise)
+    const f = make(),
+      preparation = f.stage.prepare()
+    await vi.waitFor(() => expect(loadBakedStudioProbe).toHaveBeenCalledOnce())
+    f.stage.dispose()
+    pending.resolve(full)
+    await expect(preparation).rejects.toThrow()
+    expect(full.dispose).toHaveBeenCalledOnce()
+    expect(f.scene.environment).toBe(f.oldEnvironment)
+    expect(f.model.userData.carShowroom).toBeUndefined()
+  })
+
   it('requires the explicit room switch, studio quality and exact audited resource identity', () => {
     const source: GlbSource = {
       kind: 'glb',

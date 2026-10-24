@@ -19,3 +19,4 @@ public/studio/amber-lounge/**/*.png filter=lfs diff=lfs merge=lfs -text
 public/studio/amber-lounge/**/*.f32 filter=lfs diff=lfs merge=lfs -text
 public/studio/cold-studio/**/*.png filter=lfs diff=lfs merge=lfs -text
 assets-source/cold-studio/**/*.png filter=lfs diff=lfs merge=lfs -text
+public/studio/cold-studio/**/*.rgba32f.bin filter=lfs diff=lfs merge=lfs -text

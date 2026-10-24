@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "method": "Three WebGPU static raster room capture; not path tracing or a lightmap",
+  "colorSpace": "linear-srgb",
+  "encoding": "gzip little-endian RGBA float32",
+  "config": {
+    "id": "cold-studio",
+    "revision": 10,
+    "groundY": -0.01,
+    "exposure": 1,
+    "roomBox": {
+      "min": [-7, -0.01, -9],
+      "max": [7, 4.6, 9]
+    },
+    "capture": {
+      "size": 1024,
+      "position": [0, 0.8, -0.35]
+    },
+    "floor": {
+      "color": "#bfbfbf",
+      "roughness": 1,
+      "metalness": 0,
+      "width": 14,
+      "depth": 18,
+      "tileSize": 1.2
+    },
+    "wallColor": "#343537",
+    "ceilingColor": "#303339",
+    "coveRadius": 0.45,
+    "lights": {
+      "key": {
+        "id": "key",
+        "color": "#ffffff",
+        "intensity": 7,
+        "radiance": 7,
+        "width": 5.5,
+        "height": 3.2,
+        "position": [-3.15, 4.46, -0.6],
+        "target": [-3.15, 0.55, -0.6]
+      },
+      "strip": {
+        "id": "strip",
+        "color": "#ffffff",
+        "intensity": 4.8,
+        "radiance": 4.8,
+        "width": 5.5,
+        "height": 3.2,
+        "position": [3.15, 4.46, -0.6],
+        "target": [3.15, 0.55, -0.6]
+      },
+      "rim": {
+        "id": "rim",
+        "color": "#ffffff",
+        "intensity": 8,
+        "radiance": 8,
+        "width": 5,
+        "height": 2.8,
+        "position": [3.3, 2.45, 8.86],
+        "target": [3.3, 2.45, 0]
+      },
+      "fill": {
+        "id": "fill",
+        "color": "#ffffff",
+        "intensity": 5,
+        "radiance": 5,
+        "width": 1.4,
+        "height": 3.7,
+        "position": [6.86, 2.35, -3.4],
+        "target": [0, 2.35, -3.4]
+      }
+    }
+  },
+  "sources": {
+    "config.ts": "a43b6605b1bbed41df803941e1c43e35f104bcf90d9264437750517e078d1022",
+    "geometry.ts": "79363ba201a6f43193bf7c45b9b8e67ec75a652eac63896aa8736beb73b89764",
+    "tiles.ts": "bf67141f4d059cce4ef891a31fe390b687833c511dc94d195cd0e0cb2e8f4b5e",
+    "lights.ts": "0f14eb22d2745dfe13e817fc02dc4be1eacef21719151a96add56330ca45b6e8",
+    "receiver.ts": "14629b9d7c8ac342ff27270c12013ad27808047840149caa8cff5c97ab21f293",
+    "probe.ts": "dd417accd6249f8d00818dcd4a9bdaac4b88c5df7340bb4f6088eef576874bc6",
+    "assetRecords.ts": "e7420896a4dc9ca38284b18663916ec06614e3e2e6dc27a06e2c309c531f8311"
+  },
+  "records": [
+    {
+      "role": "specular",
+      "file": "specular.rgba32f.bin",
+      "width": 4096,
+      "height": 2048,
+      "bytes": 41302328,
+      "rawBytes": 134217728,
+      "sha256": "d79779d72a17c131386c5cdcc7ad7bb5a3fd9a650272ba2b7e15060b41adeec6",
+      "rawSha256": "8f0c7cec5c1b21327564451687cd99fb2d9c2af6416735f27f76ddefcc7db10b"
+    },
+    {
+      "role": "indirect",
+      "file": "indirect.rgba32f.bin",
+      "width": 1024,
+      "height": 512,
+      "bytes": 2562492,
+      "rawBytes": 8388608,
+      "sha256": "e09e0699e7b24948ff9f451214e5e29d2a296bbafc56c35f26da8537a0c0ab54",
+      "rawSha256": "06b8eb25f92961b6f45b0ea49c6b6858f90cdad08acf30de358d71a0f267e63e"
+    }
+  ],
+  "excludes": ["car", "contact-shadow overlay", "bloom", "cutaway"]
+}

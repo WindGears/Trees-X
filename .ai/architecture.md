@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 汽车地板静态反射（2026-10-24）
+
+`carShowroom/bakedProbe.ts` 在 `carFloor=baked` 候选中校验固定配置、压缩/原始摘要、取消状态，读取离线保存的Float32 HDR。舞台继续唯一拥有纹理与PMREM；候选不分配捕获房间、立方体和转换目标。`floorReflection.ts` 精确识别候选地板，specular MRT写零以跳过SSR源射线与最终修正，仍写深度/beauty作为其他物体的命中对象，保留漫反射GI。车身及其他商品保持原支路。真实失败沿用基础画面并报告，不静默重拍或宣称烘焙成功。详见[验收记录](reventon-baked-floor-validation.md)。
+
 ## 光滑墙面与摄影棚柔光（2026-10-24）
 
 冷白棚 revision 10 的墙体、弧面与面板统一使用无贴图的深灰缎面，保留真实板缝、倒角和原生面积光高光。资产 owner 仅加载地板三张贴图，历史墙图保留但不下载；可见、捕获、cutaway 与 trace 材质保持一致。

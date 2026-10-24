@@ -26,6 +26,7 @@ import {
   vec4,
 } from 'three/tsl'
 import { bindShowroomMaterials } from '../carShowroom/materialBinding'
+import { usesBakedFloorReflection } from '../carShowroom/floorReflection'
 
 type PbrSource = MeshStandardMaterial
 type SignalContext = {
@@ -127,6 +128,7 @@ class RealtimePhysicalMaterial extends MeshPhysicalNodeMaterial {
 // Unrelated materials explicitly write zero, including studio NodeMaterials.
 export const specularCaptureNode = Fn((builder: NodeBuilder) =>
   builder.material instanceof RealtimePhysicalMaterial &&
+  !usesBakedFloorReflection(builder.object) &&
   realtimeMaterialSupported(builder.material.source)
     ? vec4(captures.specular, captures.weight)
     : vec4(0),
