@@ -163,7 +163,6 @@ beforeEach(() => {
   })
   vi.mocked(loadShowroomAssets).mockReset().mockResolvedValue({
     floor: surface(),
-    wall: surface(),
     dispose: vi.fn(),
   })
   vi.stubGlobal('matchMedia', () => ({ matches: false }))

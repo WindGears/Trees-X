@@ -71,8 +71,14 @@ describe('cold studio authored geometry', () => {
     room.applySurfaces(pack)
     expect((room.floor.material as MeshStandardMaterial).map).toBe(pack.floor.map)
     for (const mesh of room.fadeMeshes.filter((mesh) => mesh.userData.showroomSurface === 'wall')) {
-      expect((mesh.material as MeshStandardNodeMaterial).normalMap).toBe(pack.wall.normalMap)
-      expect((mesh.userData.traceMaterial as MeshStandardMaterial).map).toBe(pack.wall.map)
+      for (const material of [mesh.material, mesh.userData.traceMaterial]) {
+        const finish = material as MeshStandardMaterial
+        expect(finish.map).toBeNull()
+        expect(finish.normalMap).toBeNull()
+        expect(finish.roughnessMap).toBeNull()
+        expect(finish.roughness).toBe(0.48)
+        expect(finish.color.getHexString()).toBe('343537')
+      }
     }
     cutaway.dispose()
     room.dispose()

@@ -19,6 +19,8 @@ import { createReflectionRays } from './reflectionRays'
 import { isCarStudioScene } from '../../carStudioQuality'
 import { createCarKeyShadow } from './carShadow/runtime'
 import { createLoungeDofFocus, createOwnedLoungeDof, resolveLoungeDof } from '../loungeSpatialDof'
+import { getShowroomEnvironment } from '../carShowroom/binding'
+import { createShowroomBloom } from '../carShowroom/bloom'
 
 export interface RealtimeIrradiance {
   irradiance: Node<'vec3'>
@@ -106,6 +108,7 @@ export function createRealtimeSignals(
     composite: ReturnType<typeof createOwnedRtt> | undefined,
     linearBeauty: ReturnType<typeof createOwnedRtt> | undefined,
     loungeDof: ReturnType<typeof createOwnedLoungeDof> | undefined,
+    showroomBloom: ReturnType<typeof createShowroomBloom> | undefined,
     ssrEnabled = true,
     ssgiEnabled = true,
     denoiseEnabled = true,
@@ -165,6 +168,8 @@ export function createRealtimeSignals(
         : screenDiffuse
     antialias?.dispose()
     composite?.dispose()
+    showroomBloom?.dispose()
+    showroomBloom = undefined
     loungeDof?.dispose()
     linearBeauty?.dispose()
     loungeDof = undefined
@@ -185,7 +190,9 @@ export function createRealtimeSignals(
         loungeFocus,
       )
     }
-    composite = createOwnedRtt(renderOutput(loungeDof?.node ?? correctedBeauty))
+    const linearOutput = loungeDof?.node ?? correctedBeauty
+    if (getShowroomEnvironment(scene)) showroomBloom = createShowroomBloom(linearOutput)
+    composite = createOwnedRtt(renderOutput(showroomBloom?.node ?? linearOutput))
     antialias = smaa(composite.node)
     pipeline.outputNode = antialias
     pipeline.needsUpdate = true
@@ -271,6 +278,7 @@ export function createRealtimeSignals(
         reflection.setEnvironment(next)
         environment = next
         environmentVersion = version
+        if (Boolean(showroomBloom) !== Boolean(getShowroomEnvironment(scene))) compose()
       }
     },
     setSignals(ssr: boolean, ssgi: boolean, denoise: boolean) {
@@ -285,6 +293,7 @@ export function createRealtimeSignals(
       ssr: ssrEnabled,
       ssgi: ssgiEnabled,
       denoise: denoiseEnabled,
+      showroomBloom: Boolean(showroomBloom),
       ...(studio ? { reflectionRays: reflection.snapshot() } : {}),
     }),
     sampling: () => reflectionResolve?.snapshot() ?? null,
@@ -295,6 +304,7 @@ export function createRealtimeSignals(
       keyShadow.dispose()
       antialias?.dispose()
       composite?.dispose()
+      showroomBloom?.dispose()
       loungeDof?.dispose()
       linearBeauty?.dispose()
       loungeFocus.dispose()

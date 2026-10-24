@@ -1,7 +1,6 @@
 import {
   Texture,
   RepeatWrapping,
-  MirroredRepeatWrapping,
   SRGBColorSpace,
   NoColorSpace,
   LinearMipmapLinearFilter,
@@ -9,7 +8,7 @@ import {
 import { sha256 } from '../../assetBundle'
 import { showroomAssetRecords } from './assetRecords'
 
-/** One stage owns the six decoded images, borrowed by visible and capture rooms. */
+/** One stage owns the floor images, borrowed by visible and capture rooms. */
 export async function loadShowroomAssets(signal: AbortSignal) {
   const owned: { texture: Texture; bitmap: ImageBitmap }[] = []
   let disposed = false
@@ -23,6 +22,9 @@ export async function loadShowroomAssets(signal: AbortSignal) {
   }
   try {
     for (const record of showroomAssetRecords) {
+      // Historical coarse wall sources remain archived, but smooth paint needs
+      // neither their downloads nor their decoded/GPU allocations.
+      if (record.role !== 'floor') continue
       signal.throwIfAborted()
       const response = await fetch('/studio/cold-studio/concept-v2/' + record.file, {
         signal,
@@ -49,13 +51,7 @@ export async function loadShowroomAssets(signal: AbortSignal) {
       texture.name = `Cold studio / ${record.file}`
       texture.flipY = false
       texture.colorSpace = record.channel === 'basecolor' ? SRGBColorSpace : NoColorSpace
-      // The generated albedo is not a measured seamless scan. Mirror its edge
-      // samples so long walls do not acquire a hard horizontal repeat seam.
-      // Periodic technical maps keep RepeatWrapping and their tangent signs.
-      texture.wrapS = texture.wrapT =
-        record.role === 'wall' && record.channel === 'basecolor'
-          ? MirroredRepeatWrapping
-          : RepeatWrapping
+      texture.wrapS = texture.wrapT = RepeatWrapping
       texture.generateMipmaps = true
       texture.minFilter = LinearMipmapLinearFilter
       texture.anisotropy = 8
@@ -66,11 +62,6 @@ export async function loadShowroomAssets(signal: AbortSignal) {
         map: owned[0]!.texture,
         normalMap: owned[1]!.texture,
         roughnessMap: owned[2]!.texture,
-      },
-      wall: {
-        map: owned[3]!.texture,
-        normalMap: owned[4]!.texture,
-        roughnessMap: owned[5]!.texture,
       },
       dispose,
     }

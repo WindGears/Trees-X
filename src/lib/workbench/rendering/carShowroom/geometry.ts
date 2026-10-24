@@ -71,9 +71,8 @@ export function createColdStudioGeometry(config: CarShowroomConfig = coldStudioC
     }),
     wall = new MeshStandardMaterial({
       color: config.wallColor,
-      roughness: 1,
+      roughness: 0.48,
       metalness: 0,
-      normalScale: new Vector2(0.16, 0.16),
       side: DoubleSide,
     }),
     ceiling = new MeshStandardMaterial({
@@ -163,18 +162,14 @@ export function createColdStudioGeometry(config: CarShowroomConfig = coldStudioC
     floor,
     applySurfaces(pack: {
       readonly floor: ShowroomSurfaceMaps
-      readonly wall: ShowroomSurfaceMaps
+      readonly wall?: ShowroomSurfaceMaps
     }) {
       if (disposed) return
       applyMaps(floorMaterial, pack.floor)
-      applyMaps(wall, pack.wall)
+      // Smooth painted walls intentionally have no stone/grain textures.
+      // The capture room, opaque trace source and cutaway clone share this finish.
       for (const mesh of [floor, ...fadeMeshes]) {
-        const maps =
-          mesh.userData.showroomSurface === 'floor'
-            ? pack.floor
-            : mesh.userData.showroomSurface === 'wall'
-              ? pack.wall
-              : null
+        const maps = mesh.userData.showroomSurface === 'floor' ? pack.floor : null
         if (!maps) continue
         if (!Array.isArray(mesh.material)) applyMaps(mesh.material, maps)
         const traceMaterial: unknown = mesh.userData.traceMaterial

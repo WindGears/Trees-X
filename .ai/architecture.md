@@ -1,5 +1,11 @@
 # 新版目标架构与当前实现
 
+## 光滑墙面与摄影棚柔光（2026-10-24）
+
+冷白棚 revision 10 的墙体、弧面与面板统一使用无贴图的深灰缎面，保留真实板缝、倒角和原生面积光高光。资产 owner 仅加载地板三张贴图，历史墙图保留但不下载；可见、捕获、cutaway 与 trace 材质保持一致。
+
+`carShowroom/bloom.ts` 借用实时合成输入，自有 HDR RTT 与原生 Bloom 目标，在线性光照修正之后、唯一 `renderOutput` 之前合成，保留原 alpha；只在真实 showroom environment binding 存在时分配。环境探针与 DDGI 不包含镜头辉光。重建及卸载释放自有资源，姿态历史重置不重建后效，不增加 Canvas 或时钟。
+
 ## 摄影棚空间尺度与灯架（2026-10-23）
 
 revision 9缩紧roomBox并同步floor、灯板/灯光位置、局部捕获边界。`ceilingFrame.ts` 一次构建合并安装框架，中间BoxGeometry立即释放；最终geometry与借用共享rim材质由room唯一拥有。框架沿用建筑traceSupport及主相机cutaway，不额外建立渲染循环或独立资产。墙地连续性、边界投影及灯板无遮挡测试按当前配置求取坐标，不再硬编码旧18×22空间。

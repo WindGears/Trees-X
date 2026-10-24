@@ -2,26 +2,27 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loadShowroomAssets } from './assets'
 import { showroomAssetRecords } from './assetRecords'
 import { readFile } from 'node:fs/promises'
-import { MirroredRepeatWrapping, RepeatWrapping } from 'three'
+import { RepeatWrapping } from 'three'
 afterEach(() => vi.unstubAllGlobals())
 describe('showroom generated texture ownership', () => {
-  it('checks six source bytes and releases every decoded bitmap once', async () => {
+  it('loads only floor sources and releases every decoded bitmap once', async () => {
     const close = vi.fn()
     let decoded = 0
     vi.stubGlobal('createImageBitmap', async () => {
       const record = showroomAssetRecords[decoded++]!
       return { width: record.width, height: record.height, close }
     })
-    vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))
+    const fetch = vi.fn(async (url: string) => new Response(await readFile('public' + url)))
+    vi.stubGlobal('fetch', fetch)
     const pack = await loadShowroomAssets(new AbortController().signal)
     expect(pack.floor.map.colorSpace).toBe('srgb')
-    expect(pack.wall.normalMap.colorSpace).toBe('')
-    expect(pack.wall.map.wrapS).toBe(MirroredRepeatWrapping)
-    expect(pack.wall.map.wrapT).toBe(MirroredRepeatWrapping)
-    expect(pack.wall.normalMap.wrapS).toBe(RepeatWrapping)
+    expect(pack.floor.normalMap.colorSpace).toBe('')
+    expect(pack.floor.normalMap.wrapS).toBe(RepeatWrapping)
+    expect(fetch).toHaveBeenCalledTimes(3)
+    expect(fetch.mock.calls.every(([url]) => !url.includes('wall'))).toBe(true)
     pack.dispose()
     pack.dispose()
-    expect(close).toHaveBeenCalledTimes(6)
+    expect(close).toHaveBeenCalledTimes(3)
   })
   it('rejects corrupt data before decoding', async () => {
     const decode = vi.fn()

@@ -44,7 +44,7 @@ export interface CarShowroomConfig {
 /** Frozen inputs for the first same-room reflection comparison; white is neutral. */
 export const coldStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
   id: 'cold-studio',
-  revision: 9,
+  revision: 10,
   groundY: -0.01,
   exposure: 1,
   roomBox: { min: [-7, -0.01, -9], max: [7, 4.6, 9] },
@@ -57,7 +57,7 @@ export const coldStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConf
     depth: 18,
     tileSize: 1.2,
   },
-  wallColor: '#dddddd',
+  wallColor: '#343537',
   ceilingColor: '#303339',
   coveRadius: 0.45,
   lights: {

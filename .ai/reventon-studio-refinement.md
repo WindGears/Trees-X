@@ -89,3 +89,17 @@
 51项摄影棚单测、typecheck、ESLint、生产构建和资源摘要通过。边界/射线测试改为读取配置尺寸，避免用旧空间坐标测试新房间。完整check仍被原有PERFORMANCE_OPTIMIZATION.md格式阻断，未修改用户文件。全部GPU测试后台无头，不宣称显示器30FPS。
 
 这是一版新的空间基线，尚不将“真实摄影棚”整体目标标记完成：建筑间细小接触阴影仍不足，原主软箱BVH只接收汽车，不会因为增加建筑而自动提供完整建筑自阴影；部分远处砖缝仍有亚像素断续，车身黑位与反射颗粒也仍在。下一步优先处理建筑光照/接触关系并接受用户实机判断，不扩大车身反射算法。
+
+## 2026-10-24：revision 10 光滑墙面＋灯板 Bloom
+
+用户本轮明确要求去掉粗糙墙纹，并让灯板有柔光。墙、弧面和墙板统一为 `#343537`、roughness 0.48 的光滑非金属涂装，取消原粗颗粒底色、normal 和 roughnessMap。地砖、真实板缝/倒角、墙脚连接与灯架保持。历史墙图保留原件；当前资产 owner 只下载、校验、解码地板三图。捕获场景、trace source 与 cutaway clone 使用一致的墙材质。
+
+新增 `carShowroom/bloom.ts`：自有线性 HDR RTT 输入＋Three 原生 Bloom，在线性合成之后、唯一输出映射之前添加；仅真实冷白棚 environment binding 启用。最终 strength 0.06、radius 0.1、threshold 2.5，保留源 alpha。普通入口及其他商品不分配效果。该效果按亮度提取，强反射也可参与，不能声称严格按灯板 ID 选择。镜头辉光不参与探针捕获或 DDGI，不改变实际灯光能量。
+
+首轮 0.18/0.35 在灯板近景形成过宽灰雾，保留 `artifacts/car-showroom/smooth-bloom/` 的截图及报告，已进行一次集中收敛。最终候选在 `artifacts/car-showroom/smooth-bloom-final/`，已人工检查整车、墙角与天花近景：墙纹平整，柔光更集中，灯架轮廓可辨。没有把这一修改宣称为整间摄影棚已获用户验收，车身原有反射/边缘问题也不在本批伪称修复。
+
+工程记录：44 个测试文件、326 项测试通过，包括墙材质及贴图所有权、Bloom 目标幂等释放、姿态切换不重建后效。最初一项快照测试因新增 showroomBloom 字段失败，已同步断言并重跑通过。`npm run build`、后端打包、演示准备/启动通过。`npm run check` 的 typecheck、ESLint 通过，仍停于用户原有未跟踪 `PERFORMANCE_OPTIMIZATION.md` 的 Prettier 格式，未擅自修改该文件。
+
+后台实机测试使用现有 headless 脚本，无窗口抢焦点；输出 1440×1000。Bloom 增加一个 HDR 中间目标及原生降采样模糊链，未降低主输出或贴图精度，未增加 renderer/时钟。本轮不做实际呈现帧率认证，也没有进入世界空间反射第二节点。
+
+最终生产实机结果：`smooth-bloom-final/report.json` 的 passed=true，14 个固定取景、3 段连续操作完成，errors/httpErrors 均为 0，实际 signals.showroomBloom=true。脚本核对唯一 Canvas/renderer、同源请求、静态捕获不随绕行/开门/分离重拍，以及真实商品身份；这不是显示器呈现 30 FPS 的证据。当前本地演示已启动最终构建，用户可刷新显式冷白棚入口查看。
