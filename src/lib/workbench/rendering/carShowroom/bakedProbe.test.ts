@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { FloatType, LinearSRGBColorSpace, Object3D } from 'three'
+import { FloatType, HalfFloatType, DataUtils, LinearSRGBColorSpace, Object3D } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import { loadBakedStudioProbe } from './bakedProbe'
 import { coldStudioConfig } from './config'
@@ -10,6 +10,36 @@ afterEach(() => vi.unstubAllGlobals())
 const renderer = {} as WebGPURenderer
 const signal = () => new AbortController().signal
 describe('persisted static room HDR', () => {
+  it('loads the Cycles HDR in half precision with all four emitter directions intact', async () => {
+    vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))
+    const probe = await loadBakedStudioProbe(
+      renderer,
+      coldStudioConfig,
+      'specular',
+      signal(),
+      'cycles',
+    )
+    expect(probe.texture.type).toBe(HalfFloatType)
+    const image = probe.texture.image
+    expect(image.data).toBeInstanceOf(Uint16Array)
+    if (!(image.data instanceof Uint16Array)) throw new Error('Expected half-float HDR data')
+    for (const light of Object.values(coldStudioConfig.lights)) {
+      const delta = light.position.map((v, i) => v - coldStudioConfig.capture.position[i]!)
+      const x = Math.floor((Math.atan2(delta[2]!, delta[0]!) / (2 * Math.PI) + 0.5) * image.width)
+      const y =
+        image.height -
+        1 -
+        Math.floor((0.5 - Math.asin(delta[1]! / Math.hypot(...delta)) / Math.PI) * image.height)
+      for (let channel = 0; channel < 3; channel++)
+        expect(
+          Math.abs(
+            DataUtils.fromHalfFloat(image.data[(y * image.width + x) * 4 + channel]!) -
+              light.radiance,
+          ),
+        ).toBeLessThan(0.05)
+    }
+    probe.dispose()
+  })
   it('loads the real lossless asset with matching linear HDR orientation and one owner', async () => {
     vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))
     const probe = await loadBakedStudioProbe(renderer, coldStudioConfig, 'indirect', signal())

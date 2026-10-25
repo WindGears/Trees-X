@@ -44,10 +44,16 @@ export function createColdShowroomStage(
   base: ReventonStage,
 ): ReventonStage {
   const config = coldStudioConfig,
-    bakedFloor =
+    floorMode = new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
+      'carFloor',
+    ),
+    bakedFloor = floorMode === 'baked' || floorMode === 'cycles',
+    bakeKind = floorMode === 'cycles' ? 'cycles' : 'raster',
+    localFloorLight =
+      floorMode === 'cycles' &&
       new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
-        'carFloor',
-      ) === 'baked',
+        'carFloorLight',
+      ) === 'local',
     room = createColdStudioGeometry(config),
     cutaway = createShowroomCutaway(
       room.fadeMeshes,
@@ -75,6 +81,7 @@ export function createColdShowroomStage(
       revision: config.revision,
       panelBrightness: 1,
       floorReflection: 'screen-space+room-probe',
+      floorLight: localFloorLight ? 'local-area+indirect-probe' : 'full-probe',
       probe: null as unknown,
       fade: [] as ReturnType<typeof cutaway.snapshot>,
     }
@@ -198,14 +205,14 @@ export function createColdShowroomStage(
         oldTrace = scene.userData.traceBackground
         traceDescriptor = Object.getOwnPropertyDescriptor(scene.userData, 'traceBackground')
         full = bakedFloor
-          ? await loadBakedStudioProbe(renderer, config, 'specular', signal)
+          ? await loadBakedStudioProbe(renderer, config, 'specular', signal, bakeKind)
           : await createColdStudioProbe(renderer, captureScene, config, signal)
         signal?.throwIfAborted()
         if (disposed) throw new Error('Cold studio capture was superseded')
         for (const panel of captureRoom?.panels ?? [])
           if (panel.material instanceof MeshBasicMaterial) panel.material.color.set(0)
         indirect = bakedFloor
-          ? await loadBakedStudioProbe(renderer, config, 'indirect', signal)
+          ? await loadBakedStudioProbe(renderer, config, 'indirect', signal, bakeKind)
           : await createColdStudioProbe(renderer, captureScene, config, signal, {
               role: 'indirect',
             })
@@ -213,9 +220,15 @@ export function createColdShowroomStage(
         if (disposed) throw new Error('Cold studio capture was superseded')
         if (bakedFloor) {
           room.root.traverse((object) => {
-            if (object.userData.showroomId === 'floor') object.userData.bakedFloorReflection = true
+            if (object.userData.showroomId === 'floor') {
+              object.userData.bakedFloorReflection = true
+              object.userData.bakedFloorLocalLight = localFloorLight
+            }
           })
-          status.floorReflection = 'baked-room-probe; no-car-reflection'
+          status.floorReflection =
+            floorMode === 'cycles'
+              ? 'cycles-room-probe; no-car-reflection'
+              : 'baked-room-probe; no-car-reflection'
         }
         native = ownShowroomNativeMaterials(model)
         scene.environment = full.texture
@@ -231,7 +244,11 @@ export function createColdShowroomStage(
           ...full.snapshot,
           indirect: indirect.snapshot,
           totalFaceDraws: bakedFloor ? 0 : 12,
-          source: bakedFloor ? 'baked-r10' : 'runtime-capture',
+          source: bakedFloor
+            ? floorMode === 'cycles'
+              ? 'cycles-r10'
+              : 'baked-r10'
+            : 'runtime-capture',
         }
         status.phase = 'ready'
       } catch (cause) {

@@ -42,7 +42,7 @@ function inputs(): Parameters<PhysicalLightingModel['directRectArea']>[0] {
 }
 
 describe('same-room visible panels and diffuse-only area lights', () => {
-  it.each(['wall', 'floor', 'car'])(
+  it.each(['wall', 'floor', 'car', 'floor-local'])(
     'routes %s specular consistently with its environment source',
     (receiver) => {
       const f = fixture(),
@@ -55,7 +55,12 @@ describe('same-room visible panels and diffuse-only area lights', () => {
         model = new PhysicalLightingModel(true),
         object = new Mesh(),
         native = vi.fn<PhysicalLightingModel['directRectArea']>()
-      object.userData = { carShowroom: receiver !== 'car', showroomId: receiver }
+      object.userData = {
+        carShowroom: receiver !== 'car',
+        showroomId: receiver === 'floor-local' ? 'floor' : receiver,
+        bakedFloorReflection: receiver === 'floor-local',
+        bakedFloorLocalLight: receiver === 'floor-local',
+      }
       model.directRectArea = native
       const builder = {
         object,
@@ -66,7 +71,9 @@ describe('same-room visible panels and diffuse-only area lights', () => {
       try {
         node.setup(builder)
         const actual = native.mock.calls[0]![0].reflectedLight.directSpecular
-        expect(actual === input.reflectedLight.directSpecular).toBe(receiver === 'wall')
+        expect(actual === input.reflectedLight.directSpecular).toBe(
+          receiver === 'wall' || receiver === 'floor-local',
+        )
         expect(model.directRectArea).toBe(native)
       } finally {
         data.mockRestore()

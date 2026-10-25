@@ -11,7 +11,7 @@ import {
   flushShowroomGpu,
 } from './reventon-showroom/browser.mjs'
 
-const output = 'artifacts/car-showroom/baked-floor'
+const output = process.env.TREES_FLOOR_OUTPUT ?? 'artifacts/car-showroom/baked-floor'
 await mkdir(output, { recursive: true })
 const report = {
   passed: false,
@@ -19,14 +19,16 @@ const report = {
   warnings: [],
   runs: [],
   limitations: [
-    'Static raster probe persistence, not path-traced lightmaps.',
+    'Baked is persisted raster radiance; cycles is offline path-traced room radiance. Neither is a floor lightmap.',
     'No baked car reflection. No displayed FPS measurement. Default remains unchanged.',
   ],
 }
 let browser, activePage
 try {
   const variants = process.env.TREES_FLOOR_VARIANTS?.split(',') ?? ['baseline', 'baked']
-  assert.ok(variants.every((variant) => ['baseline', 'baked'].includes(variant)))
+  assert.ok(
+    variants.every((variant) => ['baseline', 'baked', 'cycles', 'cycles-local'].includes(variant)),
+  )
   for (const variant of variants) {
     browser = await chromium.launch({ channel: 'msedge', headless: true })
     const context = await browser.newContext({
@@ -42,13 +44,15 @@ try {
       if (message.type() === 'warning') report.warnings.push(message.text())
     })
     page.on('request', (request) => {
-      if (request.url().includes('baked-r10')) requests.push(request.url())
+      if (/\/(baked|cycles)-r10\//.test(request.url())) requests.push(request.url())
     })
     page.on('requestfailed', (request) =>
       report.errors.push({ url: request.url(), failure: request.failure() }),
     )
     const url = new URL(showroomUrl('http://127.0.0.1:5181', 'showroom'))
-    if (variant === 'baked') url.searchParams.set('carFloor', 'baked')
+    if (variant !== 'baseline')
+      url.searchParams.set('carFloor', variant === 'cycles-local' ? 'cycles' : variant)
+    if (variant === 'cycles-local') url.searchParams.set('carFloorLight', 'local')
     await page.goto(url.href, { waitUntil: 'domcontentloaded' })
     console.log(`Opened ${variant}`)
     await expect
@@ -89,8 +93,8 @@ try {
       )
       .toBe(true)
     const initial = await page.evaluate(showroomState)
-    assert.equal(initial.showroom.probe.totalFaceDraws, variant === 'baked' ? 0 : 12)
-    assert.equal(requests.length, variant === 'baked' ? 2 : 0)
+    assert.equal(initial.showroom.probe.totalFaceDraws, variant === 'baseline' ? 12 : 0)
+    assert.equal(requests.length, variant === 'baseline' ? 0 : 2)
     const floor = await page.evaluate(() => {
       const mesh = window.__demo.scene.scene.value.getObjectByName('Trees X / cold studio floor')
       return {
@@ -100,7 +104,18 @@ try {
         roughness: mesh.material.roughness,
       }
     })
-    assert.equal(floor.baked, variant === 'baked')
+    assert.equal(floor.baked, variant !== 'baseline')
+    if (variant.startsWith('cycles')) {
+      assert.equal(initial.showroom.probe.source, 'cycles-r10')
+      assert.equal(
+        await page.evaluate(
+          () => window.__demo.scene.scene.value.environment.image.data.constructor.name,
+        ),
+        'Uint16Array',
+      )
+      if (variant === 'cycles-local')
+        assert.equal(initial.showroom.floorLight, 'local-area+indirect-probe')
+    }
     const shots = []
     for (const view of ['perspective', 'side', 'rear']) {
       await selectShowroomView(page, view)

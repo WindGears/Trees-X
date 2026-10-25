@@ -1,6 +1,7 @@
 import {
   DataTexture,
   FloatType,
+  HalfFloatType,
   RGBAFormat,
   EquirectangularReflectionMapping,
   LinearSRGBColorSpace,
@@ -11,9 +12,10 @@ import { sha256 } from '../../assetBundle'
 import { ownEnvironmentPmrem } from '../environmentPMREM'
 import type { CarShowroomConfig } from './config'
 import { bakedStudioRecords } from './bakedRecords'
+import { cyclesStudioRecords } from './cyclesRecords'
 import type { createColdStudioProbe } from './probe'
 
-/** Lossless persisted output of the existing static room capture, not a path-traced lightmap.
+/** Persisted raster capture or offline Cycles radiance, not a surface lightmap.
  * The stage owns this texture and PMREM; no room capture targets are allocated here.
  */
 export async function loadBakedStudioProbe(
@@ -21,13 +23,16 @@ export async function loadBakedStudioProbe(
   config: CarShowroomConfig,
   role: 'specular' | 'indirect',
   signal: AbortSignal,
+  kind: 'raster' | 'cycles' = 'raster',
 ): Promise<Awaited<ReturnType<typeof createColdStudioProbe>>> {
   signal.throwIfAborted()
-  if (JSON.stringify(config) !== JSON.stringify(bakedStudioRecords.config))
+  const bundle = kind === 'cycles' ? cyclesStudioRecords : bakedStudioRecords
+  if (JSON.stringify(config) !== JSON.stringify(bundle.config))
     throw new Error('摄影棚配置已改变，需要重新生成静态反射资源')
-  const record = bakedStudioRecords.records.find((item) => item.role === role)
+  const record = bundle.records.find((item) => item.role === role)
   if (!record) throw new Error('摄影棚静态反射记录缺失')
-  const response = await fetch('/studio/cold-studio/baked-r10/' + record.file, {
+  const directory = kind === 'cycles' ? 'cycles-r10' : 'baked-r10'
+  const response = await fetch('/studio/cold-studio/' + directory + '/' + record.file, {
     signal,
     mode: 'same-origin',
     redirect: 'error',
@@ -44,14 +49,15 @@ export async function loadBakedStudioProbe(
   if (raw.byteLength !== record.rawBytes || (await sha256(raw)) !== record.rawSha256)
     throw new Error(`静态反射解码校验失败：${record.file}`)
   signal.throwIfAborted()
+  const half = 'dataType' in record && record.dataType === 'float16'
   const texture = new DataTexture(
-    new Float32Array(raw),
+    half ? new Uint16Array(raw) : new Float32Array(raw),
     record.width,
     record.height,
     RGBAFormat,
-    FloatType,
+    half ? HalfFloatType : FloatType,
   )
-  texture.name = `Trees X / baked cold studio ${role} r${config.revision}`
+  texture.name = `Trees X / ${kind} baked cold studio ${role} r${config.revision}`
   texture.mapping = EquirectangularReflectionMapping
   texture.colorSpace = LinearSRGBColorSpace
   texture.minFilter = texture.magFilter = LinearFilter
@@ -65,7 +71,7 @@ export async function loadBakedStudioProbe(
       snapshot: Object.freeze({
         faces: 6 as const,
         role,
-        faceResolution: role === 'specular' ? 1024 : 256,
+        faceResolution: kind === 'cycles' || role === 'specular' ? 1024 : 256,
         width: record.width,
         height: record.height,
         linearHDR: true as const,

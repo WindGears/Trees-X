@@ -177,6 +177,23 @@ afterEach(() => {
 })
 
 describe('cold studio audited gate and static scene ownership', () => {
+  it('routes the Cycles candidate explicitly without changing the old baked asset selection', async () => {
+    vi.stubGlobal('location', { search: '?carFloor=cycles' })
+    vi.mocked(loadBakedStudioProbe)
+      .mockResolvedValueOnce(probe())
+      .mockResolvedValueOnce(probe('indirect'))
+    const f = make()
+    await f.stage.prepare()
+    expect(createColdStudioProbe).not.toHaveBeenCalled()
+    expect(vi.mocked(loadBakedStudioProbe).mock.calls.map((call) => call[4])).toEqual([
+      'cycles',
+      'cycles',
+    ])
+    expect(f.model.userData.carShowroom).toMatchObject({
+      phase: 'ready',
+      probe: { source: 'cycles-r10', totalFaceDraws: 0 },
+    })
+  })
   it('loads both baked signals without capture draws and excludes only floor SSR origins', async () => {
     vi.stubGlobal('location', { search: '?carFloor=baked' })
     const full = probe(),

@@ -1,0 +1,138 @@
+{
+  "config": {
+    "id": "cold-studio",
+    "revision": 10,
+    "groundY": -0.01,
+    "exposure": 1,
+    "roomBox": {
+      "min": [-7, -0.01, -9],
+      "max": [7, 4.6, 9]
+    },
+    "capture": {
+      "size": 1024,
+      "position": [0, 0.8, -0.35]
+    },
+    "floor": {
+      "color": "#bfbfbf",
+      "roughness": 1,
+      "metalness": 0,
+      "width": 14,
+      "depth": 18,
+      "tileSize": 1.2
+    },
+    "wallColor": "#343537",
+    "ceilingColor": "#303339",
+    "coveRadius": 0.45,
+    "lights": {
+      "key": {
+        "id": "key",
+        "color": "#ffffff",
+        "intensity": 7,
+        "radiance": 7,
+        "width": 5.5,
+        "height": 3.2,
+        "position": [-3.15, 4.46, -0.6],
+        "target": [-3.15, 0.55, -0.6]
+      },
+      "strip": {
+        "id": "strip",
+        "color": "#ffffff",
+        "intensity": 4.8,
+        "radiance": 4.8,
+        "width": 5.5,
+        "height": 3.2,
+        "position": [3.15, 4.46, -0.6],
+        "target": [3.15, 0.55, -0.6]
+      },
+      "rim": {
+        "id": "rim",
+        "color": "#ffffff",
+        "intensity": 8,
+        "radiance": 8,
+        "width": 5,
+        "height": 2.8,
+        "position": [3.3, 2.45, 8.86],
+        "target": [3.3, 2.45, 0]
+      },
+      "fill": {
+        "id": "fill",
+        "color": "#ffffff",
+        "intensity": 5,
+        "radiance": 5,
+        "width": 1.4,
+        "height": 3.7,
+        "position": [6.86, 2.35, -3.4],
+        "target": [0, 2.35, -3.4]
+      }
+    }
+  },
+  "records": [
+    {
+      "role": "specular",
+      "file": "specular.rgba16f.bin",
+      "width": 4096,
+      "height": 2048,
+      "bytes": 35940615,
+      "rawBytes": 67108864,
+      "sha256": "529b1b975c3ac32541a8f9340cd9ded5d0de73e9cdb45e9209454a8059a36a42",
+      "rawSha256": "6c2fa7f70e762cc14fb4adcaace8c41614433249ab918dad81b2d8c0051db52a",
+      "dataType": "float16",
+      "maxAbsoluteError": 0.007811546325683594,
+      "maxRelativeError": 0.0009754907792838676
+    },
+    {
+      "role": "indirect",
+      "file": "indirect.rgba16f.bin",
+      "width": 1024,
+      "height": 512,
+      "bytes": 2402427,
+      "rawBytes": 4194304,
+      "sha256": "5bdf8c2845100334c64019ce86b789c12fe97d77384328a917c1bc03d4a91864",
+      "rawSha256": "758b6b8aa132ff54891679b876781f56ee402df44c83a75ffd3e131720bb733b",
+      "dataType": "float16",
+      "maxAbsoluteError": 0.0009764432907104492,
+      "maxRelativeError": 0.0009753718024418356
+    }
+  ],
+  "sourceSha256": "f4416148bf43452e548f7203ca2ecc3f349d4ec764a690b5bf2d7f7f6751d077",
+  "samples": 256,
+  "faceSize": 1024,
+  "engine": "Cycles OptiX; OIDN; 12 bounces; no clamp",
+  "seconds": 135.29222583770752,
+  "blender": "5.2.2 LTS",
+  "excludes": ["car", "UI", "contact shadow overlay", "bloom"],
+  "orientation": [
+    {
+      "light": "key",
+      "pixel": [51, 464],
+      "current": [6.994377613067627, 7.012854099273682, 6.987825393676758],
+      "reference": [0.0726318359375, 0.06768798828125, 0.06646728515625],
+      "referenceFlipped": [7, 7, 7]
+    },
+    {
+      "light": "strip",
+      "pixel": [1996, 464],
+      "current": [4.7962493896484375, 4.808806419372559, 4.7917351722717285],
+      "reference": [0.08013916015625, 0.07720947265625, 0.07257080078125],
+      "referenceFlipped": [4.796875, 4.796875, 4.796875]
+    },
+    {
+      "light": "rim",
+      "pixel": [2847, 915],
+      "current": [7.999528408050537, 8.018973350524902, 7.985802173614502],
+      "reference": [0.037322998046875, 0.03594970703125, 0.034942626953125],
+      "referenceFlipped": [8, 8, 8]
+    },
+    {
+      "light": "fill",
+      "pixel": [1775, 891],
+      "current": [4.992887496948242, 5.007760524749756, 4.990492820739746],
+      "reference": [0.053924560546875, 0.0513916015625, 0.04986572265625],
+      "referenceFlipped": [5, 5, 5]
+    }
+  ],
+  "method": "Cycles offline room radiance; native Principled approximation of Three Physical; not a floor lightmap",
+  "colorSpace": "linear-srgb",
+  "encoding": "gzip little-endian RGBA float16; opaque .bin extension",
+  "orientationConvention": "bottom-up equirect rows, DataTexture flipY=false, matches r10 WebGPU capture"
+}

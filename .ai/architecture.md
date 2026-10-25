@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 离线Cycles反射源（2026-10-25）
+
+`export-cold-studio-source.mjs` 从生产几何构造器导出28个建筑网格；独立后台Blender制作六面线性HDR。注册工具按四灯方向校验、转换行序和量化误差，再写入独立cycles-r10包及类型记录。现有bakedProbe owner增加显式cycles选择及HalfFloat数据支持，复用取消、摘要、配置一致性和PMREM释放。舞台/SSR源分类不增加绘制循环。原baked-r10保持Float32及原选择语义。材质和空间近似边界见[本批记录](reventon-cycles-room-validation.md)。
+
 ## 汽车地板静态反射（2026-10-24）
 
 `carShowroom/bakedProbe.ts` 在 `carFloor=baked` 候选中校验固定配置、压缩/原始摘要、取消状态，读取离线保存的Float32 HDR。舞台继续唯一拥有纹理与PMREM；候选不分配捕获房间、立方体和转换目标。`floorReflection.ts` 精确识别候选地板，specular MRT写零以跳过SSR源射线与最终修正，仍写深度/beauty作为其他物体的命中对象，保留漫反射GI。车身及其他商品保持原支路。真实失败沿用基础画面并报告，不静默重拍或宣称烘焙成功。详见[验收记录](reventon-baked-floor-validation.md)。

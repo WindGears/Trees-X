@@ -1,5 +1,9 @@
 # Trees X 新版项目入口
 
+## Cycles离线摄影棚候选（2026-10-25）
+
+`carFloor=cycles` 在冷白棚入口加载由当前28个真实建筑网格离线计算的Cycles HDR，保留原光栅捕获和 `carFloor=baked` 对照。256样本、12次反弹、OIDN、RGBA16F源图，浏览器继续实时Three交互，不运行路径追踪、不烘死汽车倒影。普通入口不切换。实际检查与限制见[Cycles反射源](reventon-cycles-room-validation.md)。
+
 ## 地板静态反射候选（2026-10-24）
 
 用户同意将固定房间反射离线保存，避免把汽车倒影烘死。第一步 `carFloor=baked` 仅作用于既有冷白棚汽车候选：读取r10无损静态HDR，跳过现场12次六面捕获和地板SSR；车身SSR、动态接触阴影及漫反射GI保留。普通入口不改。此批是现有光栅探针持久化，不是Blender/Cycles lightmap，也不代表概念图已还原。资源成本与验收见[静态反射记录](reventon-baked-floor-validation.md)。
