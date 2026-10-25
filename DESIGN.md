@@ -596,3 +596,7 @@ revision 9以可信摄影棚空间为当前目标：房间14×18、高4.6场景�
 ## Cycles摄影棚对照（2026-10-25）
 
 carFloor=cycles 使用同建筑、同灯位的离线路径追踪房间辐射；沿用冷白、原曝光与材质，不用调光差异冒充算法收益。仍无汽车静态倒影或地面lightmap，保留普通入口与旧baked对照，画质由实机检查判断。见 .ai/reventon-cycles-room-validation.md。
+
+## 汽车动态地板倒影（2026-10-26）
+
+显式 carFloorReflection=planar 在烘焙冷白棚中补充动态汽车倒影。保留石板接缝与原房间，透明覆盖过滤后作克制混合，避免整面镜子或固定汽车贴图。该项不代表整体摄影棚画质通过，验证及近似见 .ai/reventon-floor-reflection-validation.md。

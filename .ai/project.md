@@ -1,5 +1,9 @@
 # Trees X 新版项目入口
 
+## 汽车动态地板倒影（2026-10-26）
+
+`carFloorReflection=planar` 在既有烘焙冷白棚中增加汽车独立平面反射；房间仍离线，汽车开门/分离与相机实时变化。唯一renderer、全尺寸RGBA16F、源资源借用。实际GPU读回及面板非对称投影检查见[本批验收](reventon-floor-reflection-validation.md)。默认入口不切换，摄影棚整体画质仍待收束。
+
 ## Cycles离线摄影棚候选（2026-10-25）
 
 `carFloor=cycles` 在冷白棚入口加载由当前28个真实建筑网格离线计算的Cycles HDR，保留原光栅捕获和 `carFloor=baked` 对照。256样本、12次反弹、OIDN、RGBA16F源图，浏览器继续实时Three交互，不运行路径追踪、不烘死汽车倒影。普通入口不切换。实际检查与限制见[Cycles反射源](reventon-cycles-room-validation.md)。

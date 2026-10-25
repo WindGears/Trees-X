@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 汽车地面反射所有权（2026-10-26）
+
+`carShowroom/carFloorReflection.ts` 拥有石板geometry副本、Node合成材质及Reflector目标，借用汽车和唯一renderer。stage准备后挂载，先于房间/模型清理。复用透明product-only捕获和r185非对称投影桥接，不进入DDGI代理，不增加时钟。近似和实机证据见[本批验收](reventon-floor-reflection-validation.md)。
+
 ## 离线Cycles反射源（2026-10-25）
 
 `export-cold-studio-source.mjs` 从生产几何构造器导出28个建筑网格；独立后台Blender制作六面线性HDR。注册工具按四灯方向校验、转换行序和量化误差，再写入独立cycles-r10包及类型记录。现有bakedProbe owner增加显式cycles选择及HalfFloat数据支持，复用取消、摘要、配置一致性和PMREM释放。舞台/SSR源分类不增加绘制循环。原baked-r10保持Float32及原选择语义。材质和空间近似边界见[本批记录](reventon-cycles-room-validation.md)。

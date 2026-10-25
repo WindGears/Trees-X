@@ -314,6 +314,15 @@ try {
       origins: [],
       httpErrors: [],
     }
+    if (process.env.TREES_SHOWROOM_FLOOR) {
+      assert.equal(process.env.TREES_SHOWROOM_FLOOR, 'cycles-planar')
+      assert.equal(variant, 'showroom')
+      const candidate = new URL(activeRun.url)
+      candidate.searchParams.set('carFloor', 'cycles')
+      candidate.searchParams.set('carFloorLight', 'local')
+      candidate.searchParams.set('carFloorReflection', 'planar')
+      activeRun.url = candidate.href
+    }
     report.runs.push(activeRun)
     context = await browser.newContext({
       viewport: report.viewport,

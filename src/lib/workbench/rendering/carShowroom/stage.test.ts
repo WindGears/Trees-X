@@ -177,6 +177,28 @@ afterEach(() => {
 })
 
 describe('cold studio audited gate and static scene ownership', () => {
+  it('owns the dynamic car reflection only in the explicit baked candidate and releases it once', async () => {
+    vi.stubGlobal('location', {
+      search: '?carFloor=cycles&carFloorLight=local&carFloorReflection=planar',
+    })
+    vi.mocked(loadBakedStudioProbe)
+      .mockResolvedValueOnce(probe())
+      .mockResolvedValueOnce(probe('indirect'))
+    const f = make()
+    await f.stage.prepare()
+    const mesh = f.scene.getObjectByName('Trees X / cold studio car reflection')
+    expect(mesh).toBeInstanceOf(Mesh)
+    if (!(mesh instanceof Mesh)) throw new Error('Expected owned reflection')
+    const geometryDispose = vi.spyOn(mesh.geometry, 'dispose')
+    expect(f.model.userData.carShowroom.floorReflection).toBe(
+      'cycles-room-probe+dynamic-car-planar',
+    )
+    f.stage.dispose()
+    f.stage.dispose()
+    expect(geometryDispose).toHaveBeenCalledTimes(1)
+    expect(f.scene.getObjectByName(mesh.name)).toBeUndefined()
+    expect(f.model.parent).toBe(f.scene)
+  })
   it('routes the Cycles candidate explicitly without changing the old baked asset selection', async () => {
     vi.stubGlobal('location', { search: '?carFloor=cycles' })
     vi.mocked(loadBakedStudioProbe)

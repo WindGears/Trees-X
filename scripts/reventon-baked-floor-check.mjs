@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium, expect } from '@playwright/test'
 import { showroomUrl } from './reventon-showroom/model.mjs'
+import { inspectCarReflection } from './reventon-showroom/floor-reflection.mjs'
 import {
   attachShowroomBridge,
   showroomState,
@@ -27,7 +28,9 @@ let browser, activePage
 try {
   const variants = process.env.TREES_FLOOR_VARIANTS?.split(',') ?? ['baseline', 'baked']
   assert.ok(
-    variants.every((variant) => ['baseline', 'baked', 'cycles', 'cycles-local'].includes(variant)),
+    variants.every((variant) =>
+      ['baseline', 'baked', 'cycles', 'cycles-local', 'cycles-planar'].includes(variant),
+    ),
   )
   for (const variant of variants) {
     browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -51,8 +54,10 @@ try {
     )
     const url = new URL(showroomUrl('http://127.0.0.1:5181', 'showroom'))
     if (variant !== 'baseline')
-      url.searchParams.set('carFloor', variant === 'cycles-local' ? 'cycles' : variant)
-    if (variant === 'cycles-local') url.searchParams.set('carFloorLight', 'local')
+      url.searchParams.set('carFloor', variant.startsWith('cycles') ? 'cycles' : variant)
+    if (['cycles-local', 'cycles-planar'].includes(variant))
+      url.searchParams.set('carFloorLight', 'local')
+    if (variant === 'cycles-planar') url.searchParams.set('carFloorReflection', 'planar')
     await page.goto(url.href, { waitUntil: 'domcontentloaded' })
     console.log(`Opened ${variant}`)
     await expect
@@ -113,27 +118,55 @@ try {
         ),
         'Uint16Array',
       )
-      if (variant === 'cycles-local')
+      if (['cycles-local', 'cycles-planar'].includes(variant))
         assert.equal(initial.showroom.floorLight, 'local-area+indirect-probe')
+      if (variant === 'cycles-planar')
+        assert.equal(initial.showroom.floorReflection, 'cycles-room-probe+dynamic-car-planar')
     }
     const shots = []
+    const reflectionChecks = []
+    const inspectReflection = async (label) => {
+      if (variant !== 'cycles-planar') return
+      const value = await page.evaluate(inspectCarReflection)
+      assert.equal(value.width, 1440)
+      assert.equal(value.height, 1000)
+      assert.equal(value.invalid, 0)
+      assert.ok(value.coverage > 1000 && value.transparent > 1000)
+      assert.ok(value.checked > 10 && value.projectionError < 1e-6)
+      reflectionChecks.push({ label, ...value })
+    }
     for (const view of ['perspective', 'side', 'rear']) {
       await selectShowroomView(page, view)
       await page.waitForTimeout(1800)
       await flushShowroomGpu(page)
       await page.screenshot({ path: `${output}/${variant}-${view}.png` })
       shots.push(await page.evaluate(showroomState))
+      await inspectReflection(view)
     }
     await seekShowroomMotion(page, 'open-doors', 1)
     await selectShowroomView(page, 'perspective')
     await page.waitForTimeout(1800)
     await flushShowroomGpu(page)
     await page.screenshot({ path: `${output}/${variant}-doors.png` })
+    await inspectReflection('doors')
     await seekShowroomMotion(page, 'explore-parts', 0.6)
     await flushShowroomGpu(page)
     await page.screenshot({ path: `${output}/${variant}-separated.png` })
+    await inspectReflection('separated')
     await seekShowroomMotion(page, 'open-doors', 0)
     await seekShowroomMotion(page, 'explore-parts', 0)
+    if (variant === 'cycles-planar') {
+      await page.getByRole('button', { name: '外观', exact: true }).click()
+      await page.waitForTimeout(1200)
+      await inspectReflection('right-panel')
+      await page.screenshot({ path: `${output}/${variant}-panel.png` })
+      await page.getByRole('button', { name: '外观', exact: true }).click()
+      await page.getByRole('button', { name: '商品目录', exact: true }).click()
+      await page.waitForTimeout(1200)
+      await inspectReflection('catalog')
+      await page.screenshot({ path: `${output}/${variant}-catalog.png` })
+      assert.ok(new Set(reflectionChecks.map((entry) => entry.spatialMoment)).size > 3)
+    }
     const final = await page.evaluate(showroomState)
     assert.equal(final.canvases, 1)
     assert.ok(final.sameRenderer && final.sameCanvas)
@@ -143,7 +176,16 @@ try {
       'No recapture during observation/actions',
     )
     assert.deepEqual(await page.evaluate(() => window.__carShowroomErrors), [])
-    report.runs.push({ variant, url: url.href, initial, final, floor, requests, shots })
+    report.runs.push({
+      variant,
+      url: url.href,
+      initial,
+      final,
+      floor,
+      requests,
+      shots,
+      reflectionChecks,
+    })
     await context.close()
     await browser.close()
     browser = undefined

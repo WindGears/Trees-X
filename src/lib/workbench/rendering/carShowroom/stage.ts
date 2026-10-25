@@ -24,6 +24,7 @@ import { ownShowroomNativeMaterials } from './nativeMaterials'
 import { loadShowroomAssets } from './assets'
 import { ownShowroomPanelBrightness } from './panelBrightness'
 import { loadBakedStudioProbe } from './bakedProbe'
+import { createCarFloorReflection } from './carFloorReflection'
 
 export function coldStudioRequested(options: ReventonStageOptions | undefined, search: string) {
   return (
@@ -86,6 +87,7 @@ export function createColdShowroomStage(
       fade: [] as ReturnType<typeof cutaway.snapshot>,
     }
   let full: Awaited<ReturnType<typeof createColdStudioProbe>> | undefined,
+    carReflection: ReturnType<typeof createCarFloorReflection> | undefined,
     assets: Awaited<ReturnType<typeof loadShowroomAssets>> | undefined,
     indirect: Awaited<ReturnType<typeof createColdStudioProbe>> | undefined,
     native: ReturnType<typeof ownShowroomNativeMaterials> | undefined,
@@ -143,6 +145,7 @@ export function createColdShowroomStage(
     setShowroomEnvironment(scene)
     setShowroomStatus(scene)
     panelBrightness.dispose()
+    carReflection?.dispose()
     native?.dispose()
     cutaway.dispose()
     room.dispose()
@@ -238,6 +241,16 @@ export function createColdShowroomStage(
           irradiance: indirect.texture,
           config,
         })
+        if (
+          bakedFloor &&
+          new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
+            'carFloorReflection',
+          ) === 'planar'
+        ) {
+          carReflection = createCarFloorReflection(room.floor, model)
+          scene.add(carReflection.mesh)
+          status.floorReflection = `${bakeKind}-room-probe+dynamic-car-planar`
+        }
         status.probe = {
           captures: full.snapshot.faces,
           resolution: full.snapshot.faceResolution,
@@ -252,6 +265,8 @@ export function createColdShowroomStage(
         }
         status.phase = 'ready'
       } catch (cause) {
+        carReflection?.dispose()
+        carReflection = undefined
         for (const light of additionalLights.splice(0)) {
           light.removeFromParent()
           light.dispose()
