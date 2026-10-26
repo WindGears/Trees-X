@@ -13,6 +13,7 @@ import { ownEnvironmentPmrem } from '../environmentPMREM'
 import type { CarShowroomConfig } from './config'
 import { bakedStudioRecords } from './bakedRecords'
 import { cyclesStudioRecords } from './cyclesRecords'
+import { cyclesStudioRecords as refinedCyclesStudioRecords } from './refinedCyclesRecords'
 import type { createColdStudioProbe } from './probe'
 
 /** Persisted raster capture or offline Cycles radiance, not a surface lightmap.
@@ -26,12 +27,17 @@ export async function loadBakedStudioProbe(
   kind: 'raster' | 'cycles' = 'raster',
 ): Promise<Awaited<ReturnType<typeof createColdStudioProbe>>> {
   signal.throwIfAborted()
-  const bundle = kind === 'cycles' ? cyclesStudioRecords : bakedStudioRecords
+  const bundle =
+    kind === 'cycles'
+      ? config.revision === 11
+        ? refinedCyclesStudioRecords
+        : cyclesStudioRecords
+      : bakedStudioRecords
   if (JSON.stringify(config) !== JSON.stringify(bundle.config))
     throw new Error('摄影棚配置已改变，需要重新生成静态反射资源')
   const record = bundle.records.find((item) => item.role === role)
   if (!record) throw new Error('摄影棚静态反射记录缺失')
-  const directory = kind === 'cycles' ? 'cycles-r10' : 'baked-r10'
+  const directory = kind === 'cycles' ? `cycles-r${bundle.config.revision}` : 'baked-r10'
   const response = await fetch('/studio/cold-studio/' + directory + '/' + record.file, {
     signal,
     mode: 'same-origin',

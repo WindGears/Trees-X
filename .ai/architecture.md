@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 摄影棚与车漆候选隔离（2026-10-26）
+
+`resolveColdStudioConfig` 在内部选择 r10/r11，灯光工厂、建筑、离线导出与
+烘焙加载共用同一配置；完整配置、HDR 摘要及灯方向都核对后再挂载。
+石墨漆独立门控到已核验汽车，`studioMaterials` 唯一恢复原值；候选复原色
+在 stage attach 成功后提交，失败时不污染 setFinish 基线。无数据库变更。
+新图继续使用既有 renderer/时钟/贴图所有权。见[本批记录](reventon-refined-showroom-validation.md)。
+
 ## 汽车车漆语义兼容（2026-10-26）
 
 reventonFinishBindings在已核验包、精确旧15023列表及四个20159原材质来源均成立时，返回独立绑定列表；不修改配置。bindReventon将列表交给通用适配器，并用于本地试色与studio校准。解析不分配Three资源；释放职责保持。自定义包/绑定与缺失来源不猜测。见[绑定证据](reventon-paint-binding-validation.md)。

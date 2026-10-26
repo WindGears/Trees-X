@@ -47,7 +47,7 @@ try {
       if (message.type() === 'warning') report.warnings.push(message.text())
     })
     page.on('request', (request) => {
-      if (/\/(baked|cycles)-r10\//.test(request.url())) requests.push(request.url())
+      if (/\/(baked|cycles)-r(10|11)\//.test(request.url())) requests.push(request.url())
     })
     page.on('requestfailed', (request) =>
       report.errors.push({ url: request.url(), failure: request.failure() }),
@@ -58,6 +58,10 @@ try {
     if (['cycles-local', 'cycles-planar'].includes(variant))
       url.searchParams.set('carFloorLight', 'local')
     if (variant === 'cycles-planar') url.searchParams.set('carFloorReflection', 'planar')
+    if (process.env.TREES_STUDIO_FINISH === 'refined')
+      url.searchParams.set('carStudioFinish', 'refined')
+    if (process.env.TREES_STUDIO_PAINT === 'graphite')
+      url.searchParams.set('carStudioPaint', 'graphite')
     await page.goto(url.href, { waitUntil: 'domcontentloaded' })
     console.log(`Opened ${variant}`)
     await expect
@@ -111,7 +115,10 @@ try {
     })
     assert.equal(floor.baked, variant !== 'baseline')
     if (variant.startsWith('cycles')) {
-      assert.equal(initial.showroom.probe.source, 'cycles-r10')
+      assert.equal(
+        initial.showroom.probe.source,
+        process.env.TREES_STUDIO_FINISH === 'refined' ? 'cycles-r11' : 'cycles-r10',
+      )
       assert.equal(
         await page.evaluate(
           () => window.__demo.scene.scene.value.environment.image.data.constructor.name,

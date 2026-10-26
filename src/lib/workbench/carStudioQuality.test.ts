@@ -1,6 +1,10 @@
 import { Group, Scene } from 'three'
 import { describe, expect, it } from 'vitest'
-import { isCarStudioScene, resolveCarStudioQuality } from './carStudioQuality'
+import {
+  isCarStudioScene,
+  resolveCarStudioQuality,
+  resolveCarStudioPaint,
+} from './carStudioQuality'
 import { reventonOriginalBundle, reventonRuntimeBundle } from './reventonCandidate'
 import type { GlbSource } from './types'
 
@@ -14,6 +18,21 @@ const source: GlbSource = {
 }
 
 describe('car-only studio capability', () => {
+  it('keeps calibrated graphite behind audited showroom and explicit paint selection', () => {
+    const search = '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite'
+    expect(resolveCarStudioPaint(source, search)).toBe('graphite')
+    expect(resolveCarStudioPaint(source, '?carStudioPaint=graphite')).toBe('source')
+    expect(resolveCarStudioPaint(source, '?carQuality=studio&carStudioPaint=graphite')).toBe(
+      'source',
+    )
+    expect(resolveCarStudioPaint(source, search.replace('graphite', 'custom'))).toBe('source')
+    expect(
+      resolveCarStudioPaint(
+        { ...source, bundle: { ...source.bundle, sha256: 'f'.repeat(64) } },
+        search,
+      ),
+    ).toBe('source')
+  })
   it('requires the explicit option and the exact audited source reference', () => {
     expect(resolveCarStudioQuality(source, '?carQuality=studio')).toBe('studio')
     expect(resolveCarStudioQuality(source, '')).toBeUndefined()

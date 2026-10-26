@@ -29,6 +29,7 @@ export interface CarShowroomConfig {
     readonly width: number
     readonly depth: number
     readonly tileSize: number
+    readonly normalStrength?: number
   }
   readonly wallColor: string
   readonly ceilingColor: string
@@ -103,3 +104,37 @@ export const coldStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConf
     },
   },
 })
+
+/** A separately captured art-direction candidate. Never pair it with r10 radiance. */
+export const refinedColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...coldStudioConfig,
+  revision: 11,
+  floor: { ...coldStudioConfig.floor, color: '#999999', roughness: 1, normalStrength: 0.1 },
+  wallColor: '#48494b',
+  lights: {
+    key: { ...coldStudioConfig.lights.key, width: 5.8, height: 1.7, intensity: 5.8, radiance: 5.8 },
+    strip: {
+      ...coldStudioConfig.lights.strip,
+      width: 5.8,
+      height: 1.7,
+      intensity: 4.6,
+      radiance: 4.6,
+    },
+    rim: { ...coldStudioConfig.lights.rim, width: 3, intensity: 5.2, radiance: 5.2 },
+    fill: {
+      ...coldStudioConfig.lights.fill,
+      width: 1.4,
+      height: 3,
+      intensity: 3.2,
+      radiance: 3.2,
+      position: [6.86, 2.35, -3.4],
+      target: [0, 2.35, -3.4],
+    },
+  },
+})
+
+export function resolveColdStudioConfig(search: string) {
+  return new URLSearchParams(search).get('carStudioFinish') === 'refined'
+    ? refinedColdStudioConfig
+    : coldStudioConfig
+}

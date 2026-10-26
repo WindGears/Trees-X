@@ -3,6 +3,43 @@ import { describe, expect, it, vi } from 'vitest'
 import { applyCarStudioMaterials } from './carStudioMaterials'
 
 describe('reversible car studio calibration', () => {
+  it('calibrates only verified body paint in the explicit candidate and restores color identity', () => {
+    const model = new Group(),
+      geometry = new BoxGeometry(),
+      texture = new Texture()
+    const materials = ['20159', '15023', '20159'].map((id, i) => {
+      const material = new MeshPhysicalMaterial({ color: '#141414', map: texture, roughness: 0.24 })
+      material.name = `Reventon / ${i === 2 ? 'door_1' : 'fixed'} / ${id}`
+      if (i !== 2) material.userData.source_vpb_material_id = Number(id)
+      model.add(new Mesh(geometry, material))
+      return material
+    })
+    const colors = materials.map((m) => m.color),
+      baseline = materials.map((m) => m.color.clone())
+    const owner = applyCarStudioMaterials(
+      model,
+      [materials[0]!.name, materials[2]!.name],
+      'graphite',
+    )
+    expect(materials[0]!.color.getHexString()).toBe('484b4f')
+    expect(materials[0]!.roughness).toBe(0.3)
+    expect(materials[0]!.clearcoatRoughness).toBe(0.13)
+    expect(materials[0]!.metalness).toBe(0)
+    expect(materials[1]!.color).toEqual(baseline[1])
+    expect(materials[1]!.clearcoat).toBe(0)
+    expect(materials[2]!.color).toEqual(baseline[2])
+    materials[0]!.color.set('#eeeeee')
+    owner.dispose()
+    owner.dispose()
+    materials.forEach((m, i) => {
+      expect(m.color).toBe(colors[i])
+      expect(m.color).toEqual(baseline[i])
+      expect(m.map).toBe(texture)
+      m.dispose()
+    })
+    geometry.dispose()
+    texture.dispose()
+  })
   it('uses source semantic IDs without modifying maps, physical specular or geometry', () => {
     const model = new Group(),
       geometry = new BoxGeometry(),

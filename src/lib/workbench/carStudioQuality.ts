@@ -3,6 +3,16 @@ import { isAuditedReventonSource } from './reventonCandidate'
 import type { GlbSource } from './types'
 
 export type CarStudioQuality = 'studio'
+export type CarStudioPaint = 'source' | 'graphite'
+
+export function resolveCarStudioPaint(source: GlbSource, search: string): CarStudioPaint {
+  const query = new URLSearchParams(search)
+  return resolveCarStudioQuality(source, search) &&
+    query.get('carShowroom') === 'cold-studio' &&
+    query.get('carStudioPaint') === 'graphite'
+    ? 'graphite'
+    : 'source'
+}
 
 /** Local renderer option, never a presentation/database field. The adapter also
  * requires an actual WebGPU renderer before applying or publishing this flag. */

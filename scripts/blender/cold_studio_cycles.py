@@ -107,7 +107,12 @@ for item in data['meshes']:
                 links.new(tex.outputs['Color'], multiply.inputs[1])
                 links.new(multiply.outputs[0], bsdf.inputs['Base Color'])
             elif channel == 'roughness':
-                links.new(tex.outputs['Color'], bsdf.inputs['Roughness'])
+                multiply = nodes.new('ShaderNodeMath')
+                multiply.operation = 'MULTIPLY'
+                multiply.use_clamp = True
+                multiply.inputs[1].default_value = settings['roughness']
+                links.new(tex.outputs['Color'], multiply.inputs[0])
+                links.new(multiply.outputs[0], bsdf.inputs['Roughness'])
             else:
                 normal = nodes.new('ShaderNodeNormalMap')
                 normal.inputs['Strength'].default_value = settings['normalScale'][0]

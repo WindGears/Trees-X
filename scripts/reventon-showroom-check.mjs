@@ -321,6 +321,10 @@ try {
       candidate.searchParams.set('carFloor', 'cycles')
       candidate.searchParams.set('carFloorLight', 'local')
       candidate.searchParams.set('carFloorReflection', 'planar')
+      if (process.env.TREES_STUDIO_FINISH === 'refined')
+        candidate.searchParams.set('carStudioFinish', 'refined')
+      if (process.env.TREES_STUDIO_PAINT === 'graphite')
+        candidate.searchParams.set('carStudioPaint', 'graphite')
       activeRun.url = candidate.href
     }
     report.runs.push(activeRun)

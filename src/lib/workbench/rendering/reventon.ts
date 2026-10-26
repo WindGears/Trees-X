@@ -5,13 +5,14 @@ import { createGpuReventonShadow } from './reventonShadow'
 import { prepareGpuReventonMaterials } from './reventonGlass'
 import { createCarKeyAreaLight } from './realtime/carShadow/light'
 import { coldStudioRequested, createColdShowroomStage } from './carShowroom/stage'
-import { coldStudioConfig } from './carShowroom/config'
+import { resolveColdStudioConfig } from './carShowroom/config'
 import { createShowroomAreaLight } from './carShowroom/lights'
 
 /** Dynamically imported only for a car on the existing WebGPU renderer. */
 export const reventonGpuDependencies: ReventonGpuDependencies = {
   createStage: (renderer, scene, model, options) => {
     const showroom = coldStudioRequested(options, location.search) && Boolean(options?.camera)
+    const showroomConfig = resolveColdStudioConfig(location.search)
     const base = createReventonStageWithShadow(
       scene,
       () => {
@@ -21,9 +22,8 @@ export const reventonGpuDependencies: ReventonGpuDependencies = {
       showroom
         ? {
             ...options,
-            createKeyLight: () => createShowroomAreaLight(renderer, coldStudioConfig.lights.key),
-            createStripLight: () =>
-              createShowroomAreaLight(renderer, coldStudioConfig.lights.strip),
+            createKeyLight: () => createShowroomAreaLight(renderer, showroomConfig.lights.key),
+            createStripLight: () => createShowroomAreaLight(renderer, showroomConfig.lights.strip),
           }
         : options?.quality === 'studio' &&
             new URLSearchParams(location.search).get('carKeyShadow') === '1'

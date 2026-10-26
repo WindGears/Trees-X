@@ -221,6 +221,15 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 冷白棚 r11 候选（2026-10-26）
+
+显式 `carStudioFinish=refined`：5.8×1.7 中性白顶灯、1.4×3 竖向侧灯、
+平滑深灰墙 #48494b；石材 tint #999999，roughness 图乘数 1，微法线 0.1。
+与该配置一致的 Cycles 房间源独立保存。`carStudioPaint=graphite` 将已核验
+20159 车漆校准为 #484b4f、roughness 0.3、clearcoat 0.65、coat roughness 0.13。
+这些是候选艺术参数，普通入口不替换；最终观感仍待收束，详见
+[候选验收](.ai/reventon-refined-showroom-validation.md)。
+
 ## 汽车冷白实体摄影棚候选（2026-10-22）
 
 2026-10-26 修正已核验汽车的旧配色绑定：外观操作作用于车漆20159的四组表面，黑色塑料15023保持原色与粗糙度，不再附加车身清漆。恢复仍采用原模型颜色；这项修复不代表概念图灰银色或摄影棚画质已通过。见[实机绑定验收](.ai/reventon-paint-binding-validation.md)。

@@ -110,6 +110,54 @@ function localProgress(track: MotionTrack, progress: number) {
 }
 
 describe('Reventon registered workbench adapter', () => {
+  it.each([false, true])(
+    'commits graphite reset color only after successful setup (failure=%s)',
+    (fail) => {
+      vi.stubGlobal('location', {
+        search: '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite',
+      })
+      const f = fixture(),
+        paint = new MeshPhysicalMaterial({ color: '#101010' }),
+        native = paint.color.clone(),
+        stage = {
+          render: vi.fn(),
+          markDirty: vi.fn(),
+          dispose: vi.fn(),
+          prepare: vi.fn(async () => {}),
+        }
+      paint.name = 'Reventon / fixed / 20159'
+      paint.userData.source_vpb_material_id = 20159
+      f.source.finishMaterials = [paint.name]
+      f.model.add(new Mesh(f.geometry, paint))
+      const adapter = bindReventon(f.product, f.source, f.model, f.release, {
+        prepareMaterials: () => ({ sync: vi.fn(), dispose: vi.fn() }),
+        createStage: () => {
+          expect(paint.color.getHexString()).toBe('484b4f')
+          if (fail) throw new Error('candidate setup failed')
+          return stage
+        },
+      })
+      try {
+        const renderer = {
+          isWebGPURenderer: true,
+          getMaxAnisotropy: () => 16,
+        } as unknown as WebGPURenderer
+        if (fail)
+          expect(() => adapter.attach?.(new Scene(), renderer)).toThrow('candidate setup failed')
+        else adapter.attach?.(new Scene(), renderer)
+        adapter.setFinish('#eeeeee')
+        adapter.setFinish(f.product.presentation.finishes[0]!.color)
+        expect(paint.color.getHexString()).toBe(fail ? native.getHexString() : '484b4f')
+        adapter.dispose()
+        expect(paint.color).toEqual(native)
+      } finally {
+        adapter.dispose()
+        paint.dispose()
+        vi.unstubAllGlobals()
+      }
+    },
+  )
+
   it.each([false, true])('owns studio look restoration after GPU attach (failure=%s)', (fail) => {
     vi.stubGlobal('location', { search: '?carQuality=studio' })
     const f = fixture(),

@@ -14,7 +14,7 @@ import type { WebGPURenderer } from 'three/webgpu'
 import { isAuditedReventonSource } from '../../reventonCandidate'
 import type { ReventonStage, ReventonStageOptions } from '../../reventonStage'
 import { reventonMotionEnvelope } from '../realtime/productProfile'
-import { coldStudioConfig } from './config'
+import { resolveColdStudioConfig } from './config'
 import { createColdStudioGeometry } from './geometry'
 import { createShowroomCutaway } from './fade'
 import { configureShowroomLight, createShowroomAreaLight } from './lights'
@@ -44,7 +44,7 @@ export function createColdShowroomStage(
   camera: Camera,
   base: ReventonStage,
 ): ReventonStage {
-  const config = coldStudioConfig,
+  const config = resolveColdStudioConfig(typeof location === 'undefined' ? '' : location.search),
     floorMode = new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
       'carFloor',
     ),
@@ -259,7 +259,7 @@ export function createColdShowroomStage(
           totalFaceDraws: bakedFloor ? 0 : 12,
           source: bakedFloor
             ? floorMode === 'cycles'
-              ? 'cycles-r10'
+              ? `cycles-r${config.revision}`
               : 'baked-r10'
             : 'runtime-capture',
         }

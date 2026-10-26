@@ -1,10 +1,11 @@
 import { build } from 'rolldown'
-import { mkdir, writeFile, readFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 
-const output = 'artifacts/car-showroom/cycles-r10'
+const revision = process.argv.includes('--refined') ? 11 : 10
+const output = `artifacts/car-showroom/cycles-r${revision}`
 await mkdir(output, { recursive: true })
 await build({
   input: 'src/lib/workbench/rendering/carShowroom/geometry.ts',
@@ -12,7 +13,13 @@ await build({
   output: { file: `${output}/geometry.mjs`, format: 'esm' },
 })
 const { createColdStudioGeometry } = await import(pathToFileURL(resolve(`${output}/geometry.mjs`)))
-const room = createColdStudioGeometry()
+await build({
+  input: 'src/lib/workbench/rendering/carShowroom/config.ts',
+  output: { file: `${output}/config.mjs`, format: 'esm' },
+})
+const configs = await import(pathToFileURL(resolve(`${output}/config.mjs`)))
+const config = revision === 11 ? configs.refinedColdStudioConfig : configs.coldStudioConfig
+const room = createColdStudioGeometry(config)
 const meshes = []
 room.root.traverse((object) => {
   if (!object.isMesh) return
@@ -37,11 +44,8 @@ room.root.traverse((object) => {
   geometry.dispose()
 })
 room.dispose()
-const manifest = JSON.parse(
-  await readFile('public/studio/cold-studio/baked-r10/manifest.json', 'utf8'),
-)
 const source = {
-  config: manifest.config,
+  config,
   meshes,
   textureDirectory: resolve('public/studio/cold-studio/concept-v2'),
 }

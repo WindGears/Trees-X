@@ -1,13 +1,19 @@
 import { Mesh, MeshPhysicalMaterial, type Color, type Group } from 'three'
+import type { CarStudioPaint } from './carStudioQuality'
 
 const velvet = new Set(['18501', '18581', '19691'])
 const leather = new Set(['18661', '19771'])
 const chrome = new Set(['16262', '18270', '18347'])
 
 /** VPB material IDs/names were checked against the original material records.
- * Keep maps, UVs, colors, physical IOR and specular branches unchanged. Values
+ * Keep maps, UVs, physical IOR and specular branches unchanged. Colors stay
+ * native unless the explicit graphite art-direction candidate is selected. Values
  * are a reversible studio look on loaded materials, not source asset edits. */
-export function applyCarStudioMaterials(model: Group, finishMaterials: readonly string[]) {
+export function applyCarStudioMaterials(
+  model: Group,
+  finishMaterials: readonly string[],
+  paintLook: CarStudioPaint = 'source',
+) {
   const finishes = new Set(finishMaterials),
     originals = new Map<
       MeshPhysicalMaterial,
@@ -19,6 +25,7 @@ export function applyCarStudioMaterials(model: Group, finishMaterials: readonly 
         sheen: number
         sheenRoughness: number
         sheenColor: Color
+        color: Color
       }
     >()
   let disposed = false
@@ -44,6 +51,7 @@ export function applyCarStudioMaterials(model: Group, finishMaterials: readonly 
         sheen: material.sheen,
         sheenRoughness: material.sheenRoughness,
         sheenColor: material.sheenColor.clone(),
+        color: material.color.clone(),
       })
       if (finish || paint) {
         // Satin graphite with a separate broad coat highlight, never a chrome
@@ -51,6 +59,19 @@ export function applyCarStudioMaterials(model: Group, finishMaterials: readonly 
         material.roughness = finish ? 0.34 : 0.24
         material.clearcoat = finish ? 0.42 : 0.65
         material.clearcoatRoughness = finish ? 0.18 : 0.13
+        if (
+          paintLook === 'graphite' &&
+          finish &&
+          paint &&
+          material.userData.source_vpb_material_id === 20159
+        ) {
+          // Artistic satin graphite, not a measured automotive paint or metallic
+          // conversion. Lift the diffuse base independently of the room exposure.
+          material.color.set('#484b4f')
+          material.roughness = 0.3
+          material.clearcoat = 0.65
+          material.clearcoatRoughness = 0.13
+        }
       } else if (glass) material.specularIntensity = 0.38
       else if (velvet.has(id)) {
         material.roughness = Math.max(material.roughness, 0.94)
@@ -71,9 +92,10 @@ export function applyCarStudioMaterials(model: Group, finishMaterials: readonly 
       if (disposed) return
       disposed = true
       for (const [material, original] of originals) {
-        const { sheenColor, ...scalars } = original
+        const { sheenColor, color, ...scalars } = original
         Object.assign(material, scalars)
         material.sheenColor.copy(sheenColor)
+        material.color.copy(color)
         material.needsUpdate = true
       }
       originals.clear()

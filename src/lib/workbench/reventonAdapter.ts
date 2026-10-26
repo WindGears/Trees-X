@@ -11,7 +11,7 @@ import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTy
 import type { WebGPURenderer } from 'three/webgpu'
 import type { ReventonStage } from './reventonStage'
 import type { ReventonStageOptions } from './reventonStage'
-import { resolveCarStudioQuality } from './carStudioQuality'
+import { resolveCarStudioPaint, resolveCarStudioQuality } from './carStudioQuality'
 import { applyCarStudioMaterials } from './carStudioMaterials'
 import { resolveReventonFinishBindings } from './reventonFinishBindings'
 
@@ -98,7 +98,9 @@ export function bindReventon(
             typeof location === 'undefined' ? '' : location.search,
           )
           if (quality) {
-            studioMaterials = applyCarStudioMaterials(model, finishMaterials)
+            const paintLook = resolveCarStudioPaint(source, location.search)
+            studioMaterials = applyCarStudioMaterials(model, finishMaterials, paintLook)
+            adapter.root.userData.carStudioPaint = paintLook
             adapter.root.userData.carStudioQuality = quality
           }
           gpuTextures = canonicalizeReventonTextures(model)
@@ -112,6 +114,10 @@ export function bindReventon(
             : quality
               ? gpu.createStage(renderer, scene, adapter.root, { quality })
               : gpu.createStage(renderer, scene, adapter.root)
+          // Commit the new original swatch only after successful attachment.
+          // Failed setup must leave both the material and its reset baseline native.
+          if (adapter.root.userData.carStudioPaint === 'graphite')
+            for (const [material, base] of finishes) base.copy(material.color)
         } catch (error) {
           gpuMaterials?.dispose()
           gpuMaterials = undefined
@@ -120,6 +126,7 @@ export function bindReventon(
           studioMaterials?.dispose()
           studioMaterials = undefined
           delete adapter.root.userData.carStudioQuality
+          delete adapter.root.userData.carStudioPaint
           throw error
         }
       } else studio = createReventonStage(renderer, scene, adapter.root)
@@ -177,6 +184,7 @@ export function bindReventon(
       studioMaterials?.dispose()
       studioMaterials = undefined
       delete adapter.root.userData.carStudioQuality
+      delete adapter.root.userData.carStudioPaint
       textures.clear()
       finishes.clear()
       emissive.clear()

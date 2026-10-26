@@ -3,43 +3,43 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FloatType, HalfFloatType, DataUtils, LinearSRGBColorSpace, Object3D } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import { loadBakedStudioProbe } from './bakedProbe'
-import { coldStudioConfig } from './config'
+import { coldStudioConfig, refinedColdStudioConfig } from './config'
 import { usesBakedFloorReflection } from './floorReflection'
 
 afterEach(() => vi.unstubAllGlobals())
 const renderer = {} as WebGPURenderer
 const signal = () => new AbortController().signal
 describe('persisted static room HDR', () => {
-  it('loads the Cycles HDR in half precision with all four emitter directions intact', async () => {
-    vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))
-    const probe = await loadBakedStudioProbe(
-      renderer,
-      coldStudioConfig,
-      'specular',
-      signal(),
-      'cycles',
-    )
-    expect(probe.texture.type).toBe(HalfFloatType)
-    const image = probe.texture.image
-    expect(image.data).toBeInstanceOf(Uint16Array)
-    if (!(image.data instanceof Uint16Array)) throw new Error('Expected half-float HDR data')
-    for (const light of Object.values(coldStudioConfig.lights)) {
-      const delta = light.position.map((v, i) => v - coldStudioConfig.capture.position[i]!)
-      const x = Math.floor((Math.atan2(delta[2]!, delta[0]!) / (2 * Math.PI) + 0.5) * image.width)
-      const y =
-        image.height -
-        1 -
-        Math.floor((0.5 - Math.asin(delta[1]! / Math.hypot(...delta)) / Math.PI) * image.height)
-      for (let channel = 0; channel < 3; channel++)
-        expect(
-          Math.abs(
-            DataUtils.fromHalfFloat(image.data[(y * image.width + x) * 4 + channel]!) -
-              light.radiance,
-          ),
-        ).toBeLessThan(0.05)
-    }
-    probe.dispose()
-  })
+  it.each([coldStudioConfig, refinedColdStudioConfig])(
+    'loads Cycles revision $revision with all four emitter directions intact',
+    async (config) => {
+      vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))
+      const probe = await loadBakedStudioProbe(renderer, config, 'specular', signal(), 'cycles')
+      expect(probe.texture.type).toBe(HalfFloatType)
+      const image = probe.texture.image
+      expect(image.data).toBeInstanceOf(Uint16Array)
+      if (!(image.data instanceof Uint16Array)) throw new Error('Expected half-float HDR data')
+      for (const light of Object.values(config.lights)) {
+        const delta = light.position.map((v, i) => v - config.capture.position[i]!)
+        const x = Math.floor((Math.atan2(delta[2]!, delta[0]!) / (2 * Math.PI) + 0.5) * image.width)
+        const y =
+          image.height -
+          1 -
+          Math.floor((0.5 - Math.asin(delta[1]! / Math.hypot(...delta)) / Math.PI) * image.height)
+        for (let channel = 0; channel < 3; channel++)
+          expect(
+            Math.abs(
+              DataUtils.fromHalfFloat(image.data[(y * image.width + x) * 4 + channel]!) -
+                light.radiance,
+            ),
+          ).toBeLessThan(0.05)
+      }
+      probe.dispose()
+    },
+    // Real 64MiB decompression and SHA checks under full-suite worker load.
+    // This is an asset integration check, not a performance acceptance target.
+    15000,
+  )
   it('loads the real lossless asset with matching linear HDR orientation and one owner', async () => {
     vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))
     const probe = await loadBakedStudioProbe(renderer, coldStudioConfig, 'indirect', signal())
@@ -60,6 +60,10 @@ describe('persisted static room HDR', () => {
     vi.stubGlobal('fetch', fetch)
     await expect(
       loadBakedStudioProbe(renderer, { ...coldStudioConfig, exposure: 2 }, 'indirect', signal()),
+    ).rejects.toThrow('配置已改变')
+    expect(fetch).not.toHaveBeenCalled()
+    await expect(
+      loadBakedStudioProbe(renderer, refinedColdStudioConfig, 'indirect', signal(), 'raster'),
     ).rejects.toThrow('配置已改变')
     expect(fetch).not.toHaveBeenCalled()
   })

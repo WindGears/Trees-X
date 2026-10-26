@@ -42,7 +42,10 @@ try {
     if (m.type() === 'error') report.errors.push(m.text())
   })
   await page.goto(
-    'http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar',
+    'http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar' +
+      (process.env.TREES_STUDIO_PAINT === 'graphite'
+        ? '&carStudioFinish=refined&carStudioPaint=graphite'
+        : ''),
   )
   await expect(page.getByRole('slider', { name: '灯板亮度 · 调试' })).toBeVisible({
     timeout: 240000,

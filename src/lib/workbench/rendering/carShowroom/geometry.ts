@@ -64,7 +64,10 @@ export function createColdStudioGeometry(config: CarShowroomConfig = coldStudioC
       color: config.floor.color,
       roughness: config.floor.roughness,
       metalness: config.floor.metalness,
-      normalScale: new Vector2(0.22, 0.22),
+      normalScale: new Vector2(
+        config.floor.normalStrength ?? 0.22,
+        config.floor.normalStrength ?? 0.22,
+      ),
       clearcoat: 0.03,
       clearcoatRoughness: 0.5,
       side: DoubleSide,

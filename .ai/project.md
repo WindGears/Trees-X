@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## 冷白棚 r11 与石墨漆候选（2026-10-26）
+
+`carStudioFinish=refined` 使用窄顶灯、竖向侧灯及匹配重烘焙的独立房间资源；
+`carStudioPaint=graphite` 仅校准核验车漆并维护正确复原范围。默认保持 r10。
+工程与画面证据见[候选记录](reventon-refined-showroom-validation.md)，摄影棚整体视觉仍未通过。
+
 ## 汽车车漆绑定纠正（2026-10-26）
 
 实际分色确认旧配置15023是黑色塑料，车漆是20159。适配器仅对已核验包、精确旧列表及完整原材质来源进行本地修正；试色/studio校准共用真实车漆绑定，不改数据库、自定义配置或模型。见[绑定验收](reventon-paint-binding-validation.md)。摄影棚画质仍未收束。
