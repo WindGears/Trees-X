@@ -1,5 +1,12 @@
 # 新版目标架构与当前实现
 
+## 汽车局部多采样（2026-10-27）
+
+`sceneInputs` 单独配置 beauty samples；surface 继续 0，不共享多采样深度。
+`prepare` 使用与 draw 相同的 sample count，`signalIdentity` 隔离候选图。
+原信号 owner 负责目标清理，不新增 renderer 或时钟。实际目标状态及
+局限见[抗锯齿记录](reventon-showroom-antialias-validation.md)。
+
 ## 摄影棚与车漆候选隔离（2026-10-26）
 
 `resolveColdStudioConfig` 在内部选择 r10/r11，灯光工厂、建筑、离线导出与

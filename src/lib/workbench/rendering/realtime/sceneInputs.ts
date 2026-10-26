@@ -66,6 +66,7 @@ export function createRealtimeSceneInputs(
   camera: PerspectiveCamera,
   motion: Node,
   keyShadow = false,
+  beautySamples: 0 | 4 = 0,
 ) {
   const surface = pass(scene, camera, { samples: 0 })
   surface.transparent = false
@@ -95,7 +96,9 @@ export function createRealtimeSceneInputs(
   surface.getTexture('motion').type = HalfFloatType
   surface.getTexture('motion').format = RGFormat
 
-  const beauty = pass(scene, camera, { samples: 0 })
+  // Geometry/lighting signals remain single-sample. Only final native beauty
+  // resolves subpixel coverage; do not average normals/depth across silhouettes.
+  const beauty = pass(scene, camera, { samples: beautySamples })
   beauty.setMRT(
     mrt({ output, correctionThroughput }).setBlendMode(
       'correctionThroughput',
@@ -196,7 +199,7 @@ export function createRealtimeSceneInputs(
         for (const input of scenePasses) {
           signal?.throwIfAborted()
           if (disposed) throw new Error('Scene inputs disposed during preparation')
-          input.renderTarget.samples = 0
+          input.renderTarget.samples = input === beauty ? beautySamples : 0
           input.renderTarget.texture.type = renderer.getOutputBufferType()
           if (renderer.reversedDepthBuffer && input.renderTarget.depthTexture)
             input.renderTarget.depthTexture.type = FloatType

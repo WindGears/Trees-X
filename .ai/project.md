@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## 摄影棚边缘抗锯齿候选（2026-10-27）
+
+已核验汽车 studio 的 `carAntialias=msaa` 增加 beauty 4× MSAA，surface
+保持单采样，预热与真实目标一致。七取景及后台短测通过，改善几何点状边缘；
+默认未切换，暗部与整体画质仍待收束。见[本批记录](reventon-showroom-antialias-validation.md)。
+
 ## 冷白棚 r11 与石墨漆候选（2026-10-26）
 
 `carStudioFinish=refined` 使用窄顶灯、竖向侧灯及匹配重烘焙的独立房间资源；

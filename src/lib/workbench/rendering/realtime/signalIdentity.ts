@@ -11,5 +11,6 @@ export function realtimeSignalIdentity(
   search = typeof location === 'undefined' ? '' : location.search,
 ) {
   if (profile.adapterId !== 'reventon-v1' || !isCarStudioScene(scene)) return profile.adapterId
-  return `reventon-v1:studio:${new URLSearchParams(search).get('carStudioReflections') === '1' ? 1 : 2}`
+  const query = new URLSearchParams(search)
+  return `reventon-v1:studio:${query.get('carStudioReflections') === '1' ? 1 : 2}${query.get('carAntialias') === 'msaa' ? ':msaa4' : ''}`
 }

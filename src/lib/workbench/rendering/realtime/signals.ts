@@ -41,7 +41,13 @@ export function createRealtimeSignals(
     profile?.adapterId === 'reventon-v1' &&
     isCarStudioScene(scene) &&
     new URLSearchParams(location.search).get('carKeyShadow') === '1'
-  const inputs = createRealtimeSceneInputs(scene, camera, motion, keyShadowRequested)
+  const beautySamples =
+    profile?.adapterId === 'reventon-v1' &&
+    isCarStudioScene(scene) &&
+    new URLSearchParams(location.search).get('carAntialias') === 'msaa'
+      ? 4
+      : 0
+  const inputs = createRealtimeSceneInputs(scene, camera, motion, keyShadowRequested, beautySamples)
   const keyShadow = createCarKeyShadow(renderer, scene, camera, inputs, keyShadowRequested)
   const carOptimization =
     profile?.adapterId === 'reventon-v1' &&
@@ -294,7 +300,13 @@ export function createRealtimeSignals(
       ssgi: ssgiEnabled,
       denoise: denoiseEnabled,
       showroomBloom: Boolean(showroomBloom),
-      ...(studio ? { reflectionRays: reflection.snapshot() } : {}),
+      ...(studio
+        ? {
+            reflectionRays: reflection.snapshot(),
+            beautySamples: inputs.beauty.renderTarget.samples,
+            surfaceSamples: inputs.surface.renderTarget.samples,
+          }
+        : {}),
     }),
     sampling: () => reflectionResolve?.snapshot() ?? null,
     history: () => reflectionResolve?.historySnapshot() ?? null,

@@ -223,6 +223,11 @@ components:
 
 ## 冷白棚 r11 候选（2026-10-26）
 
+2026-10-27：显式 `carAntialias=msaa` 在既有候选中对 beauty 使用 4× 多采样，
+改善墙板缝、地砖缝和车身轮廓的点状边缘。保持 surface 单采样与最终 SMAA，
+不扩大反射模糊。默认未切换；暗部和整体空间观感仍待验收，详见
+[抗锯齿记录](.ai/reventon-showroom-antialias-validation.md)。
+
 显式 `carStudioFinish=refined`：5.8×1.7 中性白顶灯、1.4×3 竖向侧灯、
 平滑深灰墙 #48494b；石材 tint #999999，roughness 图乘数 1，微法线 0.1。
 与该配置一致的 Cycles 房间源独立保存。`carStudioPaint=graphite` 将已核验

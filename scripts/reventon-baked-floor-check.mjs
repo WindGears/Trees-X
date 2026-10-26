@@ -62,6 +62,7 @@ try {
       url.searchParams.set('carStudioFinish', 'refined')
     if (process.env.TREES_STUDIO_PAINT === 'graphite')
       url.searchParams.set('carStudioPaint', 'graphite')
+    if (process.env.TREES_CAR_MSAA === '1') url.searchParams.set('carAntialias', 'msaa')
     await page.goto(url.href, { waitUntil: 'domcontentloaded' })
     console.log(`Opened ${variant}`)
     await expect
@@ -102,6 +103,10 @@ try {
       )
       .toBe(true)
     const initial = await page.evaluate(showroomState)
+    if (process.env.TREES_CAR_MSAA === '1') {
+      assert.equal(initial.lighting.signals.beautySamples, 4)
+      assert.equal(initial.lighting.signals.surfaceSamples, 0)
+    }
     assert.equal(initial.showroom.probe.totalFaceDraws, variant === 'baseline' ? 12 : 0)
     assert.equal(requests.length, variant === 'baseline' ? 0 : 2)
     const floor = await page.evaluate(() => {

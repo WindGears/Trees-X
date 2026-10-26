@@ -71,6 +71,25 @@ function preparingRenderer() {
 }
 
 describe('opaque surface and native transparent beauty inputs', () => {
+  it('prewarms the same multisample beauty target while keeping geometry signals unaveraged', async () => {
+    const f = preparingRenderer(),
+      inputs = createRealtimeSceneInputs(new Scene(), new PerspectiveCamera(), vec2(0), false, 4),
+      counts: number[] = []
+    f.renderer.compileAsync.mockImplementation(async () => {
+      counts.push(f.renderer.getRenderTarget()!.samples)
+    })
+    try {
+      await inputs.prepare(f.gpu)
+      expect(counts).toEqual([0, 4])
+      expect(inputs.surface.renderTarget.depthTexture).not.toBe(
+        inputs.beauty.renderTarget.depthTexture,
+      )
+      expect(f.renderer.getRenderTarget()).toBe(f.retained)
+    } finally {
+      inputs.dispose()
+    }
+  })
+
   it('resizes both shared scene targets before dependants and leaves lazy pass sizing allocation-free', () => {
     const inputs = createRealtimeSceneInputs(new Scene(), new PerspectiveCamera(), vec2(0)),
       depth = inputs.depth,
