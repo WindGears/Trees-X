@@ -1,5 +1,9 @@
 # 新版目标架构与当前实现
 
+## 汽车车漆语义兼容（2026-10-26）
+
+reventonFinishBindings在已核验包、精确旧15023列表及四个20159原材质来源均成立时，返回独立绑定列表；不修改配置。bindReventon将列表交给通用适配器，并用于本地试色与studio校准。解析不分配Three资源；释放职责保持。自定义包/绑定与缺失来源不猜测。见[绑定证据](reventon-paint-binding-validation.md)。
+
 ## 汽车地面反射所有权（2026-10-26）
 
 `carShowroom/carFloorReflection.ts` 拥有石板geometry副本、Node合成材质及Reflector目标，借用汽车和唯一renderer。stage准备后挂载，先于房间/模型清理。复用透明product-only捕获和r185非对称投影桥接，不进入DDGI代理，不增加时钟。近似和实机证据见[本批验收](reventon-floor-reflection-validation.md)。

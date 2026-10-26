@@ -13,6 +13,7 @@ import type { ReventonStage } from './reventonStage'
 import type { ReventonStageOptions } from './reventonStage'
 import { resolveCarStudioQuality } from './carStudioQuality'
 import { applyCarStudioMaterials } from './carStudioMaterials'
+import { resolveReventonFinishBindings } from './reventonFinishBindings'
 
 export interface ReventonGpuDependencies {
   createStage(
@@ -32,7 +33,13 @@ export function bindReventon(
   release: () => void,
   gpu?: ReventonGpuDependencies,
 ): SceneAdapter {
-  const adapter = bindGlb(product, source, model, release)
+  const finishMaterials = resolveReventonFinishBindings(source, model)
+  const adapter = bindGlb(
+    product,
+    { ...source, finishMaterials: [...finishMaterials] },
+    model,
+    release,
+  )
   prepareReventonMaterials(model)
   prepareReventonSurfaces(model)
   const finishes = new Map<MeshStandardMaterial, Color>()
@@ -55,8 +62,7 @@ export function bindReventon(
     for (const material of materials) {
       for (const value of Object.values(material)) if (value instanceof Texture) textures.add(value)
       if (!(material instanceof MeshStandardMaterial)) continue
-      if (source.finishMaterials.includes(material.name))
-        finishes.set(material, material.color.clone())
+      if (finishMaterials.includes(material.name)) finishes.set(material, material.color.clone())
       emissive.set(material, {
         color: material.emissive.clone(),
         intensity: material.emissiveIntensity,
@@ -65,6 +71,10 @@ export function bindReventon(
   })
   adapter.root.userData.adapter = 'reventon-v1'
   adapter.root.userData.sourceObjects = sourceObjects
+  adapter.root.userData.finishBinding = {
+    corrected: finishMaterials !== source.finishMaterials,
+    materials: [...finishMaterials],
+  }
   let studio: ReturnType<typeof createReventonStage> | undefined
   let gpuMaterials: ReturnType<ReventonGpuDependencies['prepareMaterials']> | undefined
   let gpuTextures: ReturnType<typeof canonicalizeReventonTextures> | undefined
@@ -88,7 +98,7 @@ export function bindReventon(
             typeof location === 'undefined' ? '' : location.search,
           )
           if (quality) {
-            studioMaterials = applyCarStudioMaterials(model, source.finishMaterials)
+            studioMaterials = applyCarStudioMaterials(model, finishMaterials)
             adapter.root.userData.carStudioQuality = quality
           }
           gpuTextures = canonicalizeReventonTextures(model)

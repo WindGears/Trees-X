@@ -263,7 +263,7 @@ const product = {
       },
       transform: { position: [0, 0, 0], rotation: [0, 0, 0], scale: 1 },
       finishMaterials: glb.materials
-        .filter((material) => /\/ 15023$/.test(material.name))
+        .filter((material) => /\/ 20159$/.test(material.name))
         .map((material) => material.name),
       explode: [],
     },
@@ -382,8 +382,8 @@ const product = {
     ],
   },
 }
-if (product.presentation.source.finishMaterials.length !== 8)
-  throw new Error('Expected exactly the eight original 15023 surface bindings')
+if (product.presentation.source.finishMaterials.length !== 4)
+  throw new Error('Expected exactly the four original 20159 paint bindings')
 await mkdir('server/src/main/resources/presentations', { recursive: true })
 await writeFile(resolve(directory, 'workbench-manifest.json'), manifestText)
 const configPath = 'server/src/main/resources/presentations/reventon-workbench-v1.json'
