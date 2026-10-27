@@ -328,6 +328,8 @@ try {
       if (process.env.TREES_CAR_MSAA === '1') candidate.searchParams.set('carAntialias', 'msaa')
       if (process.env.TREES_STUDIO_TRIM === 'satin')
         candidate.searchParams.set('carStudioTrim', 'satin')
+      if (process.env.TREES_CABIN_LIGHT === 'local')
+        candidate.searchParams.set('carCabinLight', 'local')
       activeRun.url = candidate.href
     }
     report.runs.push(activeRun)

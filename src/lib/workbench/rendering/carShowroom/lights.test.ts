@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Mesh, RectAreaLight } from 'three'
+import { Mesh, MeshPhysicalMaterial, RectAreaLight } from 'three'
 import {
   LightsNode,
   PhysicalLightingModel,
@@ -42,7 +42,7 @@ function inputs(): Parameters<PhysicalLightingModel['directRectArea']>[0] {
 }
 
 describe('same-room visible panels and diffuse-only area lights', () => {
-  it.each(['wall', 'floor', 'car', 'floor-local'])(
+  it.each(['wall', 'floor', 'car', 'floor-local', 'cabin'])(
     'routes %s specular consistently with its environment source',
     (receiver) => {
       const f = fixture(),
@@ -56,14 +56,24 @@ describe('same-room visible panels and diffuse-only area lights', () => {
         object = new Mesh(),
         native = vi.fn<PhysicalLightingModel['directRectArea']>()
       object.userData = {
-        carShowroom: receiver !== 'car',
+        carShowroom: receiver !== 'car' && receiver !== 'cabin',
         showroomId: receiver === 'floor-local' ? 'floor' : receiver,
         bakedFloorReflection: receiver === 'floor-local',
         bakedFloorLocalLight: receiver === 'floor-local',
       }
+      if (receiver === 'cabin') {
+        const material = new MeshPhysicalMaterial()
+        material.name = 'Reventon / fixed / 18661'
+        material.userData.source_vpb_material_id = 18661
+        for (const old of Array.isArray(object.material) ? object.material : [object.material])
+          old.dispose()
+        object.material = material
+        object.userData.carStudioCabinLighting = 'local'
+      }
       model.directRectArea = native
       const builder = {
         object,
+        material: object.material,
         context: { lightingModel: model, reflectedLight: input.reflectedLight },
         lightsNode: new LightsNode(),
       } as unknown as NodeBuilder
@@ -72,7 +82,7 @@ describe('same-room visible panels and diffuse-only area lights', () => {
         node.setup(builder)
         const actual = native.mock.calls[0]![0].reflectedLight.directSpecular
         expect(actual === input.reflectedLight.directSpecular).toBe(
-          receiver === 'wall' || receiver === 'floor-local',
+          receiver === 'wall' || receiver === 'floor-local' || receiver === 'cabin',
         )
         expect(model.directRectArea).toBe(native)
       } finally {

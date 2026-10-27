@@ -8,6 +8,38 @@ import { setShowroomEnvironment } from './binding'
 import { bindShowroomMaterials } from './materialBinding'
 
 describe('cold-showroom native material ownership', () => {
+  it('excludes emitter radiance only on locally lit cabin leather and restores its hook', () => {
+    const scene = new Group(),
+      root = new Group(),
+      geometry = new BoxGeometry(),
+      leather = new MeshPhysicalMaterial(),
+      paint = new MeshPhysicalMaterial(),
+      full = new Texture(),
+      indirect = new Texture()
+    leather.name = 'Reventon / fixed / 18661'
+    leather.userData.source_vpb_material_id = 18661
+    root.userData.carStudioCabinLighting = 'local'
+    const cabin = new Mesh(geometry, leather),
+      body = new Mesh(geometry, paint)
+    root.add(cabin, body)
+    scene.add(root)
+    setShowroomEnvironment(scene, { texture: full, irradiance: indirect, config: coldStudioConfig })
+    const owner = createRealtimeMaterials(scene)
+    const cabinRuntime = cabin.material as unknown as MeshStandardNodeMaterial,
+      bodyRuntime = body.material as unknown as MeshStandardNodeMaterial
+    expect(Reflect.get(cabinRuntime.envNode!, 'value')).toBe(indirect)
+    expect(Reflect.get(bodyRuntime.envNode!, 'value')).toBe(full)
+    expect(cabinRuntime.envMap).toBeNull()
+    owner.dispose()
+    expect(cabin.material).toBe(leather)
+    expect(leather.envMap).toBeNull()
+    setShowroomEnvironment(scene)
+    geometry.dispose()
+    leather.dispose()
+    paint.dispose()
+    full.dispose()
+    indirect.dispose()
+  })
   it('keeps supported opaque and custom Node branches, converts unsupported source branches once and borrows maps', () => {
     const root = new Group(),
       geometry = new BoxGeometry(),

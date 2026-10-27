@@ -18,9 +18,9 @@ export function bindShowroomMaterials(scene: Object3D) {
         restores.push(
           installColdStudioProjection(
             material,
-            // Architectural receivers use spatial LTC highlights instead of
-            // the central probe's emitter image. Keep only bounced radiance.
-            usesLocalAreaSpecular(object) ? binding.irradiance : binding.texture,
+            // Architecture and opted-in cabin leather use spatial LTC highlights
+            // instead of the central probe's emitter image. Retain bounced radiance.
+            usesLocalAreaSpecular(object, material) ? binding.irradiance : binding.texture,
             binding.config,
             binding.irradiance,
             // The capture boundary is not an interior receiver. Reprojecting

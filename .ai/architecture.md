@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 座舱局部高光候选（2026-10-27）
+
+`carShowroom/receiver` 按汽车 owner 标记、材质来源 ID、名称和透明性统一判定
+四处皮革的局部 LTC 支路。`lights` 恢复它们原生面积光镜面；`materialBinding`
+改用已有去灯板环境且保留室内盒投影；`realtime/materials` 仅清零其镜面捕获，
+漫反射和 DDGI 通道不变。adapter 精确门控、失败/卸载清标记；不新增资源所有者
+或渲染时钟。效果与近似边界见[验收记录](reventon-cabin-light-validation.md)。
+
 ## 汽车局部多采样（2026-10-27）
 
 `sceneInputs` 单独配置 beauty samples；surface 继续 0，不共享多采样深度。

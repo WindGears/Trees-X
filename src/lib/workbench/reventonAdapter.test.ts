@@ -6,6 +6,7 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   MeshStandardMaterial,
+  PerspectiveCamera,
   Quaternion,
   Scene,
   Texture,
@@ -114,7 +115,8 @@ describe('Reventon registered workbench adapter', () => {
     'commits graphite reset color only after successful setup (failure=%s)',
     (fail) => {
       vi.stubGlobal('location', {
-        search: '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite',
+        search:
+          '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite&carCabinLight=local',
       })
       const f = fixture(),
         paint = new MeshPhysicalMaterial({ color: '#101010' }),
@@ -131,8 +133,9 @@ describe('Reventon registered workbench adapter', () => {
       f.model.add(new Mesh(f.geometry, paint))
       const adapter = bindReventon(f.product, f.source, f.model, f.release, {
         prepareMaterials: () => ({ sync: vi.fn(), dispose: vi.fn() }),
-        createStage: () => {
+        createStage: (_renderer, _scene, root) => {
           expect(paint.color.getHexString()).toBe('484b4f')
+          expect(root.userData.carStudioCabinLighting).toBe('local')
           if (fail) throw new Error('candidate setup failed')
           return stage
         },
@@ -143,12 +146,16 @@ describe('Reventon registered workbench adapter', () => {
           getMaxAnisotropy: () => 16,
         } as unknown as WebGPURenderer
         if (fail)
-          expect(() => adapter.attach?.(new Scene(), renderer)).toThrow('candidate setup failed')
-        else adapter.attach?.(new Scene(), renderer)
+          expect(() => adapter.attach?.(new Scene(), renderer, new PerspectiveCamera())).toThrow(
+            'candidate setup failed',
+          )
+        else adapter.attach?.(new Scene(), renderer, new PerspectiveCamera())
+        expect(adapter.root.userData.carStudioCabinLighting).toBe(fail ? undefined : 'local')
         adapter.setFinish('#eeeeee')
         adapter.setFinish(f.product.presentation.finishes[0]!.color)
         expect(paint.color.getHexString()).toBe(fail ? native.getHexString() : '484b4f')
         adapter.dispose()
+        expect(adapter.root.userData.carStudioCabinLighting).toBeUndefined()
         expect(paint.color).toEqual(native)
       } finally {
         adapter.dispose()

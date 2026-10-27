@@ -27,6 +27,7 @@ import {
 } from 'three/tsl'
 import { bindShowroomMaterials } from '../carShowroom/materialBinding'
 import { usesBakedFloorReflection } from '../carShowroom/floorReflection'
+import { usesCabinAreaSpecular } from '../carShowroom/receiver'
 
 type PbrSource = MeshStandardMaterial
 type SignalContext = {
@@ -129,6 +130,9 @@ class RealtimePhysicalMaterial extends MeshPhysicalNodeMaterial {
 export const specularCaptureNode = Fn((builder: NodeBuilder) =>
   builder.material instanceof RealtimePhysicalMaterial &&
   !usesBakedFloorReflection(builder.object) &&
+  // Local LTC already supplies emitter highlights on this leather. SSR must
+  // not add those same emitters a second time; its diffuse capture stays active.
+  !usesCabinAreaSpecular(builder.object, builder.material) &&
   realtimeMaterialSupported(builder.material.source)
     ? vec4(captures.specular, captures.weight)
     : vec4(0),

@@ -118,6 +118,8 @@ export function bindReventon(
             quality &&
             camera &&
             new URLSearchParams(location.search).get('carShowroom') === 'cold-studio'
+          if (showroom && new URLSearchParams(location.search).get('carCabinLight') === 'local')
+            adapter.root.userData.carStudioCabinLighting = 'local'
           studio = showroom
             ? gpu.createStage(renderer, scene, adapter.root, { quality, camera, source })
             : quality
@@ -136,6 +138,7 @@ export function bindReventon(
           studioMaterials = undefined
           delete adapter.root.userData.carStudioQuality
           delete adapter.root.userData.carStudioPaint
+          delete adapter.root.userData.carStudioCabinLighting
           throw error
         }
       } else studio = createReventonStage(renderer, scene, adapter.root)
@@ -194,6 +197,7 @@ export function bindReventon(
       studioMaterials = undefined
       delete adapter.root.userData.carStudioQuality
       delete adapter.root.userData.carStudioPaint
+      delete adapter.root.userData.carStudioCabinLighting
       textures.clear()
       finishes.clear()
       emissive.clear()

@@ -56,7 +56,7 @@ class ShowroomAreaLightNode extends RectAreaLightNode {
     // Walls/coves are at the capture boundary: native LTC places their
     // highlights from the actual light geometry. Their environment binding
     // excludes emitter pixels so this does not double the specular energy.
-    if (usesLocalAreaSpecular(builder.object)) return super.setup(builder)
+    if (usesLocalAreaSpecular(builder.object, builder.material)) return super.setup(builder)
     // Shadow/depth and Basic passes do not use a Physical lighting model. They
     // must not fail while the same room is captured or the host prewarms them.
     if (

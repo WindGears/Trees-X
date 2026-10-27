@@ -221,6 +221,14 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 座舱皮革高光候选（2026-10-27）
+
+冷白棚 `carCabinLight=local` 仅让四处已核验皮革使用局部面积光高光，房间
+探针保留去灯板的反射背景，避免与 SSR 重复叠加。仪表台压印及高光过渡改善；
+原底色/粗糙度/法线/曝光不改，不通过发光或颜色倍率提亮。车漆与玻璃保持原支路。
+此项是独立候选，整体暗部、取景和摄影棚观感仍待验收，普通入口不切换。
+见 [.ai/reventon-cabin-light-validation.md](.ai/reventon-cabin-light-validation.md)。
+
 ## 冷白棚 r11 候选（2026-10-26）
 
 2026-10-27：独立 `carStudioTrim=satin` 候选提高干燥轮胎与深色轮毂的材质
