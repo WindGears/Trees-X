@@ -4,6 +4,16 @@ import type { GlbSource } from './types'
 
 export type CarStudioQuality = 'studio'
 export type CarStudioPaint = 'source' | 'graphite'
+export type CarStudioTrim = 'source' | 'satin'
+
+export function resolveCarStudioTrim(source: GlbSource, search: string): CarStudioTrim {
+  const query = new URLSearchParams(search)
+  return resolveCarStudioQuality(source, search) &&
+    query.get('carShowroom') === 'cold-studio' &&
+    query.get('carStudioTrim') === 'satin'
+    ? 'satin'
+    : 'source'
+}
 
 export function resolveCarStudioPaint(source: GlbSource, search: string): CarStudioPaint {
   const query = new URLSearchParams(search)

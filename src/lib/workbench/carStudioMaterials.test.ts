@@ -3,6 +3,57 @@ import { describe, expect, it, vi } from 'vitest'
 import { applyCarStudioMaterials } from './carStudioMaterials'
 
 describe('reversible car studio calibration', () => {
+  it('keeps trim calibration opt-in, verifies original IDs and restores borrowed resources', () => {
+    const model = new Group(),
+      geometry = new BoxGeometry(),
+      texture = new Texture()
+    const materials = ['15411', '15491', '15731', '15731', '15808', '15731'].map((id, i) => {
+      const material = new MeshPhysicalMaterial({
+        color: '#111111',
+        roughness: 0.31,
+        clearcoat: 1,
+        clearcoatRoughness: 0.04,
+      })
+      material.name = `Reventon / ${i === 5 ? 'door_1' : 'wheel_1_1'} / ${id}`
+      if (i !== 3) material.userData.source_vpb_material_id = Number(id)
+      material.normalMap = texture
+      material.aoMap = texture
+      material.specularIntensityMap = texture
+      model.add(new Mesh(geometry, material))
+      return material
+    })
+    const initial = materials.map((m) => ({
+      color: m.color.clone(),
+      roughness: m.roughness,
+      clearcoat: m.clearcoat,
+      clearcoatRoughness: m.clearcoatRoughness,
+    }))
+    applyCarStudioMaterials(model, []).dispose()
+    materials.forEach((m, i) => expect(m).toMatchObject(initial[i]!))
+    const owner = applyCarStudioMaterials(model, [], 'source', 'satin')
+    expect(materials[0]!.color.toArray()).toEqual([0.012, 0.012, 0.012])
+    expect(materials[1]!.color).toEqual(materials[0]!.color)
+    expect(materials[0]!.roughness).toBe(0.68)
+    expect(materials[0]!.clearcoat).toBe(0)
+    expect(materials[2]!.color.getHexString()).toBe('303237')
+    expect(materials[2]!.metalness).toBe(0)
+    expect(materials[3]).toMatchObject(initial[3]!)
+    expect(materials[4]).toMatchObject(initial[4]!)
+    expect(materials[5]).toMatchObject(initial[5]!)
+    const disposeTexture = vi.spyOn(texture, 'dispose')
+    owner.dispose()
+    owner.dispose()
+    materials.forEach((m, i) => {
+      expect(m).toMatchObject(initial[i]!)
+      expect(m.normalMap).toBe(texture)
+      expect(m.specularIntensityMap).toBe(texture)
+      expect(m.aoMap).toBe(texture)
+      m.dispose()
+    })
+    expect(disposeTexture).not.toHaveBeenCalled()
+    texture.dispose()
+    geometry.dispose()
+  })
   it('calibrates only verified body paint in the explicit candidate and restores color identity', () => {
     const model = new Group(),
       geometry = new BoxGeometry(),

@@ -1,5 +1,5 @@
 import { Mesh, MeshPhysicalMaterial, type Color, type Group } from 'three'
-import type { CarStudioPaint } from './carStudioQuality'
+import type { CarStudioPaint, CarStudioTrim } from './carStudioQuality'
 
 const velvet = new Set(['18501', '18581', '19691'])
 const leather = new Set(['18661', '19771'])
@@ -13,6 +13,7 @@ export function applyCarStudioMaterials(
   model: Group,
   finishMaterials: readonly string[],
   paintLook: CarStudioPaint = 'source',
+  trimLook: CarStudioTrim = 'source',
 ) {
   const finishes = new Set(finishMaterials),
     originals = new Map<
@@ -35,12 +36,18 @@ export function applyCarStudioMaterials(
       if (!(material instanceof MeshPhysicalMaterial) || originals.has(material)) continue
       const id = /^Reventon \/ [^/]+ \/ (\d+)$/.exec(material.name)?.[1]
       if (!id) continue
+      const verifiedTrim =
+        trimLook === 'satin' &&
+        /^Reventon \/ wheel_-?1_-?1 \/ /.test(material.name) &&
+        material.userData.source_vpb_material_id === Number(id)
+      const tire = verifiedTrim && (id === '15411' || id === '15491'),
+        rim = verifiedTrim && id === '15731'
       const finish = finishes.has(material.name),
         glass = id === '15103' || id === '21865',
         paint = id === '20159',
         soft = velvet.has(id) || leather.has(id),
         metal = chrome.has(id) || id === '18029'
-      if (!finish && !glass && !paint && !soft && !metal) continue
+      if (!finish && !glass && !paint && !soft && !metal && !tire && !rim) continue
       // Transparent trim and other lamp optics retain their original handling.
       if (!glass && (material.transparent || material.transmission > 0)) continue
       originals.set(material, {
@@ -72,6 +79,18 @@ export function applyCarStudioMaterials(
           material.clearcoat = 0.65
           material.clearcoatRoughness = 0.13
         }
+      } else if (tire) {
+        // Artistic dry rubber candidate. Keep authored tread normal/specular/AO;
+        // the source left/right tints otherwise differ by a factor of two.
+        material.color.setRGB(0.012, 0.012, 0.012)
+        material.roughness = 0.68
+        material.clearcoat = 0
+      } else if (rim) {
+        // Painted alloy remains dielectric; do not convert every wheel part to metal.
+        material.color.set('#303237')
+        material.roughness = 0.38
+        material.clearcoat = 0.45
+        material.clearcoatRoughness = 0.22
       } else if (glass) material.specularIntensity = 0.38
       else if (velvet.has(id)) {
         material.roughness = Math.max(material.roughness, 0.94)

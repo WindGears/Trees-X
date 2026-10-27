@@ -326,6 +326,8 @@ try {
       if (process.env.TREES_STUDIO_PAINT === 'graphite')
         candidate.searchParams.set('carStudioPaint', 'graphite')
       if (process.env.TREES_CAR_MSAA === '1') candidate.searchParams.set('carAntialias', 'msaa')
+      if (process.env.TREES_STUDIO_TRIM === 'satin')
+        candidate.searchParams.set('carStudioTrim', 'satin')
       activeRun.url = candidate.href
     }
     report.runs.push(activeRun)

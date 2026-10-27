@@ -1,5 +1,12 @@
 # Trees X 新版项目入口
 
+## 轮胎与轮毂候选（2026-10-27）
+
+`carStudioTrim=satin` 在已核验冷白棚汽车中校准四只轮胎及四组轮毂漆面，
+按运动组与原始ID双重限制，避免修改复用同材质名的门板。六取景对照和
+后台短测通过；座舱底色过暗已定位但未修正，整体画质仍未收束。
+见[本批记录](reventon-trim-validation.md)。
+
 ## 摄影棚边缘抗锯齿候选（2026-10-27）
 
 已核验汽车 studio 的 `carAntialias=msaa` 增加 beauty 4× MSAA，surface

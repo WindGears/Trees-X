@@ -11,7 +11,11 @@ import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTy
 import type { WebGPURenderer } from 'three/webgpu'
 import type { ReventonStage } from './reventonStage'
 import type { ReventonStageOptions } from './reventonStage'
-import { resolveCarStudioPaint, resolveCarStudioQuality } from './carStudioQuality'
+import {
+  resolveCarStudioPaint,
+  resolveCarStudioQuality,
+  resolveCarStudioTrim,
+} from './carStudioQuality'
 import { applyCarStudioMaterials } from './carStudioMaterials'
 import { resolveReventonFinishBindings } from './reventonFinishBindings'
 
@@ -99,7 +103,12 @@ export function bindReventon(
           )
           if (quality) {
             const paintLook = resolveCarStudioPaint(source, location.search)
-            studioMaterials = applyCarStudioMaterials(model, finishMaterials, paintLook)
+            studioMaterials = applyCarStudioMaterials(
+              model,
+              finishMaterials,
+              paintLook,
+              resolveCarStudioTrim(source, location.search),
+            )
             adapter.root.userData.carStudioPaint = paintLook
             adapter.root.userData.carStudioQuality = quality
           }

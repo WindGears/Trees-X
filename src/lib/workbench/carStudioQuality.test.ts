@@ -4,6 +4,7 @@ import {
   isCarStudioScene,
   resolveCarStudioQuality,
   resolveCarStudioPaint,
+  resolveCarStudioTrim,
 } from './carStudioQuality'
 import { reventonOriginalBundle, reventonRuntimeBundle } from './reventonCandidate'
 import type { GlbSource } from './types'
@@ -18,6 +19,18 @@ const source: GlbSource = {
 }
 
 describe('car-only studio capability', () => {
+  it('requires an audited showroom for the satin trim candidate', () => {
+    const search = '?carQuality=studio&carShowroom=cold-studio&carStudioTrim=satin'
+    expect(resolveCarStudioTrim(source, search)).toBe('satin')
+    expect(resolveCarStudioTrim(source, '?carStudioTrim=satin')).toBe('source')
+    expect(resolveCarStudioTrim(source, search.replace('satin', 'custom'))).toBe('source')
+    expect(
+      resolveCarStudioTrim(
+        { ...source, bundle: { ...source.bundle, sha256: 'f'.repeat(64) } },
+        search,
+      ),
+    ).toBe('source')
+  })
   it('keeps calibrated graphite behind audited showroom and explicit paint selection', () => {
     const search = '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite'
     expect(resolveCarStudioPaint(source, search)).toBe('graphite')
