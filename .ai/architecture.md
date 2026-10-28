@@ -1,5 +1,14 @@
 # 新版目标架构与当前实现
 
+## 摄影棚照明与反射透射缓存（2026-10-28）
+
+panelBrightness场景局部owner分别维护灯板与统一照明倍率，灯光/环境基于初始值
+计算并恢复；useWorkbenchScene通过既有all事件唤醒DDGI及失效相关历史。
+productReflectionCapture的同步renderer实例作用域隔离r185原生透射目标的Source
+尺寸记录，finally恢复copy方法；原纹理仍由Three拥有，dispose监听及退出恢复
+清理借用记录。定制车窗viewport也独立记录尺寸。无全局原型改动或第二时钟。
+证据及失败过程见[本批记录](reventon-lighting-control-validation.md)。
+
 ## 座舱局部高光候选（2026-10-27）
 
 `carShowroom/receiver` 按汽车 owner 标记、材质来源 ID、名称和透明性统一判定

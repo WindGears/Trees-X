@@ -47,7 +47,7 @@ try {
         ? '&carStudioFinish=refined&carStudioPaint=graphite'
         : ''),
   )
-  await expect(page.getByRole('slider', { name: '灯板亮度 · 调试' })).toBeVisible({
+  await expect(page.getByRole('slider', { name: '摄影棚照明', exact: true })).toBeVisible({
     timeout: 240000,
   })
   await attachShowroomBridge(page)

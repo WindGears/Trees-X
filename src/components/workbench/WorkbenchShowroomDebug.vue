@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 
-const props = defineProps<{ apply: (value: number) => number | undefined }>()
+const props = defineProps<{
+  apply: (value: number) => number | undefined
+  applyLighting: (value: number) => number | undefined
+}>()
 const id = useId(),
-  multiplier = ref(1)
+  multiplier = ref(1),
+  lighting = ref(1)
 function set(value: number) {
   const applied = props.apply(value)
   if (applied !== undefined) multiplier.value = applied
@@ -11,27 +15,51 @@ function set(value: number) {
 function input(event: Event) {
   if (event.target instanceof HTMLInputElement) set(event.target.valueAsNumber)
 }
+function setLighting(value: number) {
+  const applied = props.applyLighting(value)
+  if (applied !== undefined) lighting.value = applied
+}
 </script>
 
 <template>
   <div class="wb-showroom-debug" @pointerdown.stop @wheel.stop @keydown.stop>
     <div class="debug-heading">
-      <label :for="id">灯板亮度 · 调试</label>
-      <output :for="id">{{ Math.round(multiplier * 100) }}%</output>
-      <button type="button" :disabled="multiplier === 1" @click="set(1)">复原</button>
+      <label :for="`${id}-lighting`">摄影棚照明</label>
+      <output :for="`${id}-lighting`">{{ Math.round(lighting * 100) }}%</output>
+      <button type="button" :disabled="lighting === 1" @click="setLighting(1)">复原</button>
     </div>
     <input
-      :id="id"
+      :id="`${id}-lighting`"
       type="range"
-      min="0"
-      max="3"
+      min="0.25"
+      max="2"
       step="0.05"
-      :value="multiplier"
-      :aria-valuetext="`${Math.round(multiplier * 100)}%`"
-      :aria-describedby="`${id}-hint`"
-      @input="input"
+      :value="lighting"
+      :aria-valuetext="`${Math.round(lighting * 100)}%`"
+      :aria-describedby="`${id}-lighting-hint`"
+      @change="setLighting(($event.target as HTMLInputElement).valueAsNumber)"
     />
-    <p :id="`${id}-hint`">仅调灯板与柔光，不改变照明和环境反射。</p>
+    <p :id="`${id}-lighting-hint`" class="lighting-hint">灯光与反射联动，松开后更新。</p>
+    <details>
+      <summary>仅调整灯板外观</summary>
+      <div class="debug-heading">
+        <label :for="id">灯板亮度 · 调试</label>
+        <output :for="id">{{ Math.round(multiplier * 100) }}%</output>
+        <button type="button" :disabled="multiplier === 1" @click="set(1)">复原</button>
+      </div>
+      <input
+        :id="id"
+        type="range"
+        min="0"
+        max="3"
+        step="0.05"
+        :value="multiplier"
+        :aria-valuetext="`${Math.round(multiplier * 100)}%`"
+        :aria-describedby="`${id}-hint`"
+        @input="input"
+      />
+      <p :id="`${id}-hint`">仅调灯板与柔光，不改变照明和环境反射。</p>
+    </details>
   </div>
 </template>
 
@@ -55,6 +83,22 @@ function input(event: Event) {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+details {
+  margin-top: 10px;
+  border-top: 1px solid #cbd4cb;
+  padding-top: 8px;
+}
+summary {
+  cursor: pointer;
+  padding: 4px 0;
+}
+details[open] summary {
+  margin-bottom: 6px;
+}
+summary:focus-visible {
+  outline: 2px solid #405c4c;
+  outline-offset: 3px;
 }
 label {
   font-weight: 600;
@@ -102,6 +146,12 @@ p {
     left: 12px;
     bottom: 218px;
     width: min(300px, calc(100% - 24px));
+  }
+}
+@media (min-width: 601px) and (max-height: 850px) {
+  .wb-showroom-debug {
+    left: 156px;
+    width: 260px;
   }
 }
 </style>

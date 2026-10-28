@@ -1,6 +1,7 @@
 import { Color, Light, REVISION, type Object3D, type Scene } from 'three'
 import type { NodeFrame, WebGPURenderer } from 'three/webgpu'
 import type ReflectorNode from 'three/src/nodes/utils/ReflectorNode.js'
+import { createReflectionViewportScope } from './reflectionViewport'
 
 type CaptureRenderer = Pick<WebGPURenderer, 'getClearColor' | 'getClearAlpha' | 'setClearColor'>
 
@@ -46,7 +47,7 @@ export function createProductCaptureScope(product: Object3D) {
   }
 }
 
-/** Local pinned bridge; no renderer/global prototype patch or additional render loop. */
+/** Local pinned bridge; synchronous instance scope, no global patch or extra loop. */
 export function bindProductReflectionCapture(
   reflector: ReflectorNode,
   product: Object3D,
@@ -55,15 +56,20 @@ export function bindProductReflectionCapture(
   if (revision !== '185') throw new Error('Product reflection capture requires reviewed r185')
   const base = reflector.reflector,
     original = base.updateBefore,
-    scope = createProductCaptureScope(product)
+    scope = createProductCaptureScope(product),
+    viewport = createReflectionViewportScope(revision)
   if (typeof original !== 'function' || !(base.renderTargets instanceof Map))
     throw new Error('Reflector capture contract changed')
   const update = (frame: NodeFrame) => {
     if (!frame.scene || !frame.renderer) return original.call(base, frame)
-    return scope.run(frame.scene, frame.renderer, () => original.call(base, frame))
+    const renderer = frame.renderer
+    return scope.run(frame.scene, renderer, () =>
+      viewport.run(renderer, () => original.call(base, frame)),
+    )
   }
   base.updateBefore = update
   return () => {
     if (base.updateBefore === update) base.updateBefore = original
+    viewport.dispose()
   }
 }

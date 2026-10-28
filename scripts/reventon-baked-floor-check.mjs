@@ -74,7 +74,7 @@ try {
           return (
             report.errors.length > 0 ||
             Boolean(fallback) ||
-            page.getByRole('slider', { name: '灯板亮度 · 调试' }).isVisible()
+            page.getByRole('slider', { name: '摄影棚照明', exact: true }).isVisible()
           )
         },
         { timeout: 240000 },

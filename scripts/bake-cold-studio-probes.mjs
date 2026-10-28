@@ -26,7 +26,7 @@ const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
 const records = []
 try {
   await page.goto(showroomUrl(base, 'showroom'), { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('slider', { name: '灯板亮度 · 调试' })).toBeVisible({
+  await expect(page.getByRole('slider', { name: '摄影棚照明', exact: true })).toBeVisible({
     timeout: 240000,
   })
   await attachShowroomBridge(page)

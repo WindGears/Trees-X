@@ -4,6 +4,7 @@ import {
   Mesh,
   MeshPhysicalMaterial,
   REVISION,
+  Source,
   Texture,
   Vector2,
   type Group,
@@ -53,6 +54,16 @@ export function ownReventonViewport(): ReventonViewport {
       reference: Parameters<ViewportTextureNode['getTextureForReference']>[0] = null,
     ) {
       const value = super.getTextureForReference(reference)
+      if (!textures.has(value)) {
+        // r185 Texture.clone shares Source/image. Beauty and planar reflection
+        // need independent size records: resizing one must not make another
+        // skip its needsUpdate while its native GPU allocation is still old.
+        const image: unknown = value.image
+        if (!image || typeof image !== 'object' || !('width' in image) || !('height' in image))
+          throw new Error('Reventon viewport requires the audited 2D framebuffer image')
+        value.source = new Source({ width: image.width, height: image.height })
+        value.name = 'Trees X / independent car glass viewport'
+      }
       if (disposed) value.dispose()
       else textures.add(value)
       return value

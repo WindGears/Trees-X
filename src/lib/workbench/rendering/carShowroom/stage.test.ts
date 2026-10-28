@@ -26,6 +26,7 @@ import { createColdStudioProbe } from './probe'
 import { coldStudioRequested, createColdShowroomStage } from './stage'
 import { loadShowroomAssets } from './assets'
 import { loadBakedStudioProbe } from './bakedProbe'
+import { setShowroomLighting } from './panelBrightness'
 
 vi.mock('./probe', () => ({ createColdStudioProbe: vi.fn() }))
 vi.mock('./assets', () => ({ loadShowroomAssets: vi.fn() }))
@@ -177,6 +178,31 @@ afterEach(() => {
 })
 
 describe('cold studio audited gate and static scene ownership', () => {
+  it('links the four studio lights and room energy without recapturing or changing exposure', async () => {
+    vi.mocked(createColdStudioProbe)
+      .mockResolvedValueOnce(probe())
+      .mockResolvedValueOnce(probe('indirect'))
+    const f = make()
+    expect(setShowroomLighting(f.scene, 1.5)).toBeUndefined()
+    await f.stage.prepare()
+    const captures = vi.mocked(createColdStudioProbe).mock.calls.length
+    const baseline: { light: RectAreaLight; intensity: number }[] = []
+    f.scene.traverse((node) => {
+      if (node instanceof RectAreaLight && node.userData.carShowroomLight)
+        baseline.push({ light: node, intensity: node.intensity })
+    })
+    expect(baseline).toHaveLength(4)
+    expect(setShowroomLighting(f.scene, 1.5)).toBe(1.5)
+    f.stage.render()
+    for (const entry of baseline) expect(entry.light.intensity).toBe(entry.intensity * 1.5)
+    expect(f.scene.environmentIntensity).toBe(1.5)
+    expect(f.renderer.toneMappingExposure).toBe(coldStudioConfig.exposure)
+    expect(f.model.userData.carShowroom.lightingBrightness).toBe(1.5)
+    expect(createColdStudioProbe).toHaveBeenCalledTimes(captures)
+    f.stage.dispose()
+    expect(f.scene.environmentIntensity).toBe(1.3)
+    expect(setShowroomLighting(f.scene, 1)).toBeUndefined()
+  })
   it('owns the dynamic car reflection only in the explicit baked candidate and releases it once', async () => {
     vi.stubGlobal('location', {
       search: '?carFloor=cycles&carFloorLight=local&carFloorReflection=planar',

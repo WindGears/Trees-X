@@ -33,6 +33,10 @@ try {
   await page.goto(showroomUrl('http://127.0.0.1:5181', 'showroom'), {
     waitUntil: 'domcontentloaded',
   })
+  await expect(page.getByRole('slider', { name: '摄影棚照明', exact: true })).toBeVisible({
+    timeout: 240000,
+  })
+  await page.getByText('仅调整灯板外观', { exact: true }).click()
   const slider = page.getByRole('slider', { name: '灯板亮度 · 调试' })
   await expect(slider).toBeVisible({ timeout: 240000 })
   await attachShowroomBridge(page)
@@ -66,7 +70,10 @@ try {
   )
   await slider.press('ArrowLeft')
   await expect(slider).toHaveValue('2.95')
-  await page.getByRole('button', { name: '复原', exact: true }).click()
+  await page
+    .locator('.wb-showroom-debug details')
+    .getByRole('button', { name: '复原', exact: true })
+    .click()
   await expect(slider).toHaveValue('1')
   const final = await page.evaluate(showroomState)
   assert.deepEqual(final.camera, initialState.camera, 'Slider keyboard must not move the camera')

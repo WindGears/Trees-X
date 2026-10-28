@@ -81,6 +81,7 @@ export function createColdShowroomStage(
       error: null as string | null,
       revision: config.revision,
       panelBrightness: 1,
+      lightingBrightness: 1,
       floorReflection: 'screen-space+room-probe',
       floorLight: localFloorLight ? 'local-area+indirect-probe' : 'full-probe',
       probe: null as unknown,
@@ -109,6 +110,21 @@ export function createColdShowroomStage(
     () => prepared && !disposed && status.phase === 'ready',
     (value) => {
       status.panelBrightness = value
+    },
+    {
+      scene,
+      baseline: 1,
+      lights: () => {
+        const result: RectAreaLight[] = []
+        scene.traverse((object) => {
+          if (object instanceof RectAreaLight && object.userData.carShowroomLight)
+            result.push(object)
+        })
+        return result
+      },
+      report: (value) => {
+        status.lightingBrightness = value
+      },
     },
   )
   scene.add(room.root)

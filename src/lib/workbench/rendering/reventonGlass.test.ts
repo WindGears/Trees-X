@@ -119,6 +119,14 @@ describe('car WebGPU thin glazing', () => {
       secondDispose = vi.spyOn(second, 'dispose')
     expect(viewport.node.getTextureForReference(target)).toBe(first)
     expect(first).not.toBe(second)
+    expect(first.source).not.toBe(second.source)
+    expect(first.source).not.toBe(viewport.node.value.source)
+    const firstImage = first.image as { width: number; height: number },
+      secondImage = second.image as { width: number; height: number }
+    firstImage.width = 1920
+    firstImage.height = 1080
+    expect(secondImage.width).not.toBe(1920)
+    expect(secondImage.height).not.toBe(1080)
     expect(viewport.node.generateMipmaps).toBe(true)
     viewport.dispose()
     viewport.dispose()

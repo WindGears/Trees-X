@@ -24,7 +24,7 @@ try {
   await page.goto(
     'http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=refined',
   )
-  await expect(page.getByRole('slider', { name: '灯板亮度 · 调试' })).toBeVisible({
+  await expect(page.getByRole('slider', { name: '摄影棚照明', exact: true })).toBeVisible({
     timeout: 240000,
   })
   await attachShowroomBridge(page)

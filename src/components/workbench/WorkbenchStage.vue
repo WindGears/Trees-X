@@ -223,6 +223,7 @@ onErrorCaptured(() => {
       v-if="coldShowroom && store.available && lighting?.showroom?.phase === 'ready'"
       :key="`${store.revision}:${hostRevision}:${revision}`"
       :apply="(value) => sceneHost?.setPanelBrightness(value)"
+      :apply-lighting="(value) => sceneHost?.setShowroomLighting(value)"
     />
     <WorkbenchRefinement
       v-if="store.available && !realtimeRequest"
