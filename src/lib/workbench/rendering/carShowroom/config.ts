@@ -133,8 +133,66 @@ export const refinedColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowr
   },
 })
 
+/** Compact physical room trial, paired only with its own r12 radiance. */
+export const compactColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...refinedColdStudioConfig,
+  revision: 12,
+  roomBox: { min: [-6, -0.01, -7], max: [6, 3.8, 7] },
+  floor: { ...refinedColdStudioConfig.floor, width: 12, depth: 14 },
+  wallColor: '#3b3c3e',
+  lights: {
+    key: {
+      ...refinedColdStudioConfig.lights.key,
+      width: 4.8,
+      height: 2.6,
+      position: [-2.6, 3.66, 1.2],
+      target: [-2.6, 0.55, 1.2],
+    },
+    strip: {
+      ...refinedColdStudioConfig.lights.strip,
+      width: 4.8,
+      height: 1.8,
+      position: [2.6, 3.66, 1.2],
+      target: [2.6, 0.55, 1.2],
+    },
+    rim: {
+      ...refinedColdStudioConfig.lights.rim,
+      width: 1.1,
+      height: 2.8,
+      position: [-5.86, 2, 2],
+      target: [0, 2, 2],
+    },
+    fill: {
+      ...refinedColdStudioConfig.lights.fill,
+      width: 1.2,
+      height: 2.8,
+      position: [5.86, 2, -2.5],
+      target: [0, 2, -2.5],
+    },
+  },
+})
+
+/** Same r12 room and energy; move the key off the default windshield mirror footprint. */
+export const balancedColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...compactColdStudioConfig,
+  revision: 13,
+  lights: {
+    ...compactColdStudioConfig.lights,
+    key: {
+      ...compactColdStudioConfig.lights.key,
+      position: [-2.6, 3.66, -3],
+      target: [-2.6, 0.55, -3],
+    },
+  },
+})
+
 export function resolveColdStudioConfig(search: string) {
-  return new URLSearchParams(search).get('carStudioFinish') === 'refined'
-    ? refinedColdStudioConfig
-    : coldStudioConfig
+  const finish = new URLSearchParams(search).get('carStudioFinish')
+  return finish === 'balanced'
+    ? balancedColdStudioConfig
+    : finish === 'compact'
+      ? compactColdStudioConfig
+      : finish === 'refined'
+        ? refinedColdStudioConfig
+        : coldStudioConfig
 }

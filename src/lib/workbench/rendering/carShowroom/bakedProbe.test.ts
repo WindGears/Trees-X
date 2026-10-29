@@ -3,14 +3,24 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { FloatType, HalfFloatType, DataUtils, LinearSRGBColorSpace, Object3D } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import { loadBakedStudioProbe } from './bakedProbe'
-import { coldStudioConfig, refinedColdStudioConfig } from './config'
+import {
+  coldStudioConfig,
+  refinedColdStudioConfig,
+  balancedColdStudioConfig,
+  compactColdStudioConfig,
+} from './config'
 import { usesBakedFloorReflection } from './floorReflection'
 
 afterEach(() => vi.unstubAllGlobals())
 const renderer = {} as WebGPURenderer
 const signal = () => new AbortController().signal
 describe('persisted static room HDR', () => {
-  it.each([coldStudioConfig, refinedColdStudioConfig])(
+  it.each([
+    coldStudioConfig,
+    refinedColdStudioConfig,
+    balancedColdStudioConfig,
+    compactColdStudioConfig,
+  ])(
     'loads Cycles revision $revision with all four emitter directions intact',
     async (config) => {
       vi.stubGlobal('fetch', async (url: string) => new Response(await readFile('public' + url)))

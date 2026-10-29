@@ -14,6 +14,8 @@ import type { CarShowroomConfig } from './config'
 import { bakedStudioRecords } from './bakedRecords'
 import { cyclesStudioRecords } from './cyclesRecords'
 import { cyclesStudioRecords as refinedCyclesStudioRecords } from './refinedCyclesRecords'
+import { cyclesStudioRecords as compactCyclesStudioRecords } from './compactCyclesRecords'
+import { cyclesStudioRecords as balancedCyclesStudioRecords } from './balancedCyclesRecords'
 import type { createColdStudioProbe } from './probe'
 
 /** Persisted raster capture or offline Cycles radiance, not a surface lightmap.
@@ -29,9 +31,13 @@ export async function loadBakedStudioProbe(
   signal.throwIfAborted()
   const bundle =
     kind === 'cycles'
-      ? config.revision === 11
-        ? refinedCyclesStudioRecords
-        : cyclesStudioRecords
+      ? config.revision === 13
+        ? balancedCyclesStudioRecords
+        : config.revision === 12
+          ? compactCyclesStudioRecords
+          : config.revision === 11
+            ? refinedCyclesStudioRecords
+            : cyclesStudioRecords
       : bakedStudioRecords
   if (JSON.stringify(config) !== JSON.stringify(bundle.config))
     throw new Error('摄影棚配置已改变，需要重新生成静态反射资源')
