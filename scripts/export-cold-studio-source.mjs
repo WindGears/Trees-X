@@ -4,13 +4,15 @@ import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 
-const revision = process.argv.includes('--balanced')
-  ? 13
-  : process.argv.includes('--compact')
-    ? 12
-    : process.argv.includes('--refined')
-      ? 11
-      : 10
+const revision = process.argv.includes('--rim')
+  ? 14
+  : process.argv.includes('--balanced')
+    ? 13
+    : process.argv.includes('--compact')
+      ? 12
+      : process.argv.includes('--refined')
+        ? 11
+        : 10
 const output = `artifacts/car-showroom/cycles-r${revision}`
 await mkdir(output, { recursive: true })
 await build({
@@ -25,13 +27,15 @@ await build({
 })
 const configs = await import(pathToFileURL(resolve(`${output}/config.mjs`)))
 const config =
-  revision === 13
-    ? configs.balancedColdStudioConfig
-    : revision === 12
-      ? configs.compactColdStudioConfig
-      : revision === 11
-        ? configs.refinedColdStudioConfig
-        : configs.coldStudioConfig
+  revision === 14
+    ? configs.rimColdStudioConfig
+    : revision === 13
+      ? configs.balancedColdStudioConfig
+      : revision === 12
+        ? configs.compactColdStudioConfig
+        : revision === 11
+          ? configs.refinedColdStudioConfig
+          : configs.coldStudioConfig
 const room = createColdStudioGeometry(config)
 const meshes = []
 room.root.traverse((object) => {

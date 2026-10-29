@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium, expect } from '@playwright/test'
+import { paintReflectionFootprint } from './reventon-showroom/paint-footprint.mjs'
 import {
   attachShowroomBridge,
   showroomState,
@@ -76,6 +77,11 @@ try {
     const file = `${view.id}-${stateName}.png`
     await page.screenshot({ path: `${output}/${file}` })
     report.shots.push({ view, stateName, target, file, state })
+    if (process.env.TREES_PAINT_FOOTPRINT === '1' && stateName === 'whole')
+      await writeFile(
+        `${output}/${view.id}-footprint.json`,
+        JSON.stringify(await page.evaluate(paintReflectionFootprint)),
+      )
     console.log(file)
   }
   for (const view of views) await capture(view, 'whole')

@@ -12,8 +12,12 @@ import {
 
 const output = process.env.TREES_COMPACT_OUTPUT ?? 'artifacts/car-showroom/compact-room'
 const variants =
-  process.env.TREES_ROOM_PAIR === 'balanced' ? ['compact', 'balanced'] : ['refined', 'compact']
-const revisions = { refined: 11, compact: 12, balanced: 13 }
+  process.env.TREES_ROOM_PAIR === 'rim'
+    ? ['balanced', 'rim']
+    : process.env.TREES_ROOM_PAIR === 'balanced'
+      ? ['compact', 'balanced']
+      : ['refined', 'compact']
+const revisions = { refined: 11, compact: 12, balanced: 13, rim: 14 }
 await mkdir(output, { recursive: true })
 const report = { passed: false, visualPassed: false, errors: [], runs: [] }
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
@@ -116,8 +120,50 @@ try {
       assert.ok(state.sameRenderer && state.sameCanvas)
       assert.deepEqual(state.output, [1440, 1000])
       assert.deepEqual(state.gpuErrors, [])
+      let fixtureReadability
+      if (variant === 'rim' && shot === 'perspective') {
+        fixtureReadability = await page.evaluate(() => {
+          const scene = window.__demo.scene.scene.value
+          const camera = window.__demo.scene.camera.activeCamera.value
+          const canvas = window.__demo.canvas.getBoundingClientRect()
+          const intro = document.querySelector('.wb-intro').getBoundingClientRect()
+          let panel
+          scene.traverse((node) => {
+            if (node.isMesh && node.userData.showroomLightId === 'rim') panel = node
+          })
+          if (!panel) throw new Error('Actual rear rim panel is required')
+          const positions = panel.geometry.getAttribute('position'),
+            points = []
+          for (let i = 0; i < positions.count; i++) {
+            const point = camera.position
+              .clone()
+              .fromBufferAttribute(positions, i)
+              .applyMatrix4(panel.matrixWorld)
+              .project(camera)
+            points.push([
+              canvas.left + ((point.x + 1) * canvas.width) / 2,
+              canvas.top + ((1 - point.y) * canvas.height) / 2,
+            ])
+          }
+          const rect = {
+            left: Math.min(...points.map((p) => p[0])),
+            right: Math.max(...points.map((p) => p[0])),
+            top: Math.min(...points.map((p) => p[1])),
+            bottom: Math.max(...points.map((p) => p[1])),
+          }
+          const overlap =
+            Math.max(0, Math.min(rect.right, intro.right) - Math.max(rect.left, intro.left)) *
+            Math.max(0, Math.min(rect.bottom, intro.bottom) - Math.max(rect.top, intro.top))
+          return { panel: rect, intro: intro.toJSON(), overlapArea: overlap }
+        })
+        assert.equal(
+          fixtureReadability.overlapArea,
+          0,
+          'Default rim panel must clear product introduction',
+        )
+      }
       await page.screenshot({ path: `${output}/${variant}-${shot}.png` })
-      shots.push({ shot, state })
+      shots.push({ shot, state, fixtureReadability })
       console.log(variant, shot)
     }
     report.runs.push({ variant, url: page.url(), initial, materials, shots })

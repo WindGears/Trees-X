@@ -321,7 +321,7 @@ try {
       candidate.searchParams.set('carFloor', 'cycles')
       candidate.searchParams.set('carFloorLight', 'local')
       candidate.searchParams.set('carFloorReflection', 'planar')
-      if (['refined', 'compact', 'balanced'].includes(process.env.TREES_STUDIO_FINISH))
+      if (['refined', 'compact', 'balanced', 'rim'].includes(process.env.TREES_STUDIO_FINISH))
         candidate.searchParams.set('carStudioFinish', process.env.TREES_STUDIO_FINISH)
       if (process.env.TREES_STUDIO_PAINT === 'graphite')
         candidate.searchParams.set('carStudioPaint', 'graphite')

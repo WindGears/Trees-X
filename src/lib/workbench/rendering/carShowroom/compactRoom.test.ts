@@ -4,13 +4,14 @@ import { reventonMotionEnvelope } from '../realtime/productProfile'
 import {
   compactColdStudioConfig,
   balancedColdStudioConfig,
+  rimColdStudioConfig,
   coldStudioConfig,
   resolveColdStudioConfig,
 } from './config'
 import { createColdStudioGeometry } from './geometry'
 
 describe('compact studio physical envelope', () => {
-  it.each([compactColdStudioConfig, balancedColdStudioConfig])(
+  it.each([compactColdStudioConfig, balancedColdStudioConfig, rimColdStudioConfig])(
     'r$revision keeps moving car clear of walls and fixtures',
     (config) => {
       const room = createColdStudioGeometry(config),
@@ -36,6 +37,7 @@ describe('compact studio physical envelope', () => {
     expect(resolveColdStudioConfig('?carStudioFinish=unknown')).toBe(coldStudioConfig)
     expect(resolveColdStudioConfig('?carStudioFinish=compact')).toBe(compactColdStudioConfig)
     expect(resolveColdStudioConfig('?carStudioFinish=balanced')).toBe(balancedColdStudioConfig)
+    expect(resolveColdStudioConfig('?carStudioFinish=rim')).toBe(rimColdStudioConfig)
   })
   it('moves only the key fixture, preserving energy, room surfaces and all other lamps', () => {
     const {
@@ -59,5 +61,25 @@ describe('compact studio physical envelope', () => {
     expect(target[2]).toBe(-3)
     for (const id of ['strip', 'rim', 'fill'] as const)
       expect(lights[id]).toEqual(previousLights[id])
+  })
+  it('changes only rim placement and aspect ratio, preserving emitting area and radiance', () => {
+    const {
+      revision: previousRevision,
+      lights: previousLights,
+      ...previousRoom
+    } = balancedColdStudioConfig
+    const { revision, lights, ...room } = rimColdStudioConfig
+    expect(revision).toBe(previousRevision + 1)
+    expect(room).toEqual(previousRoom)
+    for (const id of ['key', 'strip', 'fill'] as const)
+      expect(lights[id]).toEqual(previousLights[id])
+    expect(lights.rim.width * lights.rim.height).toBeCloseTo(
+      previousLights.rim.width * previousLights.rim.height,
+      12,
+    )
+    expect(lights.rim.radiance).toBe(previousLights.rim.radiance)
+    expect(lights.rim.intensity).toBe(previousLights.rim.intensity)
+    expect(lights.rim.color).toBe(previousLights.rim.color)
+    expect(lights.rim.position).toEqual([-3.75, 2.25, 6.86])
   })
 })

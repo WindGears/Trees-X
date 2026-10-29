@@ -186,13 +186,31 @@ export const balancedColdStudioConfig: CarShowroomConfig = Object.freeze<CarShow
   },
 })
 
+/** Equal-area rim trial selected from real paint/glass mirror footprints. */
+export const rimColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...balancedColdStudioConfig,
+  revision: 14,
+  lights: {
+    ...balancedColdStudioConfig.lights,
+    rim: {
+      ...balancedColdStudioConfig.lights.rim,
+      width: 3.5,
+      height: 0.88,
+      position: [-3.75, 2.25, 6.86],
+      target: [-3.75, 2.25, 0],
+    },
+  },
+})
+
 export function resolveColdStudioConfig(search: string) {
   const finish = new URLSearchParams(search).get('carStudioFinish')
-  return finish === 'balanced'
-    ? balancedColdStudioConfig
-    : finish === 'compact'
-      ? compactColdStudioConfig
-      : finish === 'refined'
-        ? refinedColdStudioConfig
-        : coldStudioConfig
+  return finish === 'rim'
+    ? rimColdStudioConfig
+    : finish === 'balanced'
+      ? balancedColdStudioConfig
+      : finish === 'compact'
+        ? compactColdStudioConfig
+        : finish === 'refined'
+          ? refinedColdStudioConfig
+          : coldStudioConfig
 }
