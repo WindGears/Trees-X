@@ -5,12 +5,21 @@ import {
   compactColdStudioConfig,
   balancedColdStudioConfig,
   rimColdStudioConfig,
+  stoneColdStudioConfig,
   coldStudioConfig,
   resolveColdStudioConfig,
 } from './config'
 import { createColdStudioGeometry } from './geometry'
 
 describe('compact studio physical envelope', () => {
+  it('changes only the floor tint for the ground-return study', () => {
+    const { revision, floor, ...room } = stoneColdStudioConfig
+    const { revision: previous, floor: oldFloor, ...oldRoom } = rimColdStudioConfig
+    expect(revision).toBe(previous + 1)
+    expect(room).toEqual(oldRoom)
+    expect(floor).toEqual({ ...oldFloor, color: '#dddddd' })
+    expect(resolveColdStudioConfig('?carStudioFinish=stone')).toBe(stoneColdStudioConfig)
+  })
   it.each([compactColdStudioConfig, balancedColdStudioConfig, rimColdStudioConfig])(
     'r$revision keeps moving car clear of walls and fixtures',
     (config) => {

@@ -204,13 +204,22 @@ export const rimColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomC
 
 export function resolveColdStudioConfig(search: string) {
   const finish = new URLSearchParams(search).get('carStudioFinish')
-  return finish === 'rim'
-    ? rimColdStudioConfig
-    : finish === 'balanced'
-      ? balancedColdStudioConfig
-      : finish === 'compact'
-        ? compactColdStudioConfig
-        : finish === 'refined'
-          ? refinedColdStudioConfig
-          : coldStudioConfig
+  return finish === 'stone'
+    ? stoneColdStudioConfig
+    : finish === 'rim'
+      ? rimColdStudioConfig
+      : finish === 'balanced'
+        ? balancedColdStudioConfig
+        : finish === 'compact'
+          ? compactColdStudioConfig
+          : finish === 'refined'
+            ? refinedColdStudioConfig
+            : coldStudioConfig
 }
+
+/** Ground-return study: only stone reflectance changes; lamps and car stay r14. */
+export const stoneColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...rimColdStudioConfig,
+  revision: 15,
+  floor: { ...rimColdStudioConfig.floor, color: '#dddddd' },
+})
