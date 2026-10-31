@@ -1,5 +1,6 @@
 import { Mesh, MeshPhysicalMaterial, type Color, type Group } from 'three'
 import type { CarStudioPaint, CarStudioTrim } from './carStudioQuality'
+import { carPaintStudies, isCarPaintStudy } from './carPaintStudies'
 
 const velvet = new Set(['18501', '18581', '19691'])
 const leather = new Set(['18661', '19771'])
@@ -20,6 +21,7 @@ export function applyCarStudioMaterials(
       MeshPhysicalMaterial,
       {
         roughness: number
+        metalness: number
         clearcoat: number
         clearcoatRoughness: number
         specularIntensity: number
@@ -52,6 +54,7 @@ export function applyCarStudioMaterials(
       if (!glass && (material.transparent || material.transmission > 0)) continue
       originals.set(material, {
         roughness: material.roughness,
+        metalness: material.metalness,
         clearcoat: material.clearcoat,
         clearcoatRoughness: material.clearcoatRoughness,
         specularIntensity: material.specularIntensity,
@@ -67,17 +70,14 @@ export function applyCarStudioMaterials(
         material.clearcoat = finish ? 0.42 : 0.65
         material.clearcoatRoughness = finish ? 0.18 : 0.13
         if (
-          paintLook === 'graphite' &&
+          isCarPaintStudy(paintLook) &&
           finish &&
           paint &&
           material.userData.source_vpb_material_id === 20159
         ) {
-          // Artistic satin graphite, not a measured automotive paint or metallic
-          // conversion. Lift the diffuse base independently of the room exposure.
-          material.color.set('#484b4f')
-          material.roughness = 0.3
-          material.clearcoat = 0.65
-          material.clearcoatRoughness = 0.13
+          const { color, ...parameters } = carPaintStudies[paintLook]
+          material.color.set(color)
+          Object.assign(material, parameters)
         }
       } else if (tire) {
         // Artistic dry rubber candidate. Keep authored tread normal/specular/AO;

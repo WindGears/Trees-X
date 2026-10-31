@@ -10,9 +10,15 @@ import {
 } from './reventon-showroom/browser.mjs'
 
 const materialAudit = process.env.TREES_PAINT_AUDIT === 'material'
-const output = materialAudit
-  ? 'artifacts/car-showroom/paint-response-r14'
-  : 'artifacts/car-showroom/paint-lighting-r14'
+const lobeAudit = process.env.TREES_PAINT_AUDIT === 'lobes'
+const metallicAudit = process.env.TREES_PAINT_AUDIT === 'metallic'
+const output = metallicAudit
+  ? 'artifacts/car-showroom/paint-metallic-r14'
+  : lobeAudit
+    ? 'artifacts/car-showroom/paint-lobes-r14'
+    : materialAudit
+      ? 'artifacts/car-showroom/paint-response-r14'
+      : 'artifacts/car-showroom/paint-lighting-r14'
 const url =
   'http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=rim&carStudioPaint=graphite&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local'
 await mkdir(output, { recursive: true })
@@ -67,6 +73,8 @@ try {
       source: material.source ?? material,
       color: (material.source ?? material).color.clone(),
       roughness: (material.source ?? material).roughness,
+      clearcoat: (material.source ?? material).clearcoat,
+      metalness: (material.source ?? material).metalness,
     }))
     return [...materials].map((m) => ({
       name: m.name,
@@ -82,19 +90,32 @@ try {
     }))
   })
   assert.ok(report.materials.length > 0, 'Actual paint materials required')
-  const modes = materialAudit
-    ? ['baseline', 'slate-color', 'roughness-low', 'roughness-high', 'restored']
-    : ['baseline', 'no-ssr', 'no-gi', 'native-beauty', 'paint-no-ao', 'restored']
+  const modes = metallicAudit
+    ? ['baseline', 'metallic-base', 'slate-dielectric', 'slate-metallic', 'restored']
+    : lobeAudit
+      ? ['baseline', 'native-baseline', 'no-coat', 'black-base', 'black-base-no-coat', 'restored']
+      : materialAudit
+        ? ['baseline', 'slate-color', 'roughness-low', 'roughness-high', 'restored']
+        : ['baseline', 'no-ssr', 'no-gi', 'native-beauty', 'paint-no-ao', 'restored']
   for (const mode of modes) {
+    const isolateLobes = lobeAudit && !['baseline', 'restored'].includes(mode)
     const flags = {
-      ssr: !['no-ssr', 'native-beauty'].includes(mode),
-      gi: !['no-gi', 'native-beauty'].includes(mode),
+      ssr: !isolateLobes && !['no-ssr', 'native-beauty'].includes(mode),
+      gi: !isolateLobes && !['no-gi', 'native-beauty'].includes(mode),
     }
     await page.evaluate(
       ({ mode, flags }) => {
         for (const entry of window.__paintAudit) {
           entry.source.color.copy(entry.color)
           entry.source.roughness = entry.roughness
+          entry.source.clearcoat = entry.clearcoat
+          entry.source.metalness = entry.metalness
+          if (['metallic-base', 'slate-metallic'].includes(mode)) entry.source.metalness = 0.65
+          if (['slate-dielectric', 'slate-metallic'].includes(mode))
+            entry.source.color.set('#7b7e83')
+          if (['no-coat', 'black-base-no-coat'].includes(mode)) entry.source.clearcoat = 0
+          if (['black-base', 'black-base-no-coat'].includes(mode))
+            entry.source.color.setRGB(0, 0, 0)
           if (mode === 'slate-color') entry.source.color.set('#7b7e83')
           if (mode === 'roughness-low') entry.source.roughness = 0.12
           if (mode === 'roughness-high') entry.source.roughness = 0.45
@@ -142,10 +163,21 @@ try {
           color: m.color.toArray(),
           roughness: m.roughness,
           metalness: m.metalness,
+          clearcoat: m.clearcoat,
+          specularIntensity: m.specularIntensity,
           aoMapIntensity: m.aoMapIntensity,
         })),
       )
       if (mode === 'paint-no-ao') assert.ok(materialInputs.every((m) => m.aoMapIntensity === 0))
+      if (['no-coat', 'black-base-no-coat'].includes(mode))
+        assert.ok(materialInputs.every((m) => m.clearcoat === 0))
+      if (['black-base', 'black-base-no-coat'].includes(mode))
+        assert.ok(materialInputs.every((m) => m.color.every((c) => c === 0)))
+      if (lobeAudit) assert.ok(materialInputs.every((m) => m.specularIntensity === 1))
+      if (['metallic-base', 'slate-metallic'].includes(mode))
+        assert.ok(materialInputs.every((m) => m.metalness === 0.65))
+      if (['slate-dielectric', 'slate-metallic'].includes(mode))
+        assert.ok(materialInputs.every((m, i) => m.color[0] > report.materials[i].color[0]))
       if (mode === 'roughness-low') assert.ok(materialInputs.every((m) => m.roughness === 0.12))
       if (mode === 'roughness-high') assert.ok(materialInputs.every((m) => m.roughness === 0.45))
       if (mode === 'slate-color')
@@ -164,6 +196,9 @@ try {
   }
   assert.deepEqual(report.errors, [])
   report.passed = true
+  if (lobeAudit)
+    report.interpretation =
+      'Native isolation disables SSR/GI corrections together. Black base removes dielectric diffuse; no-coat also changes base throughput. Tone mapping, bloom, AO and native shadow remain, so screenshots are not additive radiance components. Specular intensity stays 1 to retain the same supported material branch.'
 } catch (error) {
   report.failure = String(error)
   throw error

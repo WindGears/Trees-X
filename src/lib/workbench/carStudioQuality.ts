@@ -1,9 +1,10 @@
 import type { Object3D } from 'three'
 import { isAuditedReventonSource } from './reventonCandidate'
 import type { GlbSource } from './types'
+import { isCarPaintStudy, type CarPaintStudy } from './carPaintStudies'
 
 export type CarStudioQuality = 'studio'
-export type CarStudioPaint = 'source' | 'graphite'
+export type CarStudioPaint = 'source' | CarPaintStudy
 export type CarStudioTrim = 'source' | 'satin'
 
 export function resolveCarStudioTrim(source: GlbSource, search: string): CarStudioTrim {
@@ -17,10 +18,11 @@ export function resolveCarStudioTrim(source: GlbSource, search: string): CarStud
 
 export function resolveCarStudioPaint(source: GlbSource, search: string): CarStudioPaint {
   const query = new URLSearchParams(search)
+  const paint = query.get('carStudioPaint')
   return resolveCarStudioQuality(source, search) &&
     query.get('carShowroom') === 'cold-studio' &&
-    query.get('carStudioPaint') === 'graphite'
-    ? 'graphite'
+    isCarPaintStudy(paint)
+    ? paint
     : 'source'
 }
 

@@ -54,12 +54,49 @@ describe('reversible car studio calibration', () => {
     texture.dispose()
     geometry.dispose()
   })
-  it('calibrates only verified body paint in the explicit candidate and restores color identity', () => {
+  it.each([
+    {
+      look: 'graphite',
+      color: '484b4f',
+      metalness: 0,
+      roughness: 0.3,
+      coat: 0.65,
+      coatRoughness: 0.13,
+    },
+    {
+      look: 'metallic',
+      color: '7b7e83',
+      metalness: 0.65,
+      roughness: 0.3,
+      coat: 0.65,
+      coatRoughness: 0.13,
+    },
+    {
+      look: 'matte',
+      color: '777b79',
+      metalness: 0.35,
+      roughness: 0.44,
+      coat: 1,
+      coatRoughness: 0.42,
+    },
+    {
+      look: 'orange',
+      color: 'e96708',
+      metalness: 0.2,
+      roughness: 0.32,
+      coat: 1,
+      coatRoughness: 0.09,
+    },
+  ] as const)('restores verified %s paint and borrowed resource identities', (study) => {
     const model = new Group(),
       geometry = new BoxGeometry(),
       texture = new Texture()
     const materials = ['20159', '15023', '20159'].map((id, i) => {
-      const material = new MeshPhysicalMaterial({ color: '#141414', map: texture, roughness: 0.24 })
+      const material = new MeshPhysicalMaterial({
+        color: '#141414',
+        map: texture,
+        roughness: 0.24,
+      })
       material.name = `Reventon / ${i === 2 ? 'door_1' : 'fixed'} / ${id}`
       if (i !== 2) material.userData.source_vpb_material_id = Number(id)
       model.add(new Mesh(geometry, material))
@@ -70,12 +107,13 @@ describe('reversible car studio calibration', () => {
     const owner = applyCarStudioMaterials(
       model,
       [materials[0]!.name, materials[2]!.name],
-      'graphite',
+      study.look,
     )
-    expect(materials[0]!.color.getHexString()).toBe('484b4f')
-    expect(materials[0]!.roughness).toBe(0.3)
-    expect(materials[0]!.clearcoatRoughness).toBe(0.13)
-    expect(materials[0]!.metalness).toBe(0)
+    expect(materials[0]!.color.getHexString()).toBe(study.color)
+    expect(materials[0]!.roughness).toBe(study.roughness)
+    expect(materials[0]!.clearcoat).toBe(study.coat)
+    expect(materials[0]!.clearcoatRoughness).toBe(study.coatRoughness)
+    expect(materials[0]!.metalness).toBe(study.metalness)
     expect(materials[1]!.color).toEqual(baseline[1])
     expect(materials[1]!.clearcoat).toBe(0)
     expect(materials[2]!.color).toEqual(baseline[2])
@@ -85,6 +123,7 @@ describe('reversible car studio calibration', () => {
     materials.forEach((m, i) => {
       expect(m.color).toBe(colors[i])
       expect(m.color).toEqual(baseline[i])
+      expect(m.metalness).toBe(0)
       expect(m.map).toBe(texture)
       m.dispose()
     })

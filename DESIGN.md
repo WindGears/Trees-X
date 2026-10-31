@@ -221,6 +221,14 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 汽车漆面显式对照（2026-10-30）
+
+冷白棚使用 `carStudioPaint=graphite|metallic|matte|orange` 进行同灯光、同曝光、
+同相机材质研究。依次为旧深灰、缎光金属灰、原厂风格哑光灰、亮橙演绎；
+不将艺术颜色标为原厂色卡，不把普通 Physical 参数近似宣称为实测珠光模型。
+`carPaintStudies.ts` 是运行参数唯一来源，候选不改变普通入口、其他商品或UI。
+默认仍待本人验收；画面与工程证据见 `.ai/reventon-paint-studies.md`。
+
 ## 主软箱反射构图候选（2026-10-29）
 
 2026-10-30另增`carStudioFinish=rim`（r14）：rim后墙横灯3.5×0.88，位置

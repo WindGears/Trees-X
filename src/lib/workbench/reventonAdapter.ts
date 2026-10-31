@@ -17,6 +17,7 @@ import {
   resolveCarStudioTrim,
 } from './carStudioQuality'
 import { applyCarStudioMaterials } from './carStudioMaterials'
+import { isCarPaintStudy } from './carPaintStudies'
 import { resolveReventonFinishBindings } from './reventonFinishBindings'
 
 export interface ReventonGpuDependencies {
@@ -127,7 +128,7 @@ export function bindReventon(
               : gpu.createStage(renderer, scene, adapter.root)
           // Commit the new original swatch only after successful attachment.
           // Failed setup must leave both the material and its reset baseline native.
-          if (adapter.root.userData.carStudioPaint === 'graphite')
+          if (isCarPaintStudy(adapter.root.userData.carStudioPaint))
             for (const [material, base] of finishes) base.copy(material.color)
         } catch (error) {
           gpuMaterials?.dispose()

@@ -31,21 +31,24 @@ describe('car-only studio capability', () => {
       ),
     ).toBe('source')
   })
-  it('keeps calibrated graphite behind audited showroom and explicit paint selection', () => {
-    const search = '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite'
-    expect(resolveCarStudioPaint(source, search)).toBe('graphite')
-    expect(resolveCarStudioPaint(source, '?carStudioPaint=graphite')).toBe('source')
-    expect(resolveCarStudioPaint(source, '?carQuality=studio&carStudioPaint=graphite')).toBe(
-      'source',
-    )
-    expect(resolveCarStudioPaint(source, search.replace('graphite', 'custom'))).toBe('source')
-    expect(
-      resolveCarStudioPaint(
-        { ...source, bundle: { ...source.bundle, sha256: 'f'.repeat(64) } },
-        search,
-      ),
-    ).toBe('source')
-  })
+  it.each(['graphite', 'metallic', 'matte', 'orange'] as const)(
+    'gates %s paint by audited showroom',
+    (paint) => {
+      const search = `?carQuality=studio&carShowroom=cold-studio&carStudioPaint=${paint}`
+      expect(resolveCarStudioPaint(source, search)).toBe(paint)
+      expect(resolveCarStudioPaint(source, '?carStudioPaint=graphite')).toBe('source')
+      expect(resolveCarStudioPaint(source, '?carQuality=studio&carStudioPaint=graphite')).toBe(
+        'source',
+      )
+      expect(resolveCarStudioPaint(source, search.replace(paint, 'custom'))).toBe('source')
+      expect(
+        resolveCarStudioPaint(
+          { ...source, bundle: { ...source.bundle, sha256: 'f'.repeat(64) } },
+          search,
+        ),
+      ).toBe('source')
+    },
+  )
   it('requires the explicit option and the exact audited source reference', () => {
     expect(resolveCarStudioQuality(source, '?carQuality=studio')).toBe('studio')
     expect(resolveCarStudioQuality(source, '')).toBeUndefined()

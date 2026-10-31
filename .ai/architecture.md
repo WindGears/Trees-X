@@ -1,5 +1,12 @@
 # 新版目标架构与当前实现
 
+## 车漆样片参数所有权（2026-10-30）
+
+`carPaintStudies` 只存静态艺术参数，`carStudioQuality` 精确资源/展厅门控，
+`carStudioMaterials` 唯一保存和恢复颜色、金属度、清漆及粗糙度。适配器仅在
+成功挂载后提交复原色；失败与dispose恢复原值。无新贴图、图节点或绘制时钟，
+不改变公开配置。实际限制见[样片记录](reventon-paint-studies.md)。
+
 ## 摄影棚照明与反射透射缓存（2026-10-28）
 
 panelBrightness场景局部owner分别维护灯板与统一照明倍率，灯光/环境基于初始值

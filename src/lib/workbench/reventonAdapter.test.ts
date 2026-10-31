@@ -111,12 +111,20 @@ function localProgress(track: MotionTrack, progress: number) {
 }
 
 describe('Reventon registered workbench adapter', () => {
-  it.each([false, true])(
-    'commits graphite reset color only after successful setup (failure=%s)',
-    (fail) => {
+  it.each([
+    { fail: false, paintLook: 'graphite', color: '484b4f' },
+    { fail: true, paintLook: 'graphite', color: '484b4f' },
+    { fail: false, paintLook: 'metallic', color: '7b7e83' },
+    { fail: true, paintLook: 'metallic', color: '7b7e83' },
+    { fail: false, paintLook: 'matte', color: '777b79' },
+    { fail: true, paintLook: 'matte', color: '777b79' },
+    { fail: false, paintLook: 'orange', color: 'e96708' },
+    { fail: true, paintLook: 'orange', color: 'e96708' },
+  ])(
+    'commits $paintLook reset color only after successful setup (failure=$fail)',
+    ({ fail, paintLook, color }) => {
       vi.stubGlobal('location', {
-        search:
-          '?carQuality=studio&carShowroom=cold-studio&carStudioPaint=graphite&carCabinLight=local',
+        search: `?carQuality=studio&carShowroom=cold-studio&carStudioPaint=${paintLook}&carCabinLight=local`,
       })
       const f = fixture(),
         paint = new MeshPhysicalMaterial({ color: '#101010' }),
@@ -134,7 +142,7 @@ describe('Reventon registered workbench adapter', () => {
       const adapter = bindReventon(f.product, f.source, f.model, f.release, {
         prepareMaterials: () => ({ sync: vi.fn(), dispose: vi.fn() }),
         createStage: (_renderer, _scene, root) => {
-          expect(paint.color.getHexString()).toBe('484b4f')
+          expect(paint.color.getHexString()).toBe(color)
           expect(root.userData.carStudioCabinLighting).toBe('local')
           if (fail) throw new Error('candidate setup failed')
           return stage
@@ -153,7 +161,7 @@ describe('Reventon registered workbench adapter', () => {
         expect(adapter.root.userData.carStudioCabinLighting).toBe(fail ? undefined : 'local')
         adapter.setFinish('#eeeeee')
         adapter.setFinish(f.product.presentation.finishes[0]!.color)
-        expect(paint.color.getHexString()).toBe(fail ? native.getHexString() : '484b4f')
+        expect(paint.color.getHexString()).toBe(fail ? native.getHexString() : color)
         adapter.dispose()
         expect(adapter.root.userData.carStudioCabinLighting).toBeUndefined()
         expect(paint.color).toEqual(native)
