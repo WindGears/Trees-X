@@ -130,6 +130,7 @@ export function bindReventon(
           // Failed setup must leave both the material and its reset baseline native.
           if (isCarPaintStudy(adapter.root.userData.carStudioPaint))
             for (const [material, base] of finishes) base.copy(material.color)
+          if (showroom) adapter.root.userData.carPaintChoices = true
         } catch (error) {
           gpuMaterials?.dispose()
           gpuMaterials = undefined
@@ -166,11 +167,16 @@ export function bindReventon(
       studio?.markDirty()
     },
     setFinish(color) {
+      studioMaterials?.setPaint('source')
       const original = color.toLowerCase() === product.presentation.finishes[0]?.color.toLowerCase()
       for (const [material, base] of finishes) {
         if (original) material.color.copy(base)
         else material.color.set(color)
       }
+    },
+    setPaintStudy(paint) {
+      if (disposed || !adapter.root.userData.carPaintChoices) return false
+      return studioMaterials?.setPaint(paint) ?? false
     },
     select(node) {
       clearSelection()
@@ -198,6 +204,7 @@ export function bindReventon(
       studioMaterials = undefined
       delete adapter.root.userData.carStudioQuality
       delete adapter.root.userData.carStudioPaint
+      delete adapter.root.userData.carPaintChoices
       delete adapter.root.userData.carStudioCabinLighting
       textures.clear()
       finishes.clear()

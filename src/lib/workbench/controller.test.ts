@@ -315,3 +315,23 @@ it('does not emit late scene changes or load new resources after disposal', asyn
   expect(item.changed).not.toHaveBeenCalled()
   expect(vi.mocked(loadAdapter).mock.calls).toHaveLength(loads)
 })
+
+it('routes local paint intent through the adapter and invalidates material history without moving camera', async () => {
+  const item = await loadedStage()
+  try {
+    const camera = item.camera.position.clone()
+    const setPaint = vi.fn(() => true)
+    item.adapter.setPaintStudy = setPaint
+    item.adapter.root.userData.carPaintChoices = true
+    expect(item.controller.hasCarPaintStudies()).toBe(true)
+    item.changed.mockClear()
+    item.controller.sync('@car-paint/silver', false, {})
+    expect(setPaint).toHaveBeenCalledWith('silver')
+    expect(item.changed.mock.calls).toContainEqual(['materials'])
+    expect(item.camera.position).toEqual(camera)
+    item.controller.sync('@car-paint/unknown', false, {})
+    expect(setPaint).toHaveBeenCalledTimes(1)
+  } finally {
+    item.dispose()
+  }
+})

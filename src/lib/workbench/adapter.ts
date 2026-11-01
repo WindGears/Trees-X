@@ -5,6 +5,7 @@ import type { Vec3, WorkbenchProduct } from './types'
 import { bindMotionPose } from './motionPose'
 import type { WorkbenchRenderer } from './rendering/rendererTypes'
 import type { StudioMoodUpdate } from './studio/mood'
+import type { CarPaintStudy } from './carPaintStudies'
 
 export interface SceneAdapter {
   root: Group
@@ -14,6 +15,7 @@ export interface SceneAdapter {
   traceBackground?: Texture
   apply(): void
   setFinish(color: string): void
+  setPaintStudy?(paint: CarPaintStudy): boolean
   point(node: string, result: Vector3, anchor?: Vec3): Vector3 | undefined
   dispose(): void
   attach?(scene: Scene, renderer: WorkbenchRenderer, camera?: Camera): void

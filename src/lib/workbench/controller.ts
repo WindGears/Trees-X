@@ -14,6 +14,7 @@ import { progressActions } from './motionConfig'
 import { createMotionPlayback, type MotionFeedback } from './motionPlayback'
 import { structureReveal, type PlaceCallout } from './calloutProjection'
 import type { StudioMoodUpdate } from './studio/mood'
+import { carPaintChoice } from './carPaintStudies'
 
 export function createStageController(
   renderer: WorkbenchRenderer,
@@ -356,7 +357,9 @@ export function createStageController(
     sync(finishId: string, exploded: boolean, actions: Record<string, number>, instant = false) {
       if (!adapter || !product) return
       const color = product.presentation.finishes.find((f) => f.id === finishId)?.color
-      if (color) {
+      const paint = carPaintChoice(finishId)
+      if (paint && adapter.setPaintStudy?.(paint)) dirty('materials')
+      else if (color) {
         adapter.setFinish(color)
         dirty('materials')
       }
@@ -370,6 +373,9 @@ export function createStageController(
         adapter.apply()
         dirty('pose-jump')
       } else animate(values)
+    },
+    hasCarPaintStudies() {
+      return adapter?.root.userData.carPaintChoices === true
     },
     pulse(id: string) {
       if (

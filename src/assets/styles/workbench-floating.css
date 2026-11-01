@@ -686,6 +686,10 @@
 
 /* Small screens keep the same flow with a horizontal rail and bottom sheet. */
 @media (max-width: 760px) {
+  /* Inspector controls must stay above the scene's debug/status overlays. */
+  .wb-floating .wb-panel {
+    z-index: 8;
+  }
   .workbench.wb-floating {
     min-height: 640px;
   }

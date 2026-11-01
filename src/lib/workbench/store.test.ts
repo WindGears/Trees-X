@@ -11,6 +11,29 @@ const progressSamples: unknown[] = JSON.parse(
 )
 beforeEach(() => setActivePinia(createPinia()))
 afterEach(() => vi.unstubAllGlobals())
+it('keeps local paint intents gated by a ready runtime capability and clears it per product', () => {
+  const store = useWorkbenchStore()
+  const product = parseProduct(progressSamples[1])
+  store.preview(product)
+  const original = store.finishId
+  store.finish('@car-paint/silver')
+  expect(store.finishId).toBe(original)
+  store.carPaintAvailable = true
+  store.finish('@car-paint/silver')
+  expect(store.finishId).toBe(original)
+  store.ready(product.slug, store.revision)
+  store.finish('@car-paint/silver')
+  expect(store.finishId).toBe('@car-paint/silver')
+  store.finish('@car-paint/unknown')
+  expect(store.finishId).toBe('@car-paint/silver')
+  store.restore()
+  expect(store.finishId).toBe(original)
+  store.preview(parseProduct(samples[0]))
+  expect(store.carPaintAvailable).toBe(false)
+  store.finish('@car-paint/orange')
+  expect(store.finishId).not.toBe('@car-paint/orange')
+  store.dispose()
+})
 it('admin preview cancels pending public selection, gates the first frame and retries without public API', async () => {
   let resolve!: (response: Response) => void
   const fetcher = vi.fn().mockImplementation(

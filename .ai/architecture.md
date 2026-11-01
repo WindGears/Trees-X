@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 汽车局部材质选择（2026-11-01）
+
+场景成功挂载后发布carPaintChoices能力，store只保存能力和finishId意图；
+`@car-paint/`不进入公开配置。controller调用适配器setPaintStudy并通知材料
+历史失效，studioMaterials唯一保存/恢复源材质参数，runtime同步沿用原机制。
+切换商品清能力，设备恢复重新确认；普通试色恢复装载基线，无额外纹理或时钟。
+具体边界与验证见[漆面记录](reventon-paint-studies.md)。
+
 ## 车漆样片参数所有权（2026-10-30）
 
 `carPaintStudies` 只存静态艺术参数，`carStudioQuality` 精确资源/展厅门控，

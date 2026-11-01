@@ -8,8 +8,14 @@ import WorkbenchParts from './WorkbenchParts.vue'
 import WorkbenchLayoutMotion from './WorkbenchLayoutMotion.vue'
 import WorkbenchPianoMotion from './WorkbenchPianoMotion.vue'
 import WorkbenchCarMotion from './WorkbenchCarMotion.vue'
+import WorkbenchCarPaints from './WorkbenchCarPaints.vue'
+import { carPaintStudies, isCarPaintStudy } from '@/lib/workbench/carPaintStudies'
 import '@/assets/styles/workbench-parts.css'
 const store = useWorkbenchStore()
+const initialCarPaint = new URLSearchParams(location.search).get('carStudioPaint')
+const initialPaintColor = isCarPaintStudy(initialCarPaint)
+  ? carPaintStudies[initialCarPaint].color
+  : undefined
 const step = computed(() => store.presentation?.guide[store.guideStep])
 const motions = computed(() => (store.presentation ? progressActions(store.presentation) : []))
 const car = computed(
@@ -24,18 +30,28 @@ const discrete = computed(
 <template>
   <div v-if="store.presentation" class="wb-panel-content">
     <template v-if="store.panel === 'appearance'">
-      <h3>选择外壳颜色</h3>
+      <WorkbenchCarPaints />
+      <h3>{{ store.carPaintAvailable ? '其他配色' : '选择外壳颜色' }}</h3>
       <p>旋转商品，观察同一表面在不同角度的变化。</p>
       <div class="wb-finishes">
         <button
-          v-for="finish in store.presentation.finishes"
+          v-for="(finish, index) in store.presentation.finishes"
           :key="finish.id"
           type="button"
           :disabled="!store.available"
           :aria-pressed="store.finishId === finish.id"
           @click="store.finish(finish.id)"
         >
-          <span class="wb-swatch" :style="{ background: finish.color }"></span>{{ finish.name }}
+          <span
+            class="wb-swatch"
+            :style="{
+              background:
+                store.carPaintAvailable && index === 0
+                  ? (initialPaintColor ?? finish.color)
+                  : finish.color,
+            }"
+          ></span
+          >{{ store.carPaintAvailable && index === 0 ? '恢复初始外观' : finish.name }}
           <Check v-if="store.finishId === finish.id" :size="16" />
         </button>
       </div>

@@ -31,7 +31,7 @@ describe('car-only studio capability', () => {
       ),
     ).toBe('source')
   })
-  it.each(['graphite', 'metallic', 'matte', 'orange'] as const)(
+  it.each(['graphite', 'metallic', 'matte', 'orange', 'silver'] as const)(
     'gates %s paint by audited showroom',
     (paint) => {
       const search = `?carQuality=studio&carShowroom=cold-studio&carStudioPaint=${paint}`

@@ -32,6 +32,16 @@ export function applyCarStudioMaterials(
       }
     >()
   let disposed = false
+  const paintBaselines = new Map<
+    MeshPhysicalMaterial,
+    {
+      color: Color
+      metalness: number
+      roughness: number
+      clearcoat: number
+      clearcoatRoughness: number
+    }
+  >()
   model.traverse((object) => {
     if (!(object instanceof Mesh)) return
     for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
@@ -104,9 +114,30 @@ export function applyCarStudioMaterials(
       } else if (chrome.has(id)) material.roughness = Math.min(material.roughness, 0.21)
       else if (id === '18029') material.roughness = Math.min(material.roughness, 0.35)
       material.needsUpdate = true
+      if (finish && paint && material.userData.source_vpb_material_id === 20159)
+        paintBaselines.set(material, {
+          color: material.color.clone(),
+          metalness: material.metalness,
+          roughness: material.roughness,
+          clearcoat: material.clearcoat,
+          clearcoatRoughness: material.clearcoatRoughness,
+        })
     }
   })
   return {
+    setPaint(look: CarStudioPaint) {
+      if (disposed || paintBaselines.size === 0) return false
+      for (const [material, baseline] of paintBaselines) {
+        const values = isCarPaintStudy(look) ? carPaintStudies[look] : baseline
+        const { color, ...parameters } = values
+        const hadCoat = material.clearcoat > 0
+        material.metalness = baseline.metalness
+        Object.assign(material, parameters)
+        material.color.set(color)
+        if (hadCoat !== material.clearcoat > 0) material.needsUpdate = true
+      }
+      return true
+    },
     dispose() {
       if (disposed) return
       disposed = true
@@ -118,6 +149,7 @@ export function applyCarStudioMaterials(
         material.needsUpdate = true
       }
       originals.clear()
+      paintBaselines.clear()
     },
   }
 }

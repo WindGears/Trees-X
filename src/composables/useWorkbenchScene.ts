@@ -225,6 +225,7 @@ export function useWorkbenchScene(
       if (!disposed && request === generation) store.loading(product.slug, revision, phase)
     })
     if (!loaded || disposed || request !== generation) return
+    store.carPaintAvailable = current.hasCarPaintStudies?.() ?? false
     applyStudioMood(true)
     current.sync(store.finishId, store.exploded, store.actions, true)
     if (props.checkpoint?.slug === product.slug && props.checkpoint.revision === revision) {

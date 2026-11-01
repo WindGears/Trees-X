@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import { getProduct, getProducts } from '@/lib/workbench/api'
 import type { LoadPhase } from '@/lib/workbench/assetBundle'
 import { LatestRequest } from '@/lib/workbench/latest'
+import { carPaintChoice } from '@/lib/workbench/carPaintStudies'
 import type {
   MotionCommand,
   Panel,
@@ -41,6 +42,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     catalog = new LatestRequest()
   let previewProduct: WorkbenchProduct | null = null
   const presentation = computed(() => product.value?.presentation)
+  const carPaintAvailable = ref(false)
   const hotspot = computed(() =>
     presentation.value?.hotspots.find((h) => h.id === selectedPart.value),
   )
@@ -88,7 +90,11 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     exploded.value = value
   }
   function finish(id: string) {
-    if (!presentation.value?.finishes.some((f) => f.id === id)) return
+    if (
+      !presentation.value?.finishes.some((f) => f.id === id) &&
+      !(available.value && carPaintAvailable.value && carPaintChoice(id))
+    )
+      return
     manual()
     finishId.value = id
   }
@@ -173,6 +179,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     )
   }
   function prepare(id: string) {
+    carPaintAvailable.value = false
     slug.value = id
     revision.value++
     status.value = 'loading'
@@ -228,6 +235,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     }
   }
   function dispose() {
+    carPaintAvailable.value = false
     previewProduct = null
     selection.cancel()
     catalog.cancel()
@@ -254,6 +262,7 @@ export const useWorkbenchStore = defineStore('workbench', () => {
     query,
     category,
     finishId,
+    carPaintAvailable,
     selectedPart,
     hotspot,
     exploded,

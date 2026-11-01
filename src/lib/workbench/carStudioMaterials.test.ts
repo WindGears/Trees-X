@@ -87,6 +87,14 @@ describe('reversible car studio calibration', () => {
       coat: 1,
       coatRoughness: 0.09,
     },
+    {
+      look: 'silver',
+      color: 'b7bcc3',
+      metalness: 1,
+      roughness: 0.19,
+      coat: 0,
+      coatRoughness: 0.12,
+    },
   ] as const)('restores verified %s paint and borrowed resource identities', (study) => {
     const model = new Group(),
       geometry = new BoxGeometry(),

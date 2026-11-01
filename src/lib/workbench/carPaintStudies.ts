@@ -30,9 +30,29 @@ export const carPaintStudies = {
     clearcoat: 1,
     clearcoatRoughness: 0.09,
   },
+  silver: {
+    color: '#b7bcc3',
+    metalness: 1,
+    roughness: 0.19,
+    clearcoat: 0,
+    clearcoatRoughness: 0.12,
+  },
 } as const
 
 export type CarPaintStudy = keyof typeof carPaintStudies
+
+export const carPaintChoices = [
+  { id: 'orange', name: '亮橙', color: carPaintStudies.orange.color },
+  { id: 'silver', name: '亮银金属', color: carPaintStudies.silver.color },
+  { id: 'metallic', name: '缎光金属灰', color: carPaintStudies.metallic.color },
+  { id: 'matte', name: '哑光灰', color: carPaintStudies.matte.color },
+] as const
+
+/** Local UI intent only; never stored in ProductPresentation or sent to the API. */
+export function carPaintChoice(id: string): CarPaintStudy | undefined {
+  const value = id.startsWith('@car-paint/') ? id.slice(11) : undefined
+  return isCarPaintStudy(value) ? value : undefined
+}
 
 export function isCarPaintStudy(value: unknown): value is CarPaintStudy {
   return typeof value === 'string' && Object.hasOwn(carPaintStudies, value)

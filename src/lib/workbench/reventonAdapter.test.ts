@@ -120,6 +120,8 @@ describe('Reventon registered workbench adapter', () => {
     { fail: true, paintLook: 'matte', color: '777b79' },
     { fail: false, paintLook: 'orange', color: 'e96708' },
     { fail: true, paintLook: 'orange', color: 'e96708' },
+    { fail: false, paintLook: 'silver', color: 'b7bcc3' },
+    { fail: true, paintLook: 'silver', color: 'b7bcc3' },
   ])(
     'commits $paintLook reset color only after successful setup (failure=$fail)',
     ({ fail, paintLook, color }) => {
@@ -159,6 +161,17 @@ describe('Reventon registered workbench adapter', () => {
           )
         else adapter.attach?.(new Scene(), renderer, new PerspectiveCamera())
         expect(adapter.root.userData.carStudioCabinLighting).toBe(fail ? undefined : 'local')
+        const pose = { ...adapter.pose }
+        expect(adapter.setPaintStudy?.('silver')).toBe(!fail)
+        if (!fail) {
+          expect(paint.metalness).toBe(1)
+          expect(paint.clearcoat).toBe(0)
+          expect(paint.color.getHexString()).toBe('b7bcc3')
+          expect(adapter.setPaintStudy?.('orange')).toBe(true)
+          expect(paint.clearcoat).toBe(1)
+          expect(paint.metalness).toBe(0.2)
+        }
+        expect(adapter.pose).toEqual(pose)
         adapter.setFinish('#eeeeee')
         adapter.setFinish(f.product.presentation.finishes[0]!.color)
         expect(paint.color.getHexString()).toBe(fail ? native.getHexString() : color)
