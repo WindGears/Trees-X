@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { chromium, expect } from '@playwright/test'
 import { bridge } from './demo/browser-check.mjs'
+import { unpackRgbaReadback } from './reventon-showroom/rgba-readback.mjs'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181',
   asset = process.env.REVENTON_ASSET || 'original',
@@ -61,6 +62,9 @@ async function waitFor(predicate, label, timeout = 90000) {
 }
 async function attach() {
   await bridge(page, true)
+  await page.addScriptTag({
+    content: `window.__unpackRgbaReadback = ${unpackRgbaReadback.toString()}`,
+  })
   await page.evaluate(() => {
     const seen = new Set()
     const find = (vnode) => {
@@ -116,7 +120,7 @@ async function historyPixels() {
       ],
       results = []
     for (const region of regions) {
-      const payload = await renderer.readRenderTargetPixelsAsync(
+      const packedPayload = await renderer.readRenderTargetPixelsAsync(
           signal.renderTarget,
           region.x,
           region.y,
@@ -124,7 +128,7 @@ async function historyPixels() {
           region.height,
           0,
         ),
-        guides = await renderer.readRenderTargetPixelsAsync(
+        packedGuides = await renderer.readRenderTargetPixelsAsync(
           statistics.renderTarget,
           region.x,
           region.y,
@@ -132,6 +136,8 @@ async function historyPixels() {
           region.height,
           1,
         ),
+        payload = window.__unpackRgbaReadback(packedPayload, region.width, region.height),
+        guides = window.__unpackRgbaReadback(packedGuides, region.width, region.height),
         counts = [],
         coverage = [],
         distances = []

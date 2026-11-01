@@ -15,6 +15,8 @@ import {
 const output = process.env.TREES_COMPACT_OUTPUT ?? 'artifacts/car-showroom/compact-room'
 const paintStudies = process.env.TREES_ROOM_PAIR === 'paints'
 const paintPair = paintStudies || process.env.TREES_ROOM_PAIR === 'metallic'
+const roomPaint = process.env.TREES_COMPARE_PAINT ?? 'graphite'
+assert.ok(['graphite', 'metallic', 'matte', 'orange'].includes(roomPaint))
 const variants = paintStudies
   ? ['graphite', 'metallic', 'matte', 'orange']
   : paintPair
@@ -48,7 +50,7 @@ try {
     if (paintPair) {
       url.searchParams.set('carStudioFinish', 'rim')
       url.searchParams.set('carStudioPaint', variant)
-    }
+    } else url.searchParams.set('carStudioPaint', roomPaint)
     await page.goto(url.href)
     await expect(page.getByRole('slider', { name: '摄影棚照明', exact: true })).toBeVisible({
       timeout: 240000,
