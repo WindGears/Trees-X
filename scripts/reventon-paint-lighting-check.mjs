@@ -12,22 +12,30 @@ import {
 const materialAudit = process.env.TREES_PAINT_AUDIT === 'material'
 const lobeAudit = process.env.TREES_PAINT_AUDIT === 'lobes'
 const metallicAudit = process.env.TREES_PAINT_AUDIT === 'metallic'
-const output = metallicAudit
-  ? 'artifacts/car-showroom/paint-metallic-r14'
-  : lobeAudit
-    ? 'artifacts/car-showroom/paint-lobes-r14'
-    : materialAudit
-      ? 'artifacts/car-showroom/paint-response-r14'
-      : 'artifacts/car-showroom/paint-lighting-r14'
-const url =
-  'http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=rim&carStudioPaint=graphite&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local'
+const surfaceAudit = process.env.TREES_PAINT_AUDIT === 'surface'
+const silverAudit = process.env.TREES_PAINT_AUDIT === 'silver'
+const samplingAudit = process.env.TREES_PAINT_AUDIT === 'sampling'
+const pixelRatio = Number(process.env.TREES_PAINT_PIXEL_RATIO ?? 1)
+assert.ok([1, 1.5, 2].includes(pixelRatio), 'Only explicit diagnostic pixel ratios allowed')
+const paintStudy = process.env.TREES_PAINT_STUDY ?? 'graphite'
+assert.ok(['graphite', 'metallic', 'matte', 'orange', 'silver'].includes(paintStudy))
+const output =
+  process.env.TREES_PAINT_OUTPUT ??
+  (metallicAudit
+    ? 'artifacts/car-showroom/paint-metallic-r14'
+    : lobeAudit
+      ? 'artifacts/car-showroom/paint-lobes-r14'
+      : materialAudit
+        ? 'artifacts/car-showroom/paint-response-r14'
+        : 'artifacts/car-showroom/paint-lighting-r14')
+const url = `http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=rim&carStudioPaint=${paintStudy}&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local`
 await mkdir(output, { recursive: true })
-const report = { passed: false, visualPassed: false, url, errors: [], shots: [] }
+const report = { passed: false, visualPassed: false, url, pixelRatio, errors: [], shots: [] }
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
 try {
   const page = await browser.newPage({
     viewport: { width: 1440, height: 1000 },
-    deviceScaleFactor: 1,
+    deviceScaleFactor: pixelRatio,
   })
   page.on('pageerror', (e) => report.errors.push(e.message))
   page.on('console', (m) => {
@@ -75,6 +83,9 @@ try {
       roughness: (material.source ?? material).roughness,
       clearcoat: (material.source ?? material).clearcoat,
       metalness: (material.source ?? material).metalness,
+      specularIntensity: (material.source ?? material).specularIntensity,
+      sourceSide: (material.source ?? material).side,
+      runtimeSide: material.side,
     }))
     return [...materials].map((m) => ({
       name: m.name,
@@ -90,15 +101,28 @@ try {
     }))
   })
   assert.ok(report.materials.length > 0, 'Actual paint materials required')
-  const modes = metallicAudit
-    ? ['baseline', 'metallic-base', 'slate-dielectric', 'slate-metallic', 'restored']
-    : lobeAudit
-      ? ['baseline', 'native-baseline', 'no-coat', 'black-base', 'black-base-no-coat', 'restored']
-      : materialAudit
-        ? ['baseline', 'slate-color', 'roughness-low', 'roughness-high', 'restored']
-        : ['baseline', 'no-ssr', 'no-gi', 'native-beauty', 'paint-no-ao', 'restored']
+  const modes = samplingAudit
+    ? ['baseline', 'native-beauty', 'restored']
+    : silverAudit
+      ? ['baseline', 'silver-026', 'silver-032', 'silver-038', 'restored']
+      : surfaceAudit
+        ? ['baseline', 'native-beauty', 'paint-front-only', 'paint-no-specular', 'restored']
+        : metallicAudit
+          ? ['baseline', 'metallic-base', 'slate-dielectric', 'slate-metallic', 'restored']
+          : lobeAudit
+            ? [
+                'baseline',
+                'native-baseline',
+                'no-coat',
+                'black-base',
+                'black-base-no-coat',
+                'restored',
+              ]
+            : materialAudit
+              ? ['baseline', 'slate-color', 'roughness-low', 'roughness-high', 'restored']
+              : ['baseline', 'no-ssr', 'no-gi', 'native-beauty', 'paint-no-ao', 'restored']
   for (const mode of modes) {
-    const isolateLobes = lobeAudit && !['baseline', 'restored'].includes(mode)
+    const isolateLobes = (lobeAudit || surfaceAudit) && !['baseline', 'restored'].includes(mode)
     const flags = {
       ssr: !isolateLobes && !['no-ssr', 'native-beauty'].includes(mode),
       gi: !isolateLobes && !['no-gi', 'native-beauty'].includes(mode),
@@ -110,6 +134,19 @@ try {
           entry.source.roughness = entry.roughness
           entry.source.clearcoat = entry.clearcoat
           entry.source.metalness = entry.metalness
+          entry.source.specularIntensity = entry.specularIntensity
+          entry.source.side = entry.sourceSide
+          const side = mode === 'paint-front-only' ? 0 : entry.runtimeSide
+          if (entry.material.side !== side) {
+            entry.material.side = side
+            entry.material.needsUpdate = true
+          }
+          if (mode === 'paint-front-only') entry.source.side = 0
+          if (mode === 'paint-no-specular') {
+            entry.source.metalness = 0
+            entry.source.clearcoat = 0
+            entry.source.specularIntensity = 0
+          }
           if (['metallic-base', 'slate-metallic'].includes(mode)) entry.source.metalness = 0.65
           if (['slate-dielectric', 'slate-metallic'].includes(mode))
             entry.source.color.set('#7b7e83')
@@ -119,6 +156,7 @@ try {
           if (mode === 'slate-color') entry.source.color.set('#7b7e83')
           if (mode === 'roughness-low') entry.source.roughness = 0.12
           if (mode === 'roughness-high') entry.source.roughness = 0.45
+          if (mode.startsWith('silver-')) entry.source.roughness = Number(mode.slice(7)) / 100
           if (entry.ao) Object.defineProperty(entry.material, 'aoMapIntensity', entry.ao)
           else delete entry.material.aoMapIntensity
           if (mode === 'paint-no-ao')
@@ -153,7 +191,7 @@ try {
       assert.equal(state.lighting.signals.ssgi, flags.gi)
       assert.equal(state.sameRenderer && state.sameCanvas, true)
       assert.equal(state.canvases, 1)
-      assert.deepEqual(state.output, [1440, 1000])
+      assert.deepEqual(state.output, [1440 * pixelRatio, 1000 * pixelRatio])
       assert.deepEqual(state.gpuErrors, [])
       assert.deepEqual(state.lights, report.initial.lights)
       assert.equal(state.environment, report.initial.environment)
@@ -165,6 +203,7 @@ try {
           metalness: m.metalness,
           clearcoat: m.clearcoat,
           specularIntensity: m.specularIntensity,
+          side: m.side,
           aoMapIntensity: m.aoMapIntensity,
         })),
       )
@@ -174,12 +213,21 @@ try {
       if (['black-base', 'black-base-no-coat'].includes(mode))
         assert.ok(materialInputs.every((m) => m.color.every((c) => c === 0)))
       if (lobeAudit) assert.ok(materialInputs.every((m) => m.specularIntensity === 1))
+      if (mode === 'paint-front-only') assert.ok(materialInputs.every((m) => m.side === 0))
+      if (mode === 'paint-no-specular')
+        assert.ok(
+          materialInputs.every(
+            (m) => m.specularIntensity === 0 && m.metalness === 0 && m.clearcoat === 0,
+          ),
+        )
       if (['metallic-base', 'slate-metallic'].includes(mode))
         assert.ok(materialInputs.every((m) => m.metalness === 0.65))
       if (['slate-dielectric', 'slate-metallic'].includes(mode))
         assert.ok(materialInputs.every((m, i) => m.color[0] > report.materials[i].color[0]))
       if (mode === 'roughness-low') assert.ok(materialInputs.every((m) => m.roughness === 0.12))
       if (mode === 'roughness-high') assert.ok(materialInputs.every((m) => m.roughness === 0.45))
+      if (mode.startsWith('silver-'))
+        assert.ok(materialInputs.every((m) => m.roughness === Number(mode.slice(7)) / 100))
       if (mode === 'slate-color')
         assert.ok(materialInputs.every((m, i) => m.color[0] > report.materials[i].color[0]))
       const file = `${mode}-${view}.png`
