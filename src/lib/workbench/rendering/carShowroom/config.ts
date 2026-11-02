@@ -204,17 +204,19 @@ export const rimColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomC
 
 export function resolveColdStudioConfig(search: string) {
   const finish = new URLSearchParams(search).get('carStudioFinish')
-  return finish === 'stone'
-    ? stoneColdStudioConfig
-    : finish === 'rim'
-      ? rimColdStudioConfig
-      : finish === 'balanced'
-        ? balancedColdStudioConfig
-        : finish === 'compact'
-          ? compactColdStudioConfig
-          : finish === 'refined'
-            ? refinedColdStudioConfig
-            : coldStudioConfig
+  return finish === 'bounce'
+    ? bounceColdStudioConfig
+    : finish === 'stone'
+      ? stoneColdStudioConfig
+      : finish === 'rim'
+        ? rimColdStudioConfig
+        : finish === 'balanced'
+          ? balancedColdStudioConfig
+          : finish === 'compact'
+            ? compactColdStudioConfig
+            : finish === 'refined'
+              ? refinedColdStudioConfig
+              : coldStudioConfig
 }
 
 /** Ground-return study: only stone reflectance changes; lamps and car stay r14. */
@@ -222,4 +224,24 @@ export const stoneColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroo
   ...rimColdStudioConfig,
   revision: 15,
   floor: { ...rimColdStudioConfig.floor, color: '#dddddd' },
+})
+
+/** Floor-bounce lighting candidate. Same room, four emitters and capture budget.
+ * A tilted high side softbox illuminates the floor seen by downward body normals.
+ * Always capture separately; never combine this light with r14 baked radiance. */
+export const bounceColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...rimColdStudioConfig,
+  revision: 16,
+  lights: {
+    ...rimColdStudioConfig.lights,
+    fill: {
+      ...rimColdStudioConfig.lights.fill,
+      width: 3.36,
+      height: 1,
+      position: [5.65, 3.05, -0.2],
+      target: [1, 0, -0.2],
+      intensity: 12.8,
+      radiance: 12.8,
+    },
+  },
 })

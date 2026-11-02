@@ -1,5 +1,12 @@
 # 新版目标架构与当前实现
 
+## 同尺寸环境候选 r16（2026-11-02）
+
+`bounceColdStudioConfig` 只改变 r14 现有 fill，导出/离线制作/运行共用配置。
+`bakedProbe` 按完整配置与实际文件摘要加载独立 r16，不与 r14 环境叠加。
+复用原纹理/PMREM owner，不增加实时目标、查询和时钟；车漆参数不变。
+同尺寸不是性能测量结果，实际收益和边界见[r16 记录](reventon-bounce-room-validation.md)。
+
 ## 汽车局部材质选择（2026-11-01）
 
 场景成功挂载后发布carPaintChoices能力，store只保存能力和finishId意图；

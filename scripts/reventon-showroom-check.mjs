@@ -321,9 +321,17 @@ try {
       candidate.searchParams.set('carFloor', 'cycles')
       candidate.searchParams.set('carFloorLight', 'local')
       candidate.searchParams.set('carFloorReflection', 'planar')
-      if (['refined', 'compact', 'balanced', 'rim'].includes(process.env.TREES_STUDIO_FINISH))
+      if (
+        ['refined', 'compact', 'balanced', 'rim', 'stone', 'bounce'].includes(
+          process.env.TREES_STUDIO_FINISH,
+        )
+      )
         candidate.searchParams.set('carStudioFinish', process.env.TREES_STUDIO_FINISH)
-      if (['graphite', 'metallic', 'matte', 'orange'].includes(process.env.TREES_STUDIO_PAINT))
+      if (
+        ['graphite', 'metallic', 'matte', 'orange', 'silver'].includes(
+          process.env.TREES_STUDIO_PAINT,
+        )
+      )
         candidate.searchParams.set('carStudioPaint', process.env.TREES_STUDIO_PAINT)
       if (process.env.TREES_CAR_MSAA === '1') candidate.searchParams.set('carAntialias', 'msaa')
       if (process.env.TREES_STUDIO_TRIM === 'satin')

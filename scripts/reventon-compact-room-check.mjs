@@ -16,19 +16,21 @@ const output = process.env.TREES_COMPACT_OUTPUT ?? 'artifacts/car-showroom/compa
 const paintStudies = process.env.TREES_ROOM_PAIR === 'paints'
 const paintPair = paintStudies || process.env.TREES_ROOM_PAIR === 'metallic'
 const roomPaint = process.env.TREES_COMPARE_PAINT ?? 'graphite'
-assert.ok(['graphite', 'metallic', 'matte', 'orange'].includes(roomPaint))
+assert.ok(['graphite', 'metallic', 'matte', 'orange', 'silver'].includes(roomPaint))
 const variants = paintStudies
   ? ['graphite', 'metallic', 'matte', 'orange']
   : paintPair
     ? ['graphite', 'metallic']
-    : process.env.TREES_ROOM_PAIR === 'stone'
-      ? ['rim', 'stone']
-      : process.env.TREES_ROOM_PAIR === 'rim'
-        ? ['balanced', 'rim']
-        : process.env.TREES_ROOM_PAIR === 'balanced'
-          ? ['compact', 'balanced']
-          : ['refined', 'compact']
-const revisions = { refined: 11, compact: 12, balanced: 13, rim: 14, stone: 15 }
+    : process.env.TREES_ROOM_PAIR === 'bounce'
+      ? ['rim', 'bounce']
+      : process.env.TREES_ROOM_PAIR === 'stone'
+        ? ['rim', 'stone']
+        : process.env.TREES_ROOM_PAIR === 'rim'
+          ? ['balanced', 'rim']
+          : process.env.TREES_ROOM_PAIR === 'balanced'
+            ? ['compact', 'balanced']
+            : ['refined', 'compact']
+const revisions = { refined: 11, compact: 12, balanced: 13, rim: 14, stone: 15, bounce: 16 }
 await mkdir(output, { recursive: true })
 const report = { passed: false, visualPassed: false, errors: [], runs: [] }
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
