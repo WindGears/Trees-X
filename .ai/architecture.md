@@ -1,5 +1,11 @@
 # 新版目标架构与当前实现
 
+## r17 布光覆盖候选（2026-11-02）
+
+`wrapColdStudioConfig` 从r16派生，原fill加宽后移且降低单位面积辐射；构造、
+导出、烘焙加载均引用同一配置，资源独立保存。不改变材质、SSR、DDGI预算、
+所有权或时钟；真实资源/运行观测见[r17记录](reventon-wrap-room-validation.md)。
+
 ## 同尺寸环境候选 r16（2026-11-02）
 
 `bounceColdStudioConfig` 只改变 r14 现有 fill，导出/离线制作/运行共用配置。

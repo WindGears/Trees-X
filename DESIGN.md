@@ -221,6 +221,13 @@ components:
 
 # Design System: Trees X 三维商品工作台
 
+## 亮银加宽补光样片 r17（2026-11-02）
+
+`carStudioFinish=wrap`：fill为5.6×1，位置[5.65,3.05,2]、目标[1,0,2]，
+强度/辐射7.68；相对r16保持面积×辐射，其他灯光与原亮银不变。
+斜前侧板的反射更清楚，正侧下门板略暗；保留独立同尺寸环境和默认入口。
+技术验证及局限见 `.ai/reventon-wrap-room-validation.md`，用户观感仍待确认。
+
 ## 亮银环境反射样片 r16（2026-11-02）
 
 `carStudioFinish=bounce` 保留原亮银参数与 r14 房间，仅将 fill 调为斜向地面的

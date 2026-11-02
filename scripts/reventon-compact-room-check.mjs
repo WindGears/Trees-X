@@ -21,16 +21,26 @@ const variants = paintStudies
   ? ['graphite', 'metallic', 'matte', 'orange']
   : paintPair
     ? ['graphite', 'metallic']
-    : process.env.TREES_ROOM_PAIR === 'bounce'
-      ? ['rim', 'bounce']
-      : process.env.TREES_ROOM_PAIR === 'stone'
-        ? ['rim', 'stone']
-        : process.env.TREES_ROOM_PAIR === 'rim'
-          ? ['balanced', 'rim']
-          : process.env.TREES_ROOM_PAIR === 'balanced'
-            ? ['compact', 'balanced']
-            : ['refined', 'compact']
-const revisions = { refined: 11, compact: 12, balanced: 13, rim: 14, stone: 15, bounce: 16 }
+    : process.env.TREES_ROOM_PAIR === 'wrap'
+      ? ['bounce', 'wrap']
+      : process.env.TREES_ROOM_PAIR === 'bounce'
+        ? ['rim', 'bounce']
+        : process.env.TREES_ROOM_PAIR === 'stone'
+          ? ['rim', 'stone']
+          : process.env.TREES_ROOM_PAIR === 'rim'
+            ? ['balanced', 'rim']
+            : process.env.TREES_ROOM_PAIR === 'balanced'
+              ? ['compact', 'balanced']
+              : ['refined', 'compact']
+const revisions = {
+  refined: 11,
+  compact: 12,
+  balanced: 13,
+  rim: 14,
+  stone: 15,
+  bounce: 16,
+  wrap: 17,
+}
 await mkdir(output, { recursive: true })
 const report = { passed: false, visualPassed: false, errors: [], runs: [] }
 const browser = await chromium.launch({ channel: 'msedge', headless: true })

@@ -204,19 +204,21 @@ export const rimColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomC
 
 export function resolveColdStudioConfig(search: string) {
   const finish = new URLSearchParams(search).get('carStudioFinish')
-  return finish === 'bounce'
-    ? bounceColdStudioConfig
-    : finish === 'stone'
-      ? stoneColdStudioConfig
-      : finish === 'rim'
-        ? rimColdStudioConfig
-        : finish === 'balanced'
-          ? balancedColdStudioConfig
-          : finish === 'compact'
-            ? compactColdStudioConfig
-            : finish === 'refined'
-              ? refinedColdStudioConfig
-              : coldStudioConfig
+  return finish === 'wrap'
+    ? wrapColdStudioConfig
+    : finish === 'bounce'
+      ? bounceColdStudioConfig
+      : finish === 'stone'
+        ? stoneColdStudioConfig
+        : finish === 'rim'
+          ? rimColdStudioConfig
+          : finish === 'balanced'
+            ? balancedColdStudioConfig
+            : finish === 'compact'
+              ? compactColdStudioConfig
+              : finish === 'refined'
+                ? refinedColdStudioConfig
+                : coldStudioConfig
 }
 
 /** Ground-return study: only stone reflectance changes; lamps and car stay r14. */
@@ -242,6 +244,23 @@ export const bounceColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowro
       target: [1, 0, -0.2],
       intensity: 12.8,
       radiance: 12.8,
+    },
+  },
+})
+
+/** Broader fill footprint at equal emitter area*radiance to r16. No extra light. */
+export const wrapColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...bounceColdStudioConfig,
+  revision: 17,
+  lights: {
+    ...bounceColdStudioConfig.lights,
+    fill: {
+      ...bounceColdStudioConfig.lights.fill,
+      width: 5.6,
+      position: [5.65, 3.05, 2],
+      target: [1, 0, 2],
+      intensity: 7.68,
+      radiance: 7.68,
     },
   },
 })

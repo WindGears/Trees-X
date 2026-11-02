@@ -10,6 +10,7 @@ import {
   rimColdStudioConfig,
   stoneColdStudioConfig,
   bounceColdStudioConfig,
+  wrapColdStudioConfig,
   compactColdStudioConfig,
 } from './config'
 import { usesBakedFloorReflection } from './floorReflection'
@@ -25,6 +26,7 @@ describe('persisted static room HDR', () => {
     rimColdStudioConfig,
     stoneColdStudioConfig,
     bounceColdStudioConfig,
+    wrapColdStudioConfig,
     compactColdStudioConfig,
   ])(
     'loads Cycles revision $revision with all four emitter directions intact',
