@@ -20,6 +20,7 @@ import { cyclesStudioRecords as rimCyclesStudioRecords } from './rimCyclesRecord
 import { cyclesStudioRecords as stoneCyclesStudioRecords } from './stoneCyclesRecords'
 import { cyclesStudioRecords as bounceCyclesStudioRecords } from './bounceCyclesRecords'
 import { cyclesStudioRecords as wrapCyclesStudioRecords } from './wrapCyclesRecords'
+import { cyclesStudioRecords as wrapWideCyclesStudioRecords } from './wrapWideCyclesRecords'
 import type { createColdStudioProbe } from './probe'
 
 /** Persisted raster capture or offline Cycles radiance, not a surface lightmap.
@@ -35,21 +36,23 @@ export async function loadBakedStudioProbe(
   signal.throwIfAborted()
   const bundle =
     kind === 'cycles'
-      ? config.revision === 17
-        ? wrapCyclesStudioRecords
-        : config.revision === 16
-          ? bounceCyclesStudioRecords
-          : config.revision === 15
-            ? stoneCyclesStudioRecords
-            : config.revision === 14
-              ? rimCyclesStudioRecords
-              : config.revision === 13
-                ? balancedCyclesStudioRecords
-                : config.revision === 12
-                  ? compactCyclesStudioRecords
-                  : config.revision === 11
-                    ? refinedCyclesStudioRecords
-                    : cyclesStudioRecords
+      ? config.revision === 18
+        ? wrapWideCyclesStudioRecords
+        : config.revision === 17
+          ? wrapCyclesStudioRecords
+          : config.revision === 16
+            ? bounceCyclesStudioRecords
+            : config.revision === 15
+              ? stoneCyclesStudioRecords
+              : config.revision === 14
+                ? rimCyclesStudioRecords
+                : config.revision === 13
+                  ? balancedCyclesStudioRecords
+                  : config.revision === 12
+                    ? compactCyclesStudioRecords
+                    : config.revision === 11
+                      ? refinedCyclesStudioRecords
+                      : cyclesStudioRecords
       : bakedStudioRecords
   if (JSON.stringify(config) !== JSON.stringify(bundle.config))
     throw new Error('摄影棚配置已改变，需要重新生成静态反射资源')

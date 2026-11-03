@@ -322,7 +322,7 @@ try {
       candidate.searchParams.set('carFloorLight', 'local')
       candidate.searchParams.set('carFloorReflection', 'planar')
       if (
-        ['refined', 'compact', 'balanced', 'rim', 'stone', 'bounce', 'wrap'].includes(
+        ['refined', 'compact', 'balanced', 'rim', 'stone', 'bounce', 'wrap', 'wrap-wide'].includes(
           process.env.TREES_STUDIO_FINISH,
         )
       )

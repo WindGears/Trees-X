@@ -1,0 +1,139 @@
+{
+  "config": {
+    "id": "cold-studio",
+    "revision": 18,
+    "groundY": -0.01,
+    "exposure": 1,
+    "roomBox": {
+      "min": [-6, -0.01, -7],
+      "max": [6, 3.8, 7]
+    },
+    "capture": {
+      "size": 1024,
+      "position": [0, 0.8, -0.35]
+    },
+    "floor": {
+      "color": "#999999",
+      "roughness": 1,
+      "metalness": 0,
+      "width": 12,
+      "depth": 14,
+      "tileSize": 1.2,
+      "normalStrength": 0.1
+    },
+    "wallColor": "#3b3c3e",
+    "ceilingColor": "#303339",
+    "coveRadius": 0.45,
+    "lights": {
+      "key": {
+        "id": "key",
+        "color": "#ffffff",
+        "intensity": 5.8,
+        "radiance": 5.8,
+        "width": 4.8,
+        "height": 2.6,
+        "position": [-2.6, 3.66, -3],
+        "target": [-2.6, 0.55, -3]
+      },
+      "strip": {
+        "id": "strip",
+        "color": "#ffffff",
+        "intensity": 4.6,
+        "radiance": 4.6,
+        "width": 4.8,
+        "height": 1.8,
+        "position": [2.6, 3.66, 1.2],
+        "target": [2.6, 0.55, 1.2]
+      },
+      "rim": {
+        "id": "rim",
+        "color": "#ffffff",
+        "intensity": 5.2,
+        "radiance": 5.2,
+        "width": 3.5,
+        "height": 0.88,
+        "position": [-3.75, 2.25, 6.86],
+        "target": [-3.75, 2.25, 0]
+      },
+      "fill": {
+        "id": "fill",
+        "color": "#ffffff",
+        "intensity": 7.68,
+        "radiance": 7.68,
+        "width": 7.4,
+        "height": 1,
+        "position": [5.65, 3.05, 1.1],
+        "target": [1, 0, 1.1]
+      }
+    }
+  },
+  "records": [
+    {
+      "role": "specular",
+      "file": "specular.rgba16f.bin",
+      "width": 4096,
+      "height": 2048,
+      "bytes": 37976647,
+      "rawBytes": 67108864,
+      "sha256": "57dae98051b73f5dcc56f4baecdba86efa1f998328a2f438f3dfd9a832b1d5e5",
+      "rawSha256": "b42265e66c0bc3e44281b75c60f8d8b956f804ec50a9f92ca260f6721fa1f137",
+      "dataType": "float16",
+      "maxAbsoluteError": 0.003905773162841797,
+      "maxRelativeError": 0.0009754907792838676
+    },
+    {
+      "role": "indirect",
+      "file": "indirect.rgba16f.bin",
+      "width": 1024,
+      "height": 512,
+      "bytes": 2514506,
+      "rawBytes": 4194304,
+      "sha256": "de0f7a089dc62ea1bc829836e0723e537dc65e7f87f0512cc72fe19b77cd215a",
+      "rawSha256": "de2fc873bf5e374b13e0fcf754002e6122f77a68a43dc8a9a8220ef56b33b6b0",
+      "dataType": "float16",
+      "maxAbsoluteError": 0.0004882216453552246,
+      "maxRelativeError": 0.0009754907792838676
+    }
+  ],
+  "sourceSha256": "408276ac4cee24e87ffa5c7298632378b35131ffdfc6213d52d4bdd560f09695",
+  "samples": 256,
+  "faceSize": 1024,
+  "engine": "Cycles OptiX; OIDN; 12 bounces; no clamp",
+  "seconds": 115.703545,
+  "blender": "5.2.2 LTS",
+  "excludes": ["car", "UI", "contact shadow overlay", "bloom"],
+  "orientation": [
+    {
+      "light": "key",
+      "pixel": [518, 596],
+      "current": [5.8012800216674805, 5.814040184020996, 5.791186809539795],
+      "reference": null,
+      "referenceFlipped": null
+    },
+    {
+      "light": "strip",
+      "pixel": [2398, 530],
+      "current": [4.59776496887207, 4.60945987701416, 4.591833114624023],
+      "reference": null,
+      "referenceFlipped": null
+    },
+    {
+      "light": "rim",
+      "pixel": [3384, 908],
+      "current": [5.198919296264648, 5.211453437805176, 5.190601825714111],
+      "reference": null,
+      "referenceFlipped": null
+    },
+    {
+      "light": "fill",
+      "pixel": [2211, 784],
+      "current": [7.67397403717041, 7.696683406829834, 7.664112091064453],
+      "reference": null,
+      "referenceFlipped": null
+    }
+  ],
+  "method": "Cycles offline room radiance; native Principled approximation of Three Physical; not a floor lightmap",
+  "colorSpace": "linear-srgb",
+  "encoding": "gzip little-endian RGBA float16; opaque .bin extension",
+  "orientationConvention": "bottom-up equirect rows, DataTexture flipY=false, matches r10 WebGPU capture"
+}

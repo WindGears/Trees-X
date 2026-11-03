@@ -204,21 +204,23 @@ export const rimColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomC
 
 export function resolveColdStudioConfig(search: string) {
   const finish = new URLSearchParams(search).get('carStudioFinish')
-  return finish === 'wrap'
-    ? wrapColdStudioConfig
-    : finish === 'bounce'
-      ? bounceColdStudioConfig
-      : finish === 'stone'
-        ? stoneColdStudioConfig
-        : finish === 'rim'
-          ? rimColdStudioConfig
-          : finish === 'balanced'
-            ? balancedColdStudioConfig
-            : finish === 'compact'
-              ? compactColdStudioConfig
-              : finish === 'refined'
-                ? refinedColdStudioConfig
-                : coldStudioConfig
+  return finish === 'wrap-wide'
+    ? wrapWideColdStudioConfig
+    : finish === 'wrap'
+      ? wrapColdStudioConfig
+      : finish === 'bounce'
+        ? bounceColdStudioConfig
+        : finish === 'stone'
+          ? stoneColdStudioConfig
+          : finish === 'rim'
+            ? rimColdStudioConfig
+            : finish === 'balanced'
+              ? balancedColdStudioConfig
+              : finish === 'compact'
+                ? compactColdStudioConfig
+                : finish === 'refined'
+                  ? refinedColdStudioConfig
+                  : coldStudioConfig
 }
 
 /** Ground-return study: only stone reflectance changes; lamps and car stay r14. */
@@ -261,6 +263,22 @@ export const wrapColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroom
       target: [1, 0, 2],
       intensity: 7.68,
       radiance: 7.68,
+    },
+  },
+})
+
+/** Extend only the rear end of the approved wrap fill, preserving its front edge
+ * and radiance. More emitting area, not an equal-energy comparison; same draw budget. */
+export const wrapWideColdStudioConfig: CarShowroomConfig = Object.freeze<CarShowroomConfig>({
+  ...wrapColdStudioConfig,
+  revision: 18,
+  lights: {
+    ...wrapColdStudioConfig.lights,
+    fill: {
+      ...wrapColdStudioConfig.lights.fill,
+      width: 7.4,
+      position: [5.65, 3.05, 1.1],
+      target: [1, 0, 1.1],
     },
   },
 })

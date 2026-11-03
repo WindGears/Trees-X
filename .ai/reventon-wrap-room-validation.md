@@ -34,8 +34,11 @@ r17分配192几何而r16为190，两者均161纹理、39目标、228程序。此
 
 - 摄影棚91项测试、全量151文件981项测试通过；本轮限制2个测试worker。
 - npm run build与demo:prepare通过，演示服务重新启动，真实API就绪。
-- npm run check中TypeScript/ESLint通过，格式检查仍因13个既有文件停止，
-  包括用户PERFORMANCE_OPTIMIZATION.md及旧回退文件。未擅自修改；完整check未通过。
+- npm run check中TypeScript/ESLint通过。清理旧回退文件换行后，格式检查仅由用户
+  未提交的PERFORMANCE_OPTIMIZATION.md阻断；未修改该用户文档，完整check仍未通过。
+- 独立执行被格式检查阻断的后续检查：105个Vue组件行数通过；legacy form-01
+  资源检查通过（不替代汽车包校验）；demo工具49项、实时探针23项、打字机v2工具
+  36项和漆面工具14项通过。日志保留在cycles-r17，换行整理未改变运行行为。
 - silver-wrap-r17/report.json：passed=true、visualPassed=false、错误0。
   八组真实同相机/同车漆/同汽车摘要/同曝光对照；唯一Canvas/renderer，主阴影
   和DDGI实际就绪，不以DOM商品名代替模型身份。
@@ -60,4 +63,6 @@ silver-wrap-r17/performance/report.json：passed=true、错误/失败请求0。
 没有明显新增负担的迹象，但不宣称屏幕30FPS已验收或所有长尾消失。
 
 对照与实机入口：http://127.0.0.1:5181/artifacts/car-showroom/silver-wrap-r17/index.html 。
-已请求用户确认高光方向，未得到回答前保留默认，不擅自晋级。
+用户已选择“采用wrap方向继续完善”。r17成为后续反射美术对照基线；这次选择
+不代表全部画质与实际呈现性能已验收，普通入口仍保持。r18仅在独立wrap-wide
+候选中验证补回后段覆盖，原r17不可变。

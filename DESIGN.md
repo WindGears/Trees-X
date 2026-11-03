@@ -1,4 +1,12 @@
 ---
+
+## 汽车wrap方向与侧面补光（2026-11-02）
+
+用户选择r17 wrap作为反射美术方向，原亮银#b7bcc3、metalness1、roughness0.19、
+clearcoat0保持。r18 wrap-wide独立候选仅将fill宽度5.6延至7.4，中心z=2改1.1，
+高度1、强度7.68不变，保留前端覆盖并补足后段。发光面积增加32.14%，非同能量
+比较。普通入口不变，完整画质仍未通过；见.ai/reventon-wrap-wide-validation.md。
+
 name: Trees X 三维商品工作台
 description: 访客采用方案 C 毛玻璃漂浮工作台；实时 WebGPU 打字机增加明亮与暖夜原位切换、虚化酒吧背景与岩板地台，其他入口保留既有配色。
 scope: 下列 colors/typography/rounded 是共享基础样式；visitorColors/visitorTypography/visitorRounded 仅覆盖 wb-floating。

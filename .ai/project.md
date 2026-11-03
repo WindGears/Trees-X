@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## wrap方向确认与侧面覆盖补足（2026-11-02）
+
+用户已选择wrap继续完善，保持原偏黑亮银。独立wrap-wide/r18只延长同一fill，
+不增加实时反射预算；不将方向认可当作整体验收。
+实机与性能证据见[本轮记录](reventon-wrap-wide-validation.md)。
+
 ## 亮银加宽补光候选（2026-11-02）
 
 `carStudioFinish=wrap` 为 r17：加宽并后移现有fill，保持相对r16的面积×辐射，

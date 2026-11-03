@@ -6,6 +6,7 @@ import {
   resolveColdStudioConfig,
   coldStudioConfig,
   wrapColdStudioConfig,
+  wrapWideColdStudioConfig,
 } from './config'
 import { createColdStudioGeometry } from './geometry'
 
@@ -13,6 +14,7 @@ describe('floor bounce studio candidate', () => {
   it('requires an explicit candidate selection and leaves default and rim intact', () => {
     expect(resolveColdStudioConfig('?carStudioFinish=bounce')).toBe(bounceColdStudioConfig)
     expect(resolveColdStudioConfig('?carStudioFinish=wrap')).toBe(wrapColdStudioConfig)
+    expect(resolveColdStudioConfig('?carStudioFinish=wrap-wide')).toBe(wrapWideColdStudioConfig)
     expect(resolveColdStudioConfig('?carStudioFinish=rim')).toBe(rimColdStudioConfig)
     expect(resolveColdStudioConfig('')).toBe(coldStudioConfig)
   })
@@ -40,7 +42,22 @@ describe('floor bounce studio candidate', () => {
     )
   })
 
-  it.each([bounceColdStudioConfig, wrapColdStudioConfig])(
+  it('extends the selected wrap toward the rear without moving its front edge or changing radiance', () => {
+    const { revision, lights, ...room } = wrapWideColdStudioConfig
+    const { revision: previousRevision, lights: previous, ...oldRoom } = wrapColdStudioConfig
+    expect(room).toEqual(oldRoom)
+    expect(revision).toBeGreaterThan(previousRevision)
+    for (const id of ['key', 'strip', 'rim'] as const) expect(lights[id]).toEqual(previous[id])
+    expect(lights.fill.radiance).toBe(previous.fill.radiance)
+    expect(lights.fill.intensity).toBe(previous.fill.intensity)
+    expect(lights.fill.height).toBe(previous.fill.height)
+    expect(lights.fill.position[2] + lights.fill.width / 2).toBeCloseTo(
+      previous.fill.position[2] + previous.fill.width / 2,
+    )
+    expect(lights.fill.width).toBeGreaterThan(previous.fill.width)
+  })
+
+  it.each([bounceColdStudioConfig, wrapColdStudioConfig, wrapWideColdStudioConfig])(
     'keeps r$revision tilted fixture inside the room and visible to the probe',
     (config) => {
       const room = createColdStudioGeometry(config)
@@ -53,6 +70,8 @@ describe('floor bounce studio candidate', () => {
         expect(bounds.min.y).toBeGreaterThan(config.groundY)
         expect(bounds.max.y).toBeLessThan(config.roomBox.max[1])
         expect(bounds.max.x).toBeLessThan(config.roomBox.max[0])
+        expect(bounds.min.z).toBeGreaterThan(config.roomBox.min[2])
+        expect(bounds.max.z).toBeLessThan(config.roomBox.max[2])
         const origin = new Vector3(...config.capture.position)
         const ray = new Raycaster(origin, panel.position.clone().sub(origin).normalize())
         expect(ray.intersectObject(room.root, true)[0]?.object).toBe(panel)

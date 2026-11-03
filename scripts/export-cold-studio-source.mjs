@@ -4,21 +4,23 @@ import { pathToFileURL } from 'node:url'
 import { resolve } from 'node:path'
 import { createHash } from 'node:crypto'
 
-const revision = process.argv.includes('--wrap')
-  ? 17
-  : process.argv.includes('--bounce')
-    ? 16
-    : process.argv.includes('--stone')
-      ? 15
-      : process.argv.includes('--rim')
-        ? 14
-        : process.argv.includes('--balanced')
-          ? 13
-          : process.argv.includes('--compact')
-            ? 12
-            : process.argv.includes('--refined')
-              ? 11
-              : 10
+const revision = process.argv.includes('--wrap-wide')
+  ? 18
+  : process.argv.includes('--wrap')
+    ? 17
+    : process.argv.includes('--bounce')
+      ? 16
+      : process.argv.includes('--stone')
+        ? 15
+        : process.argv.includes('--rim')
+          ? 14
+          : process.argv.includes('--balanced')
+            ? 13
+            : process.argv.includes('--compact')
+              ? 12
+              : process.argv.includes('--refined')
+                ? 11
+                : 10
 const output = `artifacts/car-showroom/cycles-r${revision}`
 await mkdir(output, { recursive: true })
 await build({
@@ -33,21 +35,23 @@ await build({
 })
 const configs = await import(pathToFileURL(resolve(`${output}/config.mjs`)))
 const config =
-  revision === 17
-    ? configs.wrapColdStudioConfig
-    : revision === 16
-      ? configs.bounceColdStudioConfig
-      : revision === 15
-        ? configs.stoneColdStudioConfig
-        : revision === 14
-          ? configs.rimColdStudioConfig
-          : revision === 13
-            ? configs.balancedColdStudioConfig
-            : revision === 12
-              ? configs.compactColdStudioConfig
-              : revision === 11
-                ? configs.refinedColdStudioConfig
-                : configs.coldStudioConfig
+  revision === 18
+    ? configs.wrapWideColdStudioConfig
+    : revision === 17
+      ? configs.wrapColdStudioConfig
+      : revision === 16
+        ? configs.bounceColdStudioConfig
+        : revision === 15
+          ? configs.stoneColdStudioConfig
+          : revision === 14
+            ? configs.rimColdStudioConfig
+            : revision === 13
+              ? configs.balancedColdStudioConfig
+              : revision === 12
+                ? configs.compactColdStudioConfig
+                : revision === 11
+                  ? configs.refinedColdStudioConfig
+                  : configs.coldStudioConfig
 const room = createColdStudioGeometry(config)
 const meshes = []
 room.root.traverse((object) => {

@@ -21,17 +21,19 @@ const variants = paintStudies
   ? ['graphite', 'metallic', 'matte', 'orange']
   : paintPair
     ? ['graphite', 'metallic']
-    : process.env.TREES_ROOM_PAIR === 'wrap'
-      ? ['bounce', 'wrap']
-      : process.env.TREES_ROOM_PAIR === 'bounce'
-        ? ['rim', 'bounce']
-        : process.env.TREES_ROOM_PAIR === 'stone'
-          ? ['rim', 'stone']
-          : process.env.TREES_ROOM_PAIR === 'rim'
-            ? ['balanced', 'rim']
-            : process.env.TREES_ROOM_PAIR === 'balanced'
-              ? ['compact', 'balanced']
-              : ['refined', 'compact']
+    : process.env.TREES_ROOM_PAIR === 'wrap-wide'
+      ? ['wrap', 'wrap-wide']
+      : process.env.TREES_ROOM_PAIR === 'wrap'
+        ? ['bounce', 'wrap']
+        : process.env.TREES_ROOM_PAIR === 'bounce'
+          ? ['rim', 'bounce']
+          : process.env.TREES_ROOM_PAIR === 'stone'
+            ? ['rim', 'stone']
+            : process.env.TREES_ROOM_PAIR === 'rim'
+              ? ['balanced', 'rim']
+              : process.env.TREES_ROOM_PAIR === 'balanced'
+                ? ['compact', 'balanced']
+                : ['refined', 'compact']
 const revisions = {
   refined: 11,
   compact: 12,
@@ -40,6 +42,7 @@ const revisions = {
   stone: 15,
   bounce: 16,
   wrap: 17,
+  'wrap-wide': 18,
 }
 await mkdir(output, { recursive: true })
 const report = { passed: false, visualPassed: false, errors: [], runs: [] }

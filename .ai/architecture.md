@@ -1,5 +1,11 @@
 # 新版目标架构与当前实现
 
+## r18反射源候选（2026-11-02）
+
+wrapWideColdStudioConfig继承r17，改变fill宽度及中心，完整配置同时用于
+几何、灯光、导出与烘焙校验。r18独立资源沿用bakedProbe唯一owner及取消路径，
+不新增查询或渲染时钟，API/数据库不变。详见[验证](reventon-wrap-wide-validation.md)。
+
 ## r17 布光覆盖候选（2026-11-02）
 
 `wrapColdStudioConfig` 从r16派生，原fill加宽后移且降低单位面积辐射；构造、
