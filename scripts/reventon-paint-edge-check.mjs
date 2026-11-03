@@ -157,6 +157,11 @@ try {
           ? mesh.material[hit.face.materialIndex]
           : mesh.material
         const angle = (a, b) => (Math.acos(Math.max(-1, Math.min(1, a.dot(b)))) * 180) / Math.PI
+        const incoming = direction.clone().transformDirection(mesh.matrixWorld.clone().invert())
+        const faceNormal = hit.face.normal.clone()
+        if (faceNormal.dot(incoming) > 0) faceNormal.negate()
+        const interpolated = hit.normal.clone().normalize()
+        const reflected = incoming.clone().reflect(interpolated)
         return {
           ...pixel,
           mesh: mesh.name,
@@ -174,6 +179,9 @@ try {
             angle(normals[2], normals[0]),
           ),
           normalFaceDegrees: normals.map((v) => angle(v, hit.face.normal)),
+          reflectedPlaneCosine: reflected.dot(faceNormal),
+          geometricViewCosine: -incoming.dot(faceNormal),
+          shadingViewCosine: -incoming.dot(interpolated),
         }
       })
     }, points)
