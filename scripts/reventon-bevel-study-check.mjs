@@ -1,3 +1,4 @@
+/* global crypto */
 import assert from 'node:assert/strict'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { chromium, expect } from '@playwright/test'
@@ -43,7 +44,7 @@ try {
         { timeout: 240000 },
       )
       .toBe(true)
-    const geometry = await page.evaluate(() => {
+    const geometry = await page.evaluate(async () => {
       const result = []
       window.__demo.scene.scene.value.traverse((o) => {
         if (
@@ -51,14 +52,37 @@ try {
           !Array.isArray(o.material) &&
           o.material.userData.source_vpb_material_id === 20159
         )
-          result.push({
-            name: o.name,
-            vertices: o.geometry.attributes.position.count,
-            indices: o.geometry.index?.count ?? null,
-            stats: o.geometry.userData.paintBevelStudy ?? null,
-          })
+          result.push(o)
       })
-      return result
+      return Promise.all(
+        result.map(async (o) => {
+          // Test-only CPU buffer comparison; no readback or instrumentation in production.
+          const expanded = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone()
+          try {
+            const signatures = {}
+            for (const [name, attribute] of Object.entries(expanded.attributes)) {
+              if (name === 'treesPaintBevel') continue
+              const digest = await crypto.subtle.digest('SHA-256', attribute.array)
+              signatures[name] = {
+                sha256: Array.from(new Uint8Array(digest), (v) =>
+                  v.toString(16).padStart(2, '0'),
+                ).join(''),
+                itemSize: attribute.itemSize,
+                normalized: attribute.normalized,
+              }
+            }
+            return {
+              name: o.name,
+              vertices: o.geometry.attributes.position.count,
+              indices: o.geometry.index?.count ?? null,
+              stats: o.geometry.userData.paintBevelStudy ?? null,
+              signatures,
+            }
+          } finally {
+            expanded.dispose()
+          }
+        }),
+      )
     })
     assert.equal(geometry.length, 4)
     assert.ok(geometry.every((g) => (mode === 'baseline' ? !g.stats : g.stats?.selected > 0)))
@@ -122,6 +146,13 @@ try {
     await writeFile(`${output}/checkpoint.json`, JSON.stringify(report, null, 2))
     await page.close()
   }
+  for (const run of report.runs.slice(1))
+    for (const mesh of run.geometry) {
+      const original = report.runs[0].geometry.find((g) => g.name === mesh.name)
+      assert.ok(original)
+      assert.deepEqual(mesh.signatures, original.signatures)
+      assert.equal(mesh.indices, original.indices)
+    }
   for (const run of report.runs.slice(1))
     for (let i = 0; i < report.runs[0].shots.length; i++) {
       const before = report.runs[0].shots[i].state,

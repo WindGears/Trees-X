@@ -37,7 +37,10 @@ describe('explicit paint bevel surface study', () => {
     expect(stats.selected).toBe(1)
     expect(stats.triangles).toBe(2)
     expect(stats.selectedArea / stats.totalArea).toBeLessThan(0.01)
-    expect(Array.from(geometry.getAttribute('treesPaintBevel').array)).toEqual([1, 1, 1, 0, 0, 0])
+    const outputIndex = geometry.index!
+    expect(
+      Array.from(outputIndex.array, (i) => geometry.getAttribute('treesPaintBevel').getX(i)),
+    ).toEqual([1, 1, 1, 0, 0, 0])
     expect(source.index?.count).toBe(6)
     expect(source.getAttribute('treesPaintBevel')).toBeUndefined()
     for (const name of ['position', 'normal', 'uv']) {
@@ -45,10 +48,26 @@ describe('explicit paint bevel surface study', () => {
         after = geometry.getAttribute(name)
       for (let i = 0; i < 6; i++)
         for (let j = 0; j < before.itemSize; j++)
-          expect(after.array[i * before.itemSize + j]).toBe(
+          expect(after.array[outputIndex.getX(i) * before.itemSize + j]).toBe(
             before.array[source.index!.getX(i) * before.itemSize + j],
           )
     }
+    geometry.dispose()
+    source.dispose()
+  })
+
+  it('reuses vertices inside each selection and splits only the shared boundary', () => {
+    const source = sourceGeometry()
+    source.setIndex([0, 1, 2, 0, 1, 2, 0, 1, 3])
+    const { geometry, stats } = bevelStudyGeometry(source)
+    expect(stats.selected).toBe(2)
+    expect(geometry.getAttribute('position').count).toBe(6)
+    expect(geometry.index!.count).toBe(9)
+    expect(Array.from(geometry.index!.array).slice(0, 3)).toEqual(
+      Array.from(geometry.index!.array).slice(3, 6),
+    )
+    expect(geometry.index!.getX(0)).not.toBe(geometry.index!.getX(6))
+    expect(source.getAttribute('position').count).toBe(4)
     geometry.dispose()
     source.dispose()
   })
