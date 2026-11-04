@@ -338,6 +338,8 @@ try {
         candidate.searchParams.set('carStudioTrim', 'satin')
       if (process.env.TREES_CABIN_LIGHT === 'local')
         candidate.searchParams.set('carCabinLight', 'local')
+      if (process.env.TREES_CAR_BEVEL === 'finish')
+        candidate.searchParams.set('carBevelStudy', 'finish')
       activeRun.url = candidate.href
     }
     report.runs.push(activeRun)

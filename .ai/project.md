@@ -1,5 +1,11 @@
 # Trees X 新版项目入口
 
+## 亮银白边局部材质候选（2026-11-04）
+
+保留用户认可的wrap-wide，显式carBevelStudy=finish仅校准亮银窄面响应，
+20状态对照及真实设备丢失恢复通过；大面反射保留，部分非漆面高光仍存在。
+用户已认可右侧效果，r18 wrap-wide亮银默认采用，显式baseline可对照；详见[代价与验证](reventon-silver-seams-validation.md)。
+
 ## wrap白边过滤未晋级（2026-11-04）
 
 用户接受wrap-wide整体反射，当前只处理白边。两档局部几何粗糙度过滤完成32图

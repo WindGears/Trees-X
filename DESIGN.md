@@ -698,3 +698,10 @@ carFloor=cycles 使用同建筑、同灯位的离线路径追踪房间辐射；�
 ## 汽车动态地板倒影（2026-10-26）
 
 显式 carFloorReflection=planar 在烘焙冷白棚中补充动态汽车倒影。保留石板接缝与原房间，透明覆盖过滤后作克制混合，避免整面镜子或固定汽车贴图。该项不代表整体摄影棚画质通过，验证及近似见 .ai/reventon-floor-reflection-validation.md。
+
+# 亮银细边候选，2026-11-04
+
+用户已确认采用细边校准。r18 wrap-wide 保留大面高光，单独压低窄倒角的
+亮银反射颜色并调整局部粗糙度；仅当前亮银参数生效，baseline参数保留旧版对照。
+此为局部材质美术校准，非原厂工艺或错误法线修复；窗框等非漆面高光仍保留。
+完整约束与代价见 [.ai/reventon-silver-seams-validation.md](.ai/reventon-silver-seams-validation.md)。

@@ -1,5 +1,13 @@
 # 新版目标架构与当前实现
 
+## 亮银细边候选（2026-11-04）
+
+carShowroom/materialBinding为r18默认安装paintBevelStudy，显式baseline关闭；
+其他棚版本仅在carBevelStudy=finish下启用，
+只为已核验汽车的四个漆面拥有派生geometry和局部材质节点。恢复先于loader释放，
+实时换色走现有uniform和历史失效流程，无新增时钟或HTTP配置。
+启发式选区及辅助DDGI材质限制见[验收记录](reventon-silver-seams-validation.md)。
+
 ## r18反射源候选（2026-11-02）
 
 wrapWideColdStudioConfig继承r17，改变fill宽度及中心，完整配置同时用于

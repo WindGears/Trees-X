@@ -3,12 +3,22 @@ import { MeshStandardNodeMaterial } from 'three/webgpu'
 import { getShowroomEnvironment } from './binding'
 import { installColdStudioProjection } from './projection'
 import { usesLocalAreaSpecular } from './receiver'
+import { installPaintBevelStudy } from './paintBevelStudy'
 
 /** Realtime coordinator owns these material hooks, before adapter resource cleanup. */
 export function bindShowroomMaterials(scene: Object3D) {
   const binding = getShowroomEnvironment(scene),
     restores: (() => void)[] = [],
     seen = new Set<Material>()
+  if (binding)
+    restores.push(
+      installPaintBevelStudy(
+        scene,
+        new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
+          'carBevelStudy',
+        ) ?? (binding.config.revision === 18 ? 'finish' : null),
+      ),
+    )
   if (binding)
     scene.traverse((object) => {
       if (!(object instanceof Mesh)) return
