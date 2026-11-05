@@ -1,0 +1,57 @@
+{
+  "acceptedDate": "2026-11-05",
+  "scope": "Accepted showroom, paint and narrow-bevel finish. File byte hashes include original line endings. Not a claim of ray-traced reflections or verified display FPS.",
+  "seamFinish": "r18-default",
+  "paint": "silver",
+  "files": [
+    {
+      "sha256": "3ec8e108395e5455b8cad2514cd006bfca9b6099d9063de6b524d1eb40e21580",
+      "bytes": 8022,
+      "path": "src/lib/workbench/rendering/carShowroom/config.ts"
+    },
+    {
+      "sha256": "193a09633552ab1625c62d545fb9c85199304dc664082b94014606bf30f7475c",
+      "bytes": 2502,
+      "path": "src/lib/workbench/rendering/carShowroom/nativeMaterials.ts"
+    },
+    {
+      "sha256": "87207b4c55be0f9713b44daa06039c2215fb651e13308ad76e5d0f9c0900e829",
+      "bytes": 6927,
+      "path": "src/lib/workbench/rendering/carShowroom/paintBevelStudy.ts"
+    },
+    {
+      "sha256": "336aa3d9608f7ac90a0307641d0ebf6e8b8671ac9f7aa5026bcdcf97e0c6060e",
+      "bytes": 1907,
+      "path": "src/lib/workbench/rendering/carShowroom/materialBinding.ts"
+    },
+    {
+      "sha256": "6ab1a80300fd4d81f94f38a13f100c3ab70b902fa07da629d03336e54817f958",
+      "bytes": 3795,
+      "path": "src/lib/workbench/rendering/carShowroom/wrapWideCyclesRecords.ts"
+    },
+    {
+      "sha256": "18637f7c15d20531299f419d9085ff21b5efdab5b5db3ed4ebb688b306d41930",
+      "bytes": 4134,
+      "path": "src/lib/workbench/rendering/carShowroom/lights.ts"
+    },
+    {
+      "sha256": "184fac9904c627317e24d8dbc88d7ca9a70bf7c29b5f493ce7a11352f0fedf5d",
+      "bytes": 4912,
+      "path": "src/lib/workbench/rendering/carShowroom/bakedProbe.ts"
+    },
+    {
+      "sha256": "827a28651bf06653d766fca309b8d38ce95e4e47226052688a40f1d69f8a02cb",
+      "bytes": 6263,
+      "path": "src/lib/workbench/carStudioMaterials.ts"
+    },
+    {
+      "sha256": "8b1f5c1d2d5a31cc182f84f2e10702b7cc98da9e7f5c09d91854130a0fb526cf",
+      "bytes": 1843,
+      "path": "src/lib/workbench/carPaintStudies.ts"
+    }
+  ],
+  "schemaVersion": 1,
+  "finish": "wrap-wide",
+  "showroomRevision": 18,
+  "baselineCommit": "a9285e3"
+}

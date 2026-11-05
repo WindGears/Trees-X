@@ -1,5 +1,12 @@
 # 新版目标架构与当前实现
 
+## 汽车共享场景查询准备（2026-11-05）
+
+carShadow/bvh在原owner内暴露nearestHit与sourceForHit，继续共享派生BLAS/TLAS，
+不新建renderer或时钟。最近命中通过局部WGSL指针桥接读取固定上游结构；TLAS
+槽位须经实际打包映射关联语义Mesh，不能按输入顺序取材质。源资源只借用；
+当前仍为阴影owner，反射生命周期、UV及命中着色未接入。详见[验证与后续](reventon-world-reflection-validation.md)。
+
 ## 亮银细边候选（2026-11-04）
 
 carShowroom/materialBinding为r18默认安装paintBevelStudy，显式baseline关闭；

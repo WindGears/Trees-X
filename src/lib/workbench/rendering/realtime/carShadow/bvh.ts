@@ -1,10 +1,12 @@
 import { REVISION } from 'three'
-import type { Object3D } from 'three'
+import type { Mesh, Object3D } from 'three'
 import { Node, StructNode, type NodeBuilder, type StructTypeNode } from 'three/webgpu'
 import { Fn, nodeObject } from 'three/tsl'
 import * as BvhWebGPU from 'three-mesh-bvh/webgpu'
 import { buildCarShadowBlas } from './bvhWorker'
 import { carShadowSourceVisible, collectCarShadowGeometry } from './geometry'
+import { carNearestHit, validateCarHitLayout, type CarSceneHit } from './nearestHit'
+import { carQuerySources } from './queryIdentity'
 
 export interface CarShadowBvhSnapshot {
   meshes: number
@@ -20,6 +22,10 @@ export interface CarShadowBvhSnapshot {
 
 export interface CarShadowBvh {
   occluded(origin: Node<'vec3'>, direction: Node<'vec3'>, maxDistance: Node<'float'>): Node<'bool'>
+  /** Normalized world direction; maxDistance=0 is unbounded. Shares this owner's BLAS/TLAS. */
+  nearestHit(origin: Node<'vec3'>, direction: Node<'vec3'>, maxDistance: Node<'float'>): CarSceneHit
+  /** Borrowed semantic source; invalid/disposed slots return undefined. */
+  sourceForHit(objectIndex: number): Mesh | undefined
   sync(): boolean
   snapshot(): CarShadowBvhSnapshot
   dispose(): void
@@ -53,6 +59,7 @@ function runtimeApi(): BvhRuntime {
   ) {
     throw new Error('Car key shadow requires Three r185 / three-mesh-bvh 0.9.16 WebGPU API')
   }
+  validateCarHitLayout(api.rayIntersectionResultStruct)
   return api as BvhRuntime
 }
 
@@ -104,9 +111,11 @@ export async function createCarShadowBvh(
   let transformUpdates = 0
   let buildMs = 0
   let storageBytes = 0
+  let sources = new Map<number, Mesh>()
   const dispose = () => {
     if (disposed) return
     disposed = true
+    sources.clear()
     signal.removeEventListener('abort', dispose)
     try {
       data?.dispose()
@@ -134,6 +143,7 @@ export async function createCarShadowBvh(
     root.updateWorldMatrix(true, true)
     for (const binding of geometrySet.bindings) copyBinding(binding)
     data.update()
+    sources = carQuerySources(data, geometrySet.bindings)
     storageBytes = countStorageBytes(data.storage)
     signal.throwIfAborted()
     buildMs = performance.now() - started
@@ -149,6 +159,18 @@ export async function createCarShadowBvh(
       throw new Error('Car key shadow traversal signature changed')
     }
     return {
+      sourceForHit: (objectIndex) => sources.get(objectIndex),
+      nearestHit(origin, direction, maxDistance) {
+        if (disposed) throw new Error('Car key shadow BVH has been disposed')
+        return carNearestHit(
+          traversal as Node,
+          api.rayStruct,
+          api.rayIntersectionResultStruct,
+          origin,
+          direction,
+          maxDistance,
+        )
+      },
       occluded(origin, direction, maxDistance) {
         if (disposed) throw new Error('Car key shadow BVH has been disposed')
         return Fn(() => {
