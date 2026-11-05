@@ -100,6 +100,22 @@ GPU中位/P95为8.716/11.469ms，不是整帧。无页面、HTTP或请求失败�
 只确认分配减少和运行完成，不宣称整体提速或实际呈现30帧通过。
 记录：silver-seams-perf-indexed/report.json；实际呈现仍待验收。
 
+## 管理预览与取景回填收尾（2026-11-05）
+
+真实管理员登录后在r18亮银入口执行右键平移、取景回填、重新预览、退出预览。
+两次预览均确认四份索引漆面、选区和亮银参数，与已采用的前台入口一致；DDGI、
+双射线SSR、主软箱自阴影与cycles-r18环境均实际就绪。平移不重建环境或BVH，
+回填后的相机由新预览实际使用；退出后Canvas为零。没有持久化商品或配置。
+正式商品完整JSON摘要前后相同，网络全部同源，无页面、HTTP或GPU错误。
+
+复现命令：`node scripts/reventon-key-shadow-flow-check.mjs --showroom 1 --silver 1 --device 0 --output artifacts/car-showroom/silver-seams-admin`。
+本批不重复设备丢失测试；上一节点的真实设备恢复记录仍单独保留。脚本初次运行
+因演示服务停止而连接失败，启动后完成；失败记录为server-stopped.json，不能将
+连接失败描述为材质或渲染回归。当前入口也已写入README，不依赖临时图库。
+
+记录：silver-seams-admin/report.json，passed=true、3项闭环检查通过，两个预览
+的56041顶点、23875选中三角形及材质参数一致。主场景实际呈现预算仍未认证。
+
 ## 先前局部对照
 
 粗糙度0.65但不改反射颜色未解决描边；仅对窄面借用相邻大面法线收益有限。

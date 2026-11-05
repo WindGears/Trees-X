@@ -18,19 +18,25 @@ for (let index = 2; index < process.argv.length; index += 2) {
   const key = process.argv[index],
     value = process.argv[index + 1]
   assert.ok(
-    ['--output', '--device', '--showroom'].includes(key) && value,
-    'Expected --output, --device or --showroom value',
+    ['--output', '--device', '--showroom', '--silver'].includes(key) && value,
+    'Expected --output, --device, --showroom or --silver value',
   )
   assert.ok(!args.has(key), 'Duplicate option')
   args.set(key, value)
 }
 assert.ok(['0', '1'].includes(args.get('--device') ?? '0'), '--device requires 0 or 1')
 assert.ok(['0', '1'].includes(args.get('--showroom') ?? '0'), '--showroom requires 0 or 1')
+assert.ok(['0', '1'].includes(args.get('--silver') ?? '0'), '--silver requires 0 or 1')
+assert.ok(
+  args.get('--silver') !== '1' || args.get('--showroom') === '1',
+  '--silver requires --showroom 1',
+)
 const config = readDemoConfig(),
   base = localAuditOrigin(process.env.CHECK_URL ?? config.baseUrl),
   output = resolve(args.get('--output') ?? 'artifacts/car-key-shadow/flow'),
   deviceTest = args.get('--device') === '1',
   showroomTest = args.get('--showroom') === '1',
+  silverTest = args.get('--silver') === '1',
   detailUrl = new URL('/api/v1/admin/products/reventon', base).href,
   digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex'),
   timeout = 240000
@@ -44,6 +50,7 @@ const report = {
   viewport: { width: 1440, height: 1000 },
   deviceTest,
   showroomTest,
+  silverTest,
   checks: [],
   snapshots: {},
   errors: [],
@@ -107,11 +114,24 @@ async function snapshot() {
       camera = scene.camera.activeCamera.value,
       root = scene.scene.value.children.find((node) => node.userData.workbenchProduct)
     const architecture = [],
+      bevels = [],
       showroomRoots = []
     scene.scene.value.traverse((node) => {
       if (node.userData.carShowroom === 'cold-studio') showroomRoots.push(node.uuid)
       if (node.isMesh && node.userData.carShowroom === true)
         architecture.push({ id: node.userData.showroomId, uuid: node.uuid })
+      if (node.isMesh && node.geometry.userData.paintBevelStudy)
+        bevels.push({
+          name: node.name,
+          vertices: node.geometry.attributes.position.count,
+          indices: node.geometry.index?.count ?? 0,
+          selected: node.geometry.userData.paintBevelStudy.selected,
+          roughness: node.material.roughness,
+          metalness: node.material.metalness,
+          color: node.material.color.getHexString(),
+          colorNode: Boolean(node.material.colorNode),
+          roughnessNode: Boolean(node.material.roughnessNode),
+        })
     })
     return {
       atMs: performance.now(),
@@ -125,6 +145,7 @@ async function snapshot() {
       showroom: root?.userData.carShowroom ?? null,
       showroomRoots,
       architecture,
+      bevels,
       environment: scene.scene.value.environment?.uuid ?? null,
       backend: renderer.backend.isWebGPUBackend ? 'webgpu' : 'other',
       canvases: document.querySelectorAll('canvas').length,
@@ -196,6 +217,28 @@ function verify(value) {
       assert.ok(ids.includes(id), 'Actual showroom geometry required: ' + id)
   }
   assert.deepEqual(value.gpuErrors, [])
+  if (silverTest) {
+    assert.equal(value.showroom.revision, 18)
+    assert.equal(value.showroom.probe.source, 'cycles-r18')
+    assert.equal(value.showroom.probe.totalFaceDraws, 0)
+    assert.equal(value.showroom.floorReflection, 'cycles-room-probe+dynamic-car-planar')
+    assert.equal(value.bevels.length, 4)
+    assert.equal(
+      value.bevels.reduce((sum, mesh) => sum + mesh.vertices, 0),
+      56041,
+    )
+    assert.equal(
+      value.bevels.reduce((sum, mesh) => sum + mesh.selected, 0),
+      23875,
+    )
+    for (const mesh of value.bevels) {
+      assert.ok(mesh.indices > mesh.vertices, 'Expected compact indexed paint copy')
+      assert.equal(mesh.roughness, 0.19)
+      assert.equal(mesh.metalness, 1)
+      assert.equal(mesh.color, 'b7bcc3')
+      assert.ok(mesh.colorNode && mesh.roughnessNode)
+    }
+  }
 }
 
 async function ready() {
@@ -380,6 +423,19 @@ try {
   url.pathname = '/admin'
   url.searchParams.delete('product')
   if (showroomTest) url.searchParams.set('carShowroom', 'cold-studio')
+  if (silverTest)
+    for (const [key, value] of Object.entries({
+      carFloor: 'cycles',
+      carFloorLight: 'local',
+      carFloorReflection: 'planar',
+      carStudioFinish: 'wrap-wide',
+      carStudioPaint: 'silver',
+      carAntialias: 'msaa',
+      carStudioTrim: 'satin',
+      carCabinLight: 'local',
+    }))
+      url.searchParams.set(key, value)
+  report.url = url.href
   await page.goto(url.href, { waitUntil: 'domcontentloaded' })
   await expect
     .poll(

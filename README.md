@@ -1,5 +1,9 @@
 # Trees X
 
+2026-11-05 汽车当前验收入口：[r18 冷白摄影棚＋已认可亮银](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=wrap-wide&carStudioPaint=silver&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local)。先运行 `npm run demo:start`；此链接直接进入工作台，不依赖临时对照图库。外观面板可以切换亮橙、亮银，开门与分离继续可用。r18 的亮银默认采用用户认可的细边校准，追加 `&carBevelStudy=baseline` 可回看原白边；普通入口保持原设置。
+
+该入口包含同场景烘焙环境、动态商品地面倒影、SSR、DDGI及主软箱自阴影；车身世界空间光追反射仍未实现。已完成的视觉确认、无损派生索引整理、实际资源分配及性能限制见[亮银收尾记录](.ai/reventon-silver-seams-validation.md)。以下带日期入口为历史对照，不能视为当前已采用版本。
+
 2026-10-22 汽车[冷白实体摄影棚候选](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio)：真实房间、同场景局部IBL、盒投影与建筑避让。删去 `carShowroom` 即旧棚对照，普通入口不变。先验收空间与布光，车身世界空间光追留在下一节点；实机、短测及限制见[冷白棚记录](.ai/reventon-cold-showroom-validation.md)。所有GPU测试强制后台无头，不抢焦点。
 
 2026-10-20 汽车4K候选：[4K压缩＋实时增强](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2) ／ [原贴图同管线对照](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming)。74张KTX2、最长边4096、原始母版保留；完整包约474MB，原包约1.74GB。实际呈现和画质不能由体积推断；结果见[本批验收](.ai/reventon-runtime-v2-validation.md)。本机派生二进制未获得额外再分发许可，不随Git上传；已有原资源可按[制作说明](public/models/reventon-runtime-v2/README.md)重建后登记再构建。默认入口尚未切换。
