@@ -1,5 +1,5 @@
 import { REVISION } from 'three'
-import type { Mesh, Object3D } from 'three'
+import type { Material, Mesh, Object3D } from 'three'
 import { Node, StructNode, type NodeBuilder, type StructTypeNode } from 'three/webgpu'
 import { Fn, nodeObject } from 'three/tsl'
 import * as BvhWebGPU from 'three-mesh-bvh/webgpu'
@@ -7,6 +7,7 @@ import { buildCarShadowBlas } from './bvhWorker'
 import { carShadowSourceVisible, collectCarShadowGeometry } from './geometry'
 import { carNearestHit, validateCarHitLayout, type CarSceneHit } from './nearestHit'
 import { carQuerySources } from './queryIdentity'
+import { carHitSurface, carSurfaceLayout, type CarQuerySurface } from './querySurface'
 
 export interface CarShadowBvhSnapshot {
   meshes: number
@@ -16,6 +17,7 @@ export interface CarShadowBvhSnapshot {
   transformUpdates: number
   buildMs: number
   storageBytes: number
+  surfaceData: boolean
   disposed: boolean
   tlasStrategy: 'one-leaf-per-rigid-mesh'
 }
@@ -26,6 +28,8 @@ export interface CarShadowBvh {
   nearestHit(origin: Node<'vec3'>, direction: Node<'vec3'>, maxDistance: Node<'float'>): CarSceneHit
   /** Borrowed semantic source; invalid/disposed slots return undefined. */
   sourceForHit(objectIndex: number): Mesh | undefined
+  materialForHit(objectIndex: number, materialSlot: number): Material | undefined
+  surface(hit: CarSceneHit): CarQuerySurface
   sync(): boolean
   snapshot(): CarShadowBvhSnapshot
   dispose(): void
@@ -99,11 +103,13 @@ class OcclusionCall extends Node<'bool'> {
 export async function createCarShadowBvh(
   root: Object3D,
   signal: AbortSignal,
+  options: { surfaceData?: boolean } = {},
 ): Promise<CarShadowBvh> {
   signal.throwIfAborted()
   const api = runtimeApi()
   const started = performance.now()
-  const geometrySet = collectCarShadowGeometry(root)
+  const surfaceData = options.surfaceData === true
+  const geometrySet = collectCarShadowGeometry(root, surfaceData)
   const meshes = geometrySet.bindings.length
   const geometries = geometrySet.geometries.length
   let data: ComputeData | null = null
@@ -130,7 +136,10 @@ export async function createCarShadowBvh(
     signal.throwIfAborted()
     data = new api.BVHComputeData(
       geometrySet.bindings.map((binding) => binding.proxy),
-      { attributes: { position: 'vec4f' }, autogenerateBvh: false },
+      {
+        attributes: surfaceData ? carSurfaceLayout : { position: 'vec4f' },
+        autogenerateBvh: false,
+      },
     )
     if (
       typeof data.updateTransforms !== 'function' ||
@@ -160,6 +169,20 @@ export async function createCarShadowBvh(
     }
     return {
       sourceForHit: (objectIndex) => sources.get(objectIndex),
+      materialForHit(objectIndex, materialSlot) {
+        if (!Number.isInteger(materialSlot) || materialSlot < 0) return undefined
+        const material = sources.get(objectIndex)?.material
+        return Array.isArray(material)
+          ? material[materialSlot]
+          : materialSlot === 0
+            ? material
+            : undefined
+      },
+      surface(hit) {
+        if (disposed || !data) throw new Error('Car key shadow BVH has been disposed')
+        if (!surfaceData) throw new Error('Car query surface data was not requested')
+        return carHitSurface(data.storage, hit)
+      },
       nearestHit(origin, direction, maxDistance) {
         if (disposed) throw new Error('Car key shadow BVH has been disposed')
         return carNearestHit(
@@ -207,6 +230,7 @@ export async function createCarShadowBvh(
         transformUpdates,
         buildMs,
         storageBytes,
+        surfaceData,
         disposed,
         tlasStrategy: 'one-leaf-per-rigid-mesh',
       }),

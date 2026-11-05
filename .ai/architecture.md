@@ -5,7 +5,9 @@
 carShadow/bvh在原owner内暴露nearestHit与sourceForHit，继续共享派生BLAS/TLAS，
 不新建renderer或时钟。最近命中通过局部WGSL指针桥接读取固定上游结构；TLAS
 槽位须经实际打包映射关联语义Mesh，不能按输入顺序取材质。源资源只借用；
-当前仍为阴影owner，反射生命周期、UV及命中着色未接入。详见[验证与后续](reventon-world-reflection-validation.md)。
+当前仍为阴影owner，反射生命周期及命中着色未接入。可选surfaceData携带UV0/1、
+法线、切线、材质槽位和倒角遮罩，只拆材质边界；默认阴影保持位置缓冲。
+queryTexture借用纹理，不拥有/复制loader图片。详见[验证与后续](reventon-world-reflection-validation.md)。
 
 ## 亮银细边候选（2026-11-04）
 

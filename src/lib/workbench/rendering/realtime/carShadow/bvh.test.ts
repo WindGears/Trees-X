@@ -66,6 +66,7 @@ it('builds BLAS once per derivative and only refits TLAS after a rigid pose or v
   expect(owner.occluded(vec3(0, 3, 0), vec3(0, -1, 0), float(10)).isNode).toBe(true)
   const query = owner.nearestHit(vec3(0, 3, 0), vec3(0, -1, 0), float(10))
   expect(Object.values(query).every((field) => field.isNode)).toBe(true)
+  expect(() => owner.surface(query)).toThrow('not requested')
   expect(owner.sourceForHit(0)).toBeInstanceOf(Mesh)
   expect(owner.sourceForHit(-1)).toBeUndefined()
   expect(rebuild).toHaveBeenCalledTimes(1)
@@ -76,9 +77,35 @@ it('builds BLAS once per derivative and only refits TLAS after a rigid pose or v
   expect(() => owner.occluded(vec3(), vec3(0, 1, 0), float(1))).toThrow('disposed')
   expect(() => owner.nearestHit(vec3(), vec3(0, 1, 0), float(1))).toThrow('disposed')
   expect(owner.sourceForHit(0)).toBeUndefined()
+  expect(owner.materialForHit(0, 0)).toBeUndefined()
   expect(disposeSource).not.toHaveBeenCalled()
   expect(disposeMaterial).not.toHaveBeenCalled()
   expect(source.geometry.boundsTree).toBeUndefined()
+})
+
+it('opts into surface buffers without transferring source UVs and exposes current borrowed materials', async () => {
+  const source = fixture()
+  const originalUv = source.geometry.getAttribute('uv').array
+  const originalNormal = source.geometry.getAttribute('normal').array
+  const owner = await createCarShadowBvh(source.root, new AbortController().signal, {
+    surfaceData: true,
+  })
+  expect(owner.snapshot().surfaceData).toBe(true)
+  const hit = owner.nearestHit(vec3(0, 0, 5), vec3(0, 0, -1), float(10))
+  expect(Object.values(owner.surface(hit)).every((field) => field.isNode)).toBe(true)
+  expect(owner.materialForHit(0, 0)).toBe(source.material)
+  expect(owner.materialForHit(0, 1)).toBeUndefined()
+  expect(owner.materialForHit(0, -1)).toBeUndefined()
+  const replacement = new MeshPhysicalMaterial()
+  owner.sourceForHit(0)!.material = replacement
+  expect(owner.materialForHit(0, 0)).toBe(replacement)
+  owner.dispose()
+  expect(source.geometry.getAttribute('uv').array).toBe(originalUv)
+  expect(source.geometry.getAttribute('normal').array).toBe(originalNormal)
+  expect(() => owner.surface(hit)).toThrow('disposed')
+  source.geometry.dispose()
+  source.material.dispose()
+  replacement.dispose()
 })
 
 it('cleans an aborted late build without ever creating GPU buffers', async () => {

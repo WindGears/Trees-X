@@ -7,6 +7,7 @@ import {
   MeshBasicMaterial,
 } from 'three'
 import type { Material, Object3D } from 'three'
+import { cloneCarSurfaceGeometry, type QueryRange } from './surfaceGeometry'
 
 export interface CarShadowBinding {
   source: Mesh
@@ -39,7 +40,10 @@ export function carShadowSourceVisible(object: Object3D): boolean {
 }
 
 /** Clone only rendered opaque triangles; never copy or transfer loader-owned attributes. */
-export function collectCarShadowGeometry(root: Object3D): CarShadowGeometrySet {
+export function collectCarShadowGeometry(
+  root: Object3D,
+  surfaceData = false,
+): CarShadowGeometrySet {
   const bindings: CarShadowBinding[] = []
   const geometries: BufferGeometry[] = []
   const cache = new Map<BufferGeometry, Map<string, BufferGeometry>>()
@@ -81,7 +85,12 @@ export function collectCarShadowGeometry(root: Object3D): CarShadowGeometrySet {
       ) {
         throw new Error(`Car key shadow supports rigid Mesh only: ${object.name || object.uuid}`)
       }
-      const key = ranges.map(({ start, count }) => `${start}:${count}`).join(',')
+      const key = ranges
+        .map(
+          ({ start, count, materialIndex }) =>
+            `${start}:${count}:${surfaceData ? materialIndex : ''}`,
+        )
+        .join(',')
       let variants = cache.get(object.geometry)
       if (!variants) {
         variants = new Map()
@@ -89,7 +98,9 @@ export function collectCarShadowGeometry(root: Object3D): CarShadowGeometrySet {
       }
       let geometry = variants.get(key)
       if (!geometry) {
-        geometry = cloneOpaqueGeometry(object.geometry, ranges)
+        geometry = surfaceData
+          ? cloneCarSurfaceGeometry(object.geometry, ranges)
+          : cloneOpaqueGeometry(object.geometry, ranges)
         variants.set(key, geometry)
         geometries.push(geometry)
       }
@@ -120,10 +131,7 @@ export function collectCarShadowGeometry(root: Object3D): CarShadowGeometrySet {
   }
 }
 
-interface Range {
-  start: number
-  count: number
-}
+type Range = QueryRange
 
 function opaqueRanges(mesh: Mesh): Range[] {
   const geometry = mesh.geometry
@@ -136,13 +144,17 @@ function opaqueRanges(mesh: Mesh): Range[] {
         carShadowOpaqueMaterial(materials[group.materialIndex ?? 0]),
       )
     : carShadowOpaqueMaterial(materials)
-      ? [{ start: 0, count: total }]
+      ? [{ start: 0, count: total, materialIndex: 0 }]
       : []
   const ranges = groups
     .map((group) => {
       const start = Math.max(group.start, drawStart)
       const end = Math.min(group.start + group.count, drawEnd)
-      return { start, count: Math.max(0, Math.floor((end - start) / 3) * 3) }
+      return {
+        start,
+        count: Math.max(0, Math.floor((end - start) / 3) * 3),
+        materialIndex: group.materialIndex ?? 0,
+      }
     })
     .filter((range) => range.count > 0)
   return ranges.sort((a, b) => a.start - b.start || a.count - b.count)

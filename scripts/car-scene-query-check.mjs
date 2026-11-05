@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { createServer } from 'vite'
 import { chromium } from '@playwright/test'
 
-const output = 'artifacts/car-showroom/world-query'
+const output = 'artifacts/car-showroom/world-query-surface'
 await mkdir(output, { recursive: true })
 const server = await createServer({
   configFile: false,
@@ -77,6 +77,44 @@ try {
       checks++
     }
   assert.equal(report.result.rounds.at(-1).resources.transformUpdates, 3)
+  report.surfaceResult = await page.evaluate(async () => {
+    const { runCarSurfaceFixture } = await import('/src/lib/renderlab/carSurfaceFixture.ts')
+    return runCarSurfaceFixture()
+  })
+  assert.equal(report.surfaceResult.backend, 'WebGPUBackend')
+  for (const round of report.surfaceResult.rounds) {
+    assert.equal(round.resources.surfaceData, true)
+    assert.equal(round.resources.geometries, 2)
+    for (const item of round.cases) {
+      assert.equal(item.gpu[0], 1)
+      assert.equal(item.gpu[2], item.expected.slot)
+      assert.equal(item.gpu[3], 7)
+      assert.equal(item.sourceName, item.expected.sourceName)
+      assert.equal(item.materialName, item.expected.materialName)
+      assert.equal(item.gpu[19], 1)
+      item.expected.color.forEach((value, index) =>
+        assert(
+          Math.abs(item.gpu[16 + index] - value) < 0.003,
+          `${round.state}/${item.id}: UV1 texture transform and sRGB sampling`,
+        ),
+      )
+      const expected = [
+        ...item.expected.uv,
+        ...item.expected.uv1,
+        ...item.expected.point,
+        0.7,
+        ...item.expected.normal,
+      ]
+      expected.forEach((value, i) =>
+        assert(
+          Math.abs(item.gpu[i + 4] - value) < 1e-5,
+          `${round.state}/${item.id}: surface component ${i}: ${item.gpu[i + 4]} vs ${value}`,
+        ),
+      )
+      checks++
+    }
+  }
+  assert.equal(report.surfaceResult.rounds.at(-1).resources.transformUpdates, 2)
   assert.deepEqual(report.errors, [])
   report.checks = checks
   report.passed = true
