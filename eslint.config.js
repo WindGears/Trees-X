@@ -15,6 +15,8 @@ export default defineConfigWithVueTs(
       'public/gesture/wasm/**',
       'public/draco/**',
       'public/basis/**',
+      'src/lib/workbench/rendering/realtime/carReflection/vendor/SSRWorldNode.js',
+      'src/lib/workbench/rendering/realtime/carReflection/vendor/SpecularHelpers.js',
     ],
   },
   js.configs.recommended,

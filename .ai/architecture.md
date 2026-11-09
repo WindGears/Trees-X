@@ -8,6 +8,10 @@ carShadow/bvh在原owner内暴露nearestHit与sourceForHit，继续共享派生B
 当前仍为阴影owner，反射生命周期及命中着色未接入。可选surfaceData携带UV0/1、
 法线、切线、材质槽位和倒角遮罩，只拆材质边界；默认阴影保持位置缓冲。
 queryTexture借用纹理，不拥有/复制loader图片。详见[验证与后续](reventon-world-reflection-validation.md)。
+carReflection/vendor为固定0.185.1可重建衍生源码，只增加同射线miss回调及局部
+GGX切线退化修正；源码摘要/许可受检，不改node_modules或全局原型。reflectionRays
+支持可选工厂注入，默认仍原生；实验工厂复用双射线调度、source分类和target释放。
+2026-11-09 收尾后保留实验代码及复现入口，整车绑定与着色移出当前交付。
 
 ## 亮银细边候选（2026-11-04）
 

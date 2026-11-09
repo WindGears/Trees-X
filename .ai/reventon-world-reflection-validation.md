@@ -1,5 +1,16 @@
 # 汽车局部世界空间反射：冻结基线与最近命中接口
 
+## 阶段交付（2026-11-09）
+
+用户选择在现有画质收尾。验收版使用 r18 冷白摄影棚、wrap-wide 亮银和已认可的
+窄倒角白边修正，继续使用现有实时 SSR、主软箱阴影与摄影棚环境反射。入口：
+
+[r18 亮银实机](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=wrap-wide&carStudioPaint=silver&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local)
+
+已验证的 BVH 查询、屏幕外纹理采样和同射线回退接点作为实验归档。整车命中点材质
+着色、清漆反射和独立反射历史移出本阶段，`carReflection=world` 未开放整车入口。
+上一批管理预览与取景回填通过。实际呈现帧率未验收，历史提交吞吐另计。
+
 ## 当前边界（2026-11-05）
 
 用户已确认“冻结摄影棚，开始反射对照”。固定 r18 wrap-wide、原偏黑亮银、
@@ -53,7 +64,7 @@ fixture 的缓冲回读仅用于测试，不加入生产逐帧路径。
 因 CPU 法线未按 backface side 朝向射线而失败，校正对照语义后扩大到五物体；
 不修改实际 GPU 法线来迎合测试。初次 Vite 依赖重载干扰已通过隔离测试入口处理。
 
-## 接下来必须完成
+## 重新启动局部光追实验时的接入条件
 
 1. 共享 owner 接入汽车与静态摄影棚，补足经过校验的 UV、材质及纹理索引；
    不将打包三角形编号直接当作 loader 面编号。
@@ -97,3 +108,42 @@ vec4x4f代码；显式转换为TSL mat4后通过。没有通过放宽断言忽�
 它们不等于218份独立GPU纹理。不能把全部贴图直接同时绑定到一个着色器，或
 复制成未压缩巨型图集。需保留4K/KTX2与已有去重，验证受控材质分批着色或
 兼容压缩数组方案，并单列新增资源成本，再接真实命中光照和SSR回退合成。
+
+## 同射线回退接点（2026-11-06）
+
+新增 `carReflection/vendor/SSRWorldNode` 固定衍生模块，生成脚本验证已安装
+Three 0.185.1的两个源文件SHA-256，并可精确重建。完整MIT许可和修改说明随源码
+保存。不改node_modules，不拦截全局方法，不把已有GGX或SSR算法称为自研。
+
+在原生屏幕查询完成后且hit=0时执行回调，直接传递该次GGX样本的世界方向、
+位置、法线和粗糙度。回调只返回未加权线性出射辐射和世界距离；由同一原生
+finalSampleWeight及specDominantFactor处理，再交既有signed resolve。无支持或
+无命中用alpha=0拒绝，保留原环境回退；不把整个环境与世界命中相加。
+
+`reflectionRays`新增可选工厂参数，原调用点保持原生SSR。候选工厂复用已有
+独立双随机序列、成功帧提交、源分类和释放；不会自动创建另一个renderer或时钟。
+当前尚未向真实汽车提供该工厂，因此本批没有宣称车身反射已经增强。
+
+真实GPU夹具使用同renderer的光栅输入，放置不进入beauty的屏幕外棋盘面，经过
+已验证BVH、重心UV和sRGB纹理采样返回辐射。结果位于
+`artifacts/car-showroom/world-reflection-seam/report.json`，复现命令为
+`node scripts/car-world-reflection-check.mjs`；测试读取目标仅用于验收。
+
+- 128×128输出：倾斜面及正对相机的面各16384个世界命中，读取到四种纹理颜色。
+- 反射物移走后世界命中归零；关闭回调及拒绝命中与原生输出逐像素误差0。
+- 可见物体场景1337个原SSR命中像素保持逐像素误差0，另有6829个世界命中。
+  这些是夹具像素计数，不是整车覆盖率或性能成绩。
+- 最初夹具遗漏原生SSR需要的可采样normal/albedo及环境输入，产生TSL错误，
+  修正夹具后重测；任何GPU/TSL错误都在像素断言前使验证失败。
+- 正对镜头时还发现上游GGX先normalize零切向量的退化，原结果没有有效世界
+  命中。实验局部helper改为先检测原叉积，再归一化，正对相机复测通过。
+  不通过倾斜测试面掩盖该边界；原正式管线尚未采用这一局部修正。
+
+局限：命中内容为发光/不受光纹理面，尚不是汽车Physical材质、车身清漆或
+摄影棚完整着色。整车绑定预算、共享查询生命周期、世界命中专用历史及实机
+画面对照仍待完成。本批保持冻结棚、原灯光和默认入口。
+
+本批155文件997项单测、类型检查、ESLint及生产构建通过；构建写入忽略的
+world-reflection-build，不覆盖当前展示。完整check仍仅被用户已有
+PERFORMANCE_OPTIMIZATION.md格式问题阻断；后续架构、模型和工具检查另行执行。
+九份冻结基线文件摘要保持一致。测试浏览器及临时服务器均已退出，不抢焦点。

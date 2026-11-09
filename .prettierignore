@@ -23,3 +23,6 @@ public/basis
 .tools
 .workbuddy
 *.log
+src/lib/workbench/rendering/realtime/carReflection/vendor/SSRWorldNode.js
+src/lib/workbench/rendering/realtime/carReflection/vendor/SpecularHelpers.js
+src/lib/workbench/rendering/realtime/carReflection/vendor/THREE-LICENSE.txt

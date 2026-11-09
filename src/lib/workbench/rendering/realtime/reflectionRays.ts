@@ -25,7 +25,12 @@ interface Inputs {
 /** Own each native effect and its local classification seam. Surface/beauty
  * textures are shared and borrowed; there is still one rendering scheduler.
  */
-export function createReflectionRays(inputs: Inputs, requested: 1 | 2, classify: boolean) {
+export function createReflectionRays(
+  inputs: Inputs,
+  requested: 1 | 2,
+  classify: boolean,
+  factory: typeof ssr = ssr,
+) {
   const effects: ReturnType<typeof ssr>[] = []
   const releases: (() => void)[] = []
   let sequence: ReturnType<typeof createSsrRaySequence> | undefined
@@ -33,7 +38,7 @@ export function createReflectionRays(inputs: Inputs, requested: 1 | 2, classify:
   let disposed = false
   let frames = 0
   const create = () => {
-    const effect = ssr(inputs.beauty, inputs.depth, inputs.normal, {
+    const effect = factory(inputs.beauty, inputs.depth, inputs.normal, {
       stochastic: true,
       diffuseNode: inputs.albedo,
       metalnessNode: inputs.albedo.a,
