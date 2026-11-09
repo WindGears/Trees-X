@@ -1,8 +1,10 @@
 # Trees X
 
-2026-11-05 汽车当前验收入口：[r18 冷白摄影棚＋已认可亮银](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=wrap-wide&carStudioPaint=silver&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local)。先运行 `npm run demo:start`；此链接直接进入工作台，不依赖临时对照图库。外观面板可以切换亮橙、亮银，开门与分离继续可用。r18 的亮银默认采用用户认可的细边校准，追加 `&carBevelStudy=baseline` 可回看原白边；普通入口保持原设置。
+当前交付入口为[三件展品工作台](http://127.0.0.1:5181/)及[管理端](http://127.0.0.1:5181/admin)。首次准备或源码变动后运行 `npm run demo:prepare`，再运行 `npm run demo:start`。交付检查和待验收项见[项目收尾记录](.ai/project-closeout.md)。
 
-该入口包含同场景烘焙环境、动态商品地面倒影、SSR、DDGI及主软箱自阴影；车身世界空间光追反射仍未实现。已完成的视觉确认、无损派生索引整理、实际资源分配及性能限制见[亮银收尾记录](.ai/reventon-silver-seams-validation.md)。以下带日期入口为历史对照，不能视为当前已采用版本。
+汽车画质验收使用 [r18 冷白摄影棚＋已认可亮银](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=wrap-wide&carStudioPaint=silver&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local)。该入口依赖本机 `runtime-v2` 资源及生成的登记文件。外观面板可切换亮橙、亮银，支持开门和分离；追加 `&carBevelStudy=baseline` 可回看修正前的白边。
+
+该入口包含同场景烘焙环境、动态商品地面倒影、SSR、DDGI 及主软箱自阴影。世界空间反射保留为独立 GPU 实验，整车接入已移出本阶段。画质确认及性能限制见[亮银收尾记录](.ai/reventon-silver-seams-validation.md)。以下带日期入口为历史对照。
 
 2026-10-22 汽车[冷白实体摄影棚候选](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio)：真实房间、同场景局部IBL、盒投影与建筑避让。删去 `carShowroom` 即旧棚对照，普通入口不变。先验收空间与布光，车身世界空间光追留在下一节点；实机、短测及限制见[冷白棚记录](.ai/reventon-cold-showroom-validation.md)。所有GPU测试强制后台无头，不抢焦点。
 
@@ -45,7 +47,7 @@ Node/npm 版本遵循 package.json。另需 Java 17 和 MySQL 8.0。
 
 ```sh
 git lfs install --local
-git lfs pull --include="public/models/bundles/kimi-typewriter/**,public/models/bundles/kimi-piano/**,public/models/reventon/**,public/models/denoise/**,public/studio/amber-lounge/**" --exclude=""
+git lfs pull --include="public/models/bundles/kimi-typewriter/**,public/models/bundles/kimi-piano/**,public/models/reventon/**,public/models/denoise/**,public/studio/amber-lounge/**,public/studio/cold-studio/**" --exclude=""
 ```
 
 1. `npm ci`
