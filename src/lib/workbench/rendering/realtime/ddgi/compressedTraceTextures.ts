@@ -77,13 +77,43 @@ export function resolveCompressedTraceTexture(
  * Successful preparation transfers ownership out of the download session;
  * its later abort/disposal cannot close images still borrowed by the proxy.
  */
-export async function prepareCompressedTraceTextures(
+export function planCompressedTraceTextures(root: Object3D) {
+  // Snapshot the loader's inputs before the coordinator replaces materials.
+  const textures = new Set<Texture>()
+  root.traverse((node) => {
+    if (!(node instanceof Mesh)) return
+    for (const material of Array.isArray(node.material) ? node.material : [node.material])
+      for (const value of Object.values(material))
+        if (value instanceof Texture && isCompressedTraceTexture(value)) textures.add(value)
+  })
+  return async (files: VerifiedFiles, signal: AbortSignal) => {
+    const sources = new Map<Source<unknown>, string>()
+    for (const value of textures) {
+      const path: unknown = value.userData.treesTraceImage
+      if (typeof path !== 'string' || !/^trace\/[^?#]+\.png$/.test(path))
+        throw new Error('DDGI 压缩纹理缺少有效的 CPU 追踪副本标记')
+      if (sources.has(value.source) && sources.get(value.source) !== path)
+        throw new Error('DDGI 同一纹理 Source 不能引用不同的 CPU 追踪副本')
+      sources.set(value.source, path)
+    }
+    return readTraceTextures(sources, files, signal)
+  }
+}
+
+export function prepareCompressedTraceTextures(
   root: Object3D,
   files: VerifiedFiles,
   signal: AbortSignal,
+) {
+  return planCompressedTraceTextures(root)(files, signal)
+}
+
+async function readTraceTextures(
+  sources: Map<Source<unknown>, string>,
+  files: VerifiedFiles,
+  signal: AbortSignal,
 ): Promise<CompressedTraceTextureOwner> {
-  const sources = new Map<Source<unknown>, string>(),
-    owned = new Map<Source<unknown>, TraceImage>(),
+  const owned = new Map<Source<unknown>, TraceImage>(),
     bitmaps = new Set<ImageBitmap>()
   let disposed = false
   function dispose() {
@@ -102,20 +132,6 @@ export async function prepareCompressedTraceTextures(
   signal.throwIfAborted()
   signal.addEventListener('abort', dispose, { once: true })
   try {
-    root.traverse((node) => {
-      if (!(node instanceof Mesh)) return
-      const materials = Array.isArray(node.material) ? node.material : [node.material]
-      for (const material of materials)
-        for (const value of Object.values(material)) {
-          if (!(value instanceof Texture) || !isCompressedTraceTexture(value)) continue
-          const path: unknown = value.userData.treesTraceImage
-          if (typeof path !== 'string' || !/^trace\/[^?#]+\.png$/.test(path))
-            throw new Error('DDGI 压缩纹理缺少有效的 CPU 追踪副本标记')
-          if (sources.has(value.source) && sources.get(value.source) !== path)
-            throw new Error('DDGI 同一纹理 Source 不能引用不同的 CPU 追踪副本')
-          sources.set(value.source, path)
-        }
-    })
     for (const [original, path] of sources) {
       signal.throwIfAborted()
       if (traceImages.has(original)) throw new Error('DDGI CPU 追踪纹理已有资源拥有者')

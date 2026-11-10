@@ -18,8 +18,8 @@ for (let index = 2; index < process.argv.length; index += 2) {
   const key = process.argv[index],
     value = process.argv[index + 1]
   assert.ok(
-    ['--output', '--device', '--showroom', '--silver'].includes(key) && value,
-    'Expected --output, --device, --showroom or --silver value',
+    ['--output', '--device', '--showroom', '--silver', '--showcase'].includes(key) && value,
+    'Expected --output, --device, --showroom, --silver or --showcase value',
   )
   assert.ok(!args.has(key), 'Duplicate option')
   args.set(key, value)
@@ -27,6 +27,7 @@ for (let index = 2; index < process.argv.length; index += 2) {
 assert.ok(['0', '1'].includes(args.get('--device') ?? '0'), '--device requires 0 or 1')
 assert.ok(['0', '1'].includes(args.get('--showroom') ?? '0'), '--showroom requires 0 or 1')
 assert.ok(['0', '1'].includes(args.get('--silver') ?? '0'), '--silver requires 0 or 1')
+assert.ok(['0', '1'].includes(args.get('--showcase') ?? '0'), '--showcase requires 0 or 1')
 assert.ok(
   args.get('--silver') !== '1' || args.get('--showroom') === '1',
   '--silver requires --showroom 1',
@@ -35,8 +36,9 @@ const config = readDemoConfig(),
   base = localAuditOrigin(process.env.CHECK_URL ?? config.baseUrl),
   output = resolve(args.get('--output') ?? 'artifacts/car-key-shadow/flow'),
   deviceTest = args.get('--device') === '1',
-  showroomTest = args.get('--showroom') === '1',
-  silverTest = args.get('--silver') === '1',
+  showcase = args.get('--showcase') === '1',
+  showroomTest = showcase || args.get('--showroom') === '1',
+  silverTest = showcase || args.get('--silver') === '1',
   detailUrl = new URL('/api/v1/admin/products/reventon', base).href,
   digest = (value) => createHash('sha256').update(JSON.stringify(value)).digest('hex'),
   timeout = 240000
@@ -51,6 +53,7 @@ const report = {
   deviceTest,
   showroomTest,
   silverTest,
+  showcase,
   checks: [],
   snapshots: {},
   errors: [],
@@ -419,11 +422,13 @@ try {
       await route.abort('blockedbyclient')
     }
   })
-  const url = new URL(keyShadowUrl(base, 'shadow'))
+  const url = showcase
+    ? new URL('/admin?renderPipeline=showcase', base)
+    : new URL(keyShadowUrl(base, 'shadow'))
   url.pathname = '/admin'
   url.searchParams.delete('product')
-  if (showroomTest) url.searchParams.set('carShowroom', 'cold-studio')
-  if (silverTest)
+  if (showroomTest && !showcase) url.searchParams.set('carShowroom', 'cold-studio')
+  if (silverTest && !showcase)
     for (const [key, value] of Object.entries({
       carFloor: 'cycles',
       carFloorLight: 'local',

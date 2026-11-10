@@ -30,6 +30,7 @@
     "test:demo-joint": "node scripts/demo-joint-check.mjs",
     "test:demo-performance": "node scripts/demo-performance-check.mjs",
     "test:demo-production": "node scripts/demo-production-check.mjs",
+    "test:showcase": "node scripts/showcase-check.mjs",
     "test:demo-admin-flow": "node scripts/demo-admin-flow-check.mjs",
     "test:workbench": "node scripts/workbench-check.mjs",
     "test:typewriter": "node scripts/typewriter-check.mjs",

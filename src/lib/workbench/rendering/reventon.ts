@@ -11,8 +11,9 @@ import { createShowroomAreaLight } from './carShowroom/lights'
 /** Dynamically imported only for a car on the existing WebGPU renderer. */
 export const reventonGpuDependencies: ReventonGpuDependencies = {
   createStage: (renderer, scene, model, options) => {
-    const showroom = coldStudioRequested(options, location.search) && Boolean(options?.camera)
-    const showroomConfig = resolveColdStudioConfig(location.search)
+    const search = options?.search ?? location.search
+    const showroom = coldStudioRequested(options, search) && Boolean(options?.camera)
+    const showroomConfig = resolveColdStudioConfig(search)
     const base = createReventonStageWithShadow(
       scene,
       () => {
@@ -25,14 +26,13 @@ export const reventonGpuDependencies: ReventonGpuDependencies = {
             createKeyLight: () => createShowroomAreaLight(renderer, showroomConfig.lights.key),
             createStripLight: () => createShowroomAreaLight(renderer, showroomConfig.lights.strip),
           }
-        : options?.quality === 'studio' &&
-            new URLSearchParams(location.search).get('carKeyShadow') === '1'
+        : options?.quality === 'studio' && new URLSearchParams(search).get('carKeyShadow') === '1'
           ? { ...options, createKeyLight: () => createCarKeyAreaLight(renderer) }
           : options,
     )
     try {
       return showroom && options?.camera
-        ? createColdShowroomStage(renderer, scene, model, options.camera, base)
+        ? createColdShowroomStage(renderer, scene, model, options.camera, base, search)
         : base
     } catch (cause) {
       base.dispose()

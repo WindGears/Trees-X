@@ -33,10 +33,12 @@ export function createWorkbenchLighting(stage: StageConfig, studio: boolean) {
     ambient.intensity = next.ambient
     key.position.fromArray(next.key.position)
     key.intensity = next.key.intensity
+    key.visible = key.intensity > 0
     key.color.set(next.key.color)
     key.castShadow = !ownStudio
     rim.position.fromArray(next.rim.position)
     rim.intensity = next.rim.intensity
+    rim.visible = rim.intensity > 0
     rim.color.set(next.rim.color)
     ground.position.set(0, next.groundY, 0)
     material.color.set(next.ground)

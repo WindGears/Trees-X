@@ -94,6 +94,7 @@ async function fixture(search = '?indirectLighting=ddgi') {
     motion = {
       node: float(0),
       reset: vi.fn(),
+      clear: vi.fn(),
       beginFrame: vi.fn(),
       commitFrame: vi.fn(),
       cancelFrame: vi.fn(),
@@ -194,6 +195,24 @@ async function fixture(search = '?indirectLighting=ddgi') {
 }
 
 describe('optional DDGI coordinator asynchronous boundaries', () => {
+  it('makes the showcase car usable before requesting its indirect-light images', async () => {
+    const f = await fixture('?indirectLighting=ddgi')
+    const readTraceImages = vi.fn().mockRejectedValue(new Error('trace image unavailable'))
+    f.coordinator.prepare(reventonRealtimeProfile, '?indirectLighting=ddgi', readTraceImages, true)
+    f.coordinator.render(f.notify)
+    expect(f.notify).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot().firstRasterMs).not.toBeNull()
+    expect(factories.signals).not.toHaveBeenCalled()
+    expect(readTraceImages).not.toHaveBeenCalled()
+    f.coordinator.ready('reventon', 1)
+    await vi.waitFor(() =>
+      expect(f.coordinator.snapshot().indirectLighting?.error).toBe('trace image unavailable'),
+    )
+    expect(f.coordinator.snapshot().phase).toBe('ready')
+    expect(f.create).not.toHaveBeenCalled()
+    f.coordinator.dispose()
+  })
+
   it('rebuilds product-specific signal owners on handoff while reusing the renderer', async () => {
     const f = await fixture('?indirectLighting=ssgi')
     f.coordinator.prepare(typewriterRealtimeProfile)

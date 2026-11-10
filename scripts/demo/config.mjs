@@ -58,6 +58,7 @@ export function readDemoConfig(options = {}) {
     javaPath: join(javaHome, 'bin', platform === 'win32' ? 'java.exe' : 'java'),
     previewScript: join(rootDir, 'scripts', 'demo', 'preview.mjs'),
     env,
+    showcase: env.TREES_DEMO_SHOWCASE === '1',
     mysql: {
       host: database.hostname,
       port: Number(database.port || 3306),

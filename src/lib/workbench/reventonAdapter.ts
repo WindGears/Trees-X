@@ -37,7 +37,10 @@ export function bindReventon(
   model: Group,
   release: () => void,
   gpu?: ReventonGpuDependencies,
+  overrideSearch?: string,
 ): SceneAdapter {
+  const search = overrideSearch ?? globalThis.location?.search ?? ''
+  const stageSearch = overrideSearch === undefined ? {} : { search }
   const finishMaterials = resolveReventonFinishBindings(source, model)
   const adapter = bindGlb(
     product,
@@ -98,33 +101,33 @@ export function bindReventon(
       if (isWebGpuRenderer(renderer)) {
         if (!gpu) throw new Error('汽车 WebGPU 舞台依赖未装配')
         try {
-          const quality = resolveCarStudioQuality(
-            source,
-            typeof location === 'undefined' ? '' : location.search,
-          )
+          const quality = resolveCarStudioQuality(source, search)
           if (quality) {
-            const paintLook = resolveCarStudioPaint(source, location.search)
+            const paintLook = resolveCarStudioPaint(source, search)
             studioMaterials = applyCarStudioMaterials(
               model,
               finishMaterials,
               paintLook,
-              resolveCarStudioTrim(source, location.search),
+              resolveCarStudioTrim(source, search),
             )
             adapter.root.userData.carStudioPaint = paintLook
             adapter.root.userData.carStudioQuality = quality
           }
           gpuTextures = canonicalizeReventonTextures(model)
           gpuMaterials = gpu.prepareMaterials(model)
-          const showroom =
-            quality &&
-            camera &&
-            new URLSearchParams(location.search).get('carShowroom') === 'cold-studio'
-          if (showroom && new URLSearchParams(location.search).get('carCabinLight') === 'local')
+          const query = new URLSearchParams(search)
+          const showroom = quality && camera && query.get('carShowroom') === 'cold-studio'
+          if (showroom && query.get('carCabinLight') === 'local')
             adapter.root.userData.carStudioCabinLighting = 'local'
           studio = showroom
-            ? gpu.createStage(renderer, scene, adapter.root, { quality, camera, source })
+            ? gpu.createStage(renderer, scene, adapter.root, {
+                quality,
+                camera,
+                source,
+                ...stageSearch,
+              })
             : quality
-              ? gpu.createStage(renderer, scene, adapter.root, { quality })
+              ? gpu.createStage(renderer, scene, adapter.root, { quality, ...stageSearch })
               : gpu.createStage(renderer, scene, adapter.root)
           // Commit the new original swatch only after successful attachment.
           // Failed setup must leave both the material and its reset baseline native.

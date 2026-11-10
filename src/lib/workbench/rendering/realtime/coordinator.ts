@@ -46,25 +46,38 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiError: string | null = null,
     ddgiFramePending = false,
     preparedPasses = false,
-    shadowPreparationPending = false
+    shadowPreparationPending = false,
+    native = false
   let signalIdentity: string | undefined
-  const indirectRequested: 'ssgi' | 'ddgi' =
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
-      ? 'ddgi'
-      : 'ssgi'
-  const legacyCarSchedule =
-    typeof location !== 'undefined' &&
-    new URLSearchParams(location.search).get('carRenderTuning') === 'legacy'
+  let indirectRequested: 'ssgi' | 'ddgi' = 'ssgi',
+    legacyCarSchedule = false,
+    prepareIndirect: (() => Promise<void>) | undefined
+  const enhancementIdleMs = 900
+  let installSignals: (() => void) | undefined
+  let enhancementTimer: ReturnType<typeof setTimeout> | undefined
+  const mode = () => (native ? 'pbr' : installSignals ? 'warming' : undefined)
+
+  function scheduleEnhancement() {
+    clearTimeout(enhancementTimer)
+    if (disposed || !loaded || !active || !installSignals || interacting) return
+    enhancementTimer = setTimeout(
+      options.invalidate,
+      Math.max(0, enhancementIdleMs - (performance.now() - lastActivity)),
+    )
+  }
 
   function prepareDdgi() {
     if (indirectRequested !== 'ddgi' || ddgi || ddgiLoading) return
     ddgiLoading = true
     const token = generation
-    void import('./ddgi/field')
-      .then(({ createRealtimeDdgi }) => {
-        if (disposed || token !== generation) return
-        ddgi = createRealtimeDdgi({
+    void Promise.resolve()
+      .then(prepareIndirect)
+      .then(() => {
+        if (!disposed && token === generation) return import('./ddgi/field')
+      })
+      .then((field) => {
+        if (!field || disposed || token !== generation) return
+        ddgi = field.createRealtimeDdgi({
           renderer,
           scene,
           profile: productProfile,
@@ -111,12 +124,13 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     if (force || now - lastReport > 1000) {
       lastReport = now
       options.report({
+        mode: mode(),
         phase,
         error,
         slug,
         revision,
         generation,
-        indirectLighting: indirectStatus(),
+        indirectLighting: native ? undefined : indirectStatus(),
         reflectionRays: signals?.snapshot().reflectionRays,
         showroom: getShowroomStatus(scene),
         keyShadow: signals?.keyShadow?.(),
@@ -126,6 +140,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
   function unload() {
     if (disposed) return
     generation++
+    clearTimeout(enhancementTimer)
+    installSignals = undefined
     loaded = false
     slug = null
     revision = -1
@@ -136,6 +152,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiLoading = false
     ddgiGraphDirty = false
     ddgiError = null
+    prepareIndirect = undefined
     interacting = false
     lastActivity = performance.now()
     materials.restore()
@@ -149,7 +166,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     firstRasterMs = null
     framesSincePrepare = 0
     preparedPasses = false
-    motion.reset(scene)
+    motion.clear()
     report(true)
   }
   function indirectStatus() {
@@ -167,17 +184,35 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       revision = token
       loaded = true
       phase = error ? 'error' : active ? 'ready' : 'paused'
+      if (installSignals) {
+        lastActivity = performance.now()
+        scheduleEnhancement()
+      }
+      if (active && prepareIndirect) prepareDdgi()
       report(true)
       if (!error) options.invalidate()
     },
     prepare(
-      profile: RealtimeProductProfile = options.profile ??
+      profile: RealtimeProductProfile | null = options.profile ??
         realtimeSceneProfile(scene) ??
         typewriterRealtimeProfile,
+      search = globalThis.location?.search ?? '',
+      deferredIndirect?: () => Promise<void>,
+      deferSignals = false,
     ) {
       if (disposed) return
-      const identity = realtimeSignalIdentity(scene, profile)
-      if (profile !== productProfile || (signals && identity !== signalIdentity)) {
+      const query = new URLSearchParams(search)
+      native = profile === null
+      if (!profile) {
+        signals?.dispose()
+        signals = undefined
+        signalIdentity = undefined
+        started = performance.now()
+        firstRasterMs = null
+        return
+      }
+      const identity = realtimeSignalIdentity(scene, profile) + search
+      if (deferSignals || profile !== productProfile || (signals && identity !== signalIdentity)) {
         // A direct product handoff must not retain the previous volume or a
         // receiver/late module callback belonging to the old profile.
         generation++
@@ -193,21 +228,30 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals = undefined
       }
       productProfile = profile
+      indirectRequested = query.get('indirectLighting') === 'ddgi' ? 'ddgi' : 'ssgi'
+      legacyCarSchedule = query.get('carRenderTuning') === 'legacy'
+      prepareIndirect = deferredIndirect
       preparedPasses = false
       framesSincePrepare = 0
       lastActivity = performance.now()
       ddgi?.invalidate('all')
-      materials.install(scene)
-      motion.reset(scene)
-      const reuse = Boolean(signals)
-      signals ??= createRealtimeSignals(renderer, scene, camera, motion.node, profile)
-      signalIdentity = identity
-      signals.setProfile?.(profile)
-      signals.environment()
-      prepareDdgi()
+      const prepareMaterialsNow = !deferSignals || profile.adapterId === 'reventon-v1'
+      if (prepareMaterialsNow) materials.install(scene)
+      const install = () => {
+        if (!prepareMaterialsNow) materials.install(scene)
+        motion.reset(scene)
+        const reuse = Boolean(signals)
+        signals ??= createRealtimeSignals(renderer, scene, camera, motion.node, profile, search)
+        signalIdentity = identity
+        signals.setProfile?.(profile)
+        signals.environment()
+        if (!prepareIndirect) prepareDdgi()
+        reset = reuse
+      }
+      if (deferSignals) installSignals = install
+      else install()
       started = performance.now()
       firstRasterMs = null
-      reset = reuse
     },
     async preparePasses(signal?: AbortSignal) {
       signal?.throwIfAborted()
@@ -227,6 +271,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       // Only real scene/input changes enter here. Scheduling another completed
       // frame calls options.invalidate directly and must not keep GI busy.
       lastActivity = performance.now()
+      scheduleEnhancement()
       ddgi?.invalidate(kind)
       signals?.invalidateKeyShadow?.(kind)
       // Smooth camera/rigid motion is represented by true vectors, not a reset.
@@ -237,6 +282,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       if (disposed || error || interacting === value) return
       interacting = value
       lastActivity = performance.now()
+      scheduleEnhancement()
       if (value) options.invalidate()
     },
     setActive(value: boolean) {
@@ -246,6 +292,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       // Time spent hidden is not a safe rebuild window on the first resumed frame.
       lastActivity = performance.now()
       if (!value) {
+        clearTimeout(enhancementTimer)
         interacting = false
         clock.pause()
         phase = error ? 'error' : 'paused'
@@ -253,6 +300,8 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         clock.resume()
         reset = true
         phase = error ? 'error' : loaded ? 'ready' : 'loading'
+        scheduleEnhancement()
+        if (loaded && prepareIndirect && !ddgiError) prepareDdgi()
         options.invalidate()
       }
       report(true)
@@ -285,7 +334,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals?.setWorldGi(null)
         ddgiGraphDirty = false
       }
-      if (ddgi && !ddgiError && framesSincePrepare > 0 && ddgi.needsUpdate()) {
+      if (signals && ddgi && !ddgiError && framesSincePrepare > 0 && ddgi.needsUpdate()) {
         // Serialize asynchronous probe compute with every raster/auxiliary draw
         // on the existing renderer. Tres remains the sole scheduling clock.
         const token = generation,
@@ -318,6 +367,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     },
     snapshot(): RealtimeSnapshot {
       return {
+        mode: mode(),
         phase,
         error,
         slug,
@@ -335,13 +385,12 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         reflectionHistory: signals?.history?.() ?? null,
         materialBranches: materials.stats(),
         showroom: getShowroomStatus(scene),
-        productProfile: productProfile.adapterId,
+        productProfile: native ? undefined : productProfile.adapterId,
         preparation: { sceneInputs: preparedPasses },
         keyShadow: signals?.keyShadow?.(),
-        indirectLighting: {
-          ...indirectStatus(),
-          details: ddgi?.snapshot() ?? null,
-        },
+        indirectLighting: native
+          ? undefined
+          : { ...indirectStatus(), details: ddgi?.snapshot() ?? null },
       }
     },
     dispose() {
@@ -361,40 +410,53 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     try {
       clock.frame(() => {
         options.beforeRaster()
+        if (
+          installSignals &&
+          loaded &&
+          !interacting &&
+          performance.now() - lastActivity >= enhancementIdleMs
+        ) {
+          const install = installSignals
+          installSignals = undefined
+          install()
+        }
         materials.sync()
         renderer.getDrawingBufferSize(size)
-        if (reset) {
-          // Consume before resetting: a synchronous invalidation raised by an
-          // owner during cleanup must survive for the next complete frame.
-          reset = false
-          signals?.resetHistory()
-          signals?.environment()
-          motion.reset(scene)
-          historyResets++
-        }
-        motion.beginFrame(scene)
-        try {
-          if (signals) signals.render()
-          else renderer.render(scene, camera)
-          if (error) throw new Error(error)
-          signals?.commitFrame()
-          motion.commitFrame()
-        } catch (cause) {
-          signals?.cancelFrame()
-          motion.cancelFrame()
-          throw cause
-        }
+        if (signals) drawEnhanced()
+        else renderer.render(scene, camera)
+        if (error) throw new Error(error)
         frames++
         framesSincePrepare++
         firstRasterMs ??= performance.now() - started
       })
       notify()
       report()
-      if (loaded && !error) options.invalidate()
+      if (loaded && !error && signals) options.invalidate()
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '实时光影绘制失败'
       phase = 'error'
       report(true)
+    }
+  }
+
+  function drawEnhanced() {
+    if (reset) {
+      reset = false
+      signals?.resetHistory()
+      signals?.environment()
+      motion.reset(scene)
+      historyResets++
+    }
+    motion.beginFrame(scene)
+    try {
+      signals?.render()
+      if (error) throw new Error(error)
+      signals?.commitFrame()
+      motion.commitFrame()
+    } catch (cause) {
+      signals?.cancelFrame()
+      motion.cancelFrame()
+      throw cause
     }
   }
 }

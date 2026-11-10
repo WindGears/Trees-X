@@ -45,6 +45,7 @@ function fixture() {
   const motion = {
     node: { testMotionNode: true },
     reset: vi.fn(() => calls.push('motion:reset')),
+    clear: vi.fn(),
     beginFrame: vi.fn(() => calls.push('motion:begin')),
     commitFrame: vi.fn(() => calls.push('motion:commit')),
     cancelFrame: vi.fn(() => calls.push('motion:cancel')),

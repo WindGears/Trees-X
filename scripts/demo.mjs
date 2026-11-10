@@ -19,6 +19,12 @@ try {
     const result = await start(config, controller.signal)
     console.log(`${result.alreadyRunning ? '已登记演示正在运行' : '演示已就绪'}：${result.baseUrl}`)
     console.log('管理入口：' + result.baseUrl + '/admin；本地日志：' + config.artifactsDir)
+    if (config.showcase) {
+      console.log(
+        'WebGPU 答辩入口：' + result.baseUrl + '/?renderPipeline=showcase&product=reventon',
+      )
+      console.log('WebGPU 管理预览：' + result.baseUrl + '/admin?renderPipeline=showcase')
+    }
   } else if (command === 'stop') console.log((await stop(config)).message)
   else throw new Error('用法：node scripts/demo.mjs doctor|prepare|start|stop')
 } catch (error) {

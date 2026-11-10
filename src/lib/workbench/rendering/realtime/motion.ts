@@ -228,6 +228,12 @@ export function createMotionHistory(camera: Camera) {
       for (const entry of entries.values()) instances += (entry.previousInstances?.length ?? 0) / 16
       return { objects: entries.size, instances, historyBytes: instances * 16 * 4, frameOpen }
     },
+    clear() {
+      entries.clear()
+      root = undefined
+      initialized = false
+      frameOpen = false
+    },
     dispose() {
       if (disposed) return
       disposed = true

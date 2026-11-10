@@ -7,6 +7,7 @@ import {
   inspectAssets,
   inspectFrontend,
   inspectJar,
+  inspectShowcaseAssets,
   inspectSupportAssets,
 } from './assets.mjs'
 import { demoProducts } from './config.mjs'
@@ -71,6 +72,14 @@ export async function doctor(config) {
   )
   await check('public 三件清单与 LFS', () => inspectAssets(join(config.rootDir, 'public')))
   await check('dist 三件清单与 LFS', () => inspectAssets(config.distDir))
+  if (config.showcase) {
+    await check('public 答辩版 4K、WindGear v2、R18 与 KTX2', () =>
+      inspectShowcaseAssets(join(config.rootDir, 'public'), config.rootDir),
+    )
+    await check('dist 答辩版 4K、WindGear v2、R18 与 KTX2', () =>
+      inspectShowcaseAssets(config.distDir, config.rootDir),
+    )
+  }
   await check('public 解码器、封面、降噪与暖夜资源摘要', () =>
     inspectSupportAssets(join(config.rootDir, 'public')),
   )
@@ -125,14 +134,22 @@ export async function prepareArtifacts(config, javaVersion, build = runNpm) {
   const before = await sourceFingerprint(config.rootDir)
   const source = await inspectAssets(join(config.rootDir, 'public'))
   const sourceSupport = await inspectSupportAssets(join(config.rootDir, 'public'))
+  const sourceShowcase = config.showcase
+    ? await inspectShowcaseAssets(join(config.rootDir, 'public'), config.rootDir)
+    : undefined
   await build(config, 'build')
   await build(config, 'server:build')
   const manifests = await inspectAssets(config.distDir)
   const support = await inspectSupportAssets(config.distDir)
+  const showcase = config.showcase
+    ? await inspectShowcaseAssets(config.distDir, config.rootDir)
+    : undefined
   if (JSON.stringify(source) !== JSON.stringify(manifests))
     throw new Error('public 与 dist 的三件清单不一致。')
   if (JSON.stringify(sourceSupport) !== JSON.stringify(support))
     throw new Error('public 与 dist 的本地解码器、封面、降噪或暖夜资源摘要不一致。')
+  if (JSON.stringify(sourceShowcase) !== JSON.stringify(showcase))
+    throw new Error('public 与 dist 的答辩运行资产摘要不一致。')
   const prepared = {
     schemaVersion: 1,
     preparedAt: new Date().toISOString(),
@@ -142,6 +159,7 @@ export async function prepareArtifacts(config, javaVersion, build = runNpm) {
     frontend: await inspectFrontend(config.distDir),
     manifests,
     support,
+    ...(showcase ? { showcase } : {}),
   }
   if (before !== (await sourceFingerprint(config.rootDir)))
     throw new Error(
@@ -172,6 +190,15 @@ export async function verifyPrepared(config) {
   const sourceSupport = await inspectSupportAssets(join(config.rootDir, 'public'))
   if (JSON.stringify(sourceSupport) !== JSON.stringify(actual.support))
     throw new Error('生产解码器、封面、降噪或暖夜资源与 public 摘要不一致；请重新准备。')
+  if (config.showcase) {
+    if (!prepared.showcase) throw new Error('请使用 TREES_DEMO_SHOWCASE=1 重新准备答辩产物。')
+    for (const directory of [join(config.rootDir, 'public'), config.distDir])
+      if (
+        JSON.stringify(await inspectShowcaseAssets(directory, config.rootDir)) !==
+        JSON.stringify(prepared.showcase)
+      )
+        throw new Error('答辩运行资产已改变；请重新准备。')
+  }
   return { preparedAt: prepared.preparedAt, products: demoProducts.map((item) => item.slug) }
 }
 

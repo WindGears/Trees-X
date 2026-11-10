@@ -11,6 +11,7 @@ import { resolveStudioPalette } from '../studio/palette'
 import type { StudioMoodUpdate } from '../studio/mood'
 import { createLoungeLook } from './loungeLook'
 import { resolveLoungeProjection } from './loungeSpatialMode'
+import { showcaseRequested } from './showcase'
 
 export type WorkbenchStudio = ReturnType<typeof createTypewriterStudio> & {
   setMood?: (update: StudioMoodUpdate) => void
@@ -31,10 +32,11 @@ export const createWorkbenchStudio: WorkbenchStudioFactory = (
 ) => {
   if (!isWebGpuRenderer(renderer)) return createTypewriterStudio(renderer, scene, model, groundY)
   const realtime = isRealtimeRenderer(renderer),
-    spatial = realtime && resolveLoungeProjection() !== 'infinite'
+    loungeEnabled = realtime && !showcaseRequested(),
+    spatial = loungeEnabled && resolveLoungeProjection() !== 'infinite'
   const geometry = createGpuStudioGeometry(groundY, false, resolveStudioPalette(false), spatial),
     lighting = createStudioLights()
-  const lounge = realtime ? createLoungeLook(geometry, lighting.lights) : undefined
+  const lounge = loungeEnabled ? createLoungeLook(geometry, lighting.lights) : undefined
   let reflection: ReturnType<typeof createGpuStudioReflection> | undefined,
     shadow: ReturnType<typeof createGpuStudioShadow> | undefined,
     disposed = false

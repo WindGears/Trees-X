@@ -5,6 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import sharp from 'sharp'
 import { Matrix4, Vector3 } from 'three'
 import { demoProducts, readDemoConfig } from './demo/config.mjs'
+import { bridge } from './demo/browser-check.mjs'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5182'
 // Every API request, including preview and restoration, is pinned to the isolated restore server.
@@ -14,12 +15,24 @@ if (frontend.hostname !== '127.0.0.1' || frontend.protocol !== 'http:' || fronte
   throw new Error('管理联合验收只允许本机隔离前端（默认 5182），禁止使用正式 5181。')
 const config = readDemoConfig()
 const output = process.env.DEMO_ADMIN_OUTPUT || 'artifacts/demo/admin-flow'
+const showcase = process.env.DEMO_ADMIN_SHOWCASE === '1'
+const selected = process.env.DEMO_ADMIN_PRODUCT
+const testedProducts = selected
+  ? demoProducts.filter((item) => item.slug === selected)
+  : demoProducts
+if (!testedProducts.length) throw new Error('未知的隔离测试展品：' + selected)
+function pageUrl(path) {
+  const url = new URL(path, frontend)
+  if (showcase) url.searchParams.set('renderPipeline', 'showcase')
+  return url.href
+}
 const timeout = 180000
 const report = {
   passed: false,
   frontend: base,
   backend,
-  database: 'trees_x_restore_test',
+  database: showcase ? 'isolated showcase backend on 8091' : 'trees_x_restore_test',
+  showcase,
   products: [],
   errors: [],
   restored: [],
@@ -99,6 +112,15 @@ async function ready(target, slug) {
 }
 async function viewMatrix(target) {
   await target.waitForTimeout(120)
+  if (showcase) {
+    await bridge(target)
+    return target.evaluate(() => {
+      const { scene } = window.__demo
+      if (!scene.renderer.instance.backend.isWebGPUBackend)
+        throw new Error('缺少实际 WebGPU 后端。')
+      return scene.camera.activeCamera.value.matrixWorldInverse.toArray()
+    })
+  }
   return target.evaluate(() => {
     const matrix = window.__adminViewMatrices.get(document.querySelector('canvas'))
     if (!matrix || !matrix.every(Number.isFinite)) throw new Error('缺少实际 WebGL viewMatrix。')
@@ -199,14 +221,14 @@ async function restore(slug) {
   report.restored.push(slug)
 }
 try {
-  await page.goto(base + '/admin')
+  await page.goto(pageUrl('/admin'))
   await page
     .getByLabel('管理员账号', { exact: true })
     .fill(config.env.TREES_ADMIN_USERNAME ?? 'admin')
   await page.getByLabel('密码', { exact: true }).fill(config.env.TREES_ADMIN_PASSWORD ?? '123456')
   await page.getByRole('button', { name: '登录管理端', exact: true }).click()
   await expect(page.getByRole('button', { name: '退出登录', exact: true })).toBeVisible()
-  for (const { slug, manifest } of demoProducts) {
+  for (const { slug, manifest } of testedProducts) {
     console.log(JSON.stringify({ event: 'demo-admin-product', slug }))
     const original = await detail(slug)
     originals.set(slug, original)
@@ -282,7 +304,7 @@ try {
     await page.getByRole('button', { name: '返回商品列表', exact: true }).click()
     await expect(page.locator('canvas')).toHaveCount(0)
     visitor = await context.newPage()
-    await visitor.goto(base + '/?product=' + slug)
+    await visitor.goto(pageUrl('/?product=' + slug))
     await ready(visitor, slug)
     await visitor.reload()
     await ready(visitor, slug)

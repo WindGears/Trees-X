@@ -7,6 +7,8 @@ const message = computed(() => {
   if (props.notice) return props.notice
   if (props.status?.error) return '实时光影暂不可用，请重新加载'
   if (props.status?.showroom?.error) return '冷白棚环境未就绪，已保留原环境光照'
+  if (props.status?.mode === 'pbr') return 'WebGPU · 实时材质'
+  if (props.status?.mode === 'warming') return 'WebGPU · 材质就绪，准备实时光影'
   if (props.status?.reflectionRays?.error) return '实时光影 · 精细反射不可用，已保留基础反射'
   if (props.status?.keyShadow?.error) return '实时光影 · 自阴影不可用，已保留基础画面'
   if (props.status?.keyShadow?.requested && props.status.keyShadow.phase === 'loading')

@@ -20,6 +20,7 @@ import type { CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
 import { hasTypewriterStudio } from '@/lib/workbench/studioPreset'
 import { resolveStudioPalette, studioPalettes } from '@/lib/workbench/studio/palette'
+import { showcaseBayKind } from '@/lib/workbench/rendering/showcase'
 const props = defineProps<{
   preview?: boolean
   gallery?: boolean
@@ -40,22 +41,30 @@ const {
   notice,
   rendererFailed,
   realtimeRequest,
+  showcase,
 } = useWorkbenchRenderHost(() => sceneHost.value?.checkpoint())
 const studioMood = ref<'light' | 'dark'>(resolveStudioPalette(true).mood)
 const supportsStudioMood = computed(
-  () => hasTypewriterStudio(store.presentation) && backend.value === 'webgpu' && realtimeRequest,
+  () =>
+    hasTypewriterStudio(store.presentation) &&
+    backend.value === 'webgpu' &&
+    realtimeRequest &&
+    !showcase,
 )
 const studioPalette = computed(() =>
   supportsStudioMood.value ? studioPalettes[studioMood.value] : undefined,
 )
 const stageBackground = computed(
   () =>
-    (coldShowroom.value ? '#15171a' : undefined) ??
+    (coldShowroom.value || exhibitBay.value ? '#15171a' : undefined) ??
     studioPalette.value?.background ??
     (props.gallery ? '#e7e9e5' : (store.presentation?.stage?.background ?? '#151c25')),
 )
 const refinement = shallowRef<RefinementStatus>()
 const lighting = shallowRef<RealtimeStatus>()
+const exhibitBay = computed(() =>
+  showcase && backend.value === 'webgpu' ? showcaseBayKind(store.presentation?.source) : undefined,
+)
 const coldShowroom = computed(
   () =>
     backend.value === 'webgpu' &&
@@ -159,6 +168,8 @@ onErrorCaptured(() => {
     ref="stageElement"
     class="wb-stage"
     :data-render-backend="backend"
+    :data-render-preset="showcase ? 'showcase' : undefined"
+    :data-exhibit-bay="exhibitBay"
     :data-studio-mood="studioPalette?.mood"
     :data-car-showroom="coldShowroom ? 'cold-studio' : undefined"
     :data-studio-environment="supportsStudioMood ? studioEnvironment.phase : undefined"
@@ -200,6 +211,7 @@ onErrorCaptured(() => {
         :catalog="catalog"
         :checkpoint="checkpoint"
         :realtime-pipeline="realtimeRequest"
+        :showcase="showcase"
         :studio-mood="studioMood"
         @restore="restore"
         @refinement="reportRefinement"
@@ -220,7 +232,7 @@ onErrorCaptured(() => {
       :notice="notice"
     />
     <WorkbenchShowroomDebug
-      v-if="coldShowroom && store.available && lighting?.showroom?.phase === 'ready'"
+      v-if="coldShowroom && !showcase && store.available && lighting?.showroom?.phase === 'ready'"
       :key="`${store.revision}:${hostRevision}:${revision}`"
       :apply="(value) => sceneHost?.setPanelBrightness(value)"
       :apply-lighting="(value) => sceneHost?.setShowroomLighting(value)"

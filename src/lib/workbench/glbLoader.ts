@@ -4,7 +4,7 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
 import { checkGlbDocument } from './glbDocument'
 import { ownedResources } from './ownedResources'
-import { heavyWork } from './decodeQueue'
+import { heavyWork, taskSlots } from './decodeQueue'
 import type { AssetBundle } from './assetBundle'
 import type { VerifiedFiles } from './assetSession'
 import type { WorkbenchRenderer } from './rendering/rendererTypes'
@@ -15,8 +15,9 @@ export function decodeGlb(
   bytes: Map<string, ArrayBuffer> | VerifiedFiles,
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
+  workers: 2 | 4 = 2,
 ) {
-  return decoderOwner(signal, () => parseGlb(bundle, bytes, renderer, signal))
+  return decoderOwner(signal, () => parseGlb(bundle, bytes, renderer, signal, workers))
 }
 
 async function parseGlb(
@@ -24,7 +25,10 @@ async function parseGlb(
   bytes: Map<string, ArrayBuffer> | VerifiedFiles,
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
+  workers: 2 | 4,
 ) {
+  // One parse owns all worker slots, including geometry and image jobs.
+  const decode = workers === 2 ? heavyWork : taskSlots(workers)
   const files: VerifiedFiles =
     bytes instanceof Map
       ? {
@@ -69,15 +73,15 @@ async function parseGlb(
   })
   // Decoder instances belong to this parse. All binaries are self-hosted.
   const draco = new DRACOLoader().setDecoderPath('/draco/').setWorkerLimit(2)
-  boundDracoDecode(draco, signal)
+  boundDracoDecode(draco, signal, decode)
   const ktx = new KTX2Loader(manager)
     .setTranscoderPath('/basis/')
-    .setWorkerLimit(2)
+    .setWorkerLimit(workers)
     .detectSupport(renderer)
   const loader = new GLTFLoader(manager)
     .setDRACOLoader(draco)
     .setKTX2Loader(ktx)
-    .setMeshoptDecoder(boundMeshoptDecode(signal))
+    .setMeshoptDecoder(boundMeshoptDecode(signal, decode))
   const pending = new Set<Promise<unknown>>()
   function remember<T>(promise: Promise<T>): Promise<T> {
     const tracked = promise.then((value) => {
@@ -118,7 +122,7 @@ async function parseGlb(
         // Obtain dependencies before holding a heavy-work slot: a compressed
         // embedded image may itself need a Meshopt task, avoiding nested-slot deadlock.
         if (typeof bufferView === 'number') await parser.getDependency('bufferView', bufferView)
-        return heavyWork(signal, async () => {
+        return decode(signal, async () => {
           if (
             source &&
             typeof createImageBitmap === 'function' &&

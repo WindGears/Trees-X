@@ -1,5 +1,9 @@
 # Trees X 新版项目入口
 
+## WebGPU 答辩候选
+
+`renderPipeline=showcase` 以汽车 R18、WindGear v2 和三角钢琴组织同一个 WebGPU 工作台。默认晋级按三件画质、操作和实际呈现验收判断。通过 `TREES_DEMO_SHOWCASE=1` 选择本地打包检查。运行方式、实测和五分钟流程见[答辩版验收](showcase-validation.md)。
+
 ## 汽车画质阶段收尾（2026-11-09）
 
 交付以已认可的 r18 冷白摄影棚、wrap-wide 亮银和窄倒角白边修正为准。

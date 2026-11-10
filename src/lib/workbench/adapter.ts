@@ -23,6 +23,8 @@ export interface SceneAdapter {
   /** Native preparation is serialized by the scene host; the adapter keeps
    * ownership until the awaited work settles, even after cancellation. */
   prepare?(signal?: AbortSignal): Promise<void>
+  /** CPU assets needed by optional indirect light, after the first usable frame. */
+  prepareIndirect?(): Promise<void>
   setStudioMood?(update: StudioMoodUpdate): void
   select?(node?: string): void
   nodeForHit?(object: Object3D, instanceId?: number): Object3D | undefined

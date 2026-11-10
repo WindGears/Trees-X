@@ -23,6 +23,7 @@ export interface ReventonStageOptions {
   quality?: CarStudioQuality
   camera?: Camera
   source?: GlbSource
+  search?: string
   createKeyLight?: () => RectAreaLight
   createStripLight?: () => RectAreaLight
 }

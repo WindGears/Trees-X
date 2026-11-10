@@ -43,18 +43,14 @@ export function createColdShowroomStage(
   model: Group,
   camera: Camera,
   base: ReventonStage,
+  search = globalThis.location?.search ?? '',
 ): ReventonStage {
-  const config = resolveColdStudioConfig(typeof location === 'undefined' ? '' : location.search),
-    floorMode = new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
-      'carFloor',
-    ),
+  const query = new URLSearchParams(search),
+    config = resolveColdStudioConfig(search),
+    floorMode = query.get('carFloor'),
     bakedFloor = floorMode === 'baked' || floorMode === 'cycles',
     bakeKind = floorMode === 'cycles' ? 'cycles' : 'raster',
-    localFloorLight =
-      floorMode === 'cycles' &&
-      new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
-        'carFloorLight',
-      ) === 'local',
+    localFloorLight = floorMode === 'cycles' && query.get('carFloorLight') === 'local',
     room = createColdStudioGeometry(config),
     cutaway = createShowroomCutaway(
       room.fadeMeshes,
@@ -257,12 +253,7 @@ export function createColdShowroomStage(
           irradiance: indirect.texture,
           config,
         })
-        if (
-          bakedFloor &&
-          new URLSearchParams(typeof location === 'undefined' ? '' : location.search).get(
-            'carFloorReflection',
-          ) === 'planar'
-        ) {
+        if (bakedFloor && query.get('carFloorReflection') === 'planar') {
           carReflection = createCarFloorReflection(room.floor, model)
           scene.add(carReflection.mesh)
           status.floorReflection = `${bakeKind}-room-probe+dynamic-car-planar`

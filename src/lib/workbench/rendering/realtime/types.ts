@@ -7,6 +7,7 @@ import type { ReflectionRaySnapshot } from './reflectionRays'
 import type { CarKeyShadowSnapshot } from './carShadow/runtime'
 
 export interface RealtimeStatus {
+  mode?: 'pbr' | 'warming'
   phase: 'loading' | 'ready' | 'paused' | 'error'
   slug: string | null
   revision: number

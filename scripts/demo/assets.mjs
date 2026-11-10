@@ -62,9 +62,14 @@ export async function inspectManifest(path) {
   const document = JSON.parse(await readFile(path, 'utf8'))
   if (document.schemaVersion !== 1 || !Array.isArray(document.files) || !document.files.length)
     throw new Error('运行清单格式错误：' + path)
+  if (typeof document.entry !== 'string') throw new Error('清单入口未登记：' + path)
+  return inspectRecords(path, document.files, document.entry)
+}
+
+async function inspectRecords(path, files, entry) {
   const seen = new Set()
   let bytes = 0
-  for (const file of document.files) {
+  for (const file of files) {
     const resource = resourcePath(dirname(path), file.path)
     if (
       seen.has(resource) ||
@@ -80,9 +85,9 @@ export async function inspectManifest(path) {
       throw new Error('运行资产字节或 SHA-256 不匹配：' + resource)
     bytes += actual.bytes
   }
-  if (!seen.has(resourcePath(dirname(path), document.entry)))
+  if (entry !== undefined && !seen.has(resourcePath(dirname(path), entry)))
     throw new Error('清单入口未登记：' + path)
-  return { ...(await fileDigest(path)), files: document.files.length, assetBytes: bytes }
+  return { ...(await fileDigest(path)), files: files.length, assetBytes: bytes }
 }
 
 export async function inspectAssets(directory, products = demoProducts) {
@@ -92,6 +97,69 @@ export async function inspectAssets(directory, products = demoProducts) {
     manifests.push({ slug: product.slug, url: product.manifest, ...(await inspectManifest(path)) })
   }
   return manifests
+}
+
+export async function inspectShowcaseAssets(directory, rootDir) {
+  const bundles = []
+  for (const [reference, manifest, id] of [
+    [
+      'typewriterV2Bundle.json',
+      'models/bundles/kimi-typewriter/v2/manifest.json',
+      'kimi-typewriter',
+    ],
+    [
+      'reventonRuntimeBundle.json',
+      'models/reventon-runtime-v2/workbench-manifest.json',
+      'reventon-workbench',
+    ],
+  ]) {
+    const registration = join(rootDir, 'src/lib/workbench', reference)
+    const source = JSON.parse(
+      await readFile(registration, 'utf8').catch((error) => {
+        if (error.code === 'ENOENT') throw new Error('缺少答辩运行包登记：' + registration)
+        throw error
+      }),
+    )
+    const url = '/' + manifest
+    if (source.id !== id || source.version !== 2 || source.manifest !== url)
+      throw new Error('答辩运行包登记不符：' + reference)
+    const record = await inspectManifest(resourcePath(directory, manifest))
+    if (record.sha256 !== source.sha256) throw new Error('答辩运行包清单摘要不符：' + url)
+    bundles.push({ url, ...record })
+  }
+  const studio = []
+  for (const [name, roles] of [
+    ['concept-v2', ['floor']],
+    ['cycles-r18', ['specular', 'indirect']],
+  ]) {
+    const manifest = `studio/cold-studio/${name}/manifest.json`
+    const path = resourcePath(directory, manifest)
+    const value = JSON.parse(await readFile(path, 'utf8'))
+    const records = Array.isArray(value.records)
+      ? value.records.filter((record) => roles.includes(record.role))
+      : []
+    if (
+      records.length !== (name === 'concept-v2' ? 3 : 2) ||
+      (name === 'cycles-r18' && value.config?.revision !== 18)
+    )
+      throw new Error('答辩展厅资产清单不完整：' + manifest)
+    studio.push({
+      url: '/' + manifest,
+      ...(await inspectRecords(
+        path,
+        records.map((record) => ({ ...record, path: record.file })),
+      )),
+    })
+  }
+  const basis = []
+  for (const name of ['basis_transcoder.js', 'basis_transcoder.wasm']) {
+    const path = resourcePath(directory, 'basis/' + name)
+    await rejectLfsPointer(path)
+    const digest = await fileDigest(path)
+    if (digest.bytes === 0) throw new Error('KTX2 解码文件为空：' + name)
+    basis.push({ name, ...digest })
+  }
+  return { bundles, studio, basis }
 }
 
 export async function inspectJar(path) {

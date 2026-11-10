@@ -8,6 +8,7 @@ import type { RefinementStatus, RefinementChange } from '@/lib/workbench/renderi
 import type { RealtimeCoordinator } from '@/lib/workbench/rendering/realtime/coordinator'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
 import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
+import { productRenderSearch } from '@/lib/workbench/rendering/showcase'
 import { getShowroomEnvironment } from '@/lib/workbench/rendering/carShowroom/binding'
 import type { ownGeometryAttributes } from '@/lib/workbench/rendering/realtime/geometryOwnership'
 import { createStageController } from '@/lib/workbench/controller'
@@ -37,6 +38,7 @@ export interface WorkbenchSceneProps {
   catalog?: boolean
   checkpoint?: CameraSnapshot
   realtimePipeline?: boolean
+  showcase?: boolean
   studioMood?: StudioMood
 }
 /** Scene owns all resources except the Tres-owned renderer. */
@@ -98,6 +100,7 @@ export function useWorkbenchScene(
       Boolean(props.gallery),
       gpu && Boolean(props.realtimePipeline),
       props.studioMood,
+      gpu && props.showcase,
     ),
   )
   function updateStage() {
@@ -107,6 +110,7 @@ export function useWorkbenchScene(
       Boolean(props.gallery),
       gpu && Boolean(props.realtimePipeline),
       props.studioMood,
+      gpu && props.showcase,
     )
   }
   watch(
@@ -129,7 +133,14 @@ export function useWorkbenchScene(
   )
   let controller: ReturnType<typeof createStageController> | undefined
   function applyStudioMood(force = false) {
-    if (disposed || (preparing && !force) || !gpu || !props.realtimePipeline || !studio.value)
+    if (
+      disposed ||
+      (preparing && !force) ||
+      !gpu ||
+      props.showcase ||
+      !props.realtimePipeline ||
+      !studio.value
+    )
       return
     const token = generation
     controller?.setStudioMood({
@@ -234,29 +245,28 @@ export function useWorkbenchScene(
     }
     if (!camera.value) return
     store.loading(product.slug, revision, 'first-frame')
-    const profile = realtimeProductProfile(
-      product.presentation.source.kind === 'glb' ? product.presentation.source.adapter : undefined,
-    )
+    const source = product.presentation.source
+    const profile = realtimeProductProfile(source.kind === 'glb' ? source.adapter : undefined)
+    const native = props.showcase && !profile
+    const search = productRenderSearch(source)
+    const query = new URLSearchParams(search)
     const car = profile?.adapterId === 'reventon-v1'
     // A captured showroom must exist before material/environment graph binding.
     // The stopped host and preparation lease still own the only renderer here.
     const carPrepare =
       car &&
       realLighting &&
-      (new URLSearchParams(location.search).get('carPrewarm') !== 'off' ||
-        new URLSearchParams(location.search).get('carShowroom') === 'cold-studio')
-    if (carPrepare) await current.prepare(signal)
+      (query.get('carPrewarm') !== 'off' || query.get('carShowroom') === 'cold-studio')
+    if (carPrepare || (props.showcase && gpu)) await current.prepare(signal)
     if (disposed || request !== generation) return
-    realLighting?.prepare(profile)
-    if (
-      realLighting &&
-      (!car || new URLSearchParams(location.search).get('carPrewarm') !== 'off')
-    ) {
-      // Same renderer, stopped drawing clock and current preparation lease.
-      // These tasks warm the actual private shadow and HDR MRT variants, not
-      // the unrelated default Canvas PSO. Post effects still gate on a real frame.
-      await realLighting.preparePasses(signal)
-    } else await renderer.compileAsync(scene.value, camera.value)
+    realLighting?.prepare(native ? null : profile, search, loaded.prepareIndirect, props.showcase)
+    // Showcase compiles its visible variants in the actual first draw.
+    // Comparison entries retain the full native prewarm for matching captures.
+    if (!props.showcase || !realLighting) {
+      if (realLighting && !native && (!car || query.get('carPrewarm') !== 'off'))
+        await realLighting.preparePasses(signal)
+      else await renderer.compileAsync(scene.value, camera.value)
+    }
     if (disposed || request !== generation) return
     const frame = context.renderer.onRender(() => {
       if (

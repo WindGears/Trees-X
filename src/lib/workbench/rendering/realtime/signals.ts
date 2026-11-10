@@ -36,32 +36,30 @@ export function createRealtimeSignals(
   camera: PerspectiveCamera,
   motion: Node,
   profile?: RealtimeProductProfile,
+  search = globalThis.location?.search ?? '',
 ) {
+  const query = new URLSearchParams(search)
   const keyShadowRequested =
     profile?.adapterId === 'reventon-v1' &&
     isCarStudioScene(scene) &&
-    new URLSearchParams(location.search).get('carKeyShadow') === '1'
+    query.get('carKeyShadow') === '1'
   const beautySamples =
     profile?.adapterId === 'reventon-v1' &&
     isCarStudioScene(scene) &&
-    new URLSearchParams(location.search).get('carAntialias') === 'msaa'
+    query.get('carAntialias') === 'msaa'
       ? 4
       : 0
   const inputs = createRealtimeSceneInputs(scene, camera, motion, keyShadowRequested, beautySamples)
   const keyShadow = createCarKeyShadow(renderer, scene, camera, inputs, keyShadowRequested)
   const carOptimization =
-    profile?.adapterId === 'reventon-v1' &&
-    new URLSearchParams(location.search).get('carRenderTuning') !== 'legacy'
+    profile?.adapterId === 'reventon-v1' && query.get('carRenderTuning') !== 'legacy'
   let loungeFocus = createLoungeDofFocus(
     scene,
     camera,
     resolveLoungeDof() && (profile?.allowLoungeDof ?? true),
   )
   // Explicit engineering comparison only; the realtime entry uses rotation.
-  const reflectionKernel =
-    new URLSearchParams(location.search).get('reflectionKernel') === 'static'
-      ? 'static'
-      : 'rotating'
+  const reflectionKernel = query.get('reflectionKernel') === 'static' ? 'static' : 'rotating'
   const {
     color: beauty,
     depth,
@@ -84,7 +82,7 @@ export function createRealtimeSignals(
       nativeSingle: baseSpecular,
       camera,
     },
-    studio && new URLSearchParams(location.search).get('carStudioReflections') !== '1' ? 2 : 1,
+    studio && query.get('carStudioReflections') !== '1' ? 2 : 1,
     carOptimization || studio,
   )
   const gi = ssgi(beauty, depth, signedNormal, camera)

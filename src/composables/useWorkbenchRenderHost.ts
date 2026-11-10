@@ -6,11 +6,15 @@ import { supportsWebGL2 } from '@/lib/workbench/renderSupport'
 import { useWorkbenchStore } from '@/stores/workbench'
 import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
 import { waitForRetiredPreparations } from '@/lib/workbench/rendering/preparationLease'
+import { showcaseRequested } from '@/lib/workbench/rendering/showcase'
 
 /** Replacement always unmounts the old Tres host before preparing its successor. */
 export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined) {
   const store = useWorkbenchStore(),
-    realtimeRequest = new URLSearchParams(location.search).get('renderPipeline') === 'realtime',
+    experimentalRealtime =
+      new URLSearchParams(location.search).get('renderPipeline') === 'realtime',
+    showcase = showcaseRequested(),
+    realtimeRequest = experimentalRealtime || showcase,
     eligible = 'gpu' in navigator && matchMedia('(pointer: fine)').matches && innerWidth >= 1024,
     backend = ref(requestedBackend(location.search, 'gpu' in navigator, eligible)),
     rendererFactory = shallowRef<RendererOptions['renderer']>(),
@@ -29,7 +33,7 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
   }
   // Management previews install their configuration before mounting the host.
   // Do not briefly construct a GPU rigid-motion host for a morphing piano.
-  if (realtimeRequest && store.presentation && !isRealtimeProduct()) {
+  if (experimentalRealtime && store.presentation && !isRealtimeProduct()) {
     backend.value = 'webgl'
     hostPrepared.value = true
     notice.value = 'WebGL · 当前展品沿用原有管线'
@@ -37,7 +41,7 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
   if (backend.value === 'webgl' && !supportsWebGL2())
     store.useContent('此设备暂时无法启用三维显示。')
   if (
-    ['hybrid', 'realtime'].includes(
+    ['hybrid', 'realtime', 'showcase'].includes(
       new URLSearchParams(location.search).get('renderPipeline') ?? '',
     ) &&
     backend.value === 'webgl' &&
@@ -99,7 +103,14 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
     } else store.useContent('三维显示启动失败，已保留商品图文。')
   }
   function reconcile() {
-    if (!realtimeRequest || !store.presentation || disposed || replacing || failedGpu || !eligible)
+    if (
+      !experimentalRealtime ||
+      !store.presentation ||
+      disposed ||
+      replacing ||
+      failedGpu ||
+      !eligible
+    )
       return
     const next = isRealtimeProduct() ? 'webgpu' : 'webgl'
     notice.value = next === 'webgl' ? 'WebGL · 当前展品沿用原有管线' : ''
@@ -122,5 +133,6 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
     notice,
     rendererFailed,
     realtimeRequest,
+    showcase,
   }
 }

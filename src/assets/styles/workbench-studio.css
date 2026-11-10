@@ -1,18 +1,26 @@
 /* Only text drawn directly over the dark live studio changes. The glass tools
    retain their established light palette, including in management previews. */
-.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) {
+.wb-floating:has(.wb-stage:is([data-car-showroom='cold-studio'], [data-exhibit-bay])) {
   --wb-stage-ink: #f1f3f6;
   --wb-stage-muted: #bdc2ca;
 }
-.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-intro {
+.wb-floating:has(.wb-stage:is([data-car-showroom='cold-studio'], [data-exhibit-bay])) .wb-intro {
   color: #f1f3f6;
 }
-.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-intro p,
-.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-sample-label {
+.wb-floating:has(.wb-stage:is([data-car-showroom='cold-studio'], [data-exhibit-bay])) .wb-intro p,
+.wb-floating:has(.wb-stage:is([data-car-showroom='cold-studio'], [data-exhibit-bay]))
+  .wb-sample-label {
   color: #bdc2ca;
 }
-.wb-floating:has(.wb-stage[data-car-showroom='cold-studio']) .wb-input-hint {
+.wb-floating:has(.wb-stage:is([data-car-showroom='cold-studio'], [data-exhibit-bay]))
+  .wb-input-hint {
   color: #c7ccd3;
+}
+.wb-floating:has(
+    .wb-stage[data-render-preset='showcase']:is([data-car-showroom], [data-exhibit-bay])
+  )
+  .wb-intro {
+  text-shadow: 0 1px 9px #0c0d0fd4;
 }
 .wb-floating:has(.wb-stage[data-studio-mood='dark']) .wb-intro {
   color: #f1f3ee;

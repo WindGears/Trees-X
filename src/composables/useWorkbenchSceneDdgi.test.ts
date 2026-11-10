@@ -79,6 +79,7 @@ vi.mock('@/lib/workbench/rendering/realtime/motion', () => ({
   createMotionHistory: () => ({
     node: float(0),
     reset: vi.fn(),
+    clear: vi.fn(),
     beginFrame: vi.fn(),
     commitFrame: vi.fn(),
     cancelFrame: vi.fn(),

@@ -5,7 +5,8 @@ import type { WorkbenchProduct } from './types'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 import { createProductEnvironment, type OwnedEnvironment } from './rendering/environment'
 import { typewriterCandidate } from './typewriterCandidate'
-import { reventonCandidate } from './reventonCandidate'
+import { isAuditedReventonSource, reventonCandidate } from './reventonCandidate'
+import { productRenderSearch, showcaseBayKind, showcaseRequested } from './rendering/showcase'
 
 export async function loadAdapter(
   product: WorkbenchProduct,
@@ -18,17 +19,19 @@ export async function loadAdapter(
     phase('parse')
     return createSampleAdapter(product)
   }
-  const source = reventonCandidate(
-    typewriterCandidate(product.presentation.source, location.search),
-    location.search,
-  )
+  const search = productRenderSearch(product.presentation.source)
+  const source = reventonCandidate(typewriterCandidate(product.presentation.source, search), search)
+  const exhibit =
+    isWebGpuRenderer(renderer) && showcaseRequested(search) ? showcaseBayKind(source) : undefined
   const session = await (
-    useStreamingAssets(source, location.search) ? openAssetSession : openLegacyAssetSession
+    useStreamingAssets(source, search) ? openAssetSession : openLegacyAssetSession
   )(source.bundle, signal, phase)
   const { bundle, signal: sessionSignal } = session
   let decoded: Awaited<ReturnType<(typeof import('./glbLoader'))['decodeGlb']>> | undefined
   let adapter: SceneAdapter | undefined, environment: OwnedEnvironment | undefined
   let traceTextures: { dispose(): void } | undefined
+  let prepareIndirect: SceneAdapter['prepareIndirect']
+  let retainSession = false
   try {
     phase('parse')
     const [{ decodeGlb }, { bindGlb }] = await Promise.all([
@@ -36,22 +39,40 @@ export async function loadAdapter(
       import('./glbAdapter'),
     ])
     signal.throwIfAborted()
-    decoded = await decodeGlb(bundle, session, renderer, sessionSignal)
+    const fastCarDecode =
+      showcaseRequested(search) &&
+      isAuditedReventonSource(source) &&
+      bundle.version === 2 &&
+      (globalThis.navigator?.hardwareConcurrency ?? 0) >= 8
+    decoded = await decodeGlb(bundle, session, renderer, sessionSignal, fastCarDecode ? 4 : 2)
     if (
       source.adapter === 'reventon-v1' &&
       isWebGpuRenderer(renderer) &&
-      new URLSearchParams(location.search).get('indirectLighting') === 'ddgi'
+      new URLSearchParams(search).get('indirectLighting') === 'ddgi'
     ) {
-      const { prepareCompressedTraceTextures } =
+      const { planCompressedTraceTextures } =
         await import('./rendering/realtime/ddgi/compressedTraceTextures')
-      try {
-        traceTextures = await prepareCompressedTraceTextures(decoded.root, session, sessionSignal)
-      } catch (cause) {
-        sessionSignal.throwIfAborted()
-        // Visible KTX materials remain usable. The strict DDGI proxy will reject
-        // missing CPU maps and report its SSGI fallback instead of dropping maps.
-        decoded.root.userData.ddgiTextureError =
-          cause instanceof Error ? cause.message : String(cause)
+      const read = planCompressedTraceTextures(decoded.root)
+      const prepare = async () => {
+        const owner = await read(session, sessionSignal)
+        if (sessionSignal.aborted) {
+          owner.dispose()
+          sessionSignal.throwIfAborted()
+        }
+        traceTextures = owner
+      }
+      if (showcaseRequested(search)) {
+        let pending: Promise<void> | undefined
+        prepareIndirect = () => (pending ??= prepare().finally(session.dispose))
+      } else {
+        try {
+          await prepare()
+        } catch (cause) {
+          sessionSignal.throwIfAborted()
+          // The DDGI proxy reports the fallback instead of silently dropping maps.
+          decoded.root.userData.ddgiTextureError =
+            cause instanceof Error ? cause.message : String(cause)
+        }
       }
     }
     phase('materials')
@@ -101,8 +122,20 @@ export async function loadAdapter(
         ? (await import('./rendering/reventon')).reventonGpuDependencies
         : undefined
       signal.throwIfAborted()
-      adapter = bindReventon(product, source, decoded.root, decoded.dispose, gpu)
+      adapter = bindReventon(
+        product,
+        source,
+        decoded.root,
+        decoded.dispose,
+        gpu,
+        showcaseRequested(search) ? search : undefined,
+      )
     } else adapter = bindGlb(product, source, decoded.root, decoded.dispose)
+    if (exhibit) {
+      const { withShowcaseBay } = await import('./rendering/showcaseBay')
+      signal.throwIfAborted()
+      adapter = withShowcaseBay(adapter, exhibit, product.presentation.stage?.groundY ?? 0)
+    }
     if (
       !adapter.root.userData.triangles ||
       adapter.root.userData.triangles > bundle.budget.maxTriangles
@@ -129,7 +162,7 @@ export async function loadAdapter(
       } finally {
         session.release(envFile)
       }
-    } else
+    } else if (exhibit !== 'piano')
       environment = await createProductEnvironment(
         renderer,
         source.adapter,
@@ -143,13 +176,16 @@ export async function loadAdapter(
     current.root.userData.bundleVersion = bundle.version
     current.root.userData.bundleSha256 = source.bundle.sha256
     let disposed = false
+    retainSession = Boolean(prepareIndirect)
     return {
       ...current,
       environment: environment?.texture,
       traceBackground: environment?.background,
+      prepareIndirect,
       dispose() {
         if (disposed) return
         disposed = true
+        if (retainSession) session.dispose()
         traceTextures?.dispose()
         current.dispose()
         environment?.dispose()
@@ -162,6 +198,6 @@ export async function loadAdapter(
     environment?.dispose()
     throw error
   } finally {
-    session.dispose()
+    if (!retainSession) session.dispose()
   }
 }
