@@ -1,6 +1,7 @@
 import { HalfFloatType, Material, REVISION } from 'three'
 import type { Node } from 'three/webgpu'
 import { rtt, texture } from 'three/tsl'
+import { shareOwnedRtt } from './ownedRtt'
 
 /** Reviewed r185 RTT with two outputs in one fullscreen draw. The second
  * attachment is owned here; it adds eight bytes/pixel, not another pass.
@@ -25,6 +26,7 @@ export function createSignedHistoryOutput(expression: Node) {
     throw new Error('The reviewed signed history MRT contract changed')
   }
   statistics.name = 'TreesX.Reflection.statistics'
+  shareOwnedRtt(node)
   const setup = node.setup
   // r185 wraps the fragment in ContextNode, whose type forwards to the input
   // but whose output-struct marker does not. NodeMaterial/WGSL otherwise emit

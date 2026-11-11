@@ -3,6 +3,7 @@ import {
   readBundleManifest,
   sha256,
   type AssetBundle,
+  type BundleFile,
   type LoadPhase,
   loadBundle,
 } from './assetBundle'
@@ -55,11 +56,21 @@ export async function openAssetSession(
   ref: BundleReference,
   signal: AbortSignal,
   phase: (p: LoadPhase) => void,
+  substitute?: (file: BundleFile) => Pick<BundleFile, 'path' | 'bytes' | 'sha256'> | undefined,
 ): Promise<VerifiedAssetSession> {
   const abort = new AbortController()
   const currentSignal = AbortSignal.any([signal, abort.signal])
   const { bundle, base } = await readBundleManifest(ref, currentSignal, phase)
   const files = new Map(bundle.files.map((file) => [file.path, file]))
+  async function readVerified(file: Pick<BundleFile, 'path' | 'bytes' | 'sha256'>) {
+    const data = await downloadWork(currentSignal, () =>
+      fetchBundleBytes(base + file.path, currentSignal, file.bytes),
+    )
+    if (data.byteLength !== file.bytes || (await sha256(data)) !== file.sha256)
+      throw new Error('资源校验失败：' + file.path)
+    currentSignal.throwIfAborted()
+    return data
+  }
   interface Entry {
     promise: Promise<ArrayBuffer>
     pending: boolean
@@ -104,15 +115,21 @@ export async function openAssetSession(
       owned.add(entry)
       entry.promise = (async () => {
         try {
-          entry.free = await verifiedByteResidency.reserve(file.bytes, currentSignal)
-          currentSignal.throwIfAborted()
-          const data = await downloadWork(currentSignal, () =>
-            fetchBundleBytes(base + file.path, currentSignal, file.bytes),
+          const alternate = substitute?.(file)
+          entry.free = await verifiedByteResidency.reserve(
+            Math.max(alternate?.bytes ?? 0, file.bytes),
+            currentSignal,
           )
-          if (data.byteLength !== file.bytes || (await sha256(data)) !== file.sha256)
-            throw new Error('资源校验失败：' + path)
           currentSignal.throwIfAborted()
-          return data
+          if (alternate) {
+            try {
+              return await readVerified(alternate)
+            } catch {
+              // The portable source remains the verified fallback for optional cached bytes.
+              currentSignal.throwIfAborted()
+            }
+          }
+          return await readVerified(file)
         } catch (error) {
           entry.released = true
           abort.abort(error)

@@ -1,11 +1,13 @@
 import { Vector2 } from 'three'
 import { createRealtimeClock } from './clock'
-import { getShowroomStatus } from '../carShowroom/binding'
+import { getShowroomEnvironment, getShowroomStatus } from '../carShowroom/binding'
 import { createMotionHistory } from './motion'
 import { createRealtimeSignals } from './signals'
 import { createRealtimeMaterials } from './materials'
 import { realtimeSignalIdentity } from './signalIdentity'
 import { withPreparationLease } from '../preparationLease'
+import { r18PerformanceEnabled } from '../showcase'
+import { createCarFrameSchedule } from './carFrameSchedule'
 import type { RealtimeChange, RealtimeOptions, RealtimeSnapshot, RealtimeStatus } from './types'
 import type { RealtimeDdgi } from './ddgi/field'
 import {
@@ -56,6 +58,19 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
   let installSignals: (() => void) | undefined
   let enhancementTimer: ReturnType<typeof setTimeout> | undefined
   const mode = () => (native ? 'pbr' : installSignals ? 'warming' : undefined)
+  const frameSchedule = createCarFrameSchedule()
+
+  function needsFrame() {
+    return (
+      loaded &&
+      signals &&
+      (frameSchedule.unsettled() ||
+        interacting ||
+        ddgiPreparation ||
+        (!ddgiError && ddgi?.hasPendingUpdates()) ||
+        signals.keyShadow?.().phase === 'loading')
+    )
+  }
 
   function scheduleEnhancement() {
     clearTimeout(enhancementTimer)
@@ -141,6 +156,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
   function unload() {
     if (disposed) return
     generation++
+    frameSchedule.configure()
     clearTimeout(enhancementTimer)
     installSignals = undefined
     loaded = false
@@ -184,6 +200,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       slug = value
       revision = token
       loaded = true
+      frameSchedule.touch()
       phase = error ? 'error' : active ? 'ready' : 'paused'
       if (installSignals) {
         lastActivity = performance.now()
@@ -203,6 +220,12 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ) {
       if (disposed) return
       const query = new URLSearchParams(search)
+      const optimizeR18 =
+        profile?.adapterId === 'reventon-v1' &&
+        getShowroomEnvironment(scene)?.config.revision === 18 &&
+        query.get('carRenderTuning') !== 'legacy' &&
+        r18PerformanceEnabled(search)
+      frameSchedule.configure(optimizeR18)
       native = profile === null
       if (!profile) {
         signals?.dispose()
@@ -242,7 +265,15 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         if (!prepareMaterialsNow) materials.install(scene)
         motion.reset(scene)
         const reuse = Boolean(signals)
-        signals ??= createRealtimeSignals(renderer, scene, camera, motion.node, profile, search)
+        signals ??= createRealtimeSignals(
+          renderer,
+          scene,
+          camera,
+          motion.node,
+          profile,
+          search,
+          optimizeR18,
+        )
         signalIdentity = identity
         signals.setProfile?.(profile)
         signals.environment()
@@ -310,6 +341,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     unload,
     invalidate(kind: RealtimeChange = 'all') {
       if (disposed) return
+      frameSchedule.touch()
       // Only real scene/input changes enter here. Scheduling another completed
       // frame calls options.invalidate directly and must not keep GI busy.
       lastActivity = performance.now()
@@ -323,6 +355,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     setInteracting(value: boolean) {
       if (disposed || error || interacting === value) return
       interacting = value
+      frameSchedule.touch()
       lastActivity = performance.now()
       scheduleEnhancement()
       if (value) options.invalidate()
@@ -340,6 +373,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         phase = error ? 'error' : 'paused'
       } else {
         clock.resume()
+        frameSchedule.touch()
         reset = true
         phase = error ? 'error' : loaded ? 'ready' : 'loading'
         scheduleEnhancement()
@@ -351,6 +385,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     setSignals(ssr: boolean, ssgi: boolean, denoise: boolean) {
       if (disposed || error) return
       signals?.setSignals(ssr, ssgi, denoise)
+      frameSchedule.touch()
       options.invalidate()
     },
     render(notify: () => void) {
@@ -471,9 +506,10 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         framesSincePrepare++
         firstRasterMs ??= performance.now() - started
       })
+      frameSchedule.submitted()
       notify()
       report()
-      if (loaded && !error && signals) options.invalidate()
+      if (!error && needsFrame()) options.invalidate()
     } catch (cause) {
       error = cause instanceof Error ? cause.message : '实时光影绘制失败'
       phase = 'error'

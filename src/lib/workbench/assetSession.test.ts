@@ -125,6 +125,44 @@ describe('cancellable verified file sessions', () => {
     expect(f.fetcher).toHaveBeenCalledTimes(1)
     session.dispose()
   })
+  it.each([true, false])(
+    'verifies an optional derived texture and falls back when corrupt (%s)',
+    async (valid) => {
+      const f = await fixture()
+      const derived = new TextEncoder().encode('gpu-blocks').buffer
+      const alternate = {
+        path: 'local/one.ktx2',
+        bytes: derived.byteLength,
+        sha256: await sha256(derived),
+      }
+      const readSource = f.fetcher.getMockImplementation()!
+      f.fetcher.mockImplementation((path) =>
+        path.endsWith(alternate.path)
+          ? Promise.resolve(new Response(valid ? derived : 'corrupt'))
+          : readSource(path),
+      )
+      const session = await openAssetSession(
+        f.ref,
+        new AbortController().signal,
+        vi.fn(),
+        (file) => (file.path === 'one.png' ? alternate : undefined),
+      )
+      try {
+        const expected = valid ? derived : f.data.get('one.png')
+        expect(await session.read('one.png')).toEqual(expected)
+        expect(session.signal.aborted).toBe(false)
+        expect(f.fetcher.mock.calls.map(([path]) => path)).toEqual([
+          '/models/session/manifest.json',
+          '/models/session/local/one.ktx2',
+          ...(valid ? [] : ['/models/session/one.png']),
+        ])
+        expect(verifiedByteResidency.bytes).toBe(derived.byteLength)
+      } finally {
+        session.dispose()
+      }
+      expect(verifiedByteResidency.bytes).toBe(0)
+    },
+  )
   it('rejects corrupted files, cancels siblings and frees completed bytes', async () => {
     const f = await fixture()
     const session = await openAssetSession(f.ref, new AbortController().signal, vi.fn())

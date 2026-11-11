@@ -4,6 +4,8 @@
 
 Git只保存工具、本说明及`resources/asset-records/reventon-runtime-v2/`中的制作证据副本；运行目录和`src/lib/workbench/reventonRuntimeBundle.json`是本机生成内容。新检出目录先准备原始LFS资源与既有`.tools/ktx-4.4.2/unpacked/bin/ktx.exe`，按下面顺序完整制作、登记，再运行`npm run demo:prepare`。不要把审计副本直接拷入运行目录冒充可用包；普通入口在本机尚未登记时仍可构建。已登记机器应单独备份整个运行目录及本机登记文件，Git不备份派生二进制。
 
+R18 答辩版可在登记后使用 Node 22.15+ 执行 `npm run asset:reventon-native-textures`，生成本机 BC7＋Zstd 贴图及 `src/lib/workbench/reventonNativeTextureCache.json`。原 KTX2 用于其他 GPU 格式和缓存校验失败时的回退。答辩包准备会验证已经登记的本机缓存。迁机时可备份缓存和登记文件，也可按同一命令重建。
+
 运行`npm run asset:reventon-runtime`逐张制作UASTC q4、无RDO、完整mip的KTX2；中断后按已校验记录继续。启动时只要候选登记文件已存在，编码工具便拒绝写入，即使本机生产记录缺失也不会重建覆盖。原始图像16→8位、尺寸缩减及块压缩均可能有损，需整车近景检查。
 
 编码全部完成后依次运行`npm run asset:reventon-finalize`、`npm run asset:reventon-verify`、`npm run asset:reventon-register`。收束步骤生成供 Speedball 0.8 CPU 图集读取的独立256²辅助 PNG，在 GLB extras 中登记引用；可见材质仍使用4K KTX2，辅助图不上传为可见纹理。RGB 与 alpha 分开进行数值重采样，不额外执行 gamma 或法线通道转换。

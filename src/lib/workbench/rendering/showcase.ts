@@ -23,6 +23,16 @@ export function showcaseRequested(search = globalThis.location?.search ?? '') {
   return new URLSearchParams(search).get('renderPipeline') === 'showcase'
 }
 
+/** Keep the full R18 inputs available for a same-build performance comparison. */
+export function r18PerformanceEnabled(search: string) {
+  const query = new URLSearchParams(search)
+  return (
+    query.get('renderPipeline') === 'showcase' &&
+    query.get('showcaseLoading') !== 'previous' &&
+    query.get('r18Perf') !== 'reference'
+  )
+}
+
 export function showcaseBayKind(source: ProductPresentation['source'] | undefined) {
   if (source?.kind !== 'glb') return
   const { bundle } = source

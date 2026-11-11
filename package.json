@@ -95,6 +95,7 @@
     "asset:reventon-finalize": "node scripts/reventon-runtime-v2/finalize-runtime-trace.mjs",
     "asset:reventon-verify": "node scripts/reventon-runtime-v2/build-runtime-verify.mjs",
     "asset:reventon-register": "node scripts/reventon-runtime-v2/register-runtime.mjs",
+    "asset:reventon-native-textures": "node scripts/reventon-runtime-v2/prepare-native-textures.mjs",
     "test:reventon-runtime-tools": "node --test scripts/reventon-runtime-v2/*.test.mjs scripts/reventon-performance/*.test.mjs scripts/reventon-clean-load/*.test.mjs scripts/reventon-clean-stress/*.test.mjs",
     "test:reventon-performance": "node scripts/reventon-performance-check.mjs",
     "test:reventon-pipelines": "node scripts/reventon-pipeline-check.mjs",

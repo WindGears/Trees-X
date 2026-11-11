@@ -1,8 +1,14 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Color, ColorManagement, NoToneMapping, RenderTarget, Vector4 } from 'three'
 import { NodeFrame, type WebGPURenderer } from 'three/webgpu'
-import { context, mrt, vec4 } from 'three/tsl'
-import { compileOwnedRtt, createOwnedRtt, isolateOwnedRttMrt } from './ownedRtt'
+import { context, mrt, rtt, vec4 } from 'three/tsl'
+import {
+  compileOwnedRtt,
+  createOwnedRtt,
+  isolateOwnedRttMrt,
+  shareOwnedRtt,
+  withSharedRtt,
+} from './ownedRtt'
 
 function fixture() {
   const retained = new RenderTarget(4, 8),
@@ -69,6 +75,27 @@ function fixture() {
 }
 
 describe('shadow-only RTT shader preparation', () => {
+  it('shares one successful producer per logical frame without skipping preparation', () => {
+    const f = fixture(),
+      frame = new NodeFrame(),
+      node = rtt(vec4(1))
+    const update = vi.fn()
+    frame.renderer = f.gpu
+    frame.frameId = 8
+    node.updateBefore = update
+    shareOwnedRtt(node)
+    node.updateBefore(frame)
+    node.updateBefore(frame)
+    withSharedRtt(f.gpu, () => {
+      node.updateBefore(frame)
+      node.updateBefore(frame)
+    })
+    expect(update).toHaveBeenCalledTimes(3)
+    frame.frameId++
+    withSharedRtt(f.gpu, () => node.updateBefore(frame))
+    expect(update).toHaveBeenCalledTimes(4)
+    node.renderTarget?.dispose()
+  })
   it.each(['success', 'failure'] as const)(
     'compiles the actual initialized quad with one linear HDR output and restores state on %s',
     async (mode) => {

@@ -15,7 +15,7 @@ export function decodeGlb(
   bytes: Map<string, ArrayBuffer> | VerifiedFiles,
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
-  workers: 2 | 4 = 2,
+  workers: 2 | 4 | 6 = 2,
 ) {
   return decoderOwner(signal, () => parseGlb(bundle, bytes, renderer, signal, workers))
 }
@@ -25,7 +25,7 @@ async function parseGlb(
   bytes: Map<string, ArrayBuffer> | VerifiedFiles,
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
-  workers: 2 | 4,
+  workers: 2 | 4 | 6,
 ) {
   // One parse owns all worker slots, including geometry and image jobs.
   const decode = workers === 2 ? heavyWork : taskSlots(workers)
@@ -78,7 +78,7 @@ async function parseGlb(
     .setTranscoderPath('/basis/')
     .setWorkerLimit(workers)
     .detectSupport(renderer)
-  if (workers === 4) {
+  if (workers !== 2) {
     // The audited car uses distinct external image URIs. Feed its verified
     // bytes to the normal transcoder without a Blob copy and FileLoader read.
     const load = ktx.load.bind(ktx)

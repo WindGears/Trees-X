@@ -11,6 +11,30 @@ import { context, rtt } from 'three/tsl'
 
 type OwnedRttNode = ReturnType<typeof rtt>
 const isolatedContexts = new WeakMap<OwnedRttNode, ReturnType<typeof context>>()
+const sharedFrames = new WeakSet<object>()
+
+/** Nested Bloom, SMAA and history consumers share the same inputs in one Tres frame. */
+export function withSharedRtt(renderer: WebGPURenderer, draw: () => void) {
+  if (sharedFrames.has(renderer)) throw new Error('Nested shared RTT frame')
+  sharedFrames.add(renderer)
+  try {
+    draw()
+  } finally {
+    sharedFrames.delete(renderer)
+  }
+}
+
+export function shareOwnedRtt(node: OwnedRttNode) {
+  const update = node.updateBefore
+  let lastFrame = -1
+  node.updateBefore = function (frame) {
+    if (!frame.renderer || !sharedFrames.has(frame.renderer)) return update.call(this, frame)
+    if (lastFrame === frame.frameId) return
+    const result = update.call(this, frame)
+    lastFrame = frame.frameId
+    return result
+  }
+}
 
 /** A texture sampled by a scene material must be resized before that scene's
  * bindings are resolved, rather than lazily inside the material's nested draw.
@@ -146,6 +170,7 @@ export function createOwnedRtt(input: Node, revision = REVISION) {
     target?.dispose()
     throw new Error('The inspected r185 RTT ownership contract changed')
   }
+  shareOwnedRtt(node)
   let disposed = false
   return {
     node,

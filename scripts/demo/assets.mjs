@@ -159,7 +159,42 @@ export async function inspectShowcaseAssets(directory, rootDir) {
     if (digest.bytes === 0) throw new Error('KTX2 解码文件为空：' + name)
     basis.push({ name, ...digest })
   }
-  return { bundles, studio, basis }
+  const nativeTextures = await inspectReventonNativeTextures(directory, rootDir, basis[1].sha256)
+  return { bundles, studio, basis, ...(nativeTextures ? { nativeTextures } : {}) }
+}
+
+async function inspectReventonNativeTextures(directory, rootDir, basisSha256) {
+  const registration = join(rootDir, 'src/lib/workbench/reventonNativeTextureCache.json')
+  const bytes = await readFile(registration).catch((error) => {
+    if (error.code !== 'ENOENT') throw error
+  })
+  if (!bytes) return
+  const cache = JSON.parse(bytes)
+  const path = resourcePath(directory, 'models/reventon-runtime-v2/workbench-manifest.json')
+  const manifest = await readFile(path)
+  const bundleSha256 = createHash('sha256').update(manifest).digest('hex')
+  const textures = JSON.parse(manifest).files.filter(
+    (file) => file.role === 'texture' && file.path.endsWith('.ktx2'),
+  )
+  if (
+    cache.version !== 1 ||
+    cache.bundleSha256 !== bundleSha256 ||
+    cache.basisWasmSha256 !== basisSha256 ||
+    Object.keys(cache.files ?? {}).length !== textures.length
+  )
+    throw new Error('汽车本地纹理缓存已过期，请重新运行 npm run asset:reventon-native-textures。')
+  const files = textures.map((file) => {
+    const alternate = cache.files[file.path]
+    if (alternate?.sourceSha256 !== file.sha256)
+      throw new Error('汽车本地纹理缓存来源不匹配：' + file.path)
+    return {
+      bytes: alternate.bytes,
+      sha256: alternate.sha256,
+      path: `native-bc7/${bundleSha256}/${file.path}`,
+    }
+  })
+  const { assetBytes } = await inspectRecords(path, files)
+  return { bundleSha256, files: files.length, assetBytes }
 }
 
 export async function inspectJar(path) {

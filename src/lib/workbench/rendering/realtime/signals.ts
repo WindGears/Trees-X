@@ -11,7 +11,7 @@ import { renderOutput, sample, unpackRGBToNormal, vec4 } from 'three/tsl'
 import { ssgi } from 'three/addons/tsl/display/SSGINode.js'
 import { recurrentDenoise } from 'three/addons/tsl/display/RecurrentDenoiseNode.js'
 import { smaa } from 'three/addons/tsl/display/SMAANode.js'
-import { createOwnedRtt } from './ownedRtt'
+import { createOwnedRtt, withSharedRtt } from './ownedRtt'
 import { createReflectionResolve } from './reflectionResolve'
 import { createRealtimeSceneInputs } from './sceneInputs'
 import type { RealtimeProductProfile } from './productProfile'
@@ -37,6 +37,7 @@ export function createRealtimeSignals(
   motion: Node,
   profile?: RealtimeProductProfile,
   search = globalThis.location?.search ?? '',
+  optimizeR18 = false,
 ) {
   const query = new URLSearchParams(search)
   const keyShadowRequested =
@@ -107,6 +108,7 @@ export function createRealtimeSignals(
   spatialGi.alphaSource = 'ao'
   spatialGi.radius.value = 1
   const pipeline = new RenderPipeline(renderer)
+  const drawPipeline = () => pipeline.render()
   pipeline.outputColorTransform = false
   let antialias: ReturnType<typeof smaa> | undefined,
     composite: ReturnType<typeof createOwnedRtt> | undefined,
@@ -226,7 +228,8 @@ export function createRealtimeSignals(
         keyShadow.prepareFrame(frameSize.x, frameSize.y)
         reflection.prepare()
         reflectionResolve?.prepare(frameSize.x, frameSize.y)
-        pipeline.render()
+        if (optimizeR18) withSharedRtt(renderer, drawPipeline)
+        else pipeline.render()
       } finally {
         RendererUtils.restoreRendererState(renderer, savedState)
         renderer.xr.enabled = xr

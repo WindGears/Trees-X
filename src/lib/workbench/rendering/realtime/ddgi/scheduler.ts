@@ -28,6 +28,7 @@ export function createDdgiScheduler(started: number) {
     needsTick(now: number, ready: boolean) {
       return (!ready || remaining > 0) && now - lastStarted >= interval
     },
+    hasWork: (ready: boolean) => !ready || remaining > 0,
     begin(now: number) {
       const work = { revision, scene: sceneDirty, environment: environmentDirty }
       sceneDirty = environmentDirty = false

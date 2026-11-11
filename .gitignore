@@ -23,5 +23,6 @@ __pycache__/
 !/public/models/reventon-runtime-v2/README.md
 # Local generated registration: clean checkouts rebuild before enabling the candidate.
 /src/lib/workbench/reventonRuntimeBundle.json
+/src/lib/workbench/reventonNativeTextureCache.json
 server/target/
 .impeccable/*.log

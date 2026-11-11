@@ -217,6 +217,9 @@ export function createRealtimeDdgi(options: DdgiFieldOptions) {
     needsUpdate() {
       return !disposed && !error && (!scheduler || scheduler.needsTick(performance.now(), ready))
     },
+    hasPendingUpdates() {
+      return !disposed && !error && (!scheduler || scheduler.hasWork(ready))
+    },
     tick(idleMs = 0) {
       if (disposed || error) return Promise.resolve()
       if (pending) return pending

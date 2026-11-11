@@ -6,7 +6,13 @@ import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTy
 import { createProductEnvironment, type OwnedEnvironment } from './rendering/environment'
 import { typewriterCandidate } from './typewriterCandidate'
 import { isAuditedReventonSource, reventonCandidate } from './reventonCandidate'
-import { productRenderSearch, showcaseBayKind, showcaseRequested } from './rendering/showcase'
+import {
+  productRenderSearch,
+  r18PerformanceEnabled,
+  showcaseBayKind,
+  showcaseRequested,
+} from './rendering/showcase'
+import { nativeCarTextureCache } from './reventonPackedCache'
 
 export async function loadAdapter(
   product: WorkbenchProduct,
@@ -23,9 +29,20 @@ export async function loadAdapter(
   const source = reventonCandidate(typewriterCandidate(product.presentation.source, search), search)
   const exhibit =
     isWebGpuRenderer(renderer) && showcaseRequested(search) ? showcaseBayKind(source) : undefined
-  const session = await (
-    useStreamingAssets(source, search) ? openAssetSession : openLegacyAssetSession
-  )(source.bundle, signal, phase)
+  const optimizedCar =
+    isWebGpuRenderer(renderer) &&
+    source.bundle.version === 2 &&
+    isAuditedReventonSource(source) &&
+    r18PerformanceEnabled(search)
+  const cached =
+    optimizedCar &&
+    renderer.hasFeature('texture-compression-bc') &&
+    !renderer.hasFeature('texture-compression-astc')
+      ? nativeCarTextureCache(source.bundle.sha256)
+      : undefined
+  const session = useStreamingAssets(source, search)
+    ? await openAssetSession(source.bundle, signal, phase, cached)
+    : await openLegacyAssetSession(source.bundle, signal, phase)
   const { bundle, signal: sessionSignal } = session
   let decoded: Awaited<ReturnType<(typeof import('./glbLoader'))['decodeGlb']>> | undefined
   let adapter: SceneAdapter | undefined, environment: OwnedEnvironment | undefined
@@ -39,12 +56,14 @@ export async function loadAdapter(
       import('./glbAdapter'),
     ])
     signal.throwIfAborted()
+    const cores = globalThis.navigator?.hardwareConcurrency ?? 0
     const fastCarDecode =
       showcaseRequested(search) &&
       isAuditedReventonSource(source) &&
       bundle.version === 2 &&
-      (globalThis.navigator?.hardwareConcurrency ?? 0) >= 8
-    decoded = await decodeGlb(bundle, session, renderer, sessionSignal, fastCarDecode ? 4 : 2)
+      cores >= 8
+    const workers = optimizedCar && cores >= 12 ? 6 : fastCarDecode ? 4 : 2
+    decoded = await decodeGlb(bundle, session, renderer, sessionSignal, workers)
     if (
       source.adapter === 'reventon-v1' &&
       isWebGpuRenderer(renderer) &&
