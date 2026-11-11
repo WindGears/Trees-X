@@ -31,10 +31,12 @@ it('uses the existing two-ray clock/classification and never releases borrowed i
     },
     2,
     true,
-    (...args) => {
-      const effect = factory(...args)
-      effects.push(effect)
-      return effect
+    {
+      factory: (...args) => {
+        const effect = factory(...args)
+        effects.push(effect)
+        return effect
+      },
     },
   )
   const targetDisposals = effects.map((effect) => vi.spyOn(effect.getRenderTarget(), 'dispose'))

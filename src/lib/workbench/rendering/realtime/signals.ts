@@ -85,6 +85,9 @@ export function createRealtimeSignals(
     },
     studio && query.get('carStudioReflections') !== '1' ? 2 : 1,
     carOptimization || studio,
+    {
+      zeroMiss: optimizeR18 && query.get('r18StartupSsr') !== 'native',
+    },
   )
   const gi = ssgi(beauty, depth, signedNormal, camera)
   gi.useTemporalFiltering = false

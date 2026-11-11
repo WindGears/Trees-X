@@ -1,5 +1,6 @@
-import type { Texture } from 'three'
+import { REVISION, type Texture } from 'three'
 import type { Node, PerspectiveCamera, TextureNode } from 'three/webgpu'
+import { vec3 } from 'three/tsl'
 import { ssr } from 'three/addons/tsl/display/SSRNode.js'
 import { classifySsrSources } from './ssrSourceClassification'
 import { createSsrRaySequence } from './ssrRaySequence'
@@ -22,6 +23,28 @@ interface Inputs {
   camera: PerspectiveCamera
 }
 
+interface ReflectionRayOptions {
+  factory?: typeof ssr
+  zeroMiss?: boolean
+}
+
+/** r185 requires a sampler-shaped input for stochastic misses, even at zero
+ * intensity. The signed delta ignores misses and beauty already contains IBL. */
+function useZeroSsrMiss(effect: ReturnType<typeof ssr>) {
+  const key = '_importanceEnvironment'
+  if (
+    REVISION !== '185' ||
+    !effect.stochastic ||
+    effect.envImportanceSampling ||
+    !effect.screenEdgeFadeBlack ||
+    effect.environmentIntensity.value !== 0 ||
+    Reflect.get(effect, key) !== null
+  )
+    return false
+  const zero = vec3(0)
+  return Reflect.set(effect, key, { sampleEnvironmentBRDF: () => zero, dispose: () => undefined })
+}
+
 /** Own each native effect and its local classification seam. Surface/beauty
  * textures are shared and borrowed; there is still one rendering scheduler.
  */
@@ -29,9 +52,10 @@ export function createReflectionRays(
   inputs: Inputs,
   requested: 1 | 2,
   classify: boolean,
-  factory: typeof ssr = ssr,
+  { factory = ssr, zeroMiss = false }: ReflectionRayOptions = {},
 ) {
   const effects: ReturnType<typeof ssr>[] = []
+  const fixedMiss = new Set<ReturnType<typeof ssr>>()
   const releases: (() => void)[] = []
   let sequence: ReturnType<typeof createSsrRaySequence> | undefined
   let error: string | null = null
@@ -57,6 +81,7 @@ export function createReflectionRays(
     effect.screenEdgeFadeBlack = true
     effect.screenEdgeFade.value = 0
     if (classify) releases.push(classifySsrSources(effect, inputs.nativeSingle))
+    if (zeroMiss && useZeroSsrMiss(effect)) fixedMiss.add(effect)
     return effect
   }
   const clear = () => {
@@ -64,6 +89,7 @@ export function createReflectionRays(
     sequence = undefined
     for (const release of releases.splice(0)) release()
     for (const effect of effects.splice(0)) effect.dispose()
+    fixedMiss.clear()
   }
   try {
     create()
@@ -90,7 +116,7 @@ export function createReflectionRays(
     },
     cancelFrame: () => sequence?.cancelFrame(),
     setEnvironment(environment: Texture | null) {
-      for (const effect of effects) effect.setEnvMap(environment)
+      for (const effect of effects) if (!fixedMiss.has(effect)) effect.setEnvMap(environment)
     },
     snapshot: (): ReflectionRaySnapshot => ({
       requested,

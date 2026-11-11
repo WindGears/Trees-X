@@ -69,3 +69,17 @@ it('releases partial enhancements before reporting a usable single-ray fallback'
   owner.dispose()
   expect(dispose).toHaveBeenCalledTimes(3)
 })
+
+it.each([false, true])('only binds the live HDR to the native miss sampler (%s)', (zeroMiss) => {
+  const input = new DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1)
+  const setEnvMap = vi.spyOn(SSRNode.prototype, 'setEnvMap')
+  const owner = createReflectionRays(inputs(), 2, true, { zeroMiss })
+  try {
+    owner.setEnvironment(input)
+    expect(setEnvMap).toHaveBeenCalledTimes(zeroMiss ? 0 : 2)
+    expect(owner.snapshot()).toMatchObject({ actual: 2, error: null })
+  } finally {
+    owner.dispose()
+    input.dispose()
+  }
+})
