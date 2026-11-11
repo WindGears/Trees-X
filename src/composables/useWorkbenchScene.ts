@@ -9,6 +9,7 @@ import type { RealtimeCoordinator } from '@/lib/workbench/rendering/realtime/coo
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
 import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
 import { productRenderSearch } from '@/lib/workbench/rendering/showcase'
+import { warmR18StartupPipelines } from '@/lib/workbench/rendering/r18PipelineWarmup'
 import { getShowroomEnvironment } from '@/lib/workbench/rendering/carShowroom/binding'
 import type { ownGeometryAttributes } from '@/lib/workbench/rendering/realtime/geometryOwnership'
 import { createStageController } from '@/lib/workbench/controller'
@@ -69,6 +70,11 @@ export function useWorkbenchScene(
     generation = 0
   const setupAbort = new AbortController()
   let selectionAbort: AbortController | undefined
+  let releaseStartupPipelines: (() => void) | undefined
+  function retireStartupPipelines() {
+    releaseStartupPipelines?.()
+    releaseStartupPipelines = undefined
+  }
   const requestFrame = () => {
     if (
       props.active &&
@@ -166,6 +172,7 @@ export function useWorkbenchScene(
   function load(): Promise<void> {
     const request = ++generation
     selectionAbort?.abort()
+    retireStartupPipelines()
     const abort = (selectionAbort = new AbortController())
     removeFrame?.()
     removeFrame = undefined
@@ -200,6 +207,7 @@ export function useWorkbenchScene(
         })
       } catch (cause) {
         if (!disposed && request === generation) {
+          retireStartupPipelines()
           hybrid?.unload()
           realLighting?.unload()
           controller?.unload()
@@ -232,10 +240,18 @@ export function useWorkbenchScene(
     motionRevision = revision
     const current = controller
     if (!current) return
+    const source = product.presentation.source
+    const search = productRenderSearch(source)
+    if (gpu && props.showcase)
+      releaseStartupPipelines = warmR18StartupPipelines(renderer, source, search, signal)
     const loaded = await current.load(product, (phase) => {
       if (!disposed && request === generation) store.loading(product.slug, revision, phase)
     })
-    if (!loaded || disposed || request !== generation) return
+    if (disposed || request !== generation) return
+    if (!loaded) {
+      retireStartupPipelines()
+      return
+    }
     store.carPaintAvailable = current.hasCarPaintStudies?.() ?? false
     applyStudioMood(true)
     current.sync(store.finishId, store.exploded, store.actions, true)
@@ -243,12 +259,13 @@ export function useWorkbenchScene(
       current.restoreCamera(props.checkpoint)
       current.restoreSelection(store.selectedPart)
     }
-    if (!camera.value) return
+    if (!camera.value) {
+      retireStartupPipelines()
+      return
+    }
     store.loading(product.slug, revision, 'first-frame')
-    const source = product.presentation.source
     const profile = realtimeProductProfile(source.kind === 'glb' ? source.adapter : undefined)
     const native = props.showcase && !profile
-    const search = productRenderSearch(source)
     const query = new URLSearchParams(search)
     const car = profile?.adapterId === 'reventon-v1'
     // A captured showroom must exist before material/environment graph binding.
@@ -297,6 +314,7 @@ export function useWorkbenchScene(
       }
       frame.off()
       if (!disposed && request === generation) {
+        retireStartupPipelines()
         controller?.enableInteraction()
         store.ready(product.slug, revision)
         hybrid?.ready(product.slug, revision)
@@ -589,6 +607,7 @@ export function useWorkbenchScene(
     disposed = true
     setupAbort.abort()
     selectionAbort?.abort()
+    retireStartupPipelines()
     generation++
     removeFrame?.()
     projection.off()

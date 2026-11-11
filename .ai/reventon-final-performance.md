@@ -1,6 +1,7 @@
 # Reventón R18 加载与实时性能对照
 
 后续首帧追踪定位并消除了 SSR 的冗余 HDR 上传，最新证据见 [R18 首帧与反射开销实测](reventon-startup-profile.md)。
+R18 原生管线预编译的准备方法与证据见 [R18 首帧管线预编译](reventon-pipeline-warmup.md)。
 
 ## 正式组合
 
