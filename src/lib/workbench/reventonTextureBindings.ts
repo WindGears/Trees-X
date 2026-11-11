@@ -82,6 +82,7 @@ export function canonicalizeReventonTextures(model: Group) {
   return {
     before: originals.size,
     after: canonical.size,
+    textures: canonical as ReadonlySet<Texture>,
     dispose() {
       if (disposed) return
       disposed = true

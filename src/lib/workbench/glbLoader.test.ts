@@ -4,7 +4,13 @@ import type { AssetBundle } from './assetBundle'
 import type { VerifiedFiles } from './assetSession'
 import type { WorkbenchRenderer } from './rendering/rendererTypes'
 
-const pools = vi.hoisted(() => ({ active: 0, maximum: 0, created: 0 }))
+const pools = vi.hoisted(() => ({
+  active: 0,
+  maximum: 0,
+  created: 0,
+  load: vi.fn(),
+  parse: vi.fn(),
+}))
 vi.mock('three/addons/loaders/KTX2Loader.js', () => ({
   KTX2Loader: class {
     constructor() {
@@ -21,6 +27,8 @@ vi.mock('three/addons/loaders/KTX2Loader.js', () => ({
     detectSupport() {
       return this
     }
+    load = pools.load
+    parse = pools.parse
     dispose() {
       pools.active--
     }
@@ -34,7 +42,7 @@ class Bitmap {
   close = vi.fn()
 }
 
-function fixture(images = 1) {
+function fixture(images = 1, format: 'png' | 'ktx2' = 'png') {
   const document = {
     asset: { version: '2.0' },
     scene: 0,
@@ -52,8 +60,11 @@ function fixture(images = 1) {
         max: [1, 1, 0],
       },
     ],
-    images: Array.from({ length: images }, (_, i) => ({ uri: `image-${i}.png` })),
-    textures: Array.from({ length: images }, (_, source) => ({ source })),
+    ...(format === 'ktx2' && { extensionsUsed: ['KHR_texture_basisu'] }),
+    images: Array.from({ length: images }, (_, i) => ({ uri: `image-${i}.${format}` })),
+    textures: Array.from({ length: images }, (_, source) =>
+      format === 'ktx2' ? { extensions: { KHR_texture_basisu: { source } } } : { source },
+    ),
     materials: Array.from({ length: images }, (_, index) => ({
       pbrMetallicRoughness: { baseColorTexture: { index } },
     })),
@@ -91,7 +102,7 @@ function fixture(images = 1) {
       path,
       bytes: bytes.byteLength,
       sha256: '0'.repeat(64),
-      role: path.endsWith('png') ? 'texture' : 'model',
+      role: path.endsWith(`.${format}`) ? 'texture' : 'model',
     })),
     budget: { maxBytes: 100000, maxTriangles: 100 },
     provenance: { author: 'test', source: 'test', license: 'test', redistribution: 'test' },
@@ -109,6 +120,8 @@ beforeEach(() => {
   pools.active = 0
   pools.maximum = 0
   pools.created = 0
+  pools.load.mockReset()
+  pools.parse.mockReset()
   vi.stubGlobal('ImageBitmap', Bitmap)
   vi.stubGlobal(
     'createImageBitmap',
@@ -118,6 +131,22 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('streamed GLB dependency ownership', () => {
+  it('hands the verified KTX2 buffer directly to the fast decoder and releases the read', async () => {
+    const f = fixture(1, 'ktx2')
+    const texture = new Texture()
+    vi.stubGlobal('self', { URL })
+    pools.parse.mockImplementation((_bytes: ArrayBuffer, load: (result: Texture) => void) => {
+      load(texture)
+    })
+    const result = await decodeGlb(f.bundle, f.files, renderer, new AbortController().signal, 4)
+    expect(pools.parse.mock.calls[0]?.[0]).toBe(f.data.get('image-0.ktx2'))
+    expect(pools.parse).toHaveBeenCalledOnce()
+    expect(pools.load).not.toHaveBeenCalled()
+    expect(f.files.release).toHaveBeenCalledWith('image-0.ktx2')
+    expect(pools.active).toBe(0)
+    result.dispose()
+  })
+
   it('parses without a package-wide barrier and releases verified containers and images', async () => {
     const f = fixture(3),
       bitmaps: Bitmap[] = []

@@ -243,7 +243,7 @@ export function createRealtimeSignals(
       if (!disposed && ssrEnabled) reflection.commitFrame()
       if (!disposed) {
         keyShadow.commitFrame()
-        keyShadow.start()
+        void keyShadow.start()
       }
     },
     cancelFrame() {
@@ -258,6 +258,7 @@ export function createRealtimeSignals(
     keyShadowCompilationFailed: keyShadow.compilationFailed,
     failKeyShadow: keyShadow.fail,
     prepareKeyShadow: keyShadow.prepare,
+    startKeyShadow: keyShadow.start,
     invalidateKeyShadow: keyShadow.invalidate,
     setKeyShadowActive: keyShadow.setActive,
     setProfile(next: RealtimeProductProfile) {

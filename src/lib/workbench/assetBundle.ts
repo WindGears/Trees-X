@@ -17,13 +17,14 @@ export interface AssetBundle {
   budget: { maxBytes: number; maxTriangles: number }
   provenance: { author: string; source: string; license: string; redistribution: string }
 }
-export type LoadPhase = 'manifest' | 'download' | 'parse' | 'materials' | 'first-frame'
+export type LoadPhase = 'manifest' | 'download' | 'parse' | 'materials' | 'lighting' | 'first-frame'
 export const phaseLabels: Record<LoadPhase | 'config', string> = {
   config: '正在读取商品信息。',
   manifest: '正在核对展示资源。',
   download: '正在读取模型与纹理。',
   parse: '正在准备三维模型。',
   materials: '正在准备材质与光照。',
+  lighting: '正在准备摄影棚反射与阴影。',
   'first-frame': '即将进入展示。',
 }
 export function parseBundle(value: unknown): AssetBundle {

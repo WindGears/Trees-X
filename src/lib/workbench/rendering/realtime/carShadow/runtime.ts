@@ -20,8 +20,8 @@ export interface CarKeyShadowSnapshot {
   details: unknown
 }
 
-/** CPU construction starts after first raster. Native compilation is requested
- * explicitly by the existing coordinator, outside drawing and DDGI submission.
+/** The coordinator can start construction before first raster. Native compilation
+ * is requested outside drawing and DDGI submission.
  */
 export function createCarKeyShadow(
   renderer: WebGPURenderer,
@@ -79,15 +79,22 @@ export function createCarKeyShadow(
     retire()
   }
   return {
-    start() {
+    start(signal?: AbortSignal) {
       if (!enabled || disposed || !active || stage !== 'idle' || !root) return
+      signal?.throwIfAborted()
+      const source = root
       stage = 'building'
       const token = ++generation,
         abort = new AbortController()
       controller = abort
-      void import('./bvh')
-        .then(({ createCarShadowBvh }) => createCarShadowBvh(root!, abort.signal))
-        .then((result) => {
+      // Only the Worker build follows selection cancellation. After adoption,
+      // the lease owns BVH retirement even when native compilation is pending.
+      const cancelBuild = () => abort.abort(signal?.reason)
+      signal?.addEventListener('abort', cancelBuild, { once: true })
+      return (async () => {
+        try {
+          const { createCarShadowBvh } = await import('./bvh')
+          const result = await createCarShadowBvh(source, abort.signal)
           if (disposed || token !== generation || abort.signal.aborted) {
             result.dispose()
             return
@@ -95,17 +102,19 @@ export function createCarKeyShadow(
           bvh = result
           blasBuilds++
           stage = 'waiting'
-        })
-        .catch((cause: unknown) => {
+        } catch (cause) {
           if (!disposed && token === generation && !abort.signal.aborted) fail(cause)
-        })
+        } finally {
+          signal?.removeEventListener('abort', cancelBuild)
+        }
+      })()
     },
     needsPreparation: () => !disposed && active && stage === 'waiting',
     isCompiling: () => stage === 'compiling',
     compilationFailed(message: string) {
       compilationError = message
     },
-    async prepare(signal?: AbortSignal) {
+    async prepare(signal?: AbortSignal, prewarmScene = true) {
       if (disposed || stage !== 'waiting' || !bvh || !light) return
       stage = 'compiling'
       compilationError = null
@@ -127,7 +136,7 @@ export function createCarKeyShadow(
         visibility.prepare(size.x, size.y)
         inputs.setKeyShadow({ visibility: visibility.node, depth: inputs.depth })
         bound = true
-        await inputs.prepare(renderer, signal)
+        if (prewarmScene) await inputs.prepare(renderer, signal)
         await visibility.prepareShaders(signal)
         const device: unknown = Reflect.get(renderer.backend, 'device')
         const queue: unknown =

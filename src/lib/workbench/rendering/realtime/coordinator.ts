@@ -41,7 +41,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     error: string | null = null,
     lastReport = -Infinity,
     ddgi: RealtimeDdgi | undefined,
-    ddgiLoading = false,
+    ddgiPreparation: Promise<void> | undefined,
     ddgiGraphDirty = false,
     ddgiError: string | null = null,
     ddgiFramePending = false,
@@ -67,10 +67,10 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
   }
 
   function prepareDdgi() {
-    if (indirectRequested !== 'ddgi' || ddgi || ddgiLoading) return
-    ddgiLoading = true
+    if (indirectRequested !== 'ddgi' || ddgi) return
+    if (ddgiPreparation) return ddgiPreparation
     const token = generation
-    void Promise.resolve()
+    ddgiPreparation = Promise.resolve()
       .then(prepareIndirect)
       .then(() => {
         if (!disposed && token === generation) return import('./ddgi/field')
@@ -99,10 +99,11 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       })
       .finally(() => {
         if (!disposed && token === generation) {
-          ddgiLoading = false
+          ddgiPreparation = undefined
           options.invalidate()
         }
       })
+    return ddgiPreparation
   }
   const previousError = renderer.onError
   const onError: typeof renderer.onError = (event) => {
@@ -149,7 +150,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     signals?.setWorldGi(null)
     ddgi?.dispose()
     ddgi = undefined
-    ddgiLoading = false
+    ddgiPreparation = undefined
     ddgiGraphDirty = false
     ddgiError = null
     prepareIndirect = undefined
@@ -173,7 +174,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     return {
       requested: indirectRequested,
       actual: ddgi?.snapshot().ready && !ddgiError ? ('ddgi' as const) : ('ssgi' as const),
-      preparing: ddgiLoading || Boolean(ddgi && !ddgi.snapshot().ready && !ddgiError),
+      preparing: Boolean(ddgiPreparation || (ddgi && !ddgi.snapshot().ready && !ddgiError)),
       error: ddgiError,
     }
   }
@@ -219,7 +220,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         signals?.setWorldGi(null)
         ddgi?.dispose()
         ddgi = undefined
-        ddgiLoading = false
+        ddgiPreparation = undefined
         ddgiGraphDirty = false
         ddgiError = null
         // Product-specific source classification/history is captured at graph
@@ -264,6 +265,47 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       // even when the compile Promise resolves. A real frame still gates ready.
       if (error) throw new Error(error)
       preparedPasses = true
+    },
+    async prepareCarStartup(signal: AbortSignal) {
+      const owner = signals
+      if (disposed || !owner) return
+      signal.throwIfAborted()
+      const shadowBuild = owner.startKeyShadow(signal)
+      const step = async () => {
+        signal.throwIfAborted()
+        if (!ddgi || ddgiError || ddgi.snapshot().ready) return
+        try {
+          await ddgi.tick()
+        } catch (cause) {
+          ddgiError = cause instanceof Error ? cause.message : String(cause)
+        }
+      }
+      try {
+        // Read and build the probe field while the shadow Worker constructs BLAS.
+        // Its renderer work ends before visibility shaders use the same device.
+        await prepareDdgi()
+        await step()
+      } finally {
+        await shadowBuild
+      }
+      signal.throwIfAborted()
+      // The first scene pass uses its real shadow binding and compiles only the
+      // visible variants. The visibility RTT shaders still use their audited warmup.
+      await owner.prepareKeyShadow(signal, false)
+      // The fixed single-cascade field builds on its first tick and solves on
+      // the second. Bind that result before any beauty draw builds the graph.
+      await step()
+      signal.throwIfAborted()
+      const field = ddgi
+      if (!field || ddgiError) return
+      try {
+        if (ddgiGraphDirty) owner.setWorldGi(field.createReceiver(owner.ddgiInputs()))
+      } catch (cause) {
+        ddgiError = cause instanceof Error ? cause.message : String(cause)
+        owner.setWorldGi(null)
+      } finally {
+        ddgiGraphDirty = false
+      }
     },
     unload,
     invalidate(kind: RealtimeChange = 'all') {

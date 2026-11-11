@@ -259,7 +259,24 @@ export function useWorkbenchScene(
       (query.get('carPrewarm') !== 'off' || query.get('carShowroom') === 'cold-studio')
     if (carPrepare || (props.showcase && gpu)) await current.prepare(signal)
     if (disposed || request !== generation) return
-    realLighting?.prepare(native ? null : profile, search, loaded.prepareIndirect, props.showcase)
+    const prepareCarFirstFrame = Boolean(
+      props.showcase &&
+      car &&
+      getShowroomEnvironment(scene.value) &&
+      query.get('showcaseLoading') !== 'previous',
+    )
+    realLighting?.prepare(
+      native ? null : profile,
+      search,
+      loaded.prepareIndirect,
+      props.showcase && !prepareCarFirstFrame,
+    )
+    if (prepareCarFirstFrame) {
+      store.loading(product.slug, revision, 'lighting')
+      await realLighting?.prepareCarStartup(signal)
+      if (disposed || request !== generation) return
+      store.loading(product.slug, revision, 'first-frame')
+    }
     // Showcase compiles its visible variants in the actual first draw.
     // Comparison entries retain the full native prewarm for matching captures.
     if (!props.showcase || !realLighting) {

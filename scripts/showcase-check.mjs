@@ -45,18 +45,38 @@ const report = {
 }
 await mkdir(output, { recursive: true })
 
-function observeStartup() {
+function observeStartup(observeGpu) {
   performance.setResourceTimingBufferSize(500)
-  window.__showcaseLoad = { ready: null, phases: [] }
+  const startup = (window.__showcaseLoad = { ready: null, phases: [] })
+  const queuePrototype = observeGpu ? globalThis.GPUQueue?.prototype : undefined
+  const submit = queuePrototype?.submit
+  const firstFrame = { queue: null }
+  if (submit) {
+    queuePrototype.submit = function (commands) {
+      firstFrame.queue = this
+      return submit.call(this, commands)
+    }
+  }
   const observer = new MutationObserver(() => {
     const host = document.querySelector('.workbench')
     if (!host) return
     const phase = document.querySelector('.wb-stage-status p')?.textContent ?? host.dataset.status
-    if (window.__showcaseLoad.phases.at(-1)?.phase !== phase)
-      window.__showcaseLoad.phases.push({ phase, atMs: performance.now() })
+    if (startup.phases.at(-1)?.phase !== phase)
+      startup.phases.push({ phase, atMs: performance.now() })
     if (host.dataset.status === 'ready') {
-      window.__showcaseLoad.ready = performance.now()
+      startup.ready = performance.now()
       observer.disconnect()
+      if (submit) queuePrototype.submit = submit
+      if (observeGpu) {
+        // Fence the commands queued at first ready, before the next frame submits.
+        const { queue } = firstFrame
+        if (!queue) startup.gpuError = 'First ready frame has no WebGPU queue'
+        else
+          queue.onSubmittedWorkDone().then(
+            () => (startup.gpuComplete = performance.now()),
+            (error) => (startup.gpuError = String(error)),
+          )
+      }
     }
   })
   observer.observe(document, { subtree: true, childList: true, attributes: true })
@@ -293,17 +313,28 @@ try {
         page.on('console', (message) => {
           if (message.type() === 'error') report.errors.push(message.text())
         })
-        await page.addInitScript(observeStartup)
+        await page.addInitScript(observeStartup, slug === 'reventon')
         const session = await context.newCDPSession(page)
         const url = `${base}/?product=${slug}&renderPipeline=showcase`
         await page.goto(url, { waitUntil: 'domcontentloaded' })
         const state = await attach(page, slug)
         const load = await page.evaluate(() => window.__showcaseLoad)
         assert.ok(load.ready > 0)
+        if (slug === 'reventon') {
+          load.enhanced = await enhanced(page)
+          await page.waitForFunction(
+            () => window.__showcaseLoad.gpuComplete || window.__showcaseLoad.gpuError,
+            null,
+            { timeout },
+          )
+          const gpu = await page.evaluate(() => window.__showcaseLoad)
+          assert.equal(gpu.gpuError, undefined)
+          load.gpuComplete = gpu.gpuComplete
+        }
         evidence.loads.push(load)
         if (!sample) {
           evidence.identity = state
-          if (slug === 'reventon') evidence.enhancedMs = await enhanced(page)
+          if (slug === 'reventon') evidence.enhancedMs = load.enhanced
           if (slug === 'typewriter-study')
             await page.waitForFunction(
               () => window.__carLighting?.snapshot().signals?.ssr === true,
@@ -327,6 +358,10 @@ try {
       console.log(`${slug} ${sample + 1}/${rounds} ${Math.round(evidence.loads.at(-1).ready)}ms`)
     }
     evidence.coldLoad = distribution(evidence.loads.map((row) => row.ready))
+    if (slug === 'reventon') {
+      evidence.coldEnhanced = distribution(evidence.loads.map((row) => row.enhanced))
+      evidence.firstGpuCompleted = distribution(evidence.loads.map((row) => row.gpuComplete))
+    }
   }
   assert.deepEqual(report.errors, [])
   assert.deepEqual(report.external, [])

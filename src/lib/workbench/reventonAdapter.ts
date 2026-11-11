@@ -1,4 +1,11 @@
-import { Color, Mesh, MeshPhysicalMaterial, MeshStandardMaterial, Texture } from 'three'
+import {
+  Color,
+  CompressedTexture,
+  Mesh,
+  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+  Texture,
+} from 'three'
 import type { Camera, Group, Scene } from 'three'
 import { prepareReventonMaterials } from '../reventon/materials'
 import { bindGlb } from './glbAdapter'
@@ -19,6 +26,7 @@ import {
 import { applyCarStudioMaterials } from './carStudioMaterials'
 import { isCarPaintStudy } from './carPaintStudies'
 import { resolveReventonFinishBindings } from './reventonFinishBindings'
+import { showcaseRequested } from './rendering/showcase'
 
 export interface ReventonGpuDependencies {
   createStage(
@@ -87,6 +95,7 @@ export function bindReventon(
   let gpuMaterials: ReturnType<ReventonGpuDependencies['prepareMaterials']> | undefined
   let gpuTextures: ReturnType<typeof canonicalizeReventonTextures> | undefined
   let studioMaterials: ReturnType<typeof applyCarStudioMaterials> | undefined
+  let textureRenderer: WebGPURenderer | undefined
   let disposed = false
   const clearSelection = () => {
     for (const [material, original] of emissive) {
@@ -129,6 +138,14 @@ export function bindReventon(
             : quality
               ? gpu.createStage(renderer, scene, adapter.root, { quality, ...stageSearch })
               : gpu.createStage(renderer, scene, adapter.root)
+          if (
+            showroom &&
+            source.bundle.version === 2 &&
+            showcaseRequested(search) &&
+            query.get('showcaseLoading') !== 'previous' &&
+            renderer.hasFeature('texture-compression-bc')
+          )
+            textureRenderer = renderer
           // Commit the new original swatch only after successful attachment.
           // Failed setup must leave both the material and its reset baseline native.
           if (isCarPaintStudy(adapter.root.userData.carStudioPaint))
@@ -158,7 +175,20 @@ export function bindReventon(
       signal?.throwIfAborted()
       if (disposed) throw new Error('Car adapter has been disposed')
       gpuMaterials?.sync()
-      await studio?.prepare(signal)
+      const stage = studio?.prepare(signal)
+      try {
+        if (textureRenderer && gpuTextures) {
+          // Submit the canonical texture uploads while the room is fetching and
+          // verifying its assets. Materials later bind these same GPU textures.
+          for (const texture of gpuTextures.textures) {
+            signal?.throwIfAborted()
+            if (texture instanceof CompressedTexture) textureRenderer.initTexture(texture)
+          }
+          textureRenderer = undefined
+        }
+      } finally {
+        await stage
+      }
       signal?.throwIfAborted()
     },
     beforeRender() {
@@ -196,6 +226,7 @@ export function bindReventon(
     dispose() {
       if (disposed) return
       disposed = true
+      textureRenderer = undefined
       studio?.dispose()
       studio = undefined
       clearSelection()

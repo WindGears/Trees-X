@@ -109,6 +109,8 @@ async function fixture(search = '?indirectLighting=ddgi') {
       environment: vi.fn(),
       setSignals: vi.fn(),
       setProfile: vi.fn(),
+      startKeyShadow: vi.fn().mockResolvedValue(undefined),
+      prepareKeyShadow: vi.fn().mockResolvedValue(undefined),
       snapshot: () => flags,
       sampling: () => null,
       ddgiInputs: vi.fn(() => inputs),
@@ -195,7 +197,65 @@ async function fixture(search = '?indirectLighting=ddgi') {
 }
 
 describe('optional DDGI coordinator asynchronous boundaries', () => {
-  it('makes the showcase car usable before requesting its indirect-light images', async () => {
+  it('binds the car shadow and DDGI field before drawing the startup frame', async () => {
+    const f = await fixture()
+    const readTraceImages = vi.fn().mockResolvedValue(undefined)
+    const { signal } = new AbortController()
+    f.coordinator.prepare(reventonRealtimeProfile, '?indirectLighting=ddgi', readTraceImages)
+    const preparation = f.coordinator.prepareCarStartup(signal)
+    const probe = await f.load(false)
+    await vi.waitFor(() => expect(probe.ticks).toHaveLength(1))
+    expect(f.signals.startKeyShadow).toHaveBeenCalledWith(signal)
+    expect(f.signals.prepareKeyShadow).not.toHaveBeenCalled()
+    expect(readTraceImages).toHaveBeenCalledOnce()
+    expect(f.signals.render).not.toHaveBeenCalled()
+    await f.finishTick(probe)
+    await vi.waitFor(() => expect(probe.ticks).toHaveLength(2))
+    expect(f.signals.prepareKeyShadow).toHaveBeenCalledWith(signal, false)
+    probe.state.ready = true
+    f.create.mock.calls[0]![0].onReadyChanged?.()
+    await f.finishTick(probe)
+    await preparation
+    expect(f.signals.setWorldGi).toHaveBeenCalledExactlyOnceWith(probe.receiver)
+    f.coordinator.render(f.notify)
+    expect(f.notify).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot().indirectLighting?.actual).toBe('ddgi')
+  })
+
+  it('does not bind the startup receiver when a selection aborts during probe work', async () => {
+    const f = await fixture()
+    const abort = new AbortController()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const preparation = f.coordinator.prepareCarStartup(abort.signal)
+    const failed = expect(preparation).rejects.toMatchObject({ name: 'AbortError' })
+    const probe = await f.load(false)
+    await vi.waitFor(() => expect(probe.ticks).toHaveLength(1))
+    abort.abort()
+    probe.state.ready = true
+    f.create.mock.calls[0]![0].onReadyChanged?.()
+    await f.finishTick(probe)
+    await failed
+    expect(f.signals.setWorldGi).not.toHaveBeenCalled()
+    expect(f.signals.render).not.toHaveBeenCalled()
+  })
+
+  it('keeps the first frame drawable if startup probe work rejects', async () => {
+    const f = await fixture()
+    f.coordinator.prepare(reventonRealtimeProfile)
+    const preparation = f.coordinator.prepareCarStartup(new AbortController().signal)
+    const probe = await f.load(false)
+    await vi.waitFor(() => expect(probe.ticks).toHaveLength(1))
+    probe.ticks[0]!.reject(new Error('probe preparation failed'))
+    await preparation
+    f.coordinator.render(f.notify)
+    expect(f.notify).toHaveBeenCalledOnce()
+    expect(f.coordinator.snapshot().indirectLighting).toMatchObject({
+      actual: 'ssgi',
+      error: 'probe preparation failed',
+    })
+  })
+
+  it('keeps the deferred comparison usable when its indirect-light images fail', async () => {
     const f = await fixture('?indirectLighting=ddgi')
     const readTraceImages = vi.fn().mockRejectedValue(new Error('trace image unavailable'))
     f.coordinator.prepare(reventonRealtimeProfile, '?indirectLighting=ddgi', readTraceImages, true)

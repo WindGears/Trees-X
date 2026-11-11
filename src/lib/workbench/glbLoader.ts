@@ -78,6 +78,16 @@ async function parseGlb(
     .setTranscoderPath('/basis/')
     .setWorkerLimit(workers)
     .detectSupport(renderer)
+  if (workers === 4) {
+    // The audited car uses distinct external image URIs. Feed its verified
+    // bytes to the normal transcoder without a Blob copy and FileLoader read.
+    const load = ktx.load.bind(ktx)
+    ktx.load = (url, onLoad, onProgress, onError) => {
+      const verified = imageBytes.get(url)
+      if (verified) ktx.parse(verified, onLoad, onError)
+      else load(url, onLoad, onProgress, onError)
+    }
+  }
   const loader = new GLTFLoader(manager)
     .setDRACOLoader(draco)
     .setKTX2Loader(ktx)
