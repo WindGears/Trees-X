@@ -96,6 +96,8 @@ async function prepare() {
   assert.equal(bundle.manifest, '/models/reventon-runtime-v2/workbench-manifest.json')
   assert.match(bundle.sha256, /^[a-f0-9]{64}$/)
   const base = localAuditOrigin(process.env.CHECK_URL ?? 'http://127.0.0.1:5181')
+  const firstFrameShadows = process.env.TREES_R18_PSO_REFERENCE !== '1'
+  const path = '/?product=reventon&renderPipeline=showcase&r18Pso=off'
   const browser = await chromium.launch({ channel: 'msedge', headless: true })
   let records
   try {
@@ -109,7 +111,7 @@ async function prepare() {
       if (message.type() === 'error') errors.push(message.text())
     })
     await page.addInitScript(captureR18Pipelines)
-    await page.goto(base + '/?product=reventon&renderPipeline=showcase&r18Pso=off', {
+    await page.goto(base + path + (firstFrameShadows ? '&r18ShadowWarmup=capture' : ''), {
       waitUntil: 'domcontentloaded',
     })
     await page.waitForFunction(
@@ -128,10 +130,38 @@ async function prepare() {
       if (!renderer.backend.isWebGPUBackend)
         throw new Error('The real R18 WebGPU scene is required')
       await renderer.backend.device.queue.onSubmittedWorkDone()
-      return { sha256: root?.userData.bundleSha256, records: window.__r18StartupPipelines() }
+      const seen = new Set()
+      const lighting = (node) => {
+        if (!node || seen.has(node)) return
+        seen.add(node)
+        const exposed = node.component?.exposed?.realLighting
+        const status = (exposed?.value ?? exposed)?.snapshot?.()
+        if (status?.keyShadow?.requested) return status
+        const nested = lighting(node.component?.subTree) ?? lighting(node.suspense?.activeBranch)
+        if (nested) return nested
+        for (const child of Array.isArray(node.children) ? node.children : []) {
+          const found = lighting(child)
+          if (found) return found
+        }
+      }
+      const status = lighting(document.querySelector('#app')?._vnode)
+      return {
+        sha256: root?.userData.bundleSha256,
+        records: window.__r18StartupPipelines(),
+        firstFrameShadows: status?.keyShadow?.details?.firstFrameShaders === true,
+        shadow: status?.keyShadow?.stage,
+        indirect: status?.indirectLighting?.actual,
+      }
     })
     assert.deepEqual(errors, [])
     assert.equal(actual.sha256, bundle.sha256)
+    assert.equal(actual.shadow, 'active')
+    assert.equal(actual.indirect, 'ddgi')
+    assert.equal(
+      actual.firstFrameShadows,
+      firstFrameShadows,
+      'Use a build with the selected R18 shadow path',
+    )
     records = actual.records
     assert.ok(
       records.length >= 50 && records.length <= 128,
@@ -140,10 +170,12 @@ async function prepare() {
   } finally {
     await browser.close()
   }
-  const packed = gzipSync(JSON.stringify({ version: 1, records }))
+  const order = firstFrameShadows ? { firstFrameShadows: true } : {}
+  const packed = gzipSync(JSON.stringify({ version: 1, ...order, records }))
   const metadata = {
     version: 1,
     three: Number(REVISION),
+    ...order,
     bundleSha256: bundle.sha256,
     count: records.length,
     bytes: packed.length,
@@ -151,11 +183,11 @@ async function prepare() {
   }
   const dir = resolve('public/models/reventon-runtime-v2/native-pipelines')
   await mkdir(dir, { recursive: true })
-  const path = resolve(dir, metadata.sha256 + '.bin'),
-    temporary = path + '.' + randomUUID() + '.tmp'
+  const target = resolve(dir, metadata.sha256 + '.bin'),
+    temporary = target + '.' + randomUUID() + '.tmp'
   try {
     await writeFile(temporary, packed, { flag: 'wx' })
-    await rename(temporary, path)
+    await rename(temporary, target)
   } finally {
     await unlink(temporary).catch((error) => {
       if (error.code !== 'ENOENT') throw error

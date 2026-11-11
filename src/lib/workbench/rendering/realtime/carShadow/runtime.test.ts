@@ -151,6 +151,27 @@ describe('car key shadow asynchronous runtime ownership', () => {
     expect(factories.visibility).not.toHaveBeenCalled()
   })
 
+  it('binds first-frame shadow targets and publishes readiness only after a committed draw', async () => {
+    const f = fixture()
+    await built(f)
+    await f.owner.prepare(undefined, 'first-frame')
+    expect(f.prepare).not.toHaveBeenCalled()
+    expect(f.visibility.prepareShaders).not.toHaveBeenCalled()
+    expect(f.setKeyShadow).toHaveBeenCalledOnce()
+    expect(f.owner.snapshot()).toMatchObject({
+      stage: 'prepared',
+      phase: 'loading',
+      frames: 0,
+      details: { firstFrameShaders: true },
+    })
+    f.owner.prepareFrame(1440, 1000)
+    f.owner.cancelFrame()
+    expect(f.owner.snapshot().phase).toBe('loading')
+    f.owner.prepareFrame(1440, 1000)
+    f.owner.commitFrame()
+    expect(f.owner.snapshot()).toMatchObject({ stage: 'active', phase: 'ready', frames: 1 })
+  })
+
   it('aborts a hidden pending build and disposes its late result without readiness', async () => {
     const f = fixture()
     f.owner.start()

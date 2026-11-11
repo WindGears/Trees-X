@@ -211,7 +211,7 @@ describe('optional DDGI coordinator asynchronous boundaries', () => {
     expect(f.signals.render).not.toHaveBeenCalled()
     await f.finishTick(probe)
     await vi.waitFor(() => expect(probe.ticks).toHaveLength(2))
-    expect(f.signals.prepareKeyShadow).toHaveBeenCalledWith(signal, false)
+    expect(f.signals.prepareKeyShadow).toHaveBeenCalledWith(signal, 'targets')
     probe.state.ready = true
     f.create.mock.calls[0]![0].onReadyChanged?.()
     await f.finishTick(probe)

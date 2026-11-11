@@ -9,7 +9,10 @@ import type { RealtimeCoordinator } from '@/lib/workbench/rendering/realtime/coo
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
 import { realtimeProductProfile } from '@/lib/workbench/rendering/realtime/productProfile'
 import { productRenderSearch } from '@/lib/workbench/rendering/showcase'
-import { warmR18StartupPipelines } from '@/lib/workbench/rendering/r18PipelineWarmup'
+import {
+  useFirstFrameR18Shadows,
+  warmR18StartupPipelines,
+} from '@/lib/workbench/rendering/r18PipelineWarmup'
 import { getShowroomEnvironment } from '@/lib/workbench/rendering/carShowroom/binding'
 import type { ownGeometryAttributes } from '@/lib/workbench/rendering/realtime/geometryOwnership'
 import { createStageController } from '@/lib/workbench/controller'
@@ -290,7 +293,11 @@ export function useWorkbenchScene(
     )
     if (prepareCarFirstFrame) {
       store.loading(product.slug, revision, 'lighting')
-      await realLighting?.prepareCarStartup(signal)
+      const firstFrameShadows =
+        gpu && getShowroomEnvironment(scene.value)?.config.revision === 18
+          ? () => useFirstFrameR18Shadows(renderer, search)
+          : undefined
+      await realLighting?.prepareCarStartup(signal, firstFrameShadows)
       if (disposed || request !== generation) return
       store.loading(product.slug, revision, 'first-frame')
     }

@@ -51,6 +51,7 @@ export function createCarKeyShadow(
     bvh: CarShadowBvh | undefined,
     visibility: ReturnType<typeof createCarShadowVisibility> | undefined,
     compilationError: string | null = null,
+    firstFrameShaders = false,
     bound = false
 
   const retire = () => {
@@ -114,7 +115,7 @@ export function createCarKeyShadow(
     compilationFailed(message: string) {
       compilationError = message
     },
-    async prepare(signal?: AbortSignal, prewarmScene = true) {
+    async prepare(signal?: AbortSignal, mode: 'all' | 'targets' | 'first-frame' = 'all') {
       if (disposed || stage !== 'waiting' || !bvh || !light) return
       stage = 'compiling'
       compilationError = null
@@ -136,8 +137,8 @@ export function createCarKeyShadow(
         visibility.prepare(size.x, size.y)
         inputs.setKeyShadow({ visibility: visibility.node, depth: inputs.depth })
         bound = true
-        if (prewarmScene) await inputs.prepare(renderer, signal)
-        await visibility.prepareShaders(signal)
+        if (mode === 'all') await inputs.prepare(renderer, signal)
+        if (mode !== 'first-frame') await visibility.prepareShaders(signal)
         const device: unknown = Reflect.get(renderer.backend, 'device')
         const queue: unknown =
           device && typeof device === 'object' ? Reflect.get(device, 'queue') : undefined
@@ -150,6 +151,7 @@ export function createCarKeyShadow(
         if (disposed) return
         if (compilationError) throw new Error(compilationError)
         visibility.cancelFrame()
+        firstFrameShaders = mode === 'first-frame'
         stage = 'prepared'
       } catch (cause) {
         if (!disposed) fail(cause)
@@ -202,7 +204,11 @@ export function createCarKeyShadow(
       transformUpdates: bvh?.snapshot().transformUpdates ?? 0,
       historyResets,
       stage,
-      details: { bvh: bvh?.snapshot() ?? null, history: visibility?.snapshot() ?? null },
+      details: {
+        bvh: bvh?.snapshot() ?? null,
+        history: visibility?.snapshot() ?? null,
+        firstFrameShaders,
+      },
     }),
     dispose() {
       if (disposed) return

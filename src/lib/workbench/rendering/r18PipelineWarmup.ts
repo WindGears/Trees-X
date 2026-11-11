@@ -29,6 +29,7 @@ interface PipelineCache {
   count: number
   bytes: number
   sha256: string
+  firstFrameShadows?: true
 }
 
 const local = import.meta.glob<PipelineCache>('../reventonNativePipelineCache.json', {
@@ -36,7 +37,17 @@ const local = import.meta.glob<PipelineCache>('../reventonNativePipelineCache.js
   import: 'default',
 })
 const pending = new WeakSet<PipelineDevice>()
-const prepared = new WeakSet<PipelineDevice>()
+const prepared = new WeakMap<PipelineDevice, boolean>()
+
+export function useFirstFrameR18Shadows(renderer: WebGPURenderer, search: string) {
+  const query = new URLSearchParams(search)
+  if (!r18PerformanceEnabled(search) || query.get('carRenderTuning') === 'legacy') return false
+  const mode = query.get('r18ShadowWarmup')
+  if (mode === 'capture') return true
+  if (mode === 'reference' || query.get('r18Pso') === 'off') return false
+  const device: unknown = Reflect.get(renderer.backend, 'device')
+  return nativeCompiler(device) && prepared.get(device) === true
+}
 
 function nativeCompiler(value: unknown): value is PipelineDevice {
   return (
@@ -152,11 +163,14 @@ export function warmR18StartupPipelines(
       const bytes = await response.arrayBuffer()
       if (bytes.byteLength !== record.bytes || (await sha256(bytes)) !== record.sha256) return
       const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
-      const data: { version: number; records: CapturedPipeline[] } = await new Response(
-        stream,
-      ).json()
+      const data: {
+        version: number
+        records: CapturedPipeline[]
+        firstFrameShadows?: true
+      } = await new Response(stream).json()
       if (
         data.version !== 1 ||
+        data.firstFrameShadows !== record.firstFrameShadows ||
         !Array.isArray(data.records) ||
         data.records.length !== record.count
       )
@@ -166,7 +180,7 @@ export function warmR18StartupPipelines(
       if (request.signal.aborted) return
       // Keep native handles until Three has submitted its first real frame.
       retained.push(...pipelines)
-      if (pipelines.length === record.count) prepared.add(device)
+      if (pipelines.length === record.count) prepared.set(device, record.firstFrameShadows === true)
     } catch {
       // A stale or unsupported warmup leaves native scene compilation intact.
     } finally {

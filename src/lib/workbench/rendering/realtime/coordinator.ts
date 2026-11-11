@@ -297,7 +297,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       if (error) throw new Error(error)
       preparedPasses = true
     },
-    async prepareCarStartup(signal: AbortSignal) {
+    async prepareCarStartup(signal: AbortSignal, firstFrameShadows?: () => boolean) {
       const owner = signals
       if (disposed || !owner) return
       signal.throwIfAborted()
@@ -320,9 +320,9 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         await shadowBuild
       }
       signal.throwIfAborted()
-      // The first scene pass uses its real shadow binding and compiles only the
-      // visible variants. The visibility RTT shaders still use their audited warmup.
-      await owner.prepareKeyShadow(signal, false)
+      // A successful native cache lets the actual first draw initialize the
+      // shadow targets without an earlier draw of their surface dependencies.
+      await owner.prepareKeyShadow(signal, firstFrameShadows?.() ? 'first-frame' : 'targets')
       // The fixed single-cascade field builds on its first tick and solves on
       // the second. Bind that result before any beauty draw builds the graph.
       await step()

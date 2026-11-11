@@ -1,5 +1,7 @@
 # R18 首帧管线预编译
 
+首帧阴影的当前绘制顺序和缓存更新方法见 [R18 首帧阴影准备](reventon-shadow-startup.md)。
+
 ## 开销来源
 
 在 1440×1000 的真实 NVIDIA WebGPU 启动追踪中，软箱阴影准备的队列等待于 15.791 秒发起，约 0.2 毫秒后返回。随后进入首帧阶段，创建了 99 个渲染管线及 157 个 WGSL 模块。界面在 21.34 秒进入就绪状态，该状态前提交的 GPU 工作在 31.87 秒结算。队列结算包含此前提交的工作和浏览器回调调度。[WebGPU 队列接口](https://gpuweb.github.io/gpuweb/#dom-gpuqueue-onsubmittedworkdone)
