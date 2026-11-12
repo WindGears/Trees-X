@@ -1,6 +1,7 @@
 /* global fetch, URL, getComputedStyle */
 import { chromium, expect } from '@playwright/test'
 import { mkdir, writeFile } from 'node:fs/promises'
+import { bridge } from './demo/browser-check.mjs'
 
 const base = process.env.CHECK_URL || 'http://127.0.0.1:5181'
 const output = process.env.CALLOUT_CHECK_OUTPUT || 'artifacts/callouts'
@@ -37,18 +38,9 @@ try {
       timeout: 120000,
     })
     await expect(page.locator('canvas')).toHaveCount(1)
+    await bridge(page)
     await page.evaluate(() => {
-      let component = document.querySelector('canvas').__vueParentComponent
-      let scene
-      while (component) {
-        const values = Reflect.ownKeys(component.provides ?? {}).map(
-          (key) => component.provides[key],
-        )
-        scene ??= component.exposed?.context ?? values.find((value) => value?.scene?.value?.isScene)
-        component = component.parent
-      }
-      if (!scene) throw new Error('Actual Three context unavailable')
-      window.__calloutScene = scene
+      window.__calloutScene = window.__demo.scene
     })
     expect(
       await page.evaluate(() =>

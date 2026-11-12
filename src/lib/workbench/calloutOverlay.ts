@@ -178,18 +178,23 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
       }
     }
   }
-  function measure() {
+  function measureLabels() {
+    // Batch visibility writes so the first size read can lay out all labels.
+    const hidden = entries.filter(({ button }) => button.hidden)
+    for (const { button } of hidden) button.hidden = false
+    try {
+      for (const entry of entries) {
+        entry.width = entry.button.offsetWidth
+        entry.height = entry.button.offsetHeight
+      }
+    } finally {
+      for (const { button } of hidden) button.hidden = true
+    }
+  }
+  function measureObstacles() {
     const origin = host.getBoundingClientRect()
     bounds.width = Math.max(0, origin.width - 32)
     bounds.height = Math.max(0, origin.height - 32)
-    for (const entry of entries) {
-      // Hidden labels need a real text measurement, without a visible frame.
-      const hidden = entry.button.hidden
-      entry.button.hidden = false
-      entry.width = entry.button.offsetWidth
-      entry.height = entry.button.offsetHeight
-      entry.button.hidden = hidden
-    }
     for (const { element, rect } of obstacleElements) {
       const value = element.getBoundingClientRect()
       const visible =
@@ -241,18 +246,21 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
     for (const entry of entries) paint(entry)
     start()
   }
-  const observer = new ResizeObserver(() => {
-    measure()
+  const observer = new ResizeObserver((records) => {
+    if (records.some(({ target }) => target === host)) measureLabels()
+    measureObstacles()
     layout()
   })
   observer.observe(host)
   collectObstacles()
-  const mutations = new MutationObserver(() => {
+  const mutations = new MutationObserver((records) => {
     collectObstacles()
-    measure()
+    if (records.some(({ target }) => host.contains(target))) measureLabels()
+    measureObstacles()
     layout()
   })
   if (obstacleHost) mutations.observe(obstacleHost, { childList: true, subtree: true })
+  mutations.observe(host, { childList: true, characterData: true, subtree: true })
   function refresh() {
     const next: Entry[] = []
     host.querySelectorAll<HTMLButtonElement>('button[data-part]').forEach((button) => {
@@ -297,8 +305,7 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
         byId.delete(entry.id)
       }
     entries = next
-    measure()
-    layout()
+    changed()
   }
   const place: PlaceCallout = (id, x, y, visible, progress) => {
     reveal = progress
@@ -310,16 +317,22 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
     entry.frame = frame
   }
   function commit() {
-    if (floating) measure()
+    // Translated panels can move without resizing. Keep their current bounds.
+    if (floating) measureObstacles()
     for (const entry of entries) if (entry.frame !== frame) entry.projected = false
     frame++
     layout()
   }
-  const changed = () => {
-    measure()
+  function changed() {
+    measureLabels()
+    measureObstacles()
     layout()
   }
+  const { defaultView, fonts } = host.ownerDocument
   media.addEventListener('change', changed)
+  defaultView?.addEventListener('resize', changed)
+  fonts?.addEventListener('loadingdone', changed)
+  fonts?.addEventListener('loadingerror', changed)
   refresh()
   return {
     place,
@@ -345,6 +358,9 @@ export function createCalloutOverlay(host: HTMLElement, context: Context) {
       observer.disconnect()
       mutations.disconnect()
       media.removeEventListener('change', changed)
+      defaultView?.removeEventListener('resize', changed)
+      fonts?.removeEventListener('loadingdone', changed)
+      fonts?.removeEventListener('loadingerror', changed)
       for (const entry of entries) gsap.killTweensOf(entry)
       entries = []
       byId.clear()
