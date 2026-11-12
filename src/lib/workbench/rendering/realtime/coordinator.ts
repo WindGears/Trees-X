@@ -49,6 +49,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     ddgiFramePending = false,
     preparedPasses = false,
     shadowPreparationPending = false,
+    shareWorldMatrices = false,
     native = false
   let signalIdentity: string | undefined
   let indirectRequested: 'ssgi' | 'ddgi' = 'ssgi',
@@ -157,6 +158,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     if (disposed) return
     generation++
     frameSchedule.configure()
+    shareWorldMatrices = false
     clearTimeout(enhancementTimer)
     installSignals = undefined
     loaded = false
@@ -226,6 +228,7 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
         query.get('carRenderTuning') !== 'legacy' &&
         r18PerformanceEnabled(search)
       frameSchedule.configure(optimizeR18)
+      shareWorldMatrices = optimizeR18
       native = profile === null
       if (!profile) {
         signals?.dispose()
@@ -487,25 +490,36 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     if (disposed || !active || error) return
     try {
       clock.frame(() => {
-        options.beforeRaster()
-        if (
-          installSignals &&
-          loaded &&
-          !interacting &&
-          performance.now() - lastActivity >= enhancementIdleMs
-        ) {
-          const install = installSignals
-          installSignals = undefined
-          install()
+        const shared = shareWorldMatrices && Boolean(signals) && scene.matrixWorldAutoUpdate
+        if (shared) {
+          // R18's render hooks change pass state and material uniforms. Pose and
+          // camera actions have already committed before this synchronous draw.
+          scene.updateMatrixWorld(true)
+          scene.matrixWorldAutoUpdate = false
         }
-        materials.sync()
-        renderer.getDrawingBufferSize(size)
-        if (signals) drawEnhanced()
-        else renderer.render(scene, camera)
-        if (error) throw new Error(error)
-        frames++
-        framesSincePrepare++
-        firstRasterMs ??= performance.now() - started
+        try {
+          options.beforeRaster()
+          if (
+            installSignals &&
+            loaded &&
+            !interacting &&
+            performance.now() - lastActivity >= enhancementIdleMs
+          ) {
+            const install = installSignals
+            installSignals = undefined
+            install()
+          }
+          materials.sync()
+          renderer.getDrawingBufferSize(size)
+          if (signals) drawEnhanced(shared)
+          else renderer.render(scene, camera)
+          if (error) throw new Error(error)
+          frames++
+          framesSincePrepare++
+          firstRasterMs ??= performance.now() - started
+        } finally {
+          if (shared) scene.matrixWorldAutoUpdate = true
+        }
       })
       frameSchedule.submitted()
       notify()
@@ -518,15 +532,15 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
     }
   }
 
-  function drawEnhanced() {
+  function drawEnhanced(sharedWorldMatrices: boolean) {
     if (reset) {
       reset = false
       signals?.resetHistory()
       signals?.environment()
-      motion.reset(scene)
+      motion.reset(scene, !sharedWorldMatrices)
       historyResets++
     }
-    motion.beginFrame(scene)
+    motion.beginFrame(scene, !sharedWorldMatrices)
     try {
       signals?.render()
       if (error) throw new Error(error)

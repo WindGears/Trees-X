@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Group, PerspectiveCamera, Scene, Vector2 } from 'three'
+import { Group, PerspectiveCamera, Scene, Texture, Vector2 } from 'three'
 import type { WebGPURenderer } from 'three/webgpu'
 import { createRealtimeCoordinator } from './coordinator'
 import type { RealtimeStatus } from './types'
 import { reventonRealtimeProfile } from './productProfile'
+import { setShowroomEnvironment } from '../carShowroom/binding'
+import { wrapWideColdStudioConfig } from '../carShowroom/config'
 
 const factories = vi.hoisted(() => ({
   clock: vi.fn(),
@@ -124,6 +126,50 @@ function fixture() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('realtime complete-frame coordinator lifecycle', () => {
+  it('shares a fresh R18 pose across all passes and restores scene updating after a failed draw', () => {
+    const f = fixture()
+    const texture = new Texture()
+    setShowroomEnvironment(f.scene, {
+      texture,
+      irradiance: texture,
+      config: wrapWideColdStudioConfig,
+    })
+    try {
+      f.coordinator.prepare(reventonRealtimeProfile, '?renderPipeline=showcase')
+      f.coordinator.ready('reventon', 1)
+      const updateWorld = vi.spyOn(f.scene, 'updateMatrixWorld')
+      f.root.position.x = 3
+      f.beforeRaster.mockImplementationOnce(() => {
+        expect(f.scene.matrixWorldAutoUpdate).toBe(false)
+        expect(f.root.matrixWorld.elements[12]).toBe(3)
+        return f.calls.push('beforeRaster')
+      })
+      f.signals.render.mockImplementationOnce(() => {
+        expect(f.scene.matrixWorldAutoUpdate).toBe(false)
+        expect(f.root.matrixWorld.elements[12]).toBe(3)
+      })
+      f.coordinator.render(f.notify)
+      expect(updateWorld).toHaveBeenCalledOnce()
+      expect(f.motion.beginFrame).toHaveBeenCalledWith(f.scene, false)
+      expect(f.coordinator.snapshot()).toMatchObject({ frames: 1, error: null })
+      expect(f.scene.matrixWorldAutoUpdate).toBe(true)
+
+      f.root.position.x = -2
+      f.signals.render.mockImplementationOnce(() => {
+        expect(f.scene.matrixWorldAutoUpdate).toBe(false)
+        expect(f.root.matrixWorld.elements[12]).toBe(-2)
+        throw new Error('R18 raster failed')
+      })
+      f.coordinator.render(f.notify)
+      expect(updateWorld).toHaveBeenCalledTimes(2)
+      expect(f.coordinator.snapshot()).toMatchObject({ frames: 1, error: 'R18 raster failed' })
+      expect(f.scene.matrixWorldAutoUpdate).toBe(true)
+    } finally {
+      f.coordinator.dispose()
+      texture.dispose()
+    }
+  })
+
   it('retires a requested car shadow graph before loading another car with identical capabilities', () => {
     const f = fixture()
     Object.assign(f.signals, { keyShadow: vi.fn(() => ({ requested: true })) })

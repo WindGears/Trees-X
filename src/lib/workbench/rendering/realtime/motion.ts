@@ -161,10 +161,10 @@ export function createMotionHistory(camera: Camera) {
 
   return {
     node,
-    beginFrame(value: Object3D) {
+    beginFrame(value: Object3D, refreshWorld = true) {
       assertLive()
       if (frameOpen) throw new Error('A complete motion frame is already open')
-      value.updateMatrixWorld(true)
+      if (refreshWorld) value.updateMatrixWorld(true)
       camera.updateMatrixWorld(true)
       if (root !== value) registerRoot(value)
       captureCurrent()
@@ -186,9 +186,9 @@ export function createMotionHistory(camera: Camera) {
       frameOpen = false
     },
     /** Call for a camera cut, topology replacement, resize or device restore. */
-    reset(value: Object3D) {
+    reset(value: Object3D, refreshWorld = true) {
       assertLive()
-      value.updateMatrixWorld(true)
+      if (refreshWorld) value.updateMatrixWorld(true)
       camera.updateMatrixWorld(true)
       registerRoot(value)
       captureCurrent()
