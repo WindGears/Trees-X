@@ -40,7 +40,8 @@ export async function loadAdapter(
     !renderer.hasFeature('texture-compression-astc')
       ? nativeCarTextureCache(source.bundle.sha256)
       : undefined
-  const session = useStreamingAssets(source, search)
+  const streaming = useStreamingAssets(source, search)
+  const session = streaming
     ? await openAssetSession(source.bundle, signal, phase, cached)
     : await openLegacyAssetSession(source.bundle, signal, phase)
   const { bundle, signal: sessionSignal } = session
@@ -63,7 +64,9 @@ export async function loadAdapter(
       bundle.version === 2 &&
       cores >= 8
     const workers = optimizedCar && cores >= 12 ? 6 : fastCarDecode ? 4 : 2
-    decoded = await decodeGlb(bundle, session, renderer, sessionSignal, workers)
+    const nativeBc7 =
+      streaming && Boolean(cached) && new URLSearchParams(search).get('r18Zstd') !== 'reference'
+    decoded = await decodeGlb(bundle, session, renderer, sessionSignal, workers, nativeBc7)
     if (
       source.adapter === 'reventon-v1' &&
       isWebGpuRenderer(renderer) &&

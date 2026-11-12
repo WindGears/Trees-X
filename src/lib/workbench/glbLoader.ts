@@ -1,4 +1,4 @@
-import { LoadingManager, Texture, type Group } from 'three'
+import { LoadingManager, Texture, type CompressedTexture, type Group } from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js'
@@ -9,6 +9,7 @@ import type { AssetBundle } from './assetBundle'
 import type { VerifiedFiles } from './assetSession'
 import type { WorkbenchRenderer } from './rendering/rendererTypes'
 import { boundDracoDecode, boundMeshoptDecode, decoderOwner } from './glbDecodeScheduling'
+import { createNativeBc7Decoder } from './nativeBc7'
 
 export function decodeGlb(
   bundle: AssetBundle,
@@ -16,8 +17,9 @@ export function decodeGlb(
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
   workers: 2 | 4 | 6 = 2,
+  nativeBc7 = false,
 ) {
-  return decoderOwner(signal, () => parseGlb(bundle, bytes, renderer, signal, workers))
+  return decoderOwner(signal, () => parseGlb(bundle, bytes, renderer, signal, workers, nativeBc7))
 }
 
 async function parseGlb(
@@ -26,6 +28,7 @@ async function parseGlb(
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
   workers: 2 | 4 | 6,
+  nativeBc7: boolean,
 ) {
   // One parse owns all worker slots, including geometry and image jobs.
   const decode = workers === 2 ? heavyWork : taskSlots(workers)
@@ -78,14 +81,28 @@ async function parseGlb(
     .setTranscoderPath('/basis/')
     .setWorkerLimit(workers)
     .detectSupport(renderer)
+  const native =
+    nativeBc7 && workers !== 2 && typeof Worker === 'function'
+      ? createNativeBc7Decoder(signal)
+      : undefined
   if (workers !== 2) {
     // The audited car uses distinct external image URIs. Feed its verified
     // bytes to the normal transcoder without a Blob copy and FileLoader read.
     const load = ktx.load.bind(ktx)
     ktx.load = (url, onLoad, onProgress, onError) => {
       const verified = imageBytes.get(url)
-      if (verified) ktx.parse(verified, onLoad, onError)
-      else load(url, onLoad, onProgress, onError)
+      if (!verified) return load(url, onLoad, onProgress, onError)
+      const result = native?.load(verified)
+      if (!result) return ktx.parse(verified, onLoad, onError)
+      void result
+        .catch(() => {
+          signal.throwIfAborted()
+          return new Promise<CompressedTexture>((resolve, reject) =>
+            ktx.parse(verified, resolve, reject),
+          )
+        })
+        .then(onLoad)
+        .catch(onError)
     }
   }
   const loader = new GLTFLoader(manager)
@@ -207,6 +224,7 @@ async function parseGlb(
   } finally {
     // A failed parse may leave sibling decoder tasks running. Let them settle before terminating workers.
     while (pending.size) await Promise.allSettled([...pending])
+    native?.dispose()
     draco.dispose()
     ktx.dispose()
     urls.forEach((url) => URL.revokeObjectURL(url))
