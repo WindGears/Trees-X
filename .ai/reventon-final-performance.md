@@ -3,6 +3,8 @@
 后续首帧追踪定位并消除了 SSR 的冗余 HDR 上传，最新证据见 [R18 首帧与反射开销实测](reventon-startup-profile.md)。
 R18 原生管线预编译的准备方法与证据见 [R18 首帧管线预编译](reventon-pipeline-warmup.md)。
 
+开门与分离中的阴影缓冲上传优化见 [R18 阴影 BVH 局部上传](reventon-shadow-node-uploads.md)。
+
 ## 正式组合
 
 R18 答辩入口复用同一逻辑帧的反射空间过滤、时域过滤与主软箱阴影过滤结果。摄影棚 Bloom、SMAA 和材质采样共用这些结果。预编译和场景切换继续由原有租约和资源所有者管理。

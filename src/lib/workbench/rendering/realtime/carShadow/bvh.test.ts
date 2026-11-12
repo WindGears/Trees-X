@@ -3,6 +3,7 @@ import { BoxGeometry, Group, Mesh, MeshPhysicalMaterial } from 'three'
 import { MeshBVH } from 'three-mesh-bvh'
 import { BVHComputeData } from 'three-mesh-bvh/webgpu'
 import { float, vec3 } from 'three/tsl'
+import type { StorageBufferAttribute } from 'three/webgpu'
 import { createCarShadowBvh } from './bvh'
 
 const controls = vi.hoisted(() => ({ wait: null as Promise<void> | null, fail: false }))
@@ -141,6 +142,51 @@ it('keeps one TLAS primitive per rigid source even when a BLAS has thousands of 
   owner.dispose()
   geometry.dispose()
   material.dispose()
+})
+
+it('uploads only the changed TLAS prefix after rigid refits, preserving packed BLAS bytes', async () => {
+  const { root, door, geometry, material } = fixture()
+  const update = vi.spyOn(prototype, 'update')
+  const owner = await createCarShadowBvh(root, new AbortController().signal)
+  try {
+    const data = update.mock.instances[0] as unknown as {
+      bvh: { _roots: [ArrayBuffer] }
+      storage: {
+        nodes: { value: StorageBufferAttribute }
+        transforms: { value: StorageBufferAttribute }
+      }
+    }
+    const nodes = data.storage.nodes.value
+    const transforms = data.storage.transforms.value
+    const tlasWords = data.bvh._roots[0].byteLength / Uint32Array.BYTES_PER_ELEMENT
+    const packed = nodes.array.slice()
+    const matrices = transforms.array.slice()
+    expect(tlasWords).toBeLessThan(packed.length)
+    expect(nodes.updateRanges).toEqual([])
+
+    door.position.x = -1
+    expect(owner.sync()).toBe(true)
+    expect(nodes.array.slice(0, tlasWords)).not.toEqual(packed.slice(0, tlasWords))
+    expect(nodes.array.slice(tlasWords)).toEqual(packed.slice(tlasWords))
+    expect(transforms.array).not.toEqual(matrices)
+    expect(nodes.updateRanges).toEqual([{ start: 0, count: tlasWords }])
+    expect(transforms.updateRanges).toEqual([])
+
+    door.visible = false
+    expect(owner.sync()).toBe(true)
+    expect(nodes.updateRanges).toEqual([{ start: 0, count: tlasWords }])
+    nodes.clearUpdateRanges()
+    expect(owner.sync()).toBe(false)
+    expect(nodes.updateRanges).toEqual([])
+    door.visible = true
+    expect(owner.sync()).toBe(true)
+    expect(nodes.updateRanges).toEqual([{ start: 0, count: tlasWords }])
+    expect(nodes.array.slice(tlasWords)).toEqual(packed.slice(tlasWords))
+  } finally {
+    owner.dispose()
+    geometry.dispose()
+    material.dispose()
+  }
 })
 
 it('releases a ready owner on abort, and keeps loader-owned materials and geometry alive', async () => {

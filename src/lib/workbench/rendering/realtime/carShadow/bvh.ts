@@ -1,6 +1,12 @@
 import { REVISION } from 'three'
 import type { Material, Mesh, Object3D } from 'three'
-import { Node, StructNode, type NodeBuilder, type StructTypeNode } from 'three/webgpu'
+import {
+  Node,
+  StorageBufferAttribute,
+  StructNode,
+  type NodeBuilder,
+  type StructTypeNode,
+} from 'three/webgpu'
 import { Fn, nodeObject } from 'three/tsl'
 import * as BvhWebGPU from 'three-mesh-bvh/webgpu'
 import { buildCarShadowBlas } from './bvhWorker'
@@ -41,6 +47,7 @@ interface ComputeData {
   dispose(): void
   fns: { raycastFirstHit: unknown }
   storage: Record<string, unknown>
+  bvh?: { _roots?: unknown }
 }
 
 interface BvhRuntime {
@@ -65,6 +72,28 @@ function runtimeApi(): BvhRuntime {
   }
   validateCarHitLayout(api.rayIntersectionResultStruct)
   return api as BvhRuntime
+}
+
+function topLevelNodeRange(data: ComputeData) {
+  const roots = data.bvh?._roots
+  const nodes = (data.storage.nodes as { value?: unknown } | undefined)?.value
+  if (
+    !Array.isArray(roots) ||
+    roots.length !== 1 ||
+    !(roots[0] instanceof ArrayBuffer) ||
+    !(nodes instanceof StorageBufferAttribute) ||
+    nodes.itemSize !== 1 ||
+    !(nodes.array instanceof Uint32Array) ||
+    nodes.array.byteOffset !== 0 ||
+    nodes.array.byteLength !== nodes.array.buffer.byteLength
+  )
+    return
+
+  // The pinned packer writes 32-byte TLAS nodes first and appends immutable BLAS
+  // nodes. updateTransforms() refits that prefix without touching the tail.
+  const bytes = roots[0].byteLength
+  if (bytes === 0 || bytes % 32 !== 0 || bytes >= nodes.array.byteLength) return
+  return { nodes, words: bytes / Uint32Array.BYTES_PER_ELEMENT }
 }
 
 const RuntimeStruct = StructNode as unknown as new (
@@ -153,6 +182,7 @@ export async function createCarShadowBvh(
     for (const binding of geometrySet.bindings) copyBinding(binding)
     data.update()
     sources = carQuerySources(data, geometrySet.bindings)
+    const nodeRange = topLevelNodeRange(data)
     storageBytes = countStorageBytes(data.storage)
     signal.throwIfAborted()
     buildMs = performance.now() - started
@@ -218,6 +248,10 @@ export async function createCarShadowBvh(
         }
         if (changed) {
           data.updateTransforms()
+          // Three r185 uploads the entire packed buffer when no range is set.
+          // Creation still maps the full buffer; only subsequent writes narrow.
+          if (nodeRange && nodeRange.nodes.updateRanges.length === 0)
+            nodeRange.nodes.addUpdateRange(0, nodeRange.words)
           transformUpdates += 1
         }
         return changed
