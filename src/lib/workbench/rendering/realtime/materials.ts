@@ -319,7 +319,7 @@ export function createRealtimeMaterials(root?: Object3D) {
     meshes.length = 0
   }
 
-  function install(value: Object3D) {
+  function install(value: Object3D, shareShowroomProjection = false) {
     if (disposed) return
     restore()
     value.traverse((object) => {
@@ -330,7 +330,12 @@ export function createRealtimeMaterials(root?: Object3D) {
       object.material = runtime
       meshes.push({ mesh: object, original, runtime })
     })
-    restoreEnvironment = bindShowroomMaterials(value)
+    restoreEnvironment = bindShowroomMaterials(
+      value,
+      shareShowroomProjection
+        ? (material) => material instanceof RealtimePhysicalMaterial
+        : undefined,
+    )
   }
 
   if (root) install(root)

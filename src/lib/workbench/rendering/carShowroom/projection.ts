@@ -176,34 +176,58 @@ export function createColdStudioEnvironmentNode(
   return new ColdStudioEnvironmentNode(texture, config, irradianceTexture, projectSpecular)
 }
 
-/** Instance-only hook. Does not set envMap, so supported materials remain in the SSR branch. */
-export function installColdStudioProjection(
-  material: MeshStandardNodeMaterial,
+/** Each installer can bind the same immutable projection to compatible materials. */
+export function createColdStudioProjection(
   texture: Texture,
   config: CarShowroomConfig,
   irradianceTexture: Texture = texture,
   projectSpecular = true,
 ) {
-  const descriptor = Object.getOwnPropertyDescriptor(material, 'setupEnvironment'),
-    previousEnvironmentNode = material.envNode,
-    node = createColdStudioEnvironmentNode(texture, config, irradianceTexture, projectSpecular)
-  // r185's NodeMaterialObserver scans public node fields, not the return value
-  // of setupEnvironment(). Register this real environment input so every
-  // reused static mesh refreshes dynamic light/texture bindings after resize.
-  material.envNode = textureNode(texture)
-  Object.defineProperty(material, 'setupEnvironment', {
-    configurable: true,
-    writable: true,
-    value: () => node,
-  })
-  material.needsUpdate = true
-  let disposed = false
-  return () => {
-    if (disposed) return
-    disposed = true
-    if (descriptor) Object.defineProperty(material, 'setupEnvironment', descriptor)
-    else Reflect.deleteProperty(material, 'setupEnvironment')
-    material.envNode = previousEnvironmentNode
+  const environment = createColdStudioEnvironmentNode(
+    texture,
+    config,
+    irradianceTexture,
+    projectSpecular,
+  )
+  const reference = textureNode(texture)
+  return (material: MeshStandardNodeMaterial, programKey?: () => string) => {
+    const environmentDescriptor = Object.getOwnPropertyDescriptor(material, 'setupEnvironment')
+    const previousEnvironmentNode = material.envNode
+    const programDescriptor =
+      programKey && Object.getOwnPropertyDescriptor(material, 'customProgramCacheKey')
+    const previousProgramKey = material.customProgramCacheKey
+    const cacheKey = programKey && (() => `${previousProgramKey.call(material)}/${programKey()}`)
+
+    // The public node keeps Three's material observer watching the live probe.
+    // Retain a separate program key when materials share this node identity.
+    material.envNode = reference
+    Object.defineProperty(material, 'setupEnvironment', {
+      configurable: true,
+      writable: true,
+      value: () => environment,
+    })
+    if (cacheKey)
+      Object.defineProperty(material, 'customProgramCacheKey', {
+        configurable: true,
+        writable: true,
+        value: cacheKey,
+      })
     material.needsUpdate = true
+
+    let disposed = false
+    return () => {
+      if (disposed) return
+      disposed = true
+      if (environmentDescriptor)
+        Object.defineProperty(material, 'setupEnvironment', environmentDescriptor)
+      else Reflect.deleteProperty(material, 'setupEnvironment')
+      if (cacheKey && material.customProgramCacheKey === cacheKey) {
+        if (programDescriptor)
+          Object.defineProperty(material, 'customProgramCacheKey', programDescriptor)
+        else Reflect.deleteProperty(material, 'customProgramCacheKey')
+      }
+      material.envNode = previousEnvironmentNode
+      material.needsUpdate = true
+    }
   }
 }

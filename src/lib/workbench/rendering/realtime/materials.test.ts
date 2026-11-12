@@ -1,4 +1,13 @@
-import { BoxGeometry, Color, Group, Mesh, MeshPhysicalMaterial, Texture } from 'three'
+import {
+  BoxGeometry,
+  Color,
+  CompressedTexture,
+  Group,
+  Mesh,
+  MeshPhysicalMaterial,
+  RGBA_BPTC_Format,
+  Texture,
+} from 'three'
 import {
   MeshPhysicalNodeMaterial,
   Node,
@@ -17,6 +26,8 @@ import {
   vec3,
 } from 'three/tsl'
 import { describe, expect, it, vi } from 'vitest'
+import { setShowroomEnvironment } from '../carShowroom/binding'
+import { wrapWideColdStudioConfig } from '../carShowroom/config'
 import { createRealtimeMaterials, realtimeMaterialSupported } from './materials'
 
 describe('realtime Physical signal bridge', () => {
@@ -147,6 +158,66 @@ describe('realtime Physical signal bridge', () => {
     source.dispose()
     texture.dispose()
     geometry.dispose()
+  })
+
+  it('reuses an R18 program only while BC7 slot relationships and lighting routes match', () => {
+    const geometry = new BoxGeometry()
+    const room = new Group()
+    const car = new Group()
+    car.userData = { adapter: 'reventon-v1', carStudioQuality: 'studio' }
+    room.add(car)
+    const probe = new Texture()
+    setShowroomEnvironment(room, {
+      texture: probe,
+      irradiance: probe,
+      config: wrapWideColdStudioConfig,
+    })
+    const texture = () =>
+      new CompressedTexture(
+        [{ data: new Uint8Array(16), width: 4, height: 4 }],
+        4,
+        4,
+        RGBA_BPTC_Format,
+      )
+    const maps = [texture(), texture(), texture()] as const
+    const sources = maps.map((map) => {
+      const material = new MeshPhysicalMaterial({ map, metalnessMap: map })
+      material.userData.source_vpb_material_id = 15731
+      return material
+    })
+    const [first, second, outside] = sources.map((source) => new Mesh(geometry, source))
+    car.add(first!, second!)
+    room.add(outside!)
+    const bridge = createRealtimeMaterials()
+    bridge.install(room, true)
+    const a = first!.material as unknown as MeshPhysicalNodeMaterial
+    const b = second!.material as unknown as MeshPhysicalNodeMaterial
+    const c = outside!.material as unknown as MeshPhysicalNodeMaterial
+    try {
+      expect(a.envNode).toBe(b.envNode)
+      expect(a.customProgramCacheKey()).toBe(b.customProgramCacheKey())
+      expect(a.customProgramCacheKey()).not.toBe(c.customProgramCacheKey())
+      expect(a.map).toBe(maps[0])
+      expect(b.map).toBe(maps[1])
+
+      sources[1]!.metalnessMap = maps[2]
+      expect(bridge.sync()).toBe(true)
+      expect(a.customProgramCacheKey()).not.toBe(b.customProgramCacheKey())
+
+      sources[1]!.metalnessMap = maps[1]
+      bridge.sync()
+      maps[1].channel = 1
+      expect(a.customProgramCacheKey()).not.toBe(b.customProgramCacheKey())
+    } finally {
+      bridge.dispose()
+      expect(Object.hasOwn(a, 'customProgramCacheKey')).toBe(false)
+      expect(a.envNode).toBeNull()
+      setShowroomEnvironment(room)
+      sources.forEach((source) => source.dispose())
+      maps.forEach((map) => map.dispose())
+      probe.dispose()
+      geometry.dispose()
+    }
   })
 
   it('keeps anisotropy, transmission and transparent surfaces on their full native branch', () => {

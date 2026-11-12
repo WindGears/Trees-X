@@ -4,7 +4,7 @@ import { EnvironmentNode, MeshPhysicalNodeMaterial } from 'three/webgpu'
 import { coldStudioConfig } from './config'
 import {
   createColdStudioEnvironmentNode,
-  installColdStudioProjection,
+  createColdStudioProjection,
   projectBoxDirection,
 } from './projection'
 
@@ -60,7 +60,8 @@ describe('cold-studio box-projected environment', () => {
     const original = material.setupEnvironment,
       version = material.version,
       releaseTexture = vi.spyOn(texture, 'dispose')
-    const restore = installColdStudioProjection(material, texture, coldStudioConfig)
+    const install = createColdStudioProjection(texture, coldStudioConfig)
+    const restore = install(material)
     expect(material.envMap).toBeNull()
     expect(material.envNode?.isNode).toBe(true)
     expect(Object.values(material).some((value) => value?.isNode)).toBe(true)
@@ -78,7 +79,7 @@ describe('cold-studio box-projected environment', () => {
     expect(releaseTexture).not.toHaveBeenCalled()
     const own = { configurable: true, writable: true, value: () => null }
     Object.defineProperty(material, 'setupEnvironment', own)
-    const releaseOwn = installColdStudioProjection(material, texture, coldStudioConfig)
+    const releaseOwn = install(material)
     releaseOwn()
     expect(Object.getOwnPropertyDescriptor(material, 'setupEnvironment')).toEqual({
       ...own,
@@ -98,7 +99,7 @@ describe('cold-studio box-projected environment', () => {
       indirectDispose = vi.spyOn(indirect, 'dispose')
     expect(node.irradianceSource).toBe(indirect)
     expect(createColdStudioEnvironmentNode(full, coldStudioConfig).irradianceSource).toBe(full)
-    const restore = installColdStudioProjection(material, full, coldStudioConfig, indirect)
+    const restore = createColdStudioProjection(full, coldStudioConfig, indirect)(material)
     restore()
     expect(fullDispose).not.toHaveBeenCalled()
     expect(indirectDispose).not.toHaveBeenCalled()

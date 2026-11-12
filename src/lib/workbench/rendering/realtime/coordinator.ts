@@ -260,9 +260,10 @@ export function createRealtimeCoordinator(options: RealtimeOptions) {
       lastActivity = performance.now()
       ddgi?.invalidate('all')
       const prepareMaterialsNow = !deferSignals || profile.adapterId === 'reventon-v1'
-      if (prepareMaterialsNow) materials.install(scene)
+      const shareShowroomProjection = optimizeR18 && query.get('r18Projection') !== 'reference'
+      if (prepareMaterialsNow) materials.install(scene, shareShowroomProjection)
       const install = () => {
-        if (!prepareMaterialsNow) materials.install(scene)
+        if (!prepareMaterialsNow) materials.install(scene, shareShowroomProjection)
         motion.reset(scene)
         const reuse = Boolean(signals)
         signals ??= createRealtimeSignals(
