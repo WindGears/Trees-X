@@ -17,13 +17,14 @@ const config = readDemoConfig()
 const output = process.env.DEMO_ADMIN_OUTPUT || 'artifacts/demo/admin-flow'
 const showcase = process.env.DEMO_ADMIN_SHOWCASE === '1'
 const selected = process.env.DEMO_ADMIN_PRODUCT
+const captureDesktop = process.env.DEMO_ADMIN_DESKTOP === '1'
 const testedProducts = selected
   ? demoProducts.filter((item) => item.slug === selected)
   : demoProducts
 if (!testedProducts.length) throw new Error('未知的隔离测试展品：' + selected)
 function pageUrl(path) {
   const url = new URL(path, frontend)
-  if (showcase) url.searchParams.set('renderPipeline', 'showcase')
+  url.searchParams.set('renderPipeline', showcase ? 'showcase' : 'webgl')
   return url.href
 }
 const timeout = 180000
@@ -155,7 +156,8 @@ async function pixels(target, name) {
   const screenshot = await target.locator('canvas').screenshot({
     path: `${output}/${name}.png`,
     timeout,
-    style: '.wb-hotspots,.wb-intro,.wb-tools,.wb-input-hint{visibility:hidden!important}',
+    style:
+      '.wb-hotspots,.wb-intro,.wb-tools,.wb-input-hint,.wb-panel,.wb-stage-status{visibility:hidden!important}',
   })
   const { data, info } = await sharp(screenshot)
     .removeAlpha()
@@ -185,6 +187,24 @@ async function pixels(target, name) {
     },
   }
 }
+async function adminDesktopScreens(target) {
+  const layouts = [
+    { width: 1280, height: 720 },
+    { width: 1440, height: 1000 },
+    { width: 1920, height: 1080 },
+  ]
+  try {
+    for (const size of layouts) {
+      await target.setViewportSize(size)
+      const documentWidth = await target.evaluate(() => document.documentElement.scrollWidth)
+      expect(documentWidth).toBeLessThanOrEqual(size.width)
+      await target.screenshot({ path: `${output}/editor-${size.width}.png` })
+    }
+  } finally {
+    await target.setViewportSize({ width: 1440, height: 1000 })
+  }
+  return layouts
+}
 function pixelChange(before, after) {
   expect(after.info.width).toBe(before.info.width)
   expect(after.info.height).toBe(before.info.height)
@@ -201,6 +221,23 @@ function pixelChange(before, after) {
   const ratio = changedPixels / (before.info.width * before.info.height)
   expect(ratio).toBeGreaterThan(0.002)
   return ratio
+}
+function structureStep(panel, slug, presentation) {
+  const showcaseSteps = '.wb-exhibit-action-steps'
+  if (slug === 'typewriter-study')
+    return panel
+      .locator(showcase ? showcaseSteps : '.wb-layout-choices')
+      .getByRole('button', { name: '分层展开', exact: true })
+  if (slug === 'piano-cfx')
+    return panel
+      .locator(showcase ? showcaseSteps : '.wb-piano-chapters')
+      .getByRole('button', { name: '剖切', exact: true })
+  const doors = panel.locator('[data-motion-id="open-doors"]')
+  const step = showcase ? doors.locator(showcaseSteps) : doors
+  return step.getByRole('button', {
+    name: presentation.actions.find((action) => action.id === 'open-doors').motion.openLabel,
+    exact: true,
+  })
 }
 async function restore(slug) {
   const original = originals.get(slug)
@@ -238,6 +275,9 @@ try {
     const entry = { slug, checks: [], pixels: [] }
     report.products.push(entry)
     await page.getByRole('button', { name: '编辑' + original.item.name, exact: true }).click()
+    await expect(page.getByLabel('商品介绍', { exact: true })).toBeVisible({ timeout })
+    if (captureDesktop && report.products.length === 1)
+      report.desktop = await adminDesktopScreens(page)
     const description = original.item.description + '（隔离库管理联合验收，完成后恢复。）'
     await page.getByLabel('商品介绍', { exact: true }).fill(description)
     const previewResponse = page.waitForResponse(
@@ -248,6 +288,7 @@ try {
     await page.getByRole('button', { name: '预览当前配置', exact: true }).click()
     expect((await (await previewResponse).json()).description).toBe(description)
     await ready(page, slug)
+    if (captureDesktop) await page.screenshot({ path: `${output}/${slug}-preview-ui.png` })
     entry.pixels.push((await pixels(page, slug + '-unsaved-preview')).evidence)
     await page.getByRole('button', { name: '返回编辑', exact: true }).click()
     await expect(page.locator('canvas')).toHaveCount(0)
@@ -312,34 +353,24 @@ try {
     near(visitorMatrix, expectedMatrix(saved.presentation.camera))
     entry.visitorViewMatrix = visitorMatrix
     entry.pixels.push((await pixels(visitor, slug + '-saved-visitor')).evidence)
-    await visitor.getByRole('button', { name: '细节', exact: true }).click()
-    const hotspot = visitor.locator('.wb-part-list button').first()
+    const inspector = visitor.locator('#wb-inspector')
+    await visitor.getByRole('button', { name: showcase ? '部件' : '细节', exact: true }).click()
+    const hotspot = inspector.locator('.wb-part-list button').first()
     const hotspotName = await hotspot.textContent()
     await hotspot.click()
     await expect(hotspot).toHaveAttribute('aria-pressed', 'true')
-    await expect(visitor.locator('.wb-part-copy')).toContainText(hotspotName.trim())
+    await expect(inspector.locator('.wb-part-copy')).toContainText(hotspotName.trim())
     await visitor.waitForTimeout(1200)
     expect(await viewMatrix(visitor)).not.toEqual(visitorMatrix)
     entry.pixels.push((await pixels(visitor, slug + '-saved-hotspot')).evidence)
-    await visitor.getByRole('button', { name: '返回全景', exact: true }).click()
+    await inspector.getByRole('button', { name: '返回全景', exact: true }).click()
     await visitor.waitForTimeout(1200)
     near(await viewMatrix(visitor), expectedMatrix(saved.presentation.camera))
     await visitor.getByRole('button', { name: '结构与动作', exact: true }).click()
     await visitor.waitForTimeout(300)
     const actionBefore = await pixels(visitor, slug + '-action-before')
     const matrixBefore = await viewMatrix(visitor)
-    const actionButton =
-      slug === 'typewriter-study'
-        ? visitor
-            .locator('.wb-layout-choices')
-            .getByRole('button', { name: '分层展开', exact: true })
-        : slug === 'piano-cfx'
-          ? visitor.locator('.wb-piano-chapters').getByRole('button', { name: '剖切', exact: true })
-          : visitor.locator('[data-motion-id="open-doors"]').getByRole('button', {
-              name: saved.presentation.actions.find((action) => action.id === 'open-doors').motion
-                .openLabel,
-              exact: true,
-            })
+    const actionButton = structureStep(inspector, slug, saved.presentation)
     await actionButton.click()
     await expect(actionButton).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 })
     await visitor.waitForTimeout(250)

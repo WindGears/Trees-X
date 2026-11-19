@@ -7,6 +7,7 @@
   --ad-accent: #e0c16e;
   --ad-field: #252624;
   --ad-hover: #34322a;
+  --ad-control-ease: cubic-bezier(0.2, 0.65, 0.3, 1);
   min-height: 100svh;
   background: var(--ad-bg);
   color: var(--ad-text);
@@ -27,6 +28,7 @@
   border-radius: 6px;
   background: var(--ad-field);
   caret-color: var(--ad-accent);
+  transition: border-color 140ms var(--ad-control-ease);
 }
 .tx-admin textarea {
   resize: vertical;
@@ -49,8 +51,9 @@
   background: var(--ad-field);
   cursor: pointer;
   transition:
-    background 150ms,
-    color 150ms;
+    background-color 140ms var(--ad-control-ease),
+    border-color 140ms var(--ad-control-ease),
+    color 140ms var(--ad-control-ease);
 }
 .tx-admin button:hover:not(:disabled) {
   background: var(--ad-hover);
@@ -68,6 +71,21 @@
 .tx-admin button.ad-primary:hover:not(:disabled),
 .tx-admin button[aria-pressed='true']:hover {
   background: #f2d78b;
+}
+.tx-admin
+  :is(.ad-nav, .ad-content, .ad-header, .ad-login)
+  button:not(.workbench *):active:not(:disabled) {
+  background-color: #3a3629;
+  border-color: #75633c;
+  transition-duration: 80ms;
+}
+.tx-admin :is(.ad-header, .ad-content, .ad-login) button.ad-primary:active:not(:disabled),
+.tx-admin .ad-editor-tabs button[aria-current='page']:active:not(:disabled) {
+  background-color: #c9a74f;
+  border-color: #c9a74f;
+}
+.tx-admin :is(input, select, textarea):focus-visible:not([aria-invalid='true']) {
+  border-color: var(--ad-accent);
 }
 .tx-admin :focus-visible {
   outline: 2px solid var(--ad-accent);
@@ -187,9 +205,18 @@
 .ad-title > .ad-state {
   flex-shrink: 0;
 }
-.ad-search {
-  max-width: 360px;
+.ad-list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 24px;
   margin-bottom: 28px;
+}
+.ad-search {
+  width: min(360px, 100%);
+}
+.ad-list-error {
+  margin-bottom: 20px;
 }
 .ad-login {
   width: min(440px, calc(100% - 40px));
@@ -208,6 +235,25 @@
 }
 .ad-loading {
   padding: 40px;
+}
+.ad-request {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  min-inline-size: 160px;
+  min-block-size: 42px;
+  color: var(--ad-muted);
+  --ui-loading-ink: var(--ad-accent);
+}
+.tx-admin .ad-request p {
+  margin: 0;
+  font-size: 13px;
+}
+.ad-login-request {
+  margin-top: 12px;
+}
+.ad-title > .ad-request {
+  flex-shrink: 0;
 }
 .ad-error {
   color: #ffd0c5;
@@ -620,7 +666,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tx-admin button {
+  .tx-admin :is(button, input, select, textarea) {
     transition: none;
   }
 }

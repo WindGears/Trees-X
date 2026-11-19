@@ -10,12 +10,16 @@ const base = localAuditOrigin(process.env.CHECK_URL ?? 'http://127.0.0.1:5181')
 const output = resolve(process.env.EXHIBITION_OUTPUT ?? 'artifacts/showcase/exhibition-flow')
 assert.ok(output.startsWith(resolve('artifacts') + sep), 'Output must be under artifacts')
 const onlyTypewriter = process.argv.includes('--typewriter')
+const traceMotion = process.env.EXHIBITION_RECORD === '1'
 const home = `${base}/`
 const timeout = 150000
 const sizes = [viewport, { width: 1280, height: 720 }, { width: 1920, height: 1080 }]
 const main = '.workbench.wb-exhibition'
 const panel = '#wb-inspector'
 const typewriter = slugs[0]
+const stageStatus = '.wb-stage-status'
+const workbenchModule =
+  /\/(?:assets\/WorkbenchRoot-[^/?]+\.js|src\/components\/workbench\/WorkbenchRoot\.vue)(?:\?|$)/
 const report = {
   base,
   onlyTypewriter,
@@ -24,6 +28,7 @@ const report = {
   layouts: [],
   products: [],
   history: [],
+  motion: {},
   fault: null,
   compatibility: null,
   errors: [],
@@ -48,13 +53,113 @@ const canvasFrame = (page) =>
     () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
   )
 
-async function snapshot(page, filename) {
+async function snapshot(page, filename, animations = 'disabled') {
   await canvasFrame(page)
   await page.screenshot({
     path: resolve(output, `${filename}.png`),
-    animations: 'disabled',
+    animations,
     timeout,
   })
+}
+
+async function gateRequest(page, pattern) {
+  let release
+  const gate = new Promise((resolveGate) => {
+    release = resolveGate
+  })
+  const resumed = []
+  const intercept = (route) => {
+    const request = route.request()
+    const continuation = gate
+      .then(() => route.continue())
+      .catch((error) => {
+        // A superseded selection can abort its request while Playwright is still holding it.
+        if (
+          !request.failure() &&
+          !page.isClosed() &&
+          !/Route is already handled/.test(String(error))
+        )
+          throw error
+      })
+    resumed.push(continuation)
+    return continuation
+  }
+  await page.route(pattern, intercept)
+  let resuming
+  return () => {
+    if (!resuming) {
+      release()
+      resuming = Promise.all(resumed).then(() => page.unroute(pattern, intercept))
+    }
+    return resuming
+  }
+}
+
+async function checkLoadingSweep(status, reduced = false) {
+  const sweep = status.locator('.ui-loading-track > span')
+  await expect(sweep).toBeVisible({ timeout })
+  const motion = await sweep.evaluate(async (element) => {
+    const css = window.getComputedStyle(element)
+    const animation = element.getAnimations()[0]
+    const start = animation?.currentTime ?? null
+    const initialTransform = css.transform
+    await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)))
+    return {
+      name: css.animationName,
+      timing: css.animationTimingFunction,
+      playState: css.animationPlayState,
+      advanced: start !== null && animation.currentTime > start,
+      translated: window.getComputedStyle(element).transform !== initialTransform,
+    }
+  })
+  if (reduced) {
+    expect(motion.name).toBe('none')
+    expect(motion.advanced).toBe(false)
+    expect(motion.translated).toBe(false)
+  } else {
+    expect(motion.name).not.toBe('none')
+    expect(motion.timing).toBe('linear')
+    expect(motion.playState).toBe('running')
+    expect(motion.advanced).toBe(true)
+    expect(motion.translated).toBe(true)
+  }
+  return motion
+}
+
+async function checkPendingExhibit(page, slug) {
+  const status = page.locator(`${stageStatus}[data-exhibit="${slug}"]:visible`)
+  await expect(status.getByRole('heading')).toHaveText(nameOf(slug), { timeout })
+  await expect(status.getByRole('status')).toBeVisible()
+  await expect(
+    page.getByRole('heading', { level: 1, name: nameOf(slug), exact: true }),
+  ).toBeVisible()
+  await expect(button(page, '复位视角')).toBeDisabled()
+  return status
+}
+
+async function enterFromOverview(page) {
+  const releaseModule = await gateRequest(page, workbenchModule)
+  const releaseProduct = await gateRequest(page, `${base}/api/v1/products/${typewriter}`)
+  try {
+    await page.getByRole('link', { name: '探索打字机', exact: true }).click()
+    const pending = page.locator('.wb-exhibit-pending')
+    await expect(pending).toBeVisible({ timeout })
+    await expect(page.locator('canvas')).toHaveCount(0)
+    report.motion.pendingShell = await checkLoadingSweep(pending)
+    await snapshot(page, 'workbench-shell-loading-1440', 'allow')
+    await releaseModule()
+    const status = await checkPendingExhibit(page, typewriter)
+    report.motion.productLoading = await checkLoadingSweep(status)
+    await snapshot(page, 'typewriter-loading-1440', 'allow')
+    const releasedAt = await page.evaluate(() => performance.now())
+    await releaseProduct()
+    const identity = await attach(page, typewriter, true)
+    const postGateReadyMs = await page.evaluate((start) => performance.now() - start, releasedAt)
+    return { identity, postGateReadyMs }
+  } finally {
+    await releaseModule()
+    await releaseProduct()
+  }
 }
 
 async function verifyFit(page, selector) {
@@ -136,6 +241,8 @@ async function attach(page, slug, remember = false) {
   await expect(
     page.getByRole('heading', { level: 1, name: nameOf(slug), exact: true }),
   ).toBeVisible()
+  await expect(button(page, '复位视角')).toBeEnabled()
+  await expect(button(page, '探索结构')).toBeEnabled()
   await expect(page.locator('canvas')).toHaveCount(1)
   await bridge(page, remember)
   const identity = await page.evaluate(() => {
@@ -163,13 +270,75 @@ async function verifyDesktopWorkbench(page) {
   for (const size of sizes) {
     await page.setViewportSize(size)
     await verifyFit(page, main)
-    await expect(page.getByRole('combobox', { name: '切换展品' })).toBeVisible()
+    await expect(button(page, '切换展品')).toBeVisible()
     await expect(button(page, '探索结构')).toBeVisible()
     await expect(button(page, '复位视角')).toBeVisible()
     await snapshot(page, `typewriter-whole-${size.width}`)
     report.layouts.push(size)
   }
   await page.setViewportSize(viewport)
+}
+
+async function verifyInspectorMotion(page) {
+  const inspector = page.locator(panel)
+  const structure = button(page, '探索结构')
+  const appearance = button(page, '外观')
+  const details = button(page, '部件')
+  const close = button(inspector, '收起面板')
+  await structure.click()
+  const intermediate = await page.waitForFunction(
+    (selector) => {
+      const element = document.querySelector(selector)
+      const opacity = Number(element && window.getComputedStyle(element).opacity)
+      return opacity > 0 && opacity < 1 ? opacity : false
+    },
+    panel,
+    { timeout: 5000 },
+  )
+  report.motion.inspectorOpeningOpacity = await intermediate.jsonValue()
+  await intermediate.dispose()
+  await expect(close).toBeFocused()
+  await appearance.click()
+  await details.click()
+  await expect(inspector.getByRole('heading', { level: 2 })).toHaveText('细节')
+  await expect(inspector).toHaveCount(1)
+  await expect(details).toBeFocused()
+  // Start observing before Escape so the inert leave pose is captured even on fast frames.
+  await inspector.evaluate((element) => {
+    window.__inspectorLeave = new Promise((resolve) => {
+      const observer = new window.MutationObserver(() => {
+        if (!element.hasAttribute('inert')) return
+        observer.disconnect()
+        window.clearTimeout(timer)
+        resolve(true)
+      })
+      observer.observe(element, { attributes: true, attributeFilter: ['inert'] })
+      const timer = window.setTimeout(() => {
+        observer.disconnect()
+        resolve(false)
+      }, 5000)
+    })
+  })
+  await page.keyboard.press('Escape')
+  expect(await page.evaluate(() => window.__inspectorLeave)).toBe(true)
+  await expect(details).toBeFocused()
+  await expect(inspector).toBeHidden()
+  await expect(details).toHaveAttribute('aria-expanded', 'false')
+  report.motion.inspector = { switched: '结构 → 外观 → 部件', inert: true, restoredFocus: '部件' }
+
+  const switcher = button(page, '切换展品')
+  await details.click()
+  await switcher.press('Enter')
+  await expect(
+    page.getByRole('menuitemradio', { name: nameOf(typewriter), exact: true }),
+  ).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('menu')).toBeHidden()
+  await expect(switcher).toBeFocused()
+  await expect(inspector).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(inspector).toBeHidden()
+  await expect(details).toBeFocused()
 }
 
 async function playStep(page, label, { pause = false } = {}) {
@@ -242,8 +411,35 @@ async function observePart(page, motionId) {
 }
 
 async function switchExhibit(page, slug) {
-  await page.getByRole('combobox', { name: '切换展品' }).selectOption(slug)
+  await button(page, '切换展品').click()
+  await page.getByRole('menuitemradio', { name: nameOf(slug), exact: true }).click()
   await expect(page.locator(main)).toHaveAttribute('data-slug', slug, { timeout })
+}
+
+async function verifyInterruptedSwitch(page, pendingSlug) {
+  const releasePending = await gateRequest(page, `${base}/api/v1/products/${pendingSlug}`)
+  const releaseLatest = await gateRequest(page, `${base}/api/v1/products/${typewriter}`)
+  try {
+    await switchExhibit(page, pendingSlug)
+    await checkPendingExhibit(page, pendingSlug)
+    await switchExhibit(page, typewriter)
+    await checkPendingExhibit(page, typewriter)
+    await releaseLatest()
+    const identity = await attach(page, typewriter)
+    await releasePending()
+    await canvasFrame(page)
+    await expect(page.locator(main)).toHaveAttribute('data-slug', typewriter)
+    await expect(
+      page.getByRole('heading', { level: 1, name: nameOf(typewriter), exact: true }),
+    ).toBeVisible()
+    await expect(page.locator(`${stageStatus}[data-exhibit="${pendingSlug}"]:visible`)).toHaveCount(
+      0,
+    )
+    report.motion.interruptedSwitch = { superseded: pendingSlug, latest: typewriter, identity }
+  } finally {
+    await releasePending()
+    await releaseLatest()
+  }
 }
 
 async function retryFailedSelection(page, slug, select, intentionalFailures, remember) {
@@ -257,6 +453,8 @@ async function retryFailedSelection(page, slug, select, intentionalFailures, rem
     const status = page.locator('.wb-stage-status')
     await expect(status.getByRole('heading')).toHaveText(nameOf(slug), { timeout })
     await expect(page.locator(main)).toHaveAttribute('data-status', 'error', { timeout })
+    await expect(status.getByRole('alert')).toBeVisible()
+    await expect(status.locator('.ui-loading-track')).toHaveCount(0)
     await expect(status.getByRole('link', { name: '返回展厅' })).toBeVisible()
     await snapshot(page, `${slug}-failed-load-1440`)
   } finally {
@@ -279,10 +477,17 @@ async function verifyReducedMotionFallback(browser) {
     await page.addInitScript(() =>
       Object.defineProperty(window.navigator, 'gpu', { value: undefined }),
     )
-    await page.goto(`${home}?renderPipeline=showcase&product=${typewriter}`, {
-      waitUntil: 'domcontentloaded',
-      timeout,
-    })
+    const releaseProduct = await gateRequest(page, `${base}/api/v1/products/${typewriter}`)
+    try {
+      await page.goto(`${home}?renderPipeline=showcase&product=${typewriter}`, {
+        waitUntil: 'domcontentloaded',
+        timeout,
+      })
+      const status = await checkPendingExhibit(page, typewriter)
+      report.motion.reducedLoading = await checkLoadingSweep(status, true)
+    } finally {
+      await releaseProduct()
+    }
     await expect(page.locator(main)).toHaveAttribute('data-status', 'ready', { timeout })
     await expect(page.locator('.wb-stage')).toHaveAttribute('data-render-backend', 'webgl')
     await expect(page.locator('canvas')).toHaveCount(1)
@@ -296,11 +501,14 @@ async function verifyReducedMotionFallback(browser) {
 }
 
 const browser = await chromium.launch({ channel: 'msedge', headless: true })
+let context
+let recording
 try {
-  const context = await browser.newContext({
+  context = await browser.newContext({
     viewport,
     deviceScaleFactor: 1,
     serviceWorkers: 'block',
+    ...(traceMotion ? { recordVideo: { dir: resolve(output, 'video'), size: viewport } } : {}),
   })
   await context.route('**/*', async (route) => {
     const url = new URL(route.request().url())
@@ -310,6 +518,18 @@ try {
     } else await route.continue()
   })
   const page = await context.newPage()
+  recording = page.video()
+  await page.addInitScript(() => {
+    window.__desktopLongTasks = []
+    if (!window.PerformanceObserver.supportedEntryTypes.includes('longtask')) return
+    new window.PerformanceObserver((list) => {
+      for (const entry of list.getEntries())
+        window.__desktopLongTasks.push({
+          startMs: Math.round(entry.startTime),
+          durationMs: Math.round(entry.duration),
+        })
+    }).observe({ type: 'longtask', buffered: true })
+  })
   page.setDefaultTimeout(30000)
   const requests = []
   const intentionalFailures = new Set()
@@ -323,17 +543,21 @@ try {
   })
 
   await verifyOverview(page, requests)
-  const started = await page.evaluate(() => performance.now())
-  await page.getByRole('link', { name: '探索打字机', exact: true }).click()
-  const typewriterState = await attach(page, typewriter, true)
-  const readyMs = await page.evaluate((start) => performance.now() - start, started)
+  const { identity: typewriterState, postGateReadyMs } = await enterFromOverview(page)
   await verifyDesktopWorkbench(page)
+  await verifyInspectorMotion(page)
   await button(page, '探索结构').click()
   const layers = await playStep(page, '分层展开', { pause: true })
   await framing(page, '展开全景')
   await snapshot(page, 'typewriter-structure-1440')
   const part = await observePart(page, layers.id)
-  report.products.push({ slug: typewriter, identity: typewriterState, readyMs, layers, part })
+  report.products.push({
+    slug: typewriter,
+    identity: typewriterState,
+    postGateReadyMs,
+    layers,
+    part,
+  })
 
   if (onlyTypewriter) {
     await page.goBack({ timeout })
@@ -351,6 +575,7 @@ try {
   } else {
     const piano = slugs[1]
     const car = slugs[2]
+    await verifyInterruptedSwitch(page, piano)
     await switchExhibit(page, piano)
     const pianoState = await attach(page, piano)
     await button(page, '探索结构').click()
@@ -393,6 +618,7 @@ try {
 
   expect(report.errors).toEqual([])
   expect(report.external).toEqual([])
+  report.motion.documentLongTasks = await page.evaluate(() => window.__desktopLongTasks)
   if (!onlyTypewriter) {
     await context.close()
     await verifyReducedMotionFallback(browser)
@@ -402,7 +628,12 @@ try {
   report.failure = error instanceof Error ? error.stack : String(error)
   throw error
 } finally {
-  await writeFile(resolve(output, 'report.json'), JSON.stringify(report, null, 2))
+  await context?.close()
+  if (recording) {
+    await recording.saveAs(resolve(output, 'visitor-walkthrough.webm'))
+    report.motion.recording = 'visitor-walkthrough.webm'
+  }
   await browser.close()
+  await writeFile(resolve(output, 'report.json'), JSON.stringify(report, null, 2))
 }
 console.log(`Exhibition flow passed: ${resolve(output, 'report.json')}`)

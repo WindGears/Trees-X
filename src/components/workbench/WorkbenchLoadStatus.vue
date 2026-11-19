@@ -2,24 +2,26 @@
 import { computed, onScopeDispose } from 'vue'
 import { phaseLabels } from '@/lib/workbench/assetBundle'
 import { createInterfaceMotion } from '@/lib/workbench/interfaceMotion'
-import {
-  exhibitionHome,
-  isLocalLink,
-  type ExhibitionOverviewItem,
-} from '@/lib/workbench/exhibition'
+import { exhibitionHome, isLocalLink, type ExhibitionPoster } from '@/lib/workbench/exhibition'
 import { useWorkbenchStore } from '@/stores/workbench'
+import WorkbenchLoadCard from './WorkbenchLoadCard.vue'
 
 const props = defineProps<{
   preview?: boolean
   exhibition?: boolean
-  exhibit?: ExhibitionOverviewItem
+  exhibit?: ExhibitionPoster
 }>()
 const emit = defineEmits<{ overview: [] }>()
 const store = useWorkbenchStore()
-const motion = createInterfaceMotion()
+const motion = createInterfaceMotion('cover')
 const shown = computed(() => store.status === 'loading' || store.status === 'error')
 const failed = computed(() => store.status === 'error')
 const title = computed(() => store.product?.name || props.exhibit?.name)
+
+function leave(element: Element, done: () => void) {
+  if (element.getAttribute('data-exhibit') === store.slug) motion.leave(element, done)
+  else done()
+}
 
 function back(event: MouseEvent) {
   if (!isLocalLink(event)) return
@@ -31,36 +33,25 @@ onScopeDispose(motion.dispose)
 </script>
 
 <template>
-  <Transition
-    :css="false"
-    :on-leave="exhibition ? motion.leave : undefined"
-    @leave-cancelled="motion.cancel"
-  >
-    <div
+  <Transition :css="false" @leave="leave" @leave-cancelled="motion.cancel">
+    <WorkbenchLoadCard
       v-if="shown"
-      class="wb-stage-status"
-      :class="{ 'wb-stage-status--poster': exhibition }"
-      :role="failed ? 'alert' : 'status'"
+      :key="store.slug"
+      :title="(exhibition && title) || (failed ? '暂时无法展示' : '正在准备商品')"
+      :message="failed ? store.error : phaseLabels[store.loadPhase]"
+      :slug="store.slug"
+      :cover="exhibit?.cover"
+      :description="exhibit?.description"
+      :poster="exhibition"
+      :failed="failed"
     >
-      <img
-        v-if="exhibition && exhibit?.cover"
-        :key="exhibit.slug"
-        :src="exhibit.cover"
-        class="wb-transition-cover"
-        alt=""
-      />
-      <div class="wb-stage-status-copy">
-        <h2>{{ exhibition && title ? title : failed ? '暂时无法展示' : '正在准备商品' }}</h2>
-        <p>{{ failed ? store.error : phaseLabels[store.loadPhase] }}</p>
-        <p v-if="exhibition && failed && exhibit">{{ exhibit.description }}</p>
-        <div v-if="failed" class="wb-inline-actions">
-          <button type="button" @click="store.retry()">重新加载</button>
-          <a v-if="exhibition" :href="exhibitionHome" @click="back">返回展厅</a>
-          <button v-else-if="!preview" type="button" @click="store.panel = 'catalog'">
-            打开目录
-          </button>
-        </div>
+      <div class="wb-inline-actions">
+        <button type="button" @click="store.retry()">重新加载</button>
+        <a v-if="exhibition" :href="exhibitionHome" @click="back">返回展厅</a>
+        <button v-else-if="!preview" type="button" @click="store.panel = 'catalog'">
+          打开目录
+        </button>
       </div>
-    </div>
+    </WorkbenchLoadCard>
   </Transition>
 </template>

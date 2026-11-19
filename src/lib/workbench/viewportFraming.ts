@@ -1,5 +1,6 @@
 import { gsap } from 'gsap'
 import type { PerspectiveCamera } from 'three'
+import { inspectorTiming } from './interfaceMotion'
 
 /** Moves the projection's composition, never the observation pose or controls target. */
 export function createViewportFraming(invalidate: () => void) {
@@ -45,7 +46,12 @@ export function createViewportFraming(invalidate: () => void) {
         Object.assign(state, target)
         apply()
       } else
-        tween = gsap.to(state, { ...target, duration: 0.32, ease: 'power3.out', onUpdate: apply })
+        tween = gsap.to(state, {
+          ...target,
+          duration: inspector ? inspectorTiming.enter : inspectorTiming.leave,
+          ease: inspectorTiming.ease,
+          onUpdate: apply,
+        })
     },
     finish() {
       tween?.progress(1)

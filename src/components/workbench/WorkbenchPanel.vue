@@ -13,9 +13,10 @@ import WorkbenchExhibitActions from './WorkbenchExhibitActions.vue'
 import { carPaintStudies, isCarPaintStudy } from '@/lib/workbench/carPaintStudies'
 import { adminExhibitionSearch } from '@/lib/workbench/exhibition'
 import { productRenderSearch } from '@/lib/workbench/rendering/showcase'
+import type { Panel } from '@/lib/workbench/types'
 import '@/assets/styles/workbench-parts.css'
 const store = useWorkbenchStore()
-const props = defineProps<{ exhibition?: boolean }>()
+const props = defineProps<{ panel: Exclude<Panel, 'catalog'>; exhibition?: boolean }>()
 const initialCarPaint = computed(() => {
   const search = props.exhibition ? adminExhibitionSearch(location.search) : location.search
   const selection = new URLSearchParams(
@@ -39,7 +40,7 @@ const discrete = computed(
 </script>
 <template>
   <div v-if="store.presentation" class="wb-panel-content">
-    <template v-if="store.panel === 'appearance'">
+    <template v-if="panel === 'appearance'">
       <WorkbenchCarPaints :initial="initialCarPaint" />
       <h3>{{ store.carPaintAvailable ? '其他配色' : '选择外壳颜色' }}</h3>
       <p>旋转商品，观察同一表面在不同角度的变化。</p>
@@ -67,10 +68,10 @@ const discrete = computed(
       </div>
       <p class="wb-note">展示配色用于观察材质，不代表真实可购款式。</p>
     </template>
-    <template v-else-if="store.panel === 'details'">
+    <template v-else-if="panel === 'details'">
       <WorkbenchParts />
     </template>
-    <template v-else-if="store.panel === 'actions'">
+    <template v-else-if="panel === 'actions'">
       <h3>看看它如何变化</h3>
       <p>旋转、缩放或选择部件会暂停结构播放，保留当前变化。</p>
       <WorkbenchExhibitActions v-if="exhibition" :actions="motions" :discrete="discrete" />
@@ -111,7 +112,7 @@ const discrete = computed(
       </div>
       <p class="wb-note">分层只演示现有部件关系，不表示真实维修拆解顺序。</p>
     </template>
-    <template v-else-if="store.panel === 'guide'">
+    <template v-else-if="panel === 'guide'">
       <h3>从整体，走到细节</h3>
       <p v-if="!step">
         按自己的节奏看完

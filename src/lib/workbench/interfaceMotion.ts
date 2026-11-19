@@ -1,70 +1,88 @@
 import { gsap } from 'gsap'
 
-/** Vue transition hooks with one owner; cancelled or replaced transitions settle cleanly. */
-export function createInterfaceMotion() {
-  const active = new Set<Element>()
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+export const inspectorTiming = { enter: 0.28, leave: 0.18, ease: 'power3.out' } as const
+export const reducedInterfaceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
+
+const styles = {
+  soft: { from: { y: 9 }, atRest: { y: 0 }, exit: { y: 6 }, enter: 0.22, leave: 0.16 },
+  cover: { from: {}, atRest: {}, exit: {}, enter: 0.18, leave: 0.18 },
+  inspector: {
+    from: { x: 24 },
+    atRest: { x: 0 },
+    exit: { x: 24 },
+    enter: inspectorTiming.enter,
+    leave: inspectorTiming.leave,
+  },
+} as const
+
+/** Owns only the tweens created for this surface. A reversal keeps the sampled pose. */
+export function createInterfaceMotion(style: keyof typeof styles = 'soft') {
+  const preset = styles[style]
+  const tweens = new Map<Element, gsap.core.Tween>()
+  const interrupted = new WeakSet<Element>()
+
   function cancel(element: Element) {
-    gsap.killTweensOf(element)
-    active.delete(element)
+    const tween = tweens.get(element)
+    if (!tween) return
+    tween.kill()
+    tweens.delete(element)
+    interrupted.add(element)
   }
-  function enter(element: Element, done: () => void) {
-    cancel(element)
-    element.removeAttribute('inert')
-    active.add(element)
-    gsap.fromTo(
-      element,
-      { opacity: 0, y: 12 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: reduced() ? 0 : 0.32,
-        ease: 'power3.out',
-        onComplete: () => {
-          active.delete(element)
-          done()
-        },
-      },
-    )
+
+  function clear(element: Element) {
+    gsap.set(element, { clearProps: 'opacity,transform' })
   }
-  function leave(element: Element, done: () => void) {
-    cancel(element)
-    active.add(element)
-    element.setAttribute('inert', '')
-    gsap.to(element, {
-      opacity: 0,
-      y: 8,
-      duration: reduced() ? 0 : 0.18,
-      ease: 'power2.out',
-      onComplete: () => {
-        active.delete(element)
-        done()
-      },
+
+  function play(element: Element, to: gsap.TweenVars, duration: number, done?: () => void) {
+    const complete = () => {
+      tweens.delete(element)
+      done?.()
+      clear(element)
+    }
+    if (reducedInterfaceMotion() || document.hidden) {
+      complete()
+      return
+    }
+    const tween = gsap.to(element, {
+      ...to,
+      duration,
+      ease: inspectorTiming.ease,
+      onComplete: complete,
     })
+    tweens.set(element, tween)
   }
-  function replace(element: Element) {
-    cancel(element)
-    active.add(element)
-    gsap.fromTo(
-      element,
-      { opacity: 0.65, y: 5 },
-      {
-        opacity: 1,
-        y: 0,
-        duration: reduced() ? 0 : 0.22,
-        ease: 'power3.out',
-        onComplete: () => active.delete(element),
-      },
-    )
-  }
+
   return {
-    enter,
-    leave,
-    replace,
+    enter(element: Element, done: () => void) {
+      cancel(element)
+      element.removeAttribute('inert')
+      element.removeAttribute('aria-hidden')
+      if (!interrupted.delete(element) && !reducedInterfaceMotion() && !document.hidden)
+        gsap.set(element, { opacity: 0, ...preset.from })
+      play(element, { opacity: 1, ...preset.atRest }, preset.enter, done)
+    },
+    leave(element: Element, done: () => void) {
+      cancel(element)
+      interrupted.delete(element)
+      element.setAttribute('inert', '')
+      element.setAttribute('aria-hidden', 'true')
+      play(element, { opacity: 0, ...preset.exit }, preset.leave, done)
+    },
+    replace(element: Element) {
+      cancel(element)
+      if (!interrupted.delete(element) && !reducedInterfaceMotion() && !document.hidden)
+        gsap.set(element, { opacity: 0.42 })
+      play(element, { opacity: 1, ...preset.atRest }, 0.16)
+    },
     cancel,
     dispose() {
-      for (const el of active) gsap.killTweensOf(el)
-      active.clear()
+      for (const [element, tween] of tweens) {
+        tween.kill()
+        clear(element)
+        element.removeAttribute('inert')
+        element.removeAttribute('aria-hidden')
+      }
+      tweens.clear()
     },
   }
 }

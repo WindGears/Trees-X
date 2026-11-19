@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowDown, ArrowRight, ArrowUpRight } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { gsap } from 'gsap'
+import { computed, onMounted, onScopeDispose, ref } from 'vue'
 import {
   isLocalLink,
   typewriterHero,
@@ -30,9 +31,54 @@ const shots = [
   },
 ] as const
 type Shot = (typeof shots)[number]['id']
+const intro = ref<HTMLElement | null>(null)
 const selectedShot = ref<Shot>('layers')
+const displayedShot = ref<Shot>('layers')
+const readyShots = ref(new Set<Shot>())
 const failedShots = ref(new Set<Shot>())
 const failedCovers = ref(new Set<string>())
+const showWholeUnderlay = computed(
+  () => readyShots.value.has('whole') && readyShots.value.has('layers'),
+)
+
+const motion = gsap.matchMedia()
+onMounted(() => {
+  const element = intro.value
+  if (!element || document.hidden) return
+  motion.add('(prefers-reduced-motion: no-preference)', () => {
+    gsap.fromTo(
+      element,
+      { y: 6, opacity: 0.9 },
+      { y: 0, opacity: 1, duration: 0.28, ease: 'power2.out', clearProps: 'transform,opacity' },
+    )
+  })
+})
+onScopeDispose(() => motion.revert())
+
+function selectShot(shot: Shot) {
+  selectedShot.value = shot
+  if (readyShots.value.has(shot) || failedShots.value.has(shot)) displayedShot.value = shot
+}
+
+function failShot(shot: Shot) {
+  readyShots.value.delete(shot)
+  failedShots.value.add(shot)
+  if (selectedShot.value === shot) displayedShot.value = shot
+}
+
+async function prepareShot(shot: Shot, event: Event) {
+  const image = event.currentTarget
+  if (!(image instanceof HTMLImageElement)) return
+  try {
+    await image.decode()
+  } catch {
+    if (image.isConnected) failShot(shot)
+    return
+  }
+  if (!image.isConnected) return
+  readyShots.value.add(shot)
+  if (selectedShot.value === shot) displayedShot.value = shot
+}
 
 function open(event: MouseEvent, slug: string) {
   if (!isLocalLink(event)) return
@@ -59,7 +105,7 @@ function open(event: MouseEvent, slug: string) {
         :class="{ 'is-without-feature': catalogStatus === 'ready' && !typewriter }"
         aria-labelledby="exhibition-title"
       >
-        <div class="exhibition-intro">
+        <div ref="intro" class="exhibition-intro">
           <h1 id="exhibition-title">看见机械<span>如何运作</span></h1>
           <p>旋转整机、拆开部件，顺着一次动作看清内部结构。</p>
           <a
@@ -76,20 +122,25 @@ function open(event: MouseEvent, slug: string) {
         </div>
 
         <figure v-if="typewriter || catalogStatus !== 'ready'" class="exhibition-plate">
-          <div class="exhibition-plate-image">
+          <div class="exhibition-plate-image" :aria-busy="selectedShot !== displayedShot">
             <img
               v-for="shot in shots"
               v-show="!failedShots.has(shot.id)"
               :key="shot.id"
+              :data-shot="shot.id"
               :src="shot.source"
               :alt="shot.alt"
-              :aria-hidden="selectedShot !== shot.id ? 'true' : undefined"
-              :class="{ 'is-visible': selectedShot === shot.id }"
+              :aria-hidden="displayedShot !== shot.id ? 'true' : undefined"
+              :class="{
+                'is-visible': displayedShot === shot.id,
+                'is-underlay': shot.id === 'whole' && showWholeUnderlay,
+              }"
               :fetchpriority="shot.id === 'layers' ? 'high' : 'low'"
               decoding="async"
-              @error="failedShots.add(shot.id)"
+              @load="prepareShot(shot.id, $event)"
+              @error="failShot(shot.id)"
             />
-            <p v-if="failedShots.has(selectedShot)" class="exhibition-image-message" role="status">
+            <p v-if="failedShots.has(displayedShot)" class="exhibition-image-message" role="status">
               展示图暂不可用。
             </p>
           </div>
@@ -101,7 +152,7 @@ function open(event: MouseEvent, slug: string) {
                 :key="shot.id"
                 type="button"
                 :aria-pressed="selectedShot === shot.id"
-                @click="selectedShot = shot.id"
+                @click="selectShot(shot.id)"
               >
                 {{ shot.label }}
               </button>

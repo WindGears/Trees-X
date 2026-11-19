@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { adminApi, message, type Category } from '@/lib/admin/api'
+import UiLoadingTrack from '@/components/ui/UiLoadingTrack.vue'
 const emit = defineEmits<{ dirty: [value: boolean] }>()
 const categories = ref<Category[]>([]),
   selected = ref<number>(),
@@ -34,6 +35,7 @@ function choose(category?: Category, force = false) {
   notice.value = ''
 }
 async function save() {
+  if (busy.value) return
   busy.value = true
   error.value = ''
   notice.value = ''
@@ -49,6 +51,7 @@ async function save() {
   }
 }
 async function remove(category: Category) {
+  if (busy.value) return
   if (!window.confirm(`删除分类“${category.name}”？`)) return
   busy.value = true
   error.value = ''
@@ -72,11 +75,14 @@ onMounted(() => void load())
         <h1>商品分类</h1>
         <p>分类服务访客筛选。仍被商品使用的分类不能删除。</p>
       </div>
+      <div v-if="busy" class="ad-request">
+        <p role="status">正在处理分类…</p>
+        <UiLoadingTrack />
+      </div>
     </header>
     <div class="ad-category-layout">
       <div>
-        <p v-if="busy" role="status">正在处理分类…</p>
-        <div class="ad-table-wrap">
+        <div class="ad-table-wrap" :aria-busy="busy">
           <table class="ad-table">
             <caption class="sr-only">
               分类与使用数量
@@ -112,9 +118,17 @@ onMounted(() => void load())
       </div>
       <form class="ad-category-form" @submit.prevent="save">
         <h2>{{ selected ? '编辑分类' : '新建分类' }}</h2>
-        <label>分类名称<input v-model="form.name" required maxlength="40" /></label>
         <label
-          >排序<input v-model.number="form.sortOrder" type="number" min="0" max="100000" required
+          >分类名称<input v-model="form.name" :disabled="busy" required maxlength="40"
+        /></label>
+        <label
+          >排序<input
+            v-model.number="form.sortOrder"
+            :disabled="busy"
+            type="number"
+            min="0"
+            max="100000"
+            required
         /></label>
         <p class="ad-muted">数字越小，排列越靠前。</p>
         <p v-if="error" role="alert" class="ad-error">

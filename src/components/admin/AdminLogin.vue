@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { adminApi, message } from '@/lib/admin/api'
+import UiLoadingTrack from '@/components/ui/UiLoadingTrack.vue'
 defineProps<{ expired: boolean }>()
 const emit = defineEmits<{ authenticated: [value: { username: string }] }>()
 const username = ref(''),
@@ -8,6 +9,7 @@ const username = ref(''),
   error = ref(''),
   busy = ref(false)
 async function login() {
+  if (busy.value) return
   busy.value = true
   error.value = ''
   try {
@@ -31,19 +33,27 @@ async function login() {
       }}
     </p>
     <label
-      >管理员账号<input v-model="username" required autocomplete="username" maxlength="80"
+      >管理员账号<input
+        v-model="username"
+        :disabled="busy"
+        required
+        autocomplete="username"
+        maxlength="80"
     /></label>
     <label
       >密码<input
         v-model="password"
+        :disabled="busy"
         required
         type="password"
         autocomplete="current-password"
         maxlength="72"
     /></label>
     <p v-if="error" role="alert" class="ad-error">{{ error }}</p>
-    <button type="submit" class="ad-primary" :disabled="busy">
-      {{ busy ? '正在登录…' : '登录管理端' }}
-    </button>
+    <button type="submit" class="ad-primary" :disabled="busy">登录管理端</button>
+    <div v-if="busy" class="ad-request ad-login-request">
+      <p role="status">正在验证账号…</p>
+      <UiLoadingTrack />
+    </div>
   </form>
 </template>

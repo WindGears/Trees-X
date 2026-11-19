@@ -12,7 +12,7 @@ import type { StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
 import type { RefinementStatus } from '@/lib/workbench/rendering/refinementTypes'
 import WorkbenchRefinement from './WorkbenchRefinement.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
-import { adminExhibitionSearch, type ExhibitionOverviewItem } from '@/lib/workbench/exhibition'
+import { adminExhibitionSearch, type ExhibitionPoster } from '@/lib/workbench/exhibition'
 import WorkbenchScene from './WorkbenchScene.vue'
 import WorkbenchFallback from './WorkbenchFallback.vue'
 import WorkbenchLoadStatus from './WorkbenchLoadStatus.vue'
@@ -28,7 +28,7 @@ const props = defineProps<{
   inspector?: boolean
   catalog?: boolean
   exhibition?: boolean
-  exhibit?: ExhibitionOverviewItem
+  exhibit?: ExhibitionPoster
 }>()
 const emit = defineEmits<{ overview: [] }>()
 const store = useWorkbenchStore()

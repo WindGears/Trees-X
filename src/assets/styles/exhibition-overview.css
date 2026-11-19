@@ -8,6 +8,7 @@
   --exhibition-brass: #e0c16e;
   --exhibition-brass-ink: #252117;
   --exhibition-edge: clamp(24px, 4.45vw, 86px);
+  --exhibition-control-time: 140ms;
   --ring: var(--exhibition-brass);
   min-height: 100svh;
   color: var(--exhibition-ink);
@@ -51,10 +52,15 @@
   gap: 10px;
   color: var(--exhibition-muted);
   font-size: 14px;
+  transition: color var(--exhibition-control-time) ease-out;
 }
 
 .exhibition-index-link:hover {
   color: var(--exhibition-ink);
+}
+
+.exhibition-index-link:active {
+  color: var(--exhibition-brass);
 }
 
 .exhibition-hero {
@@ -102,11 +108,15 @@
   background: var(--exhibition-brass);
   font-size: 15px;
   font-weight: 600;
-  transition: background 160ms ease;
+  transition: background-color var(--exhibition-control-time) ease-out;
 }
 
 .exhibition-primary:hover {
   background: #ecd58e;
+}
+
+.exhibition-primary:active {
+  background: #c4a655;
 }
 
 .exhibition-primary svg,
@@ -138,10 +148,14 @@
   height: 100%;
   object-fit: contain;
   opacity: 0;
-  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.exhibition-plate-image img.is-visible {
+.exhibition-plate-image img[data-shot='layers'] {
+  transition: opacity 200ms linear;
+}
+
+.exhibition-plate-image img.is-visible,
+.exhibition-plate-image img.is-underlay {
   opacity: 1;
 }
 
@@ -186,6 +200,9 @@
   color: var(--exhibition-muted);
   background: transparent;
   font: inherit;
+  transition:
+    color var(--exhibition-control-time) ease-out,
+    background-color var(--exhibition-control-time) ease-out;
 }
 
 .exhibition-shots button:hover {
@@ -195,6 +212,11 @@
 .exhibition-shots button[aria-pressed='true'] {
   color: var(--exhibition-brass);
   background: #2b271c;
+}
+
+.exhibition-shots button:active {
+  color: var(--exhibition-ink);
+  background: #393222;
 }
 
 .exhibition-index {
@@ -228,11 +250,18 @@
   gap: 13px;
   padding-block: 12px;
   border-block: 1px solid var(--exhibition-line);
-  transition: border-color 160ms ease;
+  transition:
+    border-color var(--exhibition-control-time) ease-out,
+    background-color var(--exhibition-control-time) ease-out;
 }
 
 .exhibition-exhibit:hover {
   border-color: var(--exhibition-brass);
+}
+
+.exhibition-exhibit:active {
+  border-color: var(--exhibition-brass);
+  background: var(--exhibition-surface);
 }
 
 .exhibition-exhibit-image {
@@ -288,6 +317,15 @@
   background: transparent;
   text-decoration: underline;
   text-underline-offset: 4px;
+  transition: color var(--exhibition-control-time) ease-out;
+}
+
+.exhibition-status button:hover {
+  color: var(--exhibition-ink);
+}
+
+.exhibition-status button:active {
+  color: #c4a655;
 }
 
 @media (max-width: 1030px) {

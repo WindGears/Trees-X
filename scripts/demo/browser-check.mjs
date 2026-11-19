@@ -415,10 +415,13 @@ export function compactSnapshot(snapshot) {
 
 export async function choose(page, metadata) {
   const slug = metadata.product.slug
-  const switcher = page.getByRole('combobox', { name: '切换展品' })
+  const switcher = page.getByRole('button', { name: '切换展品', exact: true })
   if (await switcher.isVisible()) {
     const workspace = page.locator('.workbench')
-    if ((await workspace.getAttribute('data-slug')) !== slug) await switcher.selectOption(slug)
+    if ((await workspace.getAttribute('data-slug')) !== slug) {
+      await switcher.click()
+      await page.getByRole('menuitemradio', { name: metadata.product.name, exact: true }).click()
+    }
     await expect(workspace).toHaveAttribute('data-slug', slug)
     return
   }

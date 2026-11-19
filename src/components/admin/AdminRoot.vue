@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, onScopeDispose, ref } from 'vue'
 import { adminApi, message, ApiError } from '@/lib/admin/api'
+import { createInterfaceMotion } from '@/lib/workbench/interfaceMotion'
+import UiLoadingTrack from '@/components/ui/UiLoadingTrack.vue'
 import AdminLogin from './AdminLogin.vue'
 import AdminProducts from './AdminProducts.vue'
 import AdminCategories from './AdminCategories.vue'
@@ -12,6 +14,7 @@ const checked = ref(false),
   busy = ref(false)
 const tab = ref<'products' | 'categories'>('products'),
   dirty = ref(false)
+const motion = createInterfaceMotion('soft')
 async function check() {
   error.value = ''
   try {
@@ -64,6 +67,7 @@ onMounted(() => {
   window.addEventListener('beforeunload', leaving)
 })
 onScopeDispose(() => {
+  motion.dispose()
   window.removeEventListener('trees-admin-expired', expired)
   window.removeEventListener('beforeunload', leaving)
 })
@@ -78,11 +82,16 @@ onScopeDispose(() => {
       <button v-if="session" type="button" :disabled="busy" @click="logout">退出登录</button>
     </header>
     <main id="admin-main">
-      <p v-if="!checked" role="status" class="ad-loading">正在检查管理员会话…</p>
+      <div v-if="!checked" class="ad-loading ad-request">
+        <p role="status">正在检查管理员会话…</p>
+        <UiLoadingTrack />
+      </div>
       <div v-if="error" role="alert" class="ad-error">
         {{ error }} <button type="button" @click="check">重试连接</button>
       </div>
-      <AdminLogin v-if="checked && !session" :expired="ever" @authenticated="authenticated" />
+      <Transition :css="false" @enter="motion.enter" @enter-cancelled="motion.cancel">
+        <AdminLogin v-if="checked && !session" :expired="ever" @authenticated="authenticated" />
+      </Transition>
       <div v-if="ever" v-show="session" class="ad-shell">
         <nav aria-label="管理模块" class="ad-nav">
           <button
@@ -102,7 +111,9 @@ onScopeDispose(() => {
           <p>管理内容保存到本机数据库。上架商品的修改会在访客重新加载后生效。</p>
         </nav>
         <AdminProducts v-if="tab === 'products'" @dirty="dirty = $event" />
-        <AdminCategories v-else @dirty="dirty = $event" />
+        <Transition :css="false" @enter="motion.enter" @enter-cancelled="motion.cancel">
+          <AdminCategories v-if="tab === 'categories'" @dirty="dirty = $event" />
+        </Transition>
       </div>
     </main>
   </div>

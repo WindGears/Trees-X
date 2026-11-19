@@ -4,6 +4,7 @@ import { gsap } from 'gsap'
 import { Palette, ScanSearch, Layers2, Route, RotateCcw, Minus, Plus } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { Panel } from '@/lib/workbench/types'
+import { reducedInterfaceMotion } from '@/lib/workbench/interfaceMotion'
 const store = useWorkbenchStore()
 const props = defineProps<{ floating?: boolean; exhibition?: boolean }>()
 const navigation = ref<HTMLElement>()
@@ -14,10 +15,9 @@ function updateIndicator() {
   if (!indicator.value) return
   animation?.kill()
   animation = gsap.to(indicator.value, {
-    x: active?.offsetLeft ?? 0,
-    width: active?.offsetWidth ?? 0,
+    ...(active ? { x: active.offsetLeft, scaleX: active.offsetWidth / 100 } : {}),
     opacity: active ? 1 : 0,
-    duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 0.3,
+    duration: reducedInterfaceMotion() ? 0 : 0.22,
     ease: 'power3.out',
   })
 }
@@ -34,20 +34,27 @@ onScopeDispose(() => {
   window.removeEventListener('resize', updateIndicator)
 })
 const emit = defineEmits<{ panel: [value: Panel] }>()
-const tools = computed(() => [
-  ...(store.presentation?.finishes.length
-    ? [{ id: 'appearance' as const, label: '外观', icon: Palette }]
-    : []),
-  ...(store.presentation?.hotspots.length
-    ? [{ id: 'details' as const, label: props.exhibition ? '部件' : '细节', icon: ScanSearch }]
-    : []),
-  ...(store.presentation?.structure || store.presentation?.actions.length
-    ? [{ id: 'actions' as const, label: '结构与动作', icon: Layers2 }]
-    : []),
-  ...(store.presentation?.guide.length
-    ? [{ id: 'guide' as const, label: '导览', icon: Route }]
-    : []),
-])
+const tools = computed(() => {
+  const presentation = store.presentation
+  const pending = props.exhibition && !presentation
+  const choices = [
+    { id: 'appearance', label: '外观', icon: Palette, show: presentation?.finishes.length },
+    {
+      id: 'details',
+      label: props.exhibition ? '部件' : '细节',
+      icon: ScanSearch,
+      show: presentation?.hotspots.length,
+    },
+    {
+      id: 'actions',
+      label: '结构与动作',
+      icon: Layers2,
+      show: presentation?.structure || presentation?.actions.length,
+    },
+    { id: 'guide', label: '导览', icon: Route, show: presentation?.guide.length },
+  ] as const
+  return choices.filter((tool) => pending || tool.show)
+})
 </script>
 <template>
   <div class="wb-tools">
@@ -56,7 +63,7 @@ const tools = computed(() => [
         ><span class="sr-only">观察视角</span
         ><select
           aria-label="观察视角"
-          :value="store.viewId"
+          :value="store.presentation ? store.viewId : ''"
           :disabled="!store.available"
           @change="store.view(($event.target as HTMLSelectElement).value)"
         >
