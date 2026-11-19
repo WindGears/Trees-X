@@ -62,7 +62,7 @@ try {
     reducedMotion: 'reduce',
   })
   watchErrors(page)
-  await page.goto(base)
+  await page.goto(base + '/?renderPipeline=webgl')
   await expect(page.locator('.workbench')).toHaveAttribute('data-status', 'ready', {
     timeout: 30000,
   })
@@ -139,7 +139,7 @@ try {
       return original.call(this, type, ...args)
     }
   })
-  await fallback.goto(base)
+  await fallback.goto(base + '/?renderPipeline=webgl')
   const contentReady = async (slug) => {
     await expect(fallback.locator('.workbench')).toHaveAttribute('data-slug', slug)
     await expect(fallback.locator('.workbench')).toHaveAttribute('data-status', 'content')
@@ -215,7 +215,7 @@ try {
       return original.call(this, type, ...args)
     }
   })
-  await startup.goto(base)
+  await startup.goto(base + '/?renderPipeline=webgl')
   await expect(startup.locator('.workbench')).toHaveAttribute('data-status', 'content', {
     timeout: 30000,
   })

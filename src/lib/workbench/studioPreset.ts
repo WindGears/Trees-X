@@ -24,9 +24,9 @@ export function resolveWorkbenchStage(
     return {
       ...source,
       background: '#15171a',
-      ambient: 0.68,
+      ambient: 0.6,
       environmentIntensity: 0.86,
-      key: { ...source.key, intensity: 1.4, color: '#ffffff' },
+      key: { ...source.key, intensity: 1.24, color: '#ffffff' },
       rim: { ...source.rim, intensity: 0.55, color: '#ffffff' },
     }
   if (hasTypewriterStudio(presentation)) {
@@ -35,8 +35,14 @@ export function resolveWorkbenchStage(
       ...source,
       background: bay === 'typewriter' ? '#15171a' : realtime ? palette.background : '#e7e9e5',
       ground: realtime ? palette.ground : '#d8dcd5',
-      ambient: realtime ? realtimeReference.supplementalLights.ambient : 0.16,
-      environmentIntensity: realtime ? realtimeReference.environment.intensity : 0.9,
+      ambient:
+        bay === 'typewriter'
+          ? 0.23
+          : realtime
+            ? realtimeReference.supplementalLights.ambient
+            : 0.16,
+      environmentIntensity:
+        bay === 'typewriter' ? 0.42 : realtime ? realtimeReference.environment.intensity : 0.9,
       exposure: 1,
       // Delta directional fills produced subpixel HDR peaks in the mirror.
       // The realtime reference retains the three authored finite softboxes.

@@ -12,9 +12,10 @@ import type { StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
 import type { RefinementStatus } from '@/lib/workbench/rendering/refinementTypes'
 import WorkbenchRefinement from './WorkbenchRefinement.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
-import { phaseLabels } from '@/lib/workbench/assetBundle'
+import { adminExhibitionSearch, type ExhibitionOverviewItem } from '@/lib/workbench/exhibition'
 import WorkbenchScene from './WorkbenchScene.vue'
 import WorkbenchFallback from './WorkbenchFallback.vue'
+import WorkbenchLoadStatus from './WorkbenchLoadStatus.vue'
 import WorkbenchCallouts from './WorkbenchCallouts.vue'
 import type { CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import type { PlaceCallout } from '@/lib/workbench/calloutProjection'
@@ -26,12 +27,16 @@ const props = defineProps<{
   gallery?: boolean
   inspector?: boolean
   catalog?: boolean
+  exhibition?: boolean
+  exhibit?: ExhibitionOverviewItem
 }>()
+const emit = defineEmits<{ overview: [] }>()
 const store = useWorkbenchStore()
 const revision = ref(0),
   stageElement = ref<HTMLElement>()
 const sceneHost = ref<InstanceType<typeof WorkbenchScene>>()
 const onScreen = useElementVisibility(stageElement)
+const previewSearch = props.preview ? adminExhibitionSearch(location.search) : undefined
 const {
   backend,
   rendererFactory,
@@ -42,7 +47,7 @@ const {
   rendererFailed,
   realtimeRequest,
   showcase,
-} = useWorkbenchRenderHost(() => sceneHost.value?.checkpoint())
+} = useWorkbenchRenderHost(() => sceneHost.value?.checkpoint(), previewSearch)
 const studioMood = ref<'light' | 'dark'>(resolveStudioPalette(true).mood)
 const supportsStudioMood = computed(
   () =>
@@ -62,6 +67,11 @@ const stageBackground = computed(
 )
 const refinement = shallowRef<RefinementStatus>()
 const lighting = shallowRef<RealtimeStatus>()
+const currentLighting = computed(() =>
+  lighting.value?.slug === store.slug && lighting.value.revision === store.revision
+    ? lighting.value
+    : undefined,
+)
 const exhibitBay = computed(() =>
   showcase && backend.value === 'webgpu' ? showcaseBayKind(store.presentation?.source) : undefined,
 )
@@ -183,7 +193,11 @@ onErrorCaptured(() => {
     :aria-describedby="store.available ? 'wb-keyboard-hint' : undefined"
     @keydown="key"
   >
-    <WorkbenchFallback v-if="store.contentOnly && store.status === 'content'" />
+    <WorkbenchFallback
+      v-if="store.contentOnly && store.status === 'content'"
+      :exhibition="exhibition"
+      @overview="emit('overview')"
+    />
     <TresCanvas
       v-if="!store.contentOnly && hostPrepared"
       :key="hostRevision"
@@ -207,11 +221,13 @@ onErrorCaptured(() => {
         :place="place"
         :commit="commit"
         :gallery="gallery"
+        :exhibition="exhibition"
         :inspector="inspector"
         :catalog="catalog"
         :checkpoint="checkpoint"
         :realtime-pipeline="realtimeRequest"
         :showcase="showcase"
+        :render-search="previewSearch"
         :studio-mood="studioMood"
         @restore="restore"
         @refinement="reportRefinement"
@@ -228,8 +244,9 @@ onErrorCaptured(() => {
     />
     <WorkbenchRealtimeStatus
       v-if="store.available && realtimeRequest"
-      :status="backend === 'webgpu' ? lighting : undefined"
+      :status="backend === 'webgpu' ? currentLighting : undefined"
       :notice="notice"
+      :quiet="exhibition"
     />
     <WorkbenchShowroomDebug
       v-if="coldShowroom && !showcase && store.available && lighting?.showroom?.phase === 'ready'"
@@ -259,17 +276,11 @@ onErrorCaptured(() => {
       :background="stageBackground"
       @focus="focus"
     />
-    <div
-      v-if="store.status === 'loading' || store.status === 'error'"
-      class="wb-stage-status"
-      :role="store.status === 'error' ? 'alert' : 'status'"
-    >
-      <h2>{{ store.status === 'error' ? '暂时无法展示' : '正在准备商品' }}</h2>
-      <p>{{ store.status === 'error' ? store.error : phaseLabels[store.loadPhase] }}</p>
-      <div v-if="store.status === 'error'" class="wb-inline-actions">
-        <button type="button" @click="store.retry()">重新加载</button>
-        <button v-if="!preview" type="button" @click="store.panel = 'catalog'">打开目录</button>
-      </div>
-    </div>
+    <WorkbenchLoadStatus
+      :preview="preview"
+      :exhibition="exhibition"
+      :exhibit="exhibit"
+      @overview="emit('overview')"
+    />
   </div>
 </template>

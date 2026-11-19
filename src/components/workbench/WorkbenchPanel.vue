@@ -9,13 +9,23 @@ import WorkbenchLayoutMotion from './WorkbenchLayoutMotion.vue'
 import WorkbenchPianoMotion from './WorkbenchPianoMotion.vue'
 import WorkbenchCarMotion from './WorkbenchCarMotion.vue'
 import WorkbenchCarPaints from './WorkbenchCarPaints.vue'
+import WorkbenchExhibitActions from './WorkbenchExhibitActions.vue'
 import { carPaintStudies, isCarPaintStudy } from '@/lib/workbench/carPaintStudies'
+import { adminExhibitionSearch } from '@/lib/workbench/exhibition'
+import { productRenderSearch } from '@/lib/workbench/rendering/showcase'
 import '@/assets/styles/workbench-parts.css'
 const store = useWorkbenchStore()
-const initialCarPaint = new URLSearchParams(location.search).get('carStudioPaint')
-const initialPaintColor = isCarPaintStudy(initialCarPaint)
-  ? carPaintStudies[initialCarPaint].color
-  : undefined
+const props = defineProps<{ exhibition?: boolean }>()
+const initialCarPaint = computed(() => {
+  const search = props.exhibition ? adminExhibitionSearch(location.search) : location.search
+  const selection = new URLSearchParams(
+    productRenderSearch(store.presentation?.source, search),
+  ).get('carStudioPaint')
+  return isCarPaintStudy(selection) ? selection : undefined
+})
+const initialPaintColor = computed(() =>
+  initialCarPaint.value ? carPaintStudies[initialCarPaint.value].color : undefined,
+)
 const step = computed(() => store.presentation?.guide[store.guideStep])
 const motions = computed(() => (store.presentation ? progressActions(store.presentation) : []))
 const car = computed(
@@ -30,7 +40,7 @@ const discrete = computed(
 <template>
   <div v-if="store.presentation" class="wb-panel-content">
     <template v-if="store.panel === 'appearance'">
-      <WorkbenchCarPaints />
+      <WorkbenchCarPaints :initial="initialCarPaint" />
       <h3>{{ store.carPaintAvailable ? '其他配色' : '选择外壳颜色' }}</h3>
       <p>旋转商品，观察同一表面在不同角度的变化。</p>
       <div class="wb-finishes">
@@ -63,7 +73,8 @@ const discrete = computed(
     <template v-else-if="store.panel === 'actions'">
       <h3>看看它如何变化</h3>
       <p>旋转、缩放或选择部件会暂停结构播放，保留当前变化。</p>
-      <div class="wb-action-list">
+      <WorkbenchExhibitActions v-if="exhibition" :actions="motions" :discrete="discrete" />
+      <div v-else class="wb-action-list">
         <WorkbenchCarMotion v-if="car" :actions="motions" />
         <template v-else>
           <button

@@ -38,11 +38,13 @@ export interface WorkbenchSceneProps {
   place: PlaceCallout
   commit: () => void
   gallery?: boolean
+  exhibition?: boolean
   inspector?: boolean
   catalog?: boolean
   checkpoint?: CameraSnapshot
   realtimePipeline?: boolean
   showcase?: boolean
+  renderSearch?: string
   studioMood?: StudioMood
 }
 /** Scene owns all resources except the Tres-owned renderer. */
@@ -244,12 +246,16 @@ export function useWorkbenchScene(
     const current = controller
     if (!current) return
     const source = product.presentation.source
-    const search = productRenderSearch(source)
+    const search = productRenderSearch(source, props.renderSearch)
     if (gpu && props.showcase)
       releaseStartupPipelines = warmR18StartupPipelines(renderer, source, search, signal)
-    const loaded = await current.load(product, (phase) => {
-      if (!disposed && request === generation) store.loading(product.slug, revision, phase)
-    })
+    const loaded = await current.load(
+      product,
+      (phase) => {
+        if (!disposed && request === generation) store.loading(product.slug, revision, phase)
+      },
+      search,
+    )
     if (disposed || request !== generation) return
     if (!loaded) {
       retireStartupPipelines()
@@ -581,6 +587,7 @@ export function useWorkbenchScene(
       Boolean(props.gallery),
       Boolean(props.inspector),
       Boolean(props.catalog),
+      Boolean(props.exhibition),
     )
   }
   watch(
@@ -598,6 +605,7 @@ export function useWorkbenchScene(
         props.gallery,
         props.inspector,
         props.catalog,
+        props.exhibition,
       ] as const,
     updateFraming,
     { immediate: true, flush: 'post' },

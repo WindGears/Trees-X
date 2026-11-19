@@ -73,7 +73,7 @@ onScopeDispose(() => {
     <a class="skip-link" href="#admin-main">跳转到管理内容</a>
     <header class="ad-header">
       <a class="ad-brand" href="/">Trees X <span>内容管理</span></a>
-      <a href="/">打开商品工作台</a>
+      <a href="/">打开机械结构展厅</a>
       <span v-if="session">{{ session.username }}</span>
       <button v-if="session" type="button" :disabled="busy" @click="logout">退出登录</button>
     </header>

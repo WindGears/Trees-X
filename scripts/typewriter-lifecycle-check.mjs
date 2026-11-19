@@ -123,7 +123,7 @@ try {
         sameRenderer: renderer === window.__initialRenderer,
       }
     })
-  await page.goto(base)
+  await page.goto(base + '/?product=typewriter-study&renderPipeline=webgl')
   await ready('typewriter-study')
   await page.evaluate(() => {
     window.__initialCanvas = document.querySelector('canvas')

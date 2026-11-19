@@ -9,6 +9,8 @@ import {
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { Panel, WorkbenchProduct } from '@/lib/workbench/types'
 import { provideMotionSession } from '@/lib/workbench/motionSession'
+import { adminExhibitionSearch } from '@/lib/workbench/exhibition'
+import { showcaseRequested } from '@/lib/workbench/rendering/showcase'
 import WorkbenchStage from '@/components/workbench/WorkbenchStage.vue'
 import WorkbenchPanel from '@/components/workbench/WorkbenchPanel.vue'
 import WorkbenchTools from '@/components/workbench/WorkbenchTools.vue'
@@ -18,6 +20,7 @@ import '@/assets/styles/workbench-motion.css'
 const props = defineProps<{ product: WorkbenchProduct; captureTarget?: string }>()
 const emit = defineEmits<{ close: []; capture: [target: string, snapshot: CameraSnapshot] }>()
 const store = useWorkbenchStore()
+const exhibition = showcaseRequested(adminExhibitionSearch(location.search))
 const visibility = useDocumentVisibility()
 const captureSession = createCameraCaptureSession(() => ({
   slug: store.slug,
@@ -87,14 +90,18 @@ onScopeDispose(() => {
     <div class="workbench" :data-status="store.status" :data-slug="store.slug">
       <main class="wb-layout" :class="{ 'with-inspector': store.panel }">
         <section class="wb-view" aria-label="管理预览">
-          <WorkbenchStage preview /><WorkbenchTools v-if="!store.contentOnly" @panel="panel" />
+          <WorkbenchStage preview /><WorkbenchTools
+            v-if="!store.contentOnly"
+            :exhibition="exhibition"
+            @panel="panel"
+          />
         </section>
         <aside v-if="store.panel && store.panel !== 'catalog'" class="wb-panel wb-panel-right">
           <header>
             <h2>{{ titles[store.panel] }}</h2>
             <button type="button" aria-label="收起面板" @click="store.panel = null">收起</button>
           </header>
-          <WorkbenchPanel />
+          <WorkbenchPanel :exhibition="exhibition" />
         </aside>
       </main>
     </div>

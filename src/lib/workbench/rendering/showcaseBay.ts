@@ -20,25 +20,34 @@ type Exhibit = 'typewriter' | 'piano'
 function exhibitRoom(exhibit: Exhibit, supportY: number): CarShowroomConfig {
   const base = wrapWideColdStudioConfig,
     scale = exhibit === 'typewriter' ? 0.82 : 1.12,
-    groundY = exhibit === 'typewriter' ? supportY - studioDesign.height : supportY
+    groundY = exhibit === 'typewriter' ? supportY - studioDesign.height : supportY,
+    ceilingLift = exhibit === 'typewriter' ? 1.5 : 1.24
   const position = ([x, y, z]: ShowroomVector3): ShowroomVector3 => [
     x * scale,
     groundY + (y - base.groundY) * scale,
     z * scale,
   ]
-  const lamp = (light: CarShowroomLight): CarShowroomLight => ({
-    ...light,
-    width: light.width * scale,
-    height: light.height * scale,
-    position: position(light.position),
-    target: position(light.target),
-    intensity: light.intensity * 0.34,
-    radiance: light.radiance * 0.14,
-  })
+  const lamp = (light: CarShowroomLight): CarShowroomLight => {
+    const [x, y, z] = position(light.position)
+    const overhead = light.id === 'key' || light.id === 'strip'
+    const pianoFill = exhibit === 'piano' && light.id === 'fill'
+    const [targetX, targetY, targetZ] = position(light.target)
+    return {
+      ...light,
+      width: light.width * scale * (pianoFill ? 0.76 : 1),
+      height: light.height * scale,
+      position: [x, y + (overhead ? ceilingLift : pianoFill ? 0.92 : 0), z],
+      target: [targetX, targetY + (pianoFill ? 0.8 : 0), targetZ],
+      intensity: light.intensity * (exhibit === 'typewriter' ? (overhead ? 0.58 : 0.42) : 0.34),
+      radiance: light.radiance * 0.14,
+    }
+  }
+  const [right, top, back] = position(base.roomBox.max)
   return {
     ...base,
     groundY,
-    roomBox: { min: position(base.roomBox.min), max: position(base.roomBox.max) },
+    wallColor: exhibit === 'typewriter' ? '#505153' : '#444548',
+    roomBox: { min: position(base.roomBox.min), max: [right, top + ceilingLift, back] },
     floor: { ...base.floor, width: base.floor.width * scale, depth: base.floor.depth * scale },
     coveRadius: base.coveRadius * scale,
     lights: {
@@ -128,8 +137,10 @@ function createBay(
     room.root.userData.showcaseBay = exhibit
     room.floor.receiveShadow = true
     if (exhibit === 'piano' && room.floor.material instanceof MeshPhysicalMaterial) {
-      room.floor.material.color.set('#64666a')
-      room.floor.material.envMapIntensity = 0.34
+      room.floor.material.color.set('#515256')
+      room.floor.material.envMapIntensity = 0.19
+      room.floor.material.specularIntensity = 0.28
+      room.floor.material.clearcoat = 0.01
     }
     hide('workbench-ground')
     if (exhibit === 'typewriter') {
@@ -170,7 +181,7 @@ function createBay(
       assets = loaded
       room.applySurfaces(assets)
       if (pedestal) {
-        pedestal.color.set('#858687')
+        pedestal.color.set('#b3b3b5')
         pedestal.map = assets.floor.map
         pedestal.normalMap = assets.floor.normalMap
         pedestal.roughnessMap = assets.floor.roughnessMap

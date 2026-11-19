@@ -1,8 +1,8 @@
 # Trees X
 
-**WebGPU 答辩候选**可从[汽车 R18 展厅](http://127.0.0.1:5181/?renderPipeline=showcase&product=reventon)进入，在目录中切换打字机和钢琴。[管理预览](http://127.0.0.1:5181/admin?renderPipeline=showcase)使用同一预设。首次在 PowerShell 设置 `$env:TREES_DEMO_SHOWCASE = '1'`，再运行 `npm run demo:prepare` 和 `npm run demo:start`。准备程序核对本机 4K 登记、WindGear v2、R18 环境和 KTX2 解码文件。[答辩版验收与演示顺序](.ai/showcase-validation.md)
+打开[机械结构展厅](http://127.0.0.1:5181/)，可切换打字机整机与分层静帧，选择任一展品后才进入三维工作台。三个展品及[管理预览](http://127.0.0.1:5181/admin)共用 WebGPU 答辩预设，设备不支持时使用 WebGL2。封面由实际 Three.js 场景拍摄，来源及复拍方式见[封面制作说明](public/covers/showcase/README.md)。
 
-当前交付入口为[三件展品工作台](http://127.0.0.1:5181/)及[管理端](http://127.0.0.1:5181/admin)。首次准备或源码变动后运行 `npm run demo:prepare`，再运行 `npm run demo:start`。交付检查和待验收项见[项目收尾记录](.ai/project-closeout.md)。
+首次在 PowerShell 设置 `$env:TREES_DEMO_SHOWCASE = '1'`，再运行 `npm run demo:prepare` 和 `npm run demo:start`。准备程序核对本机 4K 登记、WindGear v2、R18 环境和 KTX2 解码文件。[展厅验收](.ai/structure-exhibition-validation.md) · [答辩演示顺序](.ai/showcase-validation.md)
 
 汽车画质验收使用 [r18 冷白摄影棚＋已认可亮银](http://127.0.0.1:5181/?product=reventon&renderPipeline=realtime&indirectLighting=ddgi&assetLoading=streaming&reventonAsset=runtime-v2&carQuality=studio&carKeyShadow=1&carShowroom=cold-studio&carFloor=cycles&carFloorLight=local&carFloorReflection=planar&carStudioFinish=wrap-wide&carStudioPaint=silver&carAntialias=msaa&carStudioTrim=satin&carCabinLight=local)。该入口依赖本机 `runtime-v2` 资源及生成的登记文件。外观面板可切换亮橙、亮银，支持开门和分离；追加 `&carBevelStudy=baseline` 可回看修正前的白边。
 

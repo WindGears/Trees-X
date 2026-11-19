@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import { existsSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
@@ -6,6 +7,11 @@ import { templateCompilerOptions } from '@tresjs/core'
 
 export default defineConfig({
   plugins: [vue({ ...templateCompilerOptions }), tailwindcss()],
+  define: {
+    'import.meta.env.VITE_HAS_R18_EXHIBITION_COVER': JSON.stringify(
+      existsSync(new URL('./public/covers/showcase/reventon-whole.webp', import.meta.url)),
+    ),
+  },
   optimizeDeps: { entries: ['index.html', 'renderlab.html'] },
   build: {
     rolldownOptions: {

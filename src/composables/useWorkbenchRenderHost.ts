@@ -9,14 +9,17 @@ import { waitForRetiredPreparations } from '@/lib/workbench/rendering/preparatio
 import { showcaseRequested } from '@/lib/workbench/rendering/showcase'
 
 /** Replacement always unmounts the old Tres host before preparing its successor. */
-export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined) {
+export function useWorkbenchRenderHost(
+  capture: () => CameraSnapshot | undefined,
+  search = location.search,
+) {
   const store = useWorkbenchStore(),
-    experimentalRealtime =
-      new URLSearchParams(location.search).get('renderPipeline') === 'realtime',
-    showcase = showcaseRequested(),
+    pipeline = new URLSearchParams(search).get('renderPipeline'),
+    experimentalRealtime = pipeline === 'realtime',
+    showcase = showcaseRequested(search),
     realtimeRequest = experimentalRealtime || showcase,
     eligible = 'gpu' in navigator && matchMedia('(pointer: fine)').matches && innerWidth >= 1024,
-    backend = ref(requestedBackend(location.search, 'gpu' in navigator, eligible)),
+    backend = ref(requestedBackend(search, 'gpu' in navigator, eligible)),
     rendererFactory = shallowRef<RendererOptions['renderer']>(),
     hostPrepared = ref(backend.value === 'webgl'),
     hostRevision = ref(0),
@@ -41,9 +44,7 @@ export function useWorkbenchRenderHost(capture: () => CameraSnapshot | undefined
   if (backend.value === 'webgl' && !supportsWebGL2())
     store.useContent('此设备暂时无法启用三维显示。')
   if (
-    ['hybrid', 'realtime', 'showcase'].includes(
-      new URLSearchParams(location.search).get('renderPipeline') ?? '',
-    ) &&
+    ['hybrid', 'realtime', 'showcase'].includes(pipeline ?? '') &&
     backend.value === 'webgl' &&
     !notice.value
   )

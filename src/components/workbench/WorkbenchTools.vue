@@ -5,7 +5,7 @@ import { Palette, ScanSearch, Layers2, Route, RotateCcw, Minus, Plus } from '@lu
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { Panel } from '@/lib/workbench/types'
 const store = useWorkbenchStore()
-const props = defineProps<{ floating?: boolean }>()
+const props = defineProps<{ floating?: boolean; exhibition?: boolean }>()
 const navigation = ref<HTMLElement>()
 const indicator = ref<HTMLElement>()
 let animation: gsap.core.Tween | undefined
@@ -39,7 +39,7 @@ const tools = computed(() => [
     ? [{ id: 'appearance' as const, label: '外观', icon: Palette }]
     : []),
   ...(store.presentation?.hotspots.length
-    ? [{ id: 'details' as const, label: '细节', icon: ScanSearch }]
+    ? [{ id: 'details' as const, label: props.exhibition ? '部件' : '细节', icon: ScanSearch }]
     : []),
   ...(store.presentation?.structure || store.presentation?.actions.length
     ? [{ id: 'actions' as const, label: '结构与动作', icon: Layers2 }]

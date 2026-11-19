@@ -3,13 +3,12 @@ import { computed } from 'vue'
 import { Check } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import { carPaintChoice, carPaintChoices } from '@/lib/workbench/carPaintStudies'
+const props = defineProps<{ initial?: string }>()
 const store = useWorkbenchStore()
 const selected = computed(() => {
   const choice = carPaintChoice(store.finishId)
   if (choice) return choice
-  return store.finishId === store.presentation?.finishes[0]?.id
-    ? new URLSearchParams(location.search).get('carStudioPaint')
-    : undefined
+  return store.finishId === store.presentation?.finishes[0]?.id ? props.initial : undefined
 })
 </script>
 

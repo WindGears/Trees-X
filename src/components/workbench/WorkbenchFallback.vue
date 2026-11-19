@@ -2,6 +2,8 @@
 import { ref, watch } from 'vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 const store = useWorkbenchStore()
+defineProps<{ exhibition?: boolean }>()
+const emit = defineEmits<{ overview: [] }>()
 const coverFailed = ref(false)
 watch(
   () => store.product?.cover,
@@ -14,7 +16,7 @@ watch(
 <template>
   <div v-if="store.product" class="wb-content-fallback">
     <div class="wb-fallback-product">
-      <h1 id="wb-product-title">{{ store.product.name }}</h1>
+      <h1 v-if="!exhibition" id="wb-product-title">{{ store.product.name }}</h1>
       <p>{{ store.product.description }}</p>
       <span class="wb-sample-label">{{
         store.product.displayStatus === 'formal' ? '正式展品' : '流程样板'
@@ -34,7 +36,8 @@ watch(
         {{ store.compatibilityReason }} 三维观察需要支持 WebGL 2
         的浏览器与显卡。可尝试启用浏览器硬件加速后重新打开页面。
       </p>
-      <button type="button" @click="store.openPanel('catalog')">浏览其他商品</button>
+      <button v-if="exhibition" type="button" @click="emit('overview')">返回展厅</button>
+      <button v-else type="button" @click="store.openPanel('catalog')">浏览其他商品</button>
     </section>
     <section
       v-if="store.presentation?.hotspots.length"

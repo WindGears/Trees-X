@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { RealtimeStatus } from '@/lib/workbench/rendering/realtime/types'
-const props = defineProps<{ status?: RealtimeStatus; notice?: string }>()
+const props = defineProps<{ status?: RealtimeStatus; notice?: string; quiet?: boolean }>()
 const detail = computed(() => props.status?.indirectLighting)
-const message = computed(() => {
+const warning = computed(() => {
   if (props.notice) return props.notice
   if (props.status?.error) return '实时光影暂不可用，请重新加载'
   if (props.status?.showroom?.error) return '冷白棚环境未就绪，已保留原环境光照'
-  if (props.status?.mode === 'pbr') return 'WebGPU · 实时材质'
-  if (props.status?.mode === 'warming') return 'WebGPU · 材质就绪，准备实时光影'
   if (props.status?.reflectionRays?.error) return '实时光影 · 精细反射不可用，已保留基础反射'
   if (props.status?.keyShadow?.error) return '实时光影 · 自阴影不可用，已保留基础画面'
+  if (detail.value?.error) return '实时光影 · 空间增强不可用，已用基础光照'
+  return undefined
+})
+const message = computed(() => {
+  if (warning.value || props.quiet) return warning.value
+  if (props.status?.mode === 'pbr') return 'WebGPU · 实时材质'
+  if (props.status?.mode === 'warming') return 'WebGPU · 材质就绪，准备实时光影'
   if (props.status?.keyShadow?.requested && props.status.keyShadow.phase === 'loading')
     return '实时光影 · 准备柔和自阴影'
-  if (detail.value?.error) return '实时光影 · 空间增强不可用，已用基础光照'
   if (detail.value?.preparing) return '实时光影 · 准备空间增强'
   if (detail.value?.actual === 'ddgi') return 'WebGPU · 实时光影与空间增强'
   return 'WebGPU · 实时光影'
@@ -21,7 +25,7 @@ const message = computed(() => {
 </script>
 
 <template>
-  <p v-if="status || notice" class="wb-lighting-status" role="status">
+  <p v-if="message && (status || notice)" class="wb-lighting-status" role="status">
     <span
       :title="
         status?.showroom?.error ??

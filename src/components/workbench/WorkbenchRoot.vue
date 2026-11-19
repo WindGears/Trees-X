@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from 'vue'
-import { Grid2X2, X } from '@lucide/vue'
+import { ArrowLeft, Grid2X2, Layers2, X } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { Panel } from '@/lib/workbench/types'
+import {
+  exhibitionHome,
+  isLocalLink,
+  type ExhibitionOverviewItem,
+} from '@/lib/workbench/exhibition'
 import { provideMotionSession } from '@/lib/workbench/motionSession'
 import { createInterfaceMotion } from '@/lib/workbench/interfaceMotion'
 import WorkbenchStage from './WorkbenchStage.vue'
@@ -15,7 +20,10 @@ import '@/assets/styles/workbench-accessibility.css'
 import '@/assets/styles/workbench-motion.css'
 import '@/assets/styles/workbench-floating.css'
 import '@/assets/styles/workbench-studio.css'
+import '@/assets/styles/workbench-exhibition.css'
 
+const props = defineProps<{ exhibits?: readonly ExhibitionOverviewItem[] }>()
+const emit = defineEmits<{ overview: [] }>()
 const store = useWorkbenchStore()
 provideMotionSession(store)
 const host = ref<HTMLElement>()
@@ -29,12 +37,18 @@ const titles = {
 }
 const title = computed(() => (store.panel ? titles[store.panel] : ''))
 const inspector = computed(() => Boolean(store.panel && store.panel !== 'catalog'))
+const exhibition = computed(() => props.exhibits !== undefined)
+const target = computed(() => props.exhibits?.find((item) => item.slug === store.slug))
+const name = computed(() => store.product?.name ?? target.value?.name)
+const hasStructure = computed(
+  () => store.presentation?.structure || Boolean(store.presentation?.actions.length),
+)
 let opener: HTMLElement | null = null
 function close() {
   store.panel = null
   const target = opener?.isConnected
     ? opener
-    : host.value?.querySelector<HTMLElement>('.wb-catalog-trigger')
+    : host.value?.querySelector<HTMLElement>('.wb-catalog-trigger, .wb-exhibition-switch select')
   target?.focus({ preventScroll: true })
 }
 function openPanel(panel: Panel) {
@@ -66,7 +80,18 @@ function select(slug: string) {
   )
 }
 function read() {
-  void store.select(new URL(location.href).searchParams.get('product') || 'typewriter-study')
+  const slug = new URLSearchParams(location.search).get('product')
+  if (slug || !exhibition.value) void store.select(slug || 'typewriter-study')
+}
+function switchExhibit(event: Event) {
+  if (!(event.target instanceof HTMLSelectElement) || !event.target.value) return
+  select(event.target.value)
+  event.target.value = ''
+}
+function back(event: MouseEvent) {
+  if (!isLocalLink(event)) return
+  event.preventDefault()
+  emit('overview')
 }
 function key(event: KeyboardEvent) {
   if (event.key === 'Escape' && store.panel) close()
@@ -101,7 +126,7 @@ watch(
 )
 onMounted(() => {
   read()
-  void store.loadCatalog()
+  if (!exhibition.value) void store.loadCatalog()
   window.addEventListener('popstate', read)
   window.addEventListener('keydown', key)
 })
@@ -113,9 +138,36 @@ onScopeDispose(() => {
 })
 </script>
 <template>
-  <div ref="host" class="workbench wb-floating" :data-status="store.status" :data-slug="store.slug">
+  <div
+    ref="host"
+    class="workbench wb-floating"
+    :class="{ 'wb-exhibition': exhibition }"
+    :data-status="store.status"
+    :data-slug="store.slug"
+  >
     <a class="skip-link" href="#wb-main">跳转到三维工作台</a>
-    <header class="wb-header">
+    <header v-if="exhibition" class="wb-header wb-exhibition-header">
+      <a class="wb-brand" :href="exhibitionHome" @click="back">Trees X</a>
+      <a class="wb-exhibition-back" :href="exhibitionHome" @click="back">
+        <ArrowLeft :size="16" />展厅总览
+      </a>
+      <h1 class="wb-exhibition-title">{{ name ?? '展品' }}</h1>
+      <label v-if="exhibits?.length" class="wb-exhibition-switch">
+        <span class="sr-only">切换展品</span>
+        <select class="wb-exhibition-select" aria-label="切换展品" @change="switchExhibit">
+          <option value="">切换展品</option>
+          <option
+            v-for="item in exhibits"
+            :key="item.slug"
+            :value="item.slug"
+            :disabled="item.slug === store.slug"
+          >
+            {{ item.name }}
+          </option>
+        </select>
+      </label>
+    </header>
+    <header v-else class="wb-header">
       <a class="wb-brand" href="/">Trees X<span>三维商品工作台</span></a>
       <div class="wb-header-actions">
         <span class="wb-current">{{ store.product?.name || '选择商品' }}</span>
@@ -136,7 +188,14 @@ onScopeDispose(() => {
       :class="{ 'with-catalog': store.panel === 'catalog', 'with-inspector': inspector }"
     >
       <section class="wb-view" aria-label="三维商品工作台">
-        <WorkbenchStage gallery :inspector="inspector" :catalog="store.panel === 'catalog'" />
+        <WorkbenchStage
+          gallery
+          :exhibition="exhibition"
+          :exhibit="target"
+          :inspector="inspector"
+          :catalog="store.panel === 'catalog'"
+          @overview="emit('overview')"
+        />
         <Transition
           :css="false"
           @enter="motion.enter"
@@ -145,13 +204,34 @@ onScopeDispose(() => {
           @leave-cancelled="motion.cancel"
         >
           <div
-            v-if="store.product && !store.contentOnly && !store.selectedPart"
+            v-if="
+              store.product &&
+              !store.contentOnly &&
+              !store.selectedPart &&
+              (!exhibition || store.available)
+            "
             :key="store.product.slug"
             class="wb-intro"
           >
-            <h1 id="wb-product-title">{{ store.product.name }}</h1>
-            <p>{{ store.product.description }}</p>
-            <span class="wb-sample-label">{{
+            <h1 v-if="!exhibition" id="wb-product-title">{{ store.product.name }}</h1>
+            <button
+              v-if="exhibition && hasStructure && store.available"
+              class="wb-exhibition-structure"
+              type="button"
+              aria-controls="wb-inspector"
+              :aria-expanded="store.panel === 'actions'"
+              @click="openPanel('actions')"
+            >
+              <Layers2 :size="16" />探索结构
+            </button>
+            <p>
+              {{
+                exhibition
+                  ? (target?.highlight ?? store.product.description)
+                  : store.product.description
+              }}
+            </p>
+            <span v-if="!exhibition" class="wb-sample-label">{{
               store.product.displayStatus === 'formal' ? '正式展品' : '流程样板'
             }}</span>
           </div>
@@ -159,9 +239,14 @@ onScopeDispose(() => {
         <p v-if="!store.contentOnly" class="wb-input-hint">
           拖动旋转 · 滚轮缩放 · <span class="wb-keyboard-entry">Tab 聚焦后可用方向键</span>
         </p>
-        <WorkbenchTools v-if="!store.contentOnly" floating @panel="openPanel" />
+        <WorkbenchTools
+          v-if="!store.contentOnly"
+          floating
+          :exhibition="exhibition"
+          @panel="openPanel"
+        />
       </section>
-      <WorkbenchRail @select="select" @catalog="openPanel('catalog')" />
+      <WorkbenchRail v-if="!exhibition" @select="select" @catalog="openPanel('catalog')" />
       <Transition
         :css="false"
         @enter="motion.enter"
@@ -170,7 +255,7 @@ onScopeDispose(() => {
         @leave-cancelled="motion.cancel"
       >
         <aside
-          v-if="store.panel === 'catalog'"
+          v-if="!exhibition && store.panel === 'catalog'"
           id="wb-catalog"
           class="wb-panel wb-panel-left"
           aria-labelledby="wb-catalog-heading"
@@ -203,7 +288,7 @@ onScopeDispose(() => {
               <X :size="19" />
             </button>
           </header>
-          <div class="wb-panel-body"><WorkbenchPanel /></div>
+          <div class="wb-panel-body"><WorkbenchPanel :exhibition="exhibition" /></div>
         </aside>
       </Transition>
     </main>

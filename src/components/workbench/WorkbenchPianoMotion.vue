@@ -4,6 +4,7 @@ import { Camera, Pause, Play, RotateCcw } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import { useMotionSession } from '@/lib/workbench/motionSession'
 import type { ProgressAction } from '@/lib/workbench/types'
+import { pianoMotionSteps as chapters } from '@/lib/workbench/exhibitionMotion'
 
 const props = defineProps<{ action: ProgressAction }>()
 const store = useWorkbenchStore(),
@@ -11,32 +12,6 @@ const store = useWorkbenchStore(),
 const status = computed(
   () => session.states.value[props.action.id] ?? { progress: 0, target: 1, playing: false },
 )
-const chapters = [
-  { label: '整机', view: 'perspective', description: '观察外壳、琴盖与键盘组成的完整轮廓。' },
-  { label: '剖切', view: 'piano-section', description: '透过剖切布局，查看外壳与内部结构的关系。' },
-  { label: '键盘', view: 'piano-keys', description: '查看黑白键的排列，以及键盘在整机中的位置。' },
-  {
-    label: '击弦机构',
-    view: 'piano-action',
-    description: '观察键盘与击弦机构之间的部件关系。',
-  },
-  {
-    label: '弦列与铁板',
-    view: 'piano-strings',
-    description: '查看弦列的走向，以及它们与铁板的相对位置。',
-  },
-  {
-    label: '音板与弦桥',
-    view: 'piano-soundboard',
-    description: '观察音板与弦桥的形态和连接位置。',
-  },
-  {
-    label: '制音器与踏板',
-    view: 'piano-dampers',
-    description: '查看制音器、踏板与相关连杆的结构关系。',
-  },
-  { label: '全部平铺', view: 'knoll', description: '将现有部件平铺，对照各组结构的组成与形态。' },
-].map((chapter, index) => ({ ...chapter, value: index / 7 }))
 const current = computed(() => chapters[Math.round(status.value.progress * 7)] ?? chapters[0]!)
 const target = computed(() => chapters[Math.round(status.value.target * 7)] ?? chapters[0]!)
 const view = computed(() =>

@@ -422,9 +422,7 @@ try {
       await route.abort('blockedbyclient')
     }
   })
-  const url = showcase
-    ? new URL('/admin?renderPipeline=showcase', base)
-    : new URL(keyShadowUrl(base, 'shadow'))
+  const url = showcase ? new URL('/admin', base) : new URL(keyShadowUrl(base, 'shadow'))
   url.pathname = '/admin'
   url.searchParams.delete('product')
   if (showroomTest && !showcase) url.searchParams.set('carShowroom', 'cold-studio')

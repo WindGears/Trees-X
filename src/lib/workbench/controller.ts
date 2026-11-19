@@ -177,11 +177,17 @@ export function createStageController(
     product = undefined
     controls.enabled = false
   }
-  async function load(value: WorkbenchProduct, phase: (p: LoadPhase) => void) {
+  async function load(
+    value: WorkbenchProduct,
+    phase: (p: LoadPhase) => void,
+    renderSearch?: string,
+  ) {
     if (disposed) return
     unload()
     const snapshot = parseProduct(value)
-    const loaded = await slot.load((signal) => loadAdapter(snapshot, renderer, signal, phase))
+    const loaded = await slot.load((signal) =>
+      loadAdapter(snapshot, renderer, signal, phase, renderSearch),
+    )
     if (!loaded) return
     product = snapshot
     adapter = loaded

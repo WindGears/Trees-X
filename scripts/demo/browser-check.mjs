@@ -415,6 +415,13 @@ export function compactSnapshot(snapshot) {
 
 export async function choose(page, metadata) {
   const slug = metadata.product.slug
+  const switcher = page.getByRole('combobox', { name: '切换展品' })
+  if (await switcher.isVisible()) {
+    const workspace = page.locator('.workbench')
+    if ((await workspace.getAttribute('data-slug')) !== slug) await switcher.selectOption(slug)
+    await expect(workspace).toHaveAttribute('data-slug', slug)
+    return
+  }
   await page.getByRole('button', { name: '商品目录', exact: true }).click()
   const item = page.locator('.wb-catalog-list button').filter({
     has: page.locator('h3', { hasText: metadata.product.name }),

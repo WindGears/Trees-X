@@ -4,17 +4,13 @@ import { Pause, Play, RotateCcw } from '@lucide/vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import { useMotionSession } from '@/lib/workbench/motionSession'
 import type { ProgressAction } from '@/lib/workbench/types'
+import { typewriterMotionSteps as choices } from '@/lib/workbench/exhibitionMotion'
 const props = defineProps<{ action: ProgressAction }>()
 const store = useWorkbenchStore(),
   session = useMotionSession()
 const status = computed(
   () => session.states.value[props.action.id] ?? { progress: 0, target: 1, playing: false },
 )
-const choices = [
-  { value: 0, label: '合拢整机' },
-  { value: 0.6, label: '分层展开' },
-  { value: 1, label: '平铺部件' },
-]
 </script>
 <template>
   <section

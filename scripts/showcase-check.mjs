@@ -173,7 +173,7 @@ async function inspectAction(page, slug) {
         : ['分层展开']
   await page.getByRole('button', { name: '结构与动作', exact: true }).click()
   const controls =
-    slug === 'piano-cfx' ? page.locator('.wb-piano-chapters') : page.locator('.wb-panel')
+    slug === 'piano-cfx' ? page.locator('.wb-exhibit-action-steps') : page.locator('.wb-panel')
   for (const name of labels) {
     const button = controls.getByRole('button', { name, exact: true })
     await button.click()
@@ -185,7 +185,7 @@ async function inspectAction(page, slug) {
       await page.screenshot({ path: resolve(output, `${slug}-${name}.png`) })
   }
   await page.getByRole('button', { name: '还原商品', exact: true }).click()
-  await page.getByRole('button', { name: '细节', exact: true }).click()
+  await page.getByRole('button', { name: '部件', exact: true }).click()
   await page.locator('.wb-part-list button').first().click()
   await expect(page.getByRole('button', { name: '返回全景', exact: true })).toBeVisible()
   await page.screenshot({ path: resolve(output, `${slug}-detail.png`) })
@@ -219,7 +219,7 @@ async function verifyPianoShadow(page) {
     await observeWithMouse(page)
     const cameraDraws = await page.evaluate(() => window.__pianoShadowProbe.count)
     await page.getByRole('button', { name: '结构与动作', exact: true }).click()
-    const chapters = page.locator('.wb-piano-chapters')
+    const chapters = page.locator('.wb-exhibit-action-steps')
     await chapters.getByRole('button', { name: '剖切', exact: true }).click()
     await page.waitForFunction(() => window.__pianoShadowProbe.count > 0)
     const poseDraws = await page.evaluate(() => window.__pianoShadowProbe.count)

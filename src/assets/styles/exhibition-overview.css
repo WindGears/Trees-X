@@ -1,0 +1,310 @@
+.exhibition {
+  --exhibition-background: #101112;
+  --exhibition-surface: #171819;
+  --exhibition-image: #1c1d1c;
+  --exhibition-ink: #f3f1ea;
+  --exhibition-muted: #b6b5ad;
+  --exhibition-line: #343535;
+  --exhibition-brass: #e0c16e;
+  --exhibition-brass-ink: #252117;
+  --exhibition-edge: clamp(24px, 4.45vw, 86px);
+  --ring: var(--exhibition-brass);
+  min-height: 100svh;
+  color: var(--exhibition-ink);
+  background: var(--exhibition-background);
+  font-family: Manrope, 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+.exhibition ::selection {
+  color: var(--exhibition-brass-ink);
+  background: var(--exhibition-brass);
+}
+
+.exhibition-frame {
+  width: min(1560px, calc(100% - 2 * var(--exhibition-edge)));
+  margin-inline: auto;
+}
+
+.exhibition-header {
+  border-bottom: 1px solid var(--exhibition-line);
+}
+
+.exhibition-header-inner {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.exhibition-brand {
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.exhibition-index-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  color: var(--exhibition-muted);
+  font-size: 14px;
+}
+
+.exhibition-index-link:hover {
+  color: var(--exhibition-ink);
+}
+
+.exhibition-hero {
+  display: grid;
+  grid-template-columns: minmax(250px, 1fr) minmax(0, 2.13fr);
+  align-items: center;
+  gap: clamp(32px, 4vw, 72px);
+  padding-block: clamp(26px, 4.8svh, 56px) 0;
+}
+
+.exhibition-hero.is-without-feature {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.exhibition-intro h1 {
+  margin: 0;
+  font-size: clamp(54px, 5.4vw, 96px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+
+.exhibition-intro h1 span {
+  display: block;
+}
+
+.exhibition-intro p {
+  max-width: 22em;
+  margin: 25px 0 0;
+  color: var(--exhibition-muted);
+  font-size: clamp(15px, 1.18vw, 18px);
+  line-height: 1.8;
+}
+
+.exhibition-primary {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 30px;
+  padding-inline: 20px;
+  border-radius: 7px;
+  color: var(--exhibition-brass-ink);
+  background: var(--exhibition-brass);
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 160ms ease;
+}
+
+.exhibition-primary:hover {
+  background: #ecd58e;
+}
+
+.exhibition-primary svg,
+.exhibition-index-link svg,
+.exhibition-exhibit > svg {
+  flex: none;
+}
+
+.exhibition-plate {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--exhibition-line);
+  border-radius: 14px;
+  background: var(--exhibition-surface);
+}
+
+.exhibition-plate-image {
+  position: relative;
+  height: clamp(330px, 53svh, 630px);
+  overflow: hidden;
+  background: var(--exhibition-image);
+}
+
+.exhibition-plate-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exhibition-plate-image img.is-visible {
+  opacity: 1;
+}
+
+.exhibition-image-message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--exhibition-muted);
+  font-size: 15px;
+}
+
+.exhibition-plate-caption {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 55px;
+  padding: 4px 15px 4px 20px;
+  border-top: 1px solid var(--exhibition-line);
+  color: var(--exhibition-muted);
+  font-size: 14px;
+}
+
+.exhibition-shots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding-inline: 3px;
+  border: 1px solid var(--exhibition-line);
+  border-radius: 7px;
+  background: var(--exhibition-background);
+}
+
+.exhibition-shots button {
+  min-width: 54px;
+  min-height: 44px;
+  padding-inline: 9px;
+  border: 0;
+  border-radius: 5px;
+  color: var(--exhibition-muted);
+  background: transparent;
+  font: inherit;
+}
+
+.exhibition-shots button:hover {
+  color: var(--exhibition-ink);
+}
+
+.exhibition-shots button[aria-pressed='true'] {
+  color: var(--exhibition-brass);
+  background: #2b271c;
+}
+
+.exhibition-index {
+  margin-top: clamp(36px, 6.1svh, 72px);
+  padding-bottom: clamp(35px, 5svh, 62px);
+  scroll-margin-top: 25px;
+}
+
+.exhibition-index h2 {
+  margin: 0 0 15px;
+  font-size: 17px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.exhibition-index-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(15px, 2.3vw, 40px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exhibition-exhibit {
+  display: grid;
+  min-width: 0;
+  min-height: 105px;
+  grid-template-columns: minmax(68px, 30%) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding-block: 12px;
+  border-block: 1px solid var(--exhibition-line);
+  transition: border-color 160ms ease;
+}
+
+.exhibition-exhibit:hover {
+  border-color: var(--exhibition-brass);
+}
+
+.exhibition-exhibit-image {
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--exhibition-image);
+}
+
+.exhibition-exhibit-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.exhibition-exhibit-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.exhibition-exhibit-copy strong {
+  color: var(--exhibition-ink);
+  font-size: clamp(16px, 1.3vw, 19px);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.exhibition-exhibit-copy span {
+  color: var(--exhibition-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.exhibition-exhibit > svg {
+  color: var(--exhibition-brass);
+}
+
+.exhibition-status {
+  margin: 0;
+  padding-block: 20px;
+  border-top: 1px solid var(--exhibition-line);
+  color: var(--exhibition-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.exhibition-status button {
+  min-height: 44px;
+  border: 0;
+  color: var(--exhibition-brass);
+  background: transparent;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+@media (max-width: 1030px) {
+  .exhibition-hero {
+    gap: 24px;
+  }
+
+  .exhibition-exhibit {
+    gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exhibition *,
+  .exhibition *::before,
+  .exhibition *::after {
+    scroll-behavior: auto;
+    transition: none;
+  }
+}

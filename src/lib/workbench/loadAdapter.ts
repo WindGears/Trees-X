@@ -19,13 +19,14 @@ export async function loadAdapter(
   renderer: WorkbenchRenderer,
   signal: AbortSignal,
   phase: (p: LoadPhase) => void,
+  renderSearch?: string,
 ): Promise<SceneAdapter> {
   signal.throwIfAborted()
   if (product.presentation.source.kind === 'procedural') {
     phase('parse')
     return createSampleAdapter(product)
   }
-  const search = productRenderSearch(product.presentation.source)
+  const search = renderSearch ?? productRenderSearch(product.presentation.source)
   const source = reventonCandidate(typewriterCandidate(product.presentation.source, search), search)
   const exhibit =
     isWebGpuRenderer(renderer) && showcaseRequested(search) ? showcaseBayKind(source) : undefined
