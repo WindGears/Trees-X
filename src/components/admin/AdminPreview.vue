@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onScopeDispose, ref } from 'vue'
 import { useDocumentVisibility } from '@vueuse/core'
+import { ArrowLeft, Camera, ChevronDown } from '@lucide/vue'
 import {
   createCameraCaptureSession,
   provideCameraCaptureSession,
@@ -48,6 +49,7 @@ function capture() {
 provideMotionSession(store)
 const motion = createInterfaceMotion('soft')
 const inspector = ref<HTMLElement>()
+const heading = ref<HTMLHeadingElement>()
 let panelOpener: HTMLElement | null = null
 const activeSection = computed(() => (store.panel === 'catalog' ? null : store.panel))
 function closePanel() {
@@ -69,7 +71,10 @@ function panel(value: Panel) {
       inspector.value?.querySelector<HTMLElement>('.wb-panel-close')?.focus({ preventScroll: true })
   })
 }
-onMounted(() => store.preview(props.product))
+onMounted(() => {
+  store.preview(props.product)
+  heading.value?.focus()
+})
 onScopeDispose(() => {
   motion.dispose()
   captureSession.clear()
@@ -79,17 +84,18 @@ onScopeDispose(() => {
 <template>
   <div class="ad-preview">
     <Transition appear :css="false" @enter="motion.enter" @enter-cancelled="motion.cancel">
-      <div>
-        <header class="ad-title">
-          <div>
-            <h1>{{ product.name }} · 配置预览</h1>
-            <p>使用当前输入，不写入数据库。检查热点、视角、动作和导览后返回编辑。</p>
-          </div>
-          <button type="button" @click="emit('close')">返回编辑</button>
-        </header>
+      <header class="ad-preview-header">
+        <div class="ad-preview-identity">
+          <button type="button" class="ad-back" @click="emit('close')">
+            <ArrowLeft :size="15" aria-hidden="true" />返回编辑
+          </button>
+          <h1 ref="heading" tabindex="-1">{{ product.name }} · 配置预览</h1>
+          <p>预览当前草稿。取景回填后可在表单中保存。</p>
+        </div>
         <div class="ad-capture-bar">
-          <label
-            >回填目标<select v-model="captureTarget" aria-label="回填目标">
+          <label>
+            <span>回填目标</span>
+            <select v-model="captureTarget" aria-label="回填目标" @change="captureError = ''">
               <option value="default">默认取景（含全景复位）</option>
               <option
                 v-for="view in product.presentation.views.filter((v) => v.id !== 'perspective')"
@@ -98,16 +104,21 @@ onScopeDispose(() => {
               >
                 {{ view.label }}
               </option>
-            </select></label
-          >
-          <button type="button" :disabled="!canCapture" @click="capture">使用此取景并返回</button>
-          <p class="ad-muted">左键旋转 · 滚轮缩放 · 右键平移。只回填镜头，不保存外观或动作状态。</p>
-          <p v-if="captureError" role="alert" class="ad-error">{{ captureError }}</p>
+            </select>
+          </label>
+          <button type="button" class="ad-primary" :disabled="!canCapture" @click="capture">
+            <Camera :size="16" aria-hidden="true" />使用此取景并返回
+          </button>
+          <details class="ad-capture-help">
+            <summary>操作提示<ChevronDown :size="14" aria-hidden="true" /></summary>
+            <p>左键旋转，滚轮缩放，右键平移。只回填镜头，外观与结构状态不随取景保存。</p>
+          </details>
         </div>
-      </div>
+        <p v-if="captureError" role="alert" class="ad-error">{{ captureError }}</p>
+      </header>
     </Transition>
     <div class="workbench" :data-status="store.status" :data-slug="store.slug">
-      <main
+      <div
         ref="inspector"
         class="wb-layout"
         :class="{ 'with-inspector': store.panel }"
@@ -121,7 +132,7 @@ onScopeDispose(() => {
           />
         </section>
         <WorkbenchInspector :panel="activeSection" :exhibition="exhibition" @close="closePanel" />
-      </main>
+      </div>
     </div>
   </div>
 </template>

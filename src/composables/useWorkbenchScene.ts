@@ -46,6 +46,7 @@ export interface WorkbenchSceneProps {
   showcase?: boolean
   renderSearch?: string
   studioMood?: StudioMood
+  inspectPart?: (id: string) => void
 }
 /** Scene owns all resources except the Tres-owned renderer. */
 export function useWorkbenchScene(
@@ -435,6 +436,10 @@ export function useWorkbenchScene(
         invalidate,
         store.manual,
         (id) => {
+          if (props.inspectPart) {
+            props.inspectPart(id)
+            return
+          }
           store.focus(id)
           store.panel = 'details'
         },

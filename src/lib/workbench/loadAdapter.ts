@@ -115,7 +115,15 @@ export async function loadAdapter(
         ? (await import('./rendering/studio')).createWorkbenchStudio
         : undefined
       signal.throwIfAborted()
-      adapter = bindTypewriter(product, source, decoded.root, motion, decoded.dispose, studio)
+      adapter = bindTypewriter(
+        product,
+        source,
+        decoded.root,
+        motion,
+        decoded.dispose,
+        studio,
+        showcaseRequested(search),
+      )
     } else if (source.adapter === 'piano-v1') {
       const program = product.presentation.actions.find(
         (a) => a.motion?.program?.type === 'piano-sound-path-v1',

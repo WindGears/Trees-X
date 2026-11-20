@@ -1,9 +1,19 @@
 import { readFileSync } from 'node:fs'
-import { BufferGeometry, Float32BufferAttribute, Group, Matrix4, Quaternion, Vector3 } from 'three'
+import {
+  BufferGeometry,
+  DoubleSide,
+  Float32BufferAttribute,
+  Group,
+  Matrix4,
+  Quaternion,
+  Ray,
+  Vector3,
+} from 'three'
 import { MeshBVH } from 'three-mesh-bvh'
 import { describe, expect, it } from 'vitest'
 import { parseProduct } from './api'
 import { bindTypewriterRig, parseTypewriterRig } from './typewriterRig'
+import { representativeTypebar, typebarInspectionOffset } from './typewriterInspection'
 
 const parts = parseTypewriterRig(
   JSON.parse(readFileSync('public/models/bundles/kimi-typewriter/v1/rig.json', 'utf8')) as unknown,
@@ -143,6 +153,61 @@ function clearance(point: Vector3) {
 }
 
 describe('typewriter bounded strike', () => {
+  it('keeps the typebar shaft and type slug clear of real triangles in both inspection poses', () => {
+    const { nodes, apply } = fixture()
+    const root = new Group()
+    const scale = 0.16
+    root.scale.setScalar(scale)
+    for (const node of nodes.values()) root.add(node)
+    const bar = nodes.get(representativeTypebar)!
+    const hotspot = product.presentation.hotspots.find((part) => part.node === bar.name)!
+    const occluders = parts
+      .filter((part) => part.node !== bar.name)
+      .map((part) => {
+        const mesh = geometry(part.node)
+        return { mesh, bvh: new MeshBVH(mesh), node: nodes.get(part.node)!, inverse: new Matrix4() }
+      })
+    const origin = new Vector3(),
+      end = new Vector3(),
+      ray = new Ray()
+    function blockers(offset: number[]) {
+      const camera = bar
+        .localToWorld(new Vector3(...hotspot.anchor!))
+        .add(new Vector3().fromArray(offset))
+      return [0.18, 0.45, 0.9, 1.35, 1.8, 2.25, 2.55, 2.75].map((z) => {
+        const sample = bar.localToWorld(new Vector3(-0.012, 0.015, z))
+        let closest = Infinity
+        let blocker: string | undefined
+        for (const { bvh, inverse, node } of occluders) {
+          origin.copy(camera).applyMatrix4(inverse)
+          end.copy(sample).applyMatrix4(inverse)
+          ray.origin.copy(origin)
+          ray.direction.copy(end).sub(origin).normalize()
+          const hit = bvh.raycastFirst(ray, DoubleSide, 0, origin.distanceTo(end) - 0.006 / scale)
+          if (hit && hit.distance < closest) {
+            closest = hit.distance
+            blocker = node.name
+          }
+        }
+        return blocker
+      })
+    }
+    try {
+      expect(typebarInspectionOffset(0)).toBeUndefined()
+      expect(typebarInspectionOffset(0.8)).toBeUndefined()
+      for (const progress of [0.6, 1]) {
+        apply({ 'explore-layout': progress, 'press-key': 0 })
+        root.updateMatrixWorld(true)
+        for (const { inverse, node } of occluders) inverse.copy(node.matrixWorld).invert()
+        if (progress === 0.6)
+          expect(blockers(hotspot.cameraOffset)).toEqual(Array(8).fill('part-097'))
+        expect(blockers(typebarInspectionOffset(progress)!)).toEqual(Array(8).fill(undefined))
+      }
+    } finally {
+      for (const { mesh } of occluders) mesh.dispose()
+    }
+  })
+
   it('uses the actual GLB local pivots and restores the complete static pose exactly', () => {
     const { nodes, apply } = fixture(),
       position = new Vector3(),

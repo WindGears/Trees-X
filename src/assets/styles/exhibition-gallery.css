@@ -1,0 +1,274 @@
+.exhibit-gallery {
+  --gallery-ink: #f2efe8;
+  --gallery-muted: #bdb8ad;
+  --gallery-accent: #e6c77d;
+  --gallery-line: #ffffff20;
+  --gallery-canvas: #101113;
+  --gallery-rail: #161719;
+  min-height: 640px;
+  height: 100svh;
+  display: grid;
+  grid-template-columns: clamp(170px, 14.4vw, 226px) minmax(0, 1fr);
+  color: var(--gallery-ink);
+  background: var(--gallery-canvas);
+  font:
+    14px Manrope,
+    'Noto Sans SC Display',
+    sans-serif;
+  color-scheme: dark;
+}
+
+.exhibit-rail {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 5vh, 54px);
+  padding: clamp(23px, 3.8vh, 38px) 18px;
+  border-inline-end: 1px solid var(--gallery-line);
+  background: var(--gallery-rail);
+}
+.exhibit-brand {
+  display: grid;
+  gap: 8px;
+  padding-inline: 5px;
+  font-size: 25px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+.exhibit-brand span,
+.exhibit-rail-status {
+  color: var(--gallery-muted);
+  font-size: 13px;
+  letter-spacing: normal;
+}
+.exhibit-catalog {
+  display: grid;
+  gap: 9px;
+}
+.exhibit-catalog button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px 4px;
+  align-items: center;
+  padding: 7px 7px 9px;
+  min-width: 0;
+  color: var(--gallery-muted);
+  border: 1px solid transparent;
+  border-radius: 9px;
+  text-align: left;
+}
+.exhibit-catalog img {
+  inline-size: 100%;
+  block-size: clamp(62px, 10.5vh, 102px);
+  grid-column: 1 / -1;
+  object-fit: cover;
+  border-radius: 5px;
+  background: #202123;
+}
+.exhibit-catalog button span {
+  padding-inline-start: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.exhibit-catalog button:hover {
+  color: var(--gallery-ink);
+  background: #ffffff0b;
+}
+.exhibit-catalog button[aria-current='true'] {
+  color: var(--gallery-accent);
+  border-color: #e6c77d65;
+  background: #29251e;
+}
+
+.exhibit-main {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  padding: 0 clamp(20px, 2.55vw, 46px) clamp(16px, 2.4vh, 28px);
+}
+.exhibit-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  min-height: clamp(87px, 11.8vh, 118px);
+  padding: 12px 0;
+}
+.exhibit-heading h1 {
+  margin: 0;
+  color: var(--gallery-ink);
+  font-size: clamp(26px, 2.6vw, 40px);
+  font-weight: 580;
+  letter-spacing: -0.036em;
+  line-height: 1.2;
+}
+.exhibit-heading p {
+  margin: 7px 0 0;
+  color: var(--gallery-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: balance;
+}
+.exhibit-heading button,
+.exhibit-rail-status button,
+.exhibit-pending button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 6px 11px;
+  color: var(--gallery-ink);
+  border: 1px solid var(--gallery-line);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.exhibit-heading button:hover,
+.exhibit-rail-status button:hover,
+.exhibit-pending button:hover {
+  background: #ffffff15;
+}
+.exhibit-bay {
+  --gallery-controls-height: 84px;
+  position: relative;
+  min-height: 0;
+  border: 1px solid var(--gallery-line);
+  border-radius: 12px;
+  background: #141518;
+}
+.exhibit-poster,
+.exhibit-pending {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.exhibit-poster-image,
+:root .exhibit-gallery .exhibit-bay .wb-transition-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.exhibit-poster-image {
+  height: calc(100% - var(--gallery-controls-height));
+}
+.exhibit-start {
+  position: absolute;
+  inset: auto auto calc((var(--gallery-controls-height) - 49px) / 2) 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 49px;
+  padding: 8px 23px;
+  transform: translateX(-50%);
+  color: #211a0c;
+  background: var(--gallery-accent);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 650;
+  transition:
+    background-color 150ms ease,
+    scale 110ms ease-out;
+}
+.exhibit-start:hover {
+  background: #efd79e;
+}
+.exhibit-start:active {
+  scale: 0.97;
+}
+.exhibit-gallery button {
+  cursor: pointer;
+}
+.exhibit-gallery button:focus-visible,
+.exhibit-bay:focus-visible {
+  outline: 2px solid var(--gallery-accent);
+  outline-offset: 3px;
+}
+.exhibit-bay > .exhibit-live.workbench {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) var(--gallery-controls-height);
+  height: 100%;
+  min-height: 0;
+  border-radius: inherit;
+  background: transparent;
+}
+.exhibit-live-stage {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 11px 11px 0 0;
+}
+.exhibit-live-stage .wb-stage {
+  position: absolute;
+  inset: 0;
+}
+.exhibit-live-stage .exhibit-part-detail {
+  position: absolute;
+  inset: 16px 16px auto auto;
+  z-index: 5;
+}
+.exhibit-gallery .workbench.exhibit-live button.exhibit-control-primary {
+  color: #211a0c;
+  border-color: transparent;
+  background: var(--gallery-accent);
+}
+.exhibit-gallery .workbench.exhibit-live button.exhibit-control-primary:hover:not(:disabled) {
+  color: #211a0c;
+  background: #efd79e;
+}
+.exhibit-gallery .workbench.exhibit-live .wb-callouts .wb-hotspot[aria-pressed='true'] {
+  color: #211a0c;
+  background: var(--gallery-accent);
+  border-color: #efd79e;
+}
+:root .exhibit-gallery .wb-content-fallback {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 24px;
+}
+:root .exhibit-gallery .exhibit-bay .wb-stage-status--poster {
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 24px;
+  text-align: left;
+  color: var(--gallery-ink);
+}
+:root .exhibit-gallery .exhibit-bay .wb-stage-status-copy {
+  position: relative;
+  max-width: 36ch;
+  padding: 14px 16px;
+  border: 1px solid var(--gallery-line);
+  border-radius: 10px;
+  background: #17181af5;
+}
+.exhibit-gallery .wb-stage-status p {
+  color: var(--gallery-muted);
+}
+.exhibit-pending {
+  bottom: var(--gallery-controls-height);
+  display: flex;
+  flex-direction: column;
+}
+.exhibit-pending h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+.exhibit-pending p {
+  margin: 5px 0 10px;
+}
+.exhibit-pending .ui-loading-track {
+  --ui-loading-ink: var(--gallery-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exhibit-start {
+    transition: none;
+  }
+}

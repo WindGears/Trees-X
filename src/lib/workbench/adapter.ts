@@ -17,6 +17,7 @@ export interface SceneAdapter {
   setFinish(color: string): void
   setPaintStudy?(paint: CarPaintStudy): boolean
   point(node: string, result: Vector3, anchor?: Vec3): Vector3 | undefined
+  focusPosition?(node: string, target: Vector3, result: Vector3): boolean
   dispose(): void
   attach?(scene: Scene, renderer: WorkbenchRenderer, camera?: Camera): void
   beforeRender?(): void

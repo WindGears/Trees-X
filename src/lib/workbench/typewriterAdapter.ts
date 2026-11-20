@@ -1,4 +1,5 @@
-import { MeshStandardMaterial, type Group, type Scene } from 'three'
+import { MeshStandardMaterial, Vector3, type Group, type Scene } from 'three'
+import type { SceneAdapter } from './adapter'
 import { bindGlb } from './glbAdapter'
 import { bindTypewriterRig, parseTypewriterRig } from './typewriterRig'
 import { instanceTypewriter } from './typewriterInstances'
@@ -8,6 +9,8 @@ import { createTypewriterStudio } from './studio/stage'
 import { isWebGpuRenderer, type WorkbenchRenderer } from './rendering/rendererTypes'
 import type { WorkbenchStudio, WorkbenchStudioFactory } from './rendering/studio'
 import type { StudioMoodUpdate } from './studio/mood'
+import { isAuditedTypewriterSource } from './typewriterCandidate'
+import { representativeTypebar, typebarInspectionOffset } from './typewriterInspection'
 
 export function bindTypewriter(
   product: WorkbenchProduct,
@@ -16,7 +19,8 @@ export function bindTypewriter(
   data: unknown,
   release: () => void,
   studioFactory?: WorkbenchStudioFactory,
-) {
+  exhibition = false,
+): SceneAdapter {
   const parts = parseTypewriterRig(data)
   const adapter = bindGlb(product, source, model, release)
   const applyRig = bindTypewriterRig(parts, adapter.nodes, product.presentation)
@@ -36,6 +40,13 @@ export function bindTypewriter(
   )
   adapter.root.userData.parts = parts.length
   adapter.root.userData.adapter = source.adapter
+  const inspectionLayout =
+    exhibition && product.slug === 'typewriter-study' && isAuditedTypewriterSource(source)
+      ? product.presentation.actions.find(
+          (action) => action.motion?.program?.type === 'typewriter-layout-v1',
+        )?.id
+      : undefined
+  const modelOrigin = new Vector3()
   let studio: WorkbenchStudio | undefined
   const apply = () => {
     adapter.apply()
@@ -50,6 +61,15 @@ export function bindTypewriter(
     apply,
     select: instances.select,
     nodeForHit: instances.nodeForHit,
+    focusPosition(node, target, result) {
+      if (!inspectionLayout || node !== representativeTypebar) return false
+      const offset = typebarInspectionOffset(adapter.pose[inspectionLayout] ?? 0)
+      if (!offset) return false
+      modelOrigin.setFromMatrixPosition(adapter.root.matrixWorld)
+      result.fromArray(offset).multiplyScalar(1 / 0.16)
+      adapter.root.localToWorld(result).sub(modelOrigin).add(target)
+      return true
+    },
     attach(scene: Scene, renderer: WorkbenchRenderer) {
       if (disposed || studio) return
       if (studioFactory)

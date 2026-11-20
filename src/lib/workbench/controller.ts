@@ -223,7 +223,8 @@ export function createStageController(
         focusedPart = hotspot.id
         adapter.select?.(hotspot.node)
         dirty('materials')
-        destination.copy(point).add(new Vector3(...hotspot.cameraOffset))
+        if (!adapter.focusPosition?.(hotspot.node, point, destination))
+          destination.fromArray(hotspot.cameraOffset).add(point)
         move(destination.toArray() as Vec3, point.toArray() as Vec3)
       }
     } else if (value.kind === 'orbit') {

@@ -1,5 +1,9 @@
 # Trees X 新版项目入口
 
+## 一体式暗色展厅
+
+首页在同一页展示三个展品、封面和互动入口。互动后直接切展，部件详情与章节操作可以同时使用。管理端将预览与保存置顶。当前实机结果见[展厅验收](exhibition-integrated-validation.md)。
+
 ## WebGPU 答辩候选
 
 `renderPipeline=showcase` 以汽车 R18、WindGear v2 和三角钢琴组织同一个 WebGPU 工作台。默认晋级按三件画质、操作和实际呈现验收判断。通过 `TREES_DEMO_SHOWCASE=1` 选择本地打包检查。运行方式、实测和五分钟流程见[答辩版验收](showcase-validation.md)。

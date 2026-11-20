@@ -99,6 +99,12 @@ const tab = async (name, selected = true) => {
   await button.click()
   if (selected) await expect(button).toHaveAttribute('aria-current', 'page')
 }
+const moreOperations = () => page.getByRole('button', { name: '更多操作', exact: true })
+const productOperation = (name) => page.getByRole('menuitem', { name, exact: true })
+async function selectProductOperation(name) {
+  await moreOperations().click()
+  await productOperation(name).click()
+}
 async function draftConfig() {
   await tab('高级配置')
   return JSON.parse(await page.getByLabel('完整展示配置 JSON', { exact: true }).inputValue())
@@ -157,7 +163,13 @@ try {
   await capture('categories-1440')
   await page.getByRole('button', { name: '商品与展示配置', exact: true }).click()
   await page.getByRole('button', { name: '编辑机械打字机', exact: true }).click()
-  await page.getByRole('button', { name: '下架商品', exact: true }).click()
+  await moreOperations().press('Enter')
+  await expect(productOperation('下架商品')).toHaveAccessibleDescription(
+    '从展厅目录移除，并停用访客商品链接。',
+  )
+  await page.keyboard.press('Escape')
+  await expect(moreOperations()).toBeFocused()
+  await selectProductOperation('下架商品')
   await expect(page.getByRole('status')).toContainText('已下架')
   expect((await api('/api/v1/products/typewriter-study')).status).toBe(404)
   await page.getByLabel('商品名称', { exact: true }).fill('打字机管理验证')
@@ -344,7 +356,7 @@ try {
   await tab('基本信息')
   await page.getByRole('button', { name: '保存修改', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('已保存')
-  await page.getByRole('button', { name: '上架商品', exact: true }).click()
+  await selectProductOperation('上架商品')
   await expect(page.getByRole('status')).toContainText('已上架')
   expect((await api('/api/v1/products/typewriter-study')).data.name).toBe('打字机管理验证')
   expect((await api('/api/v1/products/typewriter-study')).data.presentation.camera).toEqual(
@@ -392,7 +404,7 @@ try {
   await expect(page.getByRole('alert')).toContainText('其他窗口修改')
   await expect(page.getByLabel('商品介绍', { exact: true })).toHaveValue('保留我的未保存输入')
   page.once('dialog', (dialog) => dialog.accept())
-  await page.getByRole('button', { name: '重新读取', exact: true }).click()
+  await selectProductOperation('重新读取')
   await expect(page.getByLabel('商品介绍', { exact: true })).toHaveValue('另一窗口已更新')
   await page.getByLabel('商品介绍', { exact: true }).fill('会话过期时的输入')
   await api('/api/v1/admin/session/logout', 'POST')
@@ -428,7 +440,7 @@ try {
     await tab('基本信息')
   }
   await page.setViewportSize({ width: 1440, height: 1000 })
-  await page.getByRole('button', { name: '下架商品', exact: true }).click()
+  await selectProductOperation('下架商品')
   await expect(page.getByRole('status')).toContainText('已下架')
   expect((await api('/api/v1/products/typewriter-study')).status).toBe(404)
   report.checks.push(

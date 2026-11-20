@@ -8,6 +8,7 @@ const legacyProducts = new Set([
   'home-furniture-set',
   'toy-racer',
 ])
+const officialExhibits = new Set(['typewriter-study', 'piano-cfx', 'reventon'])
 function isLegacy() {
   const query = new URL(location.href).searchParams
   return query.get('legacy') === '1' || legacyProducts.has(query.get('product') ?? '')
@@ -15,7 +16,11 @@ function isLegacy() {
 function isExhibition() {
   const url = new URL(location.href)
   if (url.pathname !== '/' || isLegacy()) return false
-  return !url.searchParams.size || url.searchParams.get('renderPipeline') === 'showcase'
+  return (
+    !url.searchParams.size ||
+    url.searchParams.get('renderPipeline') === 'showcase' ||
+    (url.searchParams.size === 1 && officialExhibits.has(url.searchParams.get('product') ?? ''))
+  )
 }
 const legacy = ref(isLegacy())
 const admin = ref(location.pathname === '/admin' || location.pathname.startsWith('/admin/'))

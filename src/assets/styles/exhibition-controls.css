@@ -1,0 +1,309 @@
+.exhibit-controls,
+.exhibit-tool-sheet,
+.exhibit-chapter-menu,
+.exhibit-part-detail {
+  --exhibit-control-ink: #f0ece2;
+  --exhibit-control-muted: #bdb8ae;
+  --exhibit-control-line: #45413a;
+  --exhibit-control-accent: #e5c690;
+  color: var(--exhibit-control-ink);
+}
+
+.exhibit-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  width: 100%;
+  padding: 13px clamp(18px, 2vw, 32px);
+  min-height: 76px;
+}
+
+.exhibit-controls-state {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 640;
+  line-height: 1.4;
+}
+
+.exhibit-chapter-count {
+  margin-inline-start: 9px;
+  color: var(--exhibit-control-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.exhibit-controls-detail,
+.exhibit-tool-body p,
+.exhibit-part-detail p {
+  margin: 5px 0 0;
+  color: var(--exhibit-control-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.exhibit-controls-actions,
+.exhibit-tool-inline,
+.exhibit-part-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exhibit-controls-actions {
+  flex: 0 0 auto;
+}
+
+.exhibit-controls button,
+.exhibit-tool-sheet button,
+.exhibit-part-detail button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--exhibit-control-line);
+  border-radius: 7px;
+  color: inherit;
+  background: #272521;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 560;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    transform 110ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.exhibit-controls button:hover,
+.exhibit-tool-sheet button:hover,
+.exhibit-part-detail button:hover {
+  background: #363029;
+}
+
+.exhibit-controls button:active,
+.exhibit-tool-sheet button:active,
+.exhibit-part-detail button:active {
+  transform: scale(0.97);
+}
+
+.exhibit-controls .exhibit-control-primary,
+.exhibit-part-detail .exhibit-control-primary {
+  min-width: 116px;
+  border-color: transparent;
+  color: #221911;
+  background: var(--exhibit-control-accent);
+  font-weight: 670;
+}
+
+.exhibit-controls .exhibit-control-primary:hover,
+.exhibit-part-detail .exhibit-control-primary:hover {
+  background: #f1d6a4;
+}
+
+.exhibit-controls .exhibit-tools-trigger {
+  border-color: transparent;
+  color: var(--exhibit-control-muted);
+  background: transparent;
+}
+
+.exhibit-controls :focus-visible,
+.exhibit-tool-sheet :focus-visible,
+.exhibit-part-detail :focus-visible {
+  outline: 2px solid var(--exhibit-control-accent);
+  outline-offset: 2px;
+}
+
+.exhibit-tool-sheet,
+.exhibit-chapter-menu,
+.exhibit-part-detail {
+  border: 1px solid var(--exhibit-control-line);
+  border-radius: 13px;
+  background: #211f1d;
+  box-shadow: 0 12px 24px rgb(0 0 0 / 35%);
+  color-scheme: dark;
+}
+
+.exhibit-chapter-menu {
+  z-index: 41;
+  min-width: 190px;
+  padding: 7px;
+  font: 14px var(--exhibit-font, system-ui, sans-serif);
+}
+
+.exhibit-chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 35px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.exhibit-chapter-item > span {
+  min-width: 13px;
+  color: var(--exhibit-control-muted);
+  font-size: 12px;
+}
+
+.exhibit-chapter-item svg {
+  margin-inline-start: auto;
+}
+
+.exhibit-chapter-item[data-state='checked'] {
+  color: var(--exhibit-control-accent);
+}
+
+.exhibit-chapter-item[data-highlighted] {
+  outline: none;
+  background: #383128;
+}
+
+.exhibit-tool-sheet {
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  width: min(332px, calc(100vw - 32px));
+  max-height: min(520px, calc(100vh - 132px));
+  padding: 5px 15px 13px;
+  font: 14px var(--exhibit-font, system-ui, sans-serif);
+}
+
+.exhibit-tool-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 7px 0 9px;
+  border-bottom: 1px solid var(--exhibit-control-line);
+}
+
+.exhibit-tool-sheet .exhibit-tool-tabs button {
+  flex: 1;
+  min-height: 33px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--exhibit-control-muted);
+}
+
+.exhibit-tool-sheet button[aria-pressed='true'] {
+  border-color: #806541;
+  color: var(--exhibit-control-accent);
+  background: #3e3225;
+}
+
+.exhibit-tool-body {
+  display: grid;
+  gap: 9px;
+  min-height: 100px;
+  padding: 11px 3px 12px;
+  overflow-y: auto;
+  scrollbar-color: #625748 #211f1d;
+}
+
+.exhibit-tool-body label,
+.exhibit-tool-body h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 620;
+}
+
+.exhibit-tool-body input {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--exhibit-control-line);
+  border-radius: 7px;
+  color: inherit;
+  background: #171613;
+  caret-color: var(--exhibit-control-accent);
+}
+
+.exhibit-tool-body input::placeholder {
+  color: var(--exhibit-control-muted);
+}
+
+.exhibit-tool-list,
+.exhibit-tool-sheet .wb-finishes {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exhibit-tool-list button,
+.exhibit-tool-sheet .wb-finishes button {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 33px;
+  border-color: transparent;
+  background: transparent;
+  text-align: left;
+}
+
+.exhibit-tool-sheet .wb-note {
+  margin: 6px 0 9px;
+}
+
+.exhibit-finish-swatch,
+.exhibit-tool-sheet .wb-swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgb(255 255 255 / 24%);
+  border-radius: 50%;
+}
+
+.exhibit-tool-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--exhibit-control-line);
+}
+
+.exhibit-tool-sheet .exhibit-tool-footer button {
+  min-height: 34px;
+  border-color: transparent;
+  color: var(--exhibit-control-muted);
+  background: transparent;
+}
+
+.exhibit-part-detail {
+  width: min(296px, calc(100% - 24px));
+  padding: 16px;
+}
+
+.exhibit-part-detail header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.exhibit-part-detail h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.exhibit-part-detail .exhibit-part-close {
+  flex: 0 0 34px;
+  min-height: 34px;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.exhibit-part-actions {
+  margin-top: 13px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exhibit-controls button,
+  .exhibit-tool-sheet button,
+  .exhibit-part-detail button {
+    transform: none;
+    transition: none;
+  }
+}

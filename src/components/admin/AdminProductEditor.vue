@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, onScopeDispose, ref, watch } from 'vue'
+import { ArrowLeft } from '@lucide/vue'
 import { adminApi, message, type AdminDetail, type Category } from '@/lib/admin/api'
 import { createProductDraft, provideProductDraft } from '@/lib/admin/productDraft'
-import { applyCameraCapture, editorSections } from '@/lib/admin/editor'
+import { applyCameraCapture, editorSections, type EditorSection } from '@/lib/admin/editor'
 import type { CameraSnapshot } from '@/lib/workbench/cameraCapture'
 import type { WorkbenchProduct } from '@/lib/workbench/types'
 import { createInterfaceMotion } from '@/lib/workbench/interfaceMotion'
@@ -14,6 +15,7 @@ import AdminCamera from './AdminCamera.vue'
 import AdminActions from './AdminActions.vue'
 import AdminGuide from './AdminGuide.vue'
 import AdminConfigEditor from './AdminConfigEditor.vue'
+import AdminProductMenu from './AdminProductMenu.vue'
 const loadPreview = () => import('./AdminPreview.vue')
 const AdminPreview = defineAsyncComponent(loadPreview)
 const requestLabels = {
@@ -22,6 +24,15 @@ const requestLabels = {
   visibility: '正在更新上架状态…',
   reload: '正在重新读取配置…',
 }
+const groups: { label: string; ids: EditorSection[] }[] = [
+  { label: '商品资料', ids: ['info', 'finishes'] },
+  { label: '展示内容', ids: ['hotspots', 'camera', 'actions', 'guide'] },
+  { label: '高级设置', ids: ['advanced'] },
+]
+const sectionGroups = groups.map(({ label, ids }) => ({
+  label,
+  sections: editorSections.filter(([id]) => ids.includes(id)),
+}))
 const props = defineProps<{ detail: AdminDetail; categories: Category[]; create: boolean }>()
 const emit = defineEmits<{ close: []; dirty: [value: boolean] }>()
 const draft = createProductDraft(props.detail, props.create)
@@ -113,6 +124,7 @@ async function reload() {
   if (dirty.value && !window.confirm('重新读取将丢弃当前未保存修改，继续？')) return
   pending.value = 'reload'
   error.value = ''
+  notice.value = ''
   try {
     draft.accept(await adminApi.detail(item.value.slug))
   } catch (e) {
@@ -143,81 +155,86 @@ onScopeDispose(() => {
     @close="preview = null"
     @capture="captured"
   />
-  <template v-else>
-    <Transition appear :css="false" @enter="motion.enter" @enter-cancelled="motion.cancel">
-      <header class="ad-title">
-        <div>
-          <button type="button" class="ad-back" :disabled="busy" @click="close">
-            返回商品列表
-          </button>
-          <h1>{{ creating ? '新建商品' : item.name }}</h1>
-          <p>编辑当前商品；预览和取景不保存数据库，完成后手动保存。</p>
-        </div>
-        <span class="ad-state">{{
-          dirty ? '有未保存修改' : item.listed ? '已上架' : '已下架'
-        }}</span>
-      </header>
-    </Transition>
-    <form class="ad-editor" novalidate @submit.prevent="save">
-      <nav class="ad-editor-tabs" aria-label="商品编辑分区">
-        <button
-          v-for="[id, label] in editorSections"
-          :key="id"
-          type="button"
-          :aria-current="section === id ? 'page' : undefined"
-          :disabled="busy"
-          @click="draft.choose(id)"
-        >
-          {{ label }}
-        </button>
-      </nav>
-      <fieldset ref="sectionBody" :disabled="busy" class="ad-editor-body">
-        <legend class="sr-only">商品与展示配置</legend>
-        <AdminBasicFields
-          v-show="section === 'info'"
-          :categories="categories"
-          :creating="creating"
-        />
-        <AdminHotspots v-show="section === 'hotspots'" />
-        <AdminFinishes v-show="section === 'finishes'" />
-        <AdminCamera v-show="section === 'camera'" @capture="showPreview" />
-        <AdminActions v-show="section === 'actions'" />
-        <AdminGuide v-show="section === 'guide'" />
-        <AdminConfigEditor v-show="section === 'advanced'" />
-      </fieldset>
-      <div class="ad-savebar">
-        <div v-if="issues.length" class="ad-error ad-issues" role="alert">
-          <p>有{{ issues.length }}项需要修正，保存与预览暂不可用。</p>
-          <button
-            v-for="(issue, index) in issues"
-            :key="issue.path + index"
-            type="button"
-            :disabled="busy"
-            @click="draft.locate(issue)"
-          >
-            {{ issue.message }}
-          </button>
-        </div>
-        <p v-if="advancedDirty" class="ad-muted">
-          高级JSON尚未应用，请在高级配置中应用或放弃输入。
-        </p>
-        <p v-if="error" role="alert" class="ad-error">{{ error }}</p>
-        <p v-if="notice" role="status">{{ notice }}</p>
-        <div class="ad-actions">
-          <button type="submit" class="ad-primary" :disabled="blocked">保存修改</button
-          ><button type="button" :disabled="blocked" @click="showPreview()">预览当前配置</button
-          ><button v-if="!creating" type="button" :disabled="busy || dirty" @click="visibility">
-            {{ item.listed ? '下架商品' : '上架商品' }}</button
-          ><button v-if="!creating" type="button" :disabled="busy" @click="reload">重新读取</button>
-          <div v-if="pending" class="ad-request">
-            <p role="status">{{ requestLabels[pending] }}</p>
-            <UiLoadingTrack />
+  <form v-else class="ad-editor" novalidate @submit.prevent="save">
+    <header class="ad-editor-header">
+      <Transition appear :css="false" @enter="motion.enter" @enter-cancelled="motion.cancel">
+        <div class="ad-editor-toolbar">
+          <div class="ad-editor-identity">
+            <button type="button" class="ad-back" :disabled="busy" @click="close">
+              <ArrowLeft :size="15" aria-hidden="true" />返回商品列表
+            </button>
+            <h1>{{ item.name.trim() || (creating ? '新建商品' : '商品配置') }}</h1>
+            <div class="ad-editor-meta">
+              <span class="ad-state" :class="{ 'is-listed': item.listed }">
+                {{ item.listed ? '已上架' : '已下架' }}
+              </span>
+              <span class="ad-state" :class="{ 'is-dirty': dirty }">
+                {{ dirty ? '有未保存修改' : '已保存' }}
+              </span>
+            </div>
+          </div>
+          <div class="ad-editor-primary">
+            <button type="button" :disabled="blocked" @click="showPreview()">预览当前配置</button>
+            <button type="submit" class="ad-primary" :disabled="blocked">保存修改</button>
+            <AdminProductMenu
+              v-if="!creating"
+              :busy="busy"
+              :dirty="dirty"
+              :listed="item.listed"
+              @visibility="visibility"
+              @reload="reload"
+            />
           </div>
         </div>
-        <p class="ad-muted">
-          {{ dirty ? '上下架前先保存修改。' : '保存上架商品后，访客重新加载读取更新内容。' }}
-        </p>
+      </Transition>
+      <div v-if="pending" class="ad-request ad-editor-request">
+        <p role="status">{{ requestLabels[pending] }}</p>
+        <UiLoadingTrack />
       </div>
-    </form>
-  </template>
+      <p v-if="error" role="alert" class="ad-error ad-editor-feedback">{{ error }}</p>
+      <p v-if="!pending && notice" role="status" class="ad-editor-feedback">{{ notice }}</p>
+    </header>
+    <nav class="ad-editor-tabs" aria-label="商品编辑分区">
+      <div v-for="group in sectionGroups" :key="group.label" role="group" :aria-label="group.label">
+        <span aria-hidden="true">{{ group.label }}</span>
+        <div class="ad-editor-section-buttons">
+          <button
+            v-for="[id, label] in group.sections"
+            :key="id"
+            type="button"
+            :aria-current="section === id ? 'page' : undefined"
+            :disabled="busy"
+            @click="draft.choose(id)"
+          >
+            {{ label }}
+          </button>
+        </div>
+      </div>
+    </nav>
+    <div v-if="issues.length || advancedDirty" class="ad-editor-validation">
+      <div v-if="issues.length" class="ad-error ad-issues" role="alert">
+        <p>有{{ issues.length }}项需要修正，保存与预览暂不可用。</p>
+        <button
+          v-for="(issue, index) in issues"
+          :key="issue.path + index"
+          type="button"
+          :disabled="busy"
+          @click="draft.locate(issue)"
+        >
+          {{ issue.message }}
+        </button>
+      </div>
+      <p v-if="advancedDirty" class="ad-muted">高级JSON尚未应用，请在高级配置中应用或放弃输入。</p>
+    </div>
+    <fieldset ref="sectionBody" :disabled="busy" class="ad-editor-body">
+      <legend class="sr-only">商品与展示配置</legend>
+      <AdminBasicFields v-show="section === 'info'" :categories="categories" :creating="creating" />
+      <AdminHotspots v-show="section === 'hotspots'" />
+      <AdminFinishes v-show="section === 'finishes'" />
+      <AdminCamera v-show="section === 'camera'" @capture="showPreview" />
+      <AdminActions v-show="section === 'actions'" />
+      <AdminGuide v-show="section === 'guide'" />
+      <AdminConfigEditor v-show="section === 'advanced'" />
+    </fieldset>
+  </form>
 </template>

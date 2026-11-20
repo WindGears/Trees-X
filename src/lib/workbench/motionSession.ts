@@ -22,7 +22,9 @@ function createSession(store: ReturnType<typeof useWorkbenchStore>) {
 }
 const key: InjectionKey<ReturnType<typeof createSession>> = Symbol('workbench-motion')
 export function provideMotionSession(store: ReturnType<typeof useWorkbenchStore>) {
-  provide(key, createSession(store))
+  const session = createSession(store)
+  provide(key, session)
+  return session
 }
 export function useMotionSession() {
   const session = inject(key)

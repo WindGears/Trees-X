@@ -1,4 +1,4 @@
-import type { ProductSummary } from './types'
+import type { Hotspot, ProductSummary } from './types'
 
 export interface ExhibitionPoster {
   name: string
@@ -62,4 +62,24 @@ export function exhibitionItems(products: ProductSummary[]): ExhibitionOverviewI
 
 export function isLocalLink(event: MouseEvent) {
   return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey
+}
+
+export function exhibitionMarkers(
+  parts: readonly Hotspot[],
+  selectedId: string,
+  limit = 12,
+  names?: readonly string[],
+) {
+  const selected = parts.find((part) => part.id === selectedId)
+  const markers = parts.filter((part) => part.marker !== false && part !== selected)
+  if (names?.length) {
+    const priority = (name: string) => {
+      const rank = names.findIndex((target) => name.includes(target))
+      return rank === -1 ? names.length : rank
+    }
+    markers.sort((a, b) => priority(a.name) - priority(b.name))
+  }
+  return selected
+    ? [selected, ...markers.slice(0, Math.max(0, limit - 1))]
+    : markers.slice(0, limit)
 }

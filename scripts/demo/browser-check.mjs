@@ -415,6 +415,14 @@ export function compactSnapshot(snapshot) {
 
 export async function choose(page, metadata) {
   const slug = metadata.product.slug
+  const gallery = page.getByRole('navigation', { name: '选择展品' })
+  if (await gallery.isVisible()) {
+    await gallery.getByRole('button', { name: metadata.product.name, exact: true }).click()
+    const start = page.getByRole('button', { name: '开始互动', exact: true })
+    if (await start.isVisible()) await start.click()
+    await expect(page.locator('.exhibit-live')).toHaveAttribute('data-slug', slug)
+    return
+  }
   const switcher = page.getByRole('button', { name: '切换展品', exact: true })
   if (await switcher.isVisible()) {
     const workspace = page.locator('.workbench')

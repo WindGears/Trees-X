@@ -145,10 +145,11 @@ function expectedMatrix(camera) {
     .setPosition(position)
     .invert().elements
 }
+function matrixDelta(actual, expected) {
+  return Math.max(...actual.map((value, index) => Math.abs(value - expected[index])))
+}
 function near(actual, expected, tolerance = 0.0002) {
-  expect(Math.max(...actual.map((value, index) => Math.abs(value - expected[index])))).toBeLessThan(
-    tolerance,
-  )
+  expect(matrixDelta(actual, expected)).toBeLessThan(tolerance)
 }
 const canonical = (value) =>
   JSON.parse(JSON.stringify(value, (_key, item) => (item === null ? undefined : item)))
@@ -157,7 +158,7 @@ async function pixels(target, name) {
     path: `${output}/${name}.png`,
     timeout,
     style:
-      '.wb-hotspots,.wb-intro,.wb-tools,.wb-input-hint,.wb-panel,.wb-stage-status{visibility:hidden!important}',
+      '.wb-hotspots,.wb-intro,.wb-tools,.wb-input-hint,.wb-panel,.wb-stage-status,.exhibit-part-detail{visibility:hidden!important}',
   })
   const { data, info } = await sharp(screenshot)
     .removeAlpha()
@@ -222,23 +223,109 @@ function pixelChange(before, after) {
   expect(ratio).toBeGreaterThan(0.002)
   return ratio
 }
-function structureStep(panel, slug, presentation) {
-  const showcaseSteps = '.wb-exhibit-action-steps'
+function legacyStructureStep(panel, slug, presentation) {
   if (slug === 'typewriter-study')
     return panel
-      .locator(showcase ? showcaseSteps : '.wb-layout-choices')
+      .locator('.wb-layout-choices')
       .getByRole('button', { name: '分层展开', exact: true })
   if (slug === 'piano-cfx')
-    return panel
-      .locator(showcase ? showcaseSteps : '.wb-piano-chapters')
-      .getByRole('button', { name: '剖切', exact: true })
-  const doors = panel.locator('[data-motion-id="open-doors"]')
-  const step = showcase ? doors.locator(showcaseSteps) : doors
-  return step.getByRole('button', {
+    return panel.locator('.wb-piano-chapters').getByRole('button', { name: '剖切', exact: true })
+  return panel.locator('[data-motion-id="open-doors"]').getByRole('button', {
     name: presentation.actions.find((action) => action.id === 'open-doors').motion.openLabel,
     exact: true,
   })
 }
+
+const showcaseTasks = {
+  'typewriter-study': {
+    part: 'part-095',
+    action: { label: '分层展开', id: 'explore-layout', progress: 0.6, view: 'structure' },
+  },
+  'piano-cfx': {
+    part: 'piano-part-435',
+    action: { label: '剖切', id: 'sound-path', progress: 1 / 7, view: 'piano-section' },
+  },
+  reventon: {
+    part: 'headlights',
+    action: { label: '打开双门', id: 'open-doors', progress: 1 },
+  },
+}
+
+async function inspectSavedPart(target, slug, presentation, entry, savedMatrix) {
+  const inspector = target.locator('#wb-inspector')
+  let detail
+  let back
+  if (showcase) {
+    await target.getByRole('button', { name: '观察工具', exact: true }).click()
+    const sheet = target.getByRole('dialog', { name: '观察工具', exact: true })
+    const part = presentation.hotspots.find((item) => item.id === showcaseTasks[slug].part)
+    expect(part, `Missing initial-pose inspectable part for ${slug}`).toBeTruthy()
+    await sheet.getByRole('searchbox', { name: '查找部件' }).fill(part.name)
+    await sheet.getByRole('button', { name: part.name, exact: true }).click()
+    detail = target.locator('.exhibit-part-detail')
+    await expect(detail.getByRole('heading', { name: part.name, exact: true })).toBeVisible()
+    back = '回到本段'
+  } else {
+    await target.getByRole('button', { name: '细节', exact: true }).click()
+    const hotspot = inspector.locator('.wb-part-list button').first()
+    const hotspotName = await hotspot.textContent()
+    await hotspot.click()
+    await expect(hotspot).toHaveAttribute('aria-pressed', 'true')
+    detail = inspector.locator('.wb-part-copy')
+    await expect(detail).toContainText(hotspotName.trim())
+    back = '返回全景'
+  }
+  await expect
+    .poll(async () => matrixDelta(await viewMatrix(target), savedMatrix))
+    .toBeGreaterThan(0.01)
+  entry.pixels.push((await pixels(target, slug + '-saved-hotspot')).evidence)
+  await detail.getByRole('button', { name: back, exact: true }).click()
+  const expected = expectedMatrix(presentation.camera)
+  await expect
+    .poll(async () => matrixDelta(await viewMatrix(target), expected))
+    .toBeLessThan(0.0002)
+  await expect(detail).toBeHidden()
+}
+
+async function verifySavedAction(target, slug, presentation, entry) {
+  const inspector = target.locator('#wb-inspector')
+  if (!showcase) await target.getByRole('button', { name: '结构与动作', exact: true }).click()
+  const before = await pixels(target, slug + '-action-before')
+  const matrixBefore = await viewMatrix(target)
+  if (showcase) {
+    const action = showcaseTasks[slug].action
+    await target.getByRole('button', { name: action.label, exact: true }).click()
+    await target.waitForFunction(
+      ({ id, progress }) => {
+        const state = window.__demo.motion.snapshot()[id]
+        return state && !state.playing && Math.abs(state.progress - progress) < 0.0001
+      },
+      { id: action.id, progress: action.progress },
+      { timeout },
+    )
+    if (action.view) {
+      const view = presentation.views.find((item) => item.id === action.view)
+      expect(view, `Missing suggested chapter view for ${slug}`).toBeTruthy()
+      near(await viewMatrix(target), expectedMatrix(view))
+      entry.suggestedView = view.id
+    } else near(await viewMatrix(target), matrixBefore)
+  } else {
+    const action = legacyStructureStep(inspector, slug, presentation)
+    await action.click()
+    await expect(action).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 })
+    await target.waitForTimeout(250)
+    near(await viewMatrix(target), matrixBefore)
+  }
+  const after = await pixels(target, slug + '-action-after')
+  entry.actionPixelChange = pixelChange(before, after)
+  entry.pixels.push(before.evidence, after.evidence)
+  entry.checks.push(
+    showcase
+      ? 'Visitor renders the saved camera, part inspection returns to it, and the chapter reaches real structure progress and its suggested view when configured.'
+      : 'Visitor reload renders the saved viewMatrix; hotspot changes the real camera; structure action changes rendered model pixels while preserving that camera.',
+  )
+}
+
 async function restore(slug) {
   const original = originals.get(slug)
   const current = await detail(slug)
@@ -337,7 +424,21 @@ try {
     await expect(page.getByRole('status').filter({ hasText: /^已保存。/ })).toBeVisible()
     const saved = await detail(slug)
     expect(saved.item.description).toBe(description)
-    expect(canonical(saved.presentation)).toEqual(canonical(expected))
+    const persisted = canonical(saved.presentation)
+    const savedPerspective = persisted.views.find((view) => view.id === 'perspective')
+    expect(savedPerspective).toBeTruthy()
+    // Database JSON serialization may round the last floating-point digit.
+    for (const [actual, draft] of [
+      [persisted.camera, expected.camera],
+      [savedPerspective, expectedPerspective],
+    ]) {
+      for (const key of ['position', 'target']) {
+        expect(actual[key]).toHaveLength(3)
+        near(actual[key], draft[key], 1e-12)
+        actual[key] = draft[key]
+      }
+    }
+    expect(persisted).toEqual(canonical(expected))
     entry.camera = captured.camera
     entry.checks.push(
       'Real right-button pan is captured, remains unsaved until explicit save, and updates only default camera plus perspective view.',
@@ -353,34 +454,8 @@ try {
     near(visitorMatrix, expectedMatrix(saved.presentation.camera))
     entry.visitorViewMatrix = visitorMatrix
     entry.pixels.push((await pixels(visitor, slug + '-saved-visitor')).evidence)
-    const inspector = visitor.locator('#wb-inspector')
-    await visitor.getByRole('button', { name: showcase ? '部件' : '细节', exact: true }).click()
-    const hotspot = inspector.locator('.wb-part-list button').first()
-    const hotspotName = await hotspot.textContent()
-    await hotspot.click()
-    await expect(hotspot).toHaveAttribute('aria-pressed', 'true')
-    await expect(inspector.locator('.wb-part-copy')).toContainText(hotspotName.trim())
-    await visitor.waitForTimeout(1200)
-    expect(await viewMatrix(visitor)).not.toEqual(visitorMatrix)
-    entry.pixels.push((await pixels(visitor, slug + '-saved-hotspot')).evidence)
-    await inspector.getByRole('button', { name: '返回全景', exact: true }).click()
-    await visitor.waitForTimeout(1200)
-    near(await viewMatrix(visitor), expectedMatrix(saved.presentation.camera))
-    await visitor.getByRole('button', { name: '结构与动作', exact: true }).click()
-    await visitor.waitForTimeout(300)
-    const actionBefore = await pixels(visitor, slug + '-action-before')
-    const matrixBefore = await viewMatrix(visitor)
-    const actionButton = structureStep(inspector, slug, saved.presentation)
-    await actionButton.click()
-    await expect(actionButton).toHaveAttribute('aria-pressed', 'true', { timeout: 30000 })
-    await visitor.waitForTimeout(250)
-    near(await viewMatrix(visitor), matrixBefore)
-    const actionAfter = await pixels(visitor, slug + '-action-after')
-    entry.actionPixelChange = pixelChange(actionBefore, actionAfter)
-    entry.pixels.push(actionBefore.evidence, actionAfter.evidence)
-    entry.checks.push(
-      'Visitor reload renders the saved viewMatrix; hotspot changes the real camera; structure action changes rendered model pixels while preserving that camera.',
-    )
+    await inspectSavedPart(visitor, slug, saved.presentation, entry, visitorMatrix)
+    await verifySavedAction(visitor, slug, saved.presentation, entry)
     await visitor.close()
     visitor = undefined
     await restore(slug)

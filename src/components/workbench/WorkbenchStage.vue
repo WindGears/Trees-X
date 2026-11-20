@@ -12,7 +12,11 @@ import type { StudioEnvironmentStatus } from '@/lib/workbench/studio/mood'
 import type { RefinementStatus } from '@/lib/workbench/rendering/refinementTypes'
 import WorkbenchRefinement from './WorkbenchRefinement.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
-import { adminExhibitionSearch, type ExhibitionPoster } from '@/lib/workbench/exhibition'
+import {
+  adminExhibitionSearch,
+  exhibitionMarkers,
+  type ExhibitionPoster,
+} from '@/lib/workbench/exhibition'
 import WorkbenchScene from './WorkbenchScene.vue'
 import WorkbenchFallback from './WorkbenchFallback.vue'
 import WorkbenchLoadStatus from './WorkbenchLoadStatus.vue'
@@ -29,6 +33,10 @@ const props = defineProps<{
   catalog?: boolean
   exhibition?: boolean
   exhibit?: ExhibitionPoster
+  inspectPart?: (id: string) => void
+  markerLimit?: number
+  markerNames?: readonly string[]
+  renderSearch?: string
 }>()
 const emit = defineEmits<{ overview: [] }>()
 const store = useWorkbenchStore()
@@ -36,7 +44,7 @@ const revision = ref(0),
   stageElement = ref<HTMLElement>()
 const sceneHost = ref<InstanceType<typeof WorkbenchScene>>()
 const onScreen = useElementVisibility(stageElement)
-const previewSearch = props.preview ? adminExhibitionSearch(location.search) : undefined
+const previewSearch = props.preview ? adminExhibitionSearch(location.search) : props.renderSearch
 const {
   backend,
   rendererFactory,
@@ -109,12 +117,14 @@ const active = computed(() => visibility.value === 'visible' && onScreen.value)
 const dpr = Math.min(window.devicePixelRatio || 1, 2)
 const initialCamera = new Vector3(3.5, 2.3, 5)
 const callouts = ref<InstanceType<typeof WorkbenchCallouts>>()
-const visibleParts = computed(() => {
-  const parts = store.presentation?.hotspots ?? []
-  const selected = parts.find((part) => part.id === store.selectedPart)
-  const markers = parts.filter((part) => part.marker !== false && part !== selected)
-  return selected ? [selected, ...markers.slice(0, 11)] : markers.slice(0, 12)
-})
+const visibleParts = computed(() =>
+  exhibitionMarkers(
+    store.presentation?.hotspots ?? [],
+    store.selectedPart,
+    props.markerLimit,
+    props.markerNames,
+  ),
+)
 const place: PlaceCallout = (...values) => callouts.value?.place(...values)
 function commit() {
   callouts.value?.commit()
@@ -126,6 +136,10 @@ function restore(snapshot?: CameraSnapshot) {
   revision.value++
 }
 function focus(id: string) {
+  if (props.inspectPart) {
+    props.inspectPart(id)
+    return
+  }
   store.focus(id)
   store.panel = 'details'
 }
@@ -172,7 +186,6 @@ onErrorCaptured(() => {
   return false
 })
 </script>
-
 <template>
   <div
     ref="stageElement"
@@ -223,6 +236,7 @@ onErrorCaptured(() => {
         :gallery="gallery"
         :exhibition="exhibition"
         :inspector="inspector"
+        :inspect-part="inspectPart"
         :catalog="catalog"
         :checkpoint="checkpoint"
         :realtime-pipeline="realtimeRequest"
