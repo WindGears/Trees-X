@@ -1,4 +1,149 @@
 ---
+name: Trees X 机械探索馆候选
+description: gallery=next 的全幅展位与可扩展展品库；默认入口未切换，历史渲染规范保留在附录。
+colors:
+  museum-bg: '#111214'
+  museum-panel: '#202124'
+  museum-ink: '#f1efea'
+  museum-muted: '#b5b3ad'
+  museum-accent: '#d9be83'
+  museum-line: '#ffffff24'
+typography:
+  museum-display:
+    fontFamily: 'Manrope, Noto Sans SC, sans-serif'
+    fontSize: '30px'
+    fontWeight: 550
+    lineHeight: 1.3
+    letterSpacing: '-0.03em'
+  museum-library-title:
+    fontSize: '34px'
+    fontWeight: 550
+    letterSpacing: '-0.03em'
+  museum-card-title:
+    fontSize: '20px'
+    fontWeight: 550
+    lineHeight: 1.5
+  museum-body:
+    fontFamily: 'Manrope, Noto Sans SC, sans-serif'
+    fontSize: '15px'
+  museum-control:
+    fontSize: '14px'
+  museum-label:
+    fontSize: '12px'
+rounded:
+  museum-control: '10px'
+  museum-card: '12px'
+  museum-panel: '16px'
+spacing:
+  museum-card-gap: '24px'
+  museum-panel-inset: '22px'
+components:
+  museum-primary:
+    backgroundColor: '{colors.museum-accent}'
+    textColor: '#1c1912'
+    rounded: '{rounded.museum-control}'
+    padding: '0 20px'
+    height: '44px'
+  museum-ghost:
+    backgroundColor: 'transparent'
+    textColor: '{colors.museum-ink}'
+    rounded: '{rounded.museum-control}'
+    height: '40px'
+---
+
+# Design System: Trees X 机械探索馆候选
+
+## Overview
+
+**Creative North Star: "以展品为中心的可扩展机械探索馆"**
+
+本段记录用户选定方向已经落地的阶段 1/2 界面：全幅展位承托一个真实展品，目录以独立展品库展开，观察工具按需出现。石墨暗底、暖白文字与少量黄铜状态色使界面服务结构探索；三维材质、房间与灯光仍按各自既有规范和验收边界管理。
+
+适用入口为 `?gallery=next`，静态原型为 `?galleryPrototype=1`。无参数默认入口没有切换。本次不是全计划或三件画质验收；完整阶段状态见 [.ai/museum-validation.md](.ai/museum-validation.md)。下方历史附录保留旧入口和渲染事实，旧侧栏布局不约束本候选。
+
+**Key Characteristics:**
+
+- 展品占据全幅舞台，目录不常驻侧栏。
+- 搜索、分类与当前展位标记支撑目录扩展。
+- 操作、结构状态与辅助工具在同一展位可见。
+- 动效可中断，减弱动态直接到达稳定状态。
+
+## Colors
+
+### Primary
+
+黄铜色 `museum-accent` 用于开始互动、选中动作、当前展位和键盘焦点，不表示真实商品材质或商业身份。
+
+### Neutral
+
+石墨底色 `museum-bg` 区分展位外壳和展品库；`museum-panel` 承托操作条与条件面板。暖白 `museum-ink` 用于标题和操作，`museum-muted` 用于说明。细线 `museum-line` 提供边界，不用大面积阴影替代分组。
+
+**The 状态可读 Rule.** 选中同时提供文字或语义状态；舞台上的输入与动作状态使用暗色承托，避免直接叠在高光上。
+
+## Typography
+
+字体由 Manrope 与 Noto Sans SC 承担；展位标题、展品库标题、卡片标题、正文和辅助文字分别使用 frontmatter 中的尺度。面板标题为 21px，说明行高 1.75；操作区使用 14px，标题保持简短中文身份。卡片标题允许长名称换行，简介最多显示两行。
+
+## Layout
+
+当前候选为桌面优先的单展位，舞台铺满 `100dvh`；顶部导航高 64px，中央切展器与右侧展品库入口分工。标题距左 32px、距顶 96px；底部动作条居中，观察工具靠右。没有常驻左目录。
+
+检查面板仅按需出现，宽 304px；1360px 及以下为 280px。展品库在独立全屏表面滚动，默认三列，1700px 起四列，卡片间距 24px，封面比例 4:3。1280、1440、1920 桌面证据已记录；当前候选尚无移动端验收，不把桌面布局规则写成移动适配完成。
+
+**The 展位优先 Rule.** 扩展目录数量通过展品库容纳，不重新挤入常驻侧栏；该规则只约束本候选表面。
+
+## Elevation & Depth
+
+界面以明暗表面和细边框分层，操作条与检查面板使用半透明暗底和 16px 背景模糊。标题上方渐隐遮罩帮助文字衔接真实场景。三维空间感来自实际模型与房间；不把本次 UI 记录当作墙面、地台或模型画质重新认可。
+
+## Shapes
+
+控件、目录卡和浮层分别使用 10、12、16px 圆角。当前展位标记与辅助状态承托为 6px 圆角。部件外观色样为圆形；其形状只用于选择已有外观能力。
+
+## Components
+
+### Buttons
+
+主按钮为黄铜底与深色字，最小高度 44px；普通工具最小高度 40px。键盘焦点为 2px 黄铜描边，偏移 4px；禁用态降低透明度并禁用操作。按压缩放至 0.98，90ms；颜色与普通状态反馈 140ms。
+
+### Navigation
+
+顶部快速切展使用可搜索浮层，完整目录使用「展品库」。库关闭回到触发入口焦点，当前展品以文字标记和边框共同提示。帮助使用独立对话框。
+
+### Cards / Containers
+
+展品卡显示实机渲染截图、分类、名称和说明，缺图显示名称回退；悬停或键盘聚焦时图片缩放至 1.015，160ms。封面不是实物照片。检查面板按部件、外观、视角或更多操作切换；关闭工具保留展品状态。
+
+### Inputs / Fields
+
+搜索框与分类选择器高 44px，暗底、细边框及暖白输入文字。无结果可清除筛选，读取失败提供重试；没有数据不展示虚构展品。
+
+### Structure Controls and Motion
+
+打字机底部提供整机、分层、平铺与 A 键动作；暂停/继续位置保留宽度，空闲时不可聚焦。动作状态来自真实会话，不以按钮点击假定结构已经抵达。现有通用描述器包含钢琴章节和汽车动作能力，但本轮只完成打字机实机流程证据。
+
+GSAP 管理表面补间：展品库 260/180ms、位移 16px；检查面板 280/180ms、位移 24px；封面 180ms 淡入淡出；普通柔和浮层 220/160ms。取消旧补间后从当前状态续接，退出元素不可交互，卸载释放自有补间。减弱动态或文档隐藏时直接完成。以上是已实现参数，不表示完整计划中的所有动效均已验收。
+
+## Do's and Don'ts
+
+### Do:
+
+- **Do** 让真实展品、当前结构和可用操作成为主要信息。
+- **Do** 使用实机渲染截图并明确区分目录夹具与实际上架数据。
+- **Do** 保留加载、失败、无结果与键盘焦点反馈。
+- **Do** 区分阶段工程通过、实机流程通过与用户画质认可。
+
+### Don't:
+
+- **Don't** 把旧入口的左侧目录套用到全幅候选。
+- **Don't** 把候选入口、桌面证据或静态原型称为默认晋级、移动通过或整套完成。
+- **Don't** 将目录数量夹具、截图或首帧记录写成真实商品规模、显示帧率或画质分数。
+
+# 历史与既有入口附录
+
+以下原有规范按各自日期、查询参数和入口阅读，保留渲染参数与曾经确认的视觉事实。这里的「当前」「默认」是相应阶段记录的用语；候选 `gallery=next` 的现状以上方规范为准，默认路由未因本次文档更新而改变。
+
+---
 
 ## 汽车wrap方向与侧面补光（2026-11-02）
 
@@ -11,220 +156,220 @@ name: Trees X 三维商品工作台
 description: 访客采用方案 C 毛玻璃漂浮工作台；实时 WebGPU 打字机增加明亮与暖夜原位切换、虚化酒吧背景与岩板地台，其他入口保留既有配色。
 scope: 下列 colors/typography/rounded 是共享基础样式；visitorColors/visitorTypography/visitorRounded 仅覆盖 wb-floating。
 visitorColors:
-  wb-bg: '#e7e9e5'
-  wb-foreground: '#29332e'
-  wb-panel: 'rgb(248 250 246 / 88%)'
-  wb-line: 'rgb(66 80 70 / 15%)'
-  wb-muted: '#5d675f'
-  wb-accent: '#3e5c4b'
-  wb-label: '#4e5d52'
-  wb-field: 'rgb(255 255 252 / 65%)'
-  wb-placeholder: '#727c74'
-  wb-focus: '#365a43'
-  wb-glass: 'rgb(248 250 246 / 76%)'
-  wb-glass-border: 'rgb(255 255 255 / 80%)'
-  stage-ground: '#d8dcd5'
-  selected-background: '#e1e9df'
-  selected-border: '#aabbab'
+wb-bg: '#e7e9e5'
+wb-foreground: '#29332e'
+wb-panel: 'rgb(248 250 246 / 88%)'
+wb-line: 'rgb(66 80 70 / 15%)'
+wb-muted: '#5d675f'
+wb-accent: '#3e5c4b'
+wb-label: '#4e5d52'
+wb-field: 'rgb(255 255 252 / 65%)'
+wb-placeholder: '#727c74'
+wb-focus: '#365a43'
+wb-glass: 'rgb(248 250 246 / 76%)'
+wb-glass-border: 'rgb(255 255 255 / 80%)'
+stage-ground: '#d8dcd5'
+selected-background: '#e1e9df'
+selected-border: '#aabbab'
 studioColors:
-  dark-background-middle-fog: '#241c17'
-  dark-sky-top: '#33261e'
-  dark-sky-bottom: '#191511'
-  dark-floor: '#241d17'
-  dark-pedestal: '#44392f'
-  dark-title: '#f1f3ee'
-  dark-description-label-line: '#c0c9c0'
-  dark-input-hint: '#c7cec4'
-  dark-anchor: '#d2dfcf'
-  dark-selected-line: '#edf4e8'
+dark-background-middle-fog: '#241c17'
+dark-sky-top: '#33261e'
+dark-sky-bottom: '#191511'
+dark-floor: '#241d17'
+dark-pedestal: '#44392f'
+dark-title: '#f1f3ee'
+dark-description-label-line: '#c0c9c0'
+dark-input-hint: '#c7cec4'
+dark-anchor: '#d2dfcf'
+dark-selected-line: '#edf4e8'
 historicalGreenStudioColors:
-  dark-background-middle-fog: '#333f39'
-  dark-sky-top: '#505c55'
-  dark-sky-bottom: '#242e29'
-  dark-floor: '#2e3832'
-  dark-pedestal: '#3f4944'
-  dark-title: '#f1f3ee'
-  dark-description-label-line: '#c0c9c0'
-  dark-input-hint: '#c7cec4'
-  dark-anchor: '#d2dfcf'
-  dark-selected-line: '#edf4e8'
+dark-background-middle-fog: '#333f39'
+dark-sky-top: '#505c55'
+dark-sky-bottom: '#242e29'
+dark-floor: '#2e3832'
+dark-pedestal: '#3f4944'
+dark-title: '#f1f3ee'
+dark-description-label-line: '#c0c9c0'
+dark-input-hint: '#c7cec4'
+dark-anchor: '#d2dfcf'
+dark-selected-line: '#edf4e8'
 visitorTypography:
-  display-desktop: 'clamp(34px, 2.6vw, 44px) / 1.25 / 500'
-  display-mobile: '29px / 1.25 / 500'
-  brand-desktop: '22px'
-  brand-mobile: '21px'
-  panel-heading-desktop: '20px / 1.4 / 500'
-  panel-heading-mobile: '18px'
-  body: '14px / 1.8'
-  auxiliary: '12px'
+display-desktop: 'clamp(34px, 2.6vw, 44px) / 1.25 / 500'
+display-mobile: '29px / 1.25 / 500'
+brand-desktop: '22px'
+brand-mobile: '21px'
+panel-heading-desktop: '20px / 1.4 / 500'
+panel-heading-mobile: '18px'
+body: '14px / 1.8'
+auxiliary: '12px'
 visitorRounded:
-  rail-panel: '24px'
-  primary-dock: '18px'
-  camera-dock: '16px'
-  control: '12px'
-  field: '10px'
-  hotspot: '8px'
+rail-panel: '24px'
+primary-dock: '18px'
+camera-dock: '16px'
+control: '12px'
+field: '10px'
+hotspot: '8px'
 colors:
-  wb-accent: '#bed4ef'
-  wb-accent-hover: '#d1e2f5'
-  wb-accent-ink: '#101923'
-  wb-focus: '#d1e5ff'
-  wb-bg: '#101720'
-  wb-stage: '#151c25'
-  wb-stage-warm: '#f7f5ef'
-  wb-stage-warm-ink: '#31392f'
-  wb-stage-warm-muted: '#626b5e'
-  wb-panel: '#131d29'
-  wb-foreground: '#f0f4fa'
-  wb-muted: '#abbacb'
-  wb-line: '#304052'
-  wb-button: '#1d2b3c'
-  wb-button-hover: '#2b3d51'
-  wb-field: '#172330'
-  wb-label: '#bccce0'
-  wb-tool-line: '#405369'
-  wb-toolbar: '#111d2bea'
-  wb-search-line: '#52708f'
-  wb-placeholder: '#aebed0'
-  wb-scrollbar: '#526a85'
-  wb-swatch-line: '#7890ac'
-  wb-status: '#151c25f5'
-  wb-hotspot: '#111b28d9'
-  wb-hotspot-line: '#7990ac'
-  ad-error-text: '#ffd0c5'
-  ad-error-bg: '#302421'
-  ad-error-line: '#82635b'
-  ad-listed: '#bfdcce'
+wb-accent: '#bed4ef'
+wb-accent-hover: '#d1e2f5'
+wb-accent-ink: '#101923'
+wb-focus: '#d1e5ff'
+wb-bg: '#101720'
+wb-stage: '#151c25'
+wb-stage-warm: '#f7f5ef'
+wb-stage-warm-ink: '#31392f'
+wb-stage-warm-muted: '#626b5e'
+wb-panel: '#131d29'
+wb-foreground: '#f0f4fa'
+wb-muted: '#abbacb'
+wb-line: '#304052'
+wb-button: '#1d2b3c'
+wb-button-hover: '#2b3d51'
+wb-field: '#172330'
+wb-label: '#bccce0'
+wb-tool-line: '#405369'
+wb-toolbar: '#111d2bea'
+wb-search-line: '#52708f'
+wb-placeholder: '#aebed0'
+wb-scrollbar: '#526a85'
+wb-swatch-line: '#7890ac'
+wb-status: '#151c25f5'
+wb-hotspot: '#111b28d9'
+wb-hotspot-line: '#7990ac'
+ad-error-text: '#ffd0c5'
+ad-error-bg: '#302421'
+ad-error-line: '#82635b'
+ad-listed: '#bfdcce'
 typography:
-  ad-heading:
-    fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
-    fontSize: '28px'
-    fontWeight: 500
-    lineHeight: 1.3
-    letterSpacing: '-0.02em'
-  ad-heading-mobile:
-    fontSize: '24px'
-    fontWeight: 500
-    lineHeight: 1.3
-  ad-code:
-    fontFamily: 'Consolas, Courier New, monospace'
-    fontSize: '13px'
-    lineHeight: 1.7
-  wb-display:
-    fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
-    fontSize: '36px'
-    fontWeight: 500
-    lineHeight: 1.3
-    letterSpacing: '-0.025em'
-  wb-display-mobile:
-    fontSize: '27px'
-    fontWeight: 500
-    lineHeight: 1.3
-    letterSpacing: '-0.025em'
-  wb-brand:
-    fontSize: '23px'
-    fontWeight: 600
-    letterSpacing: '-0.03em'
-  wb-brand-mobile:
-    fontSize: '20px'
-    fontWeight: 600
-    letterSpacing: '-0.03em'
-  wb-panel-heading:
-    fontSize: '22px'
-    fontWeight: 500
-  wb-panel-heading-mobile:
-    fontSize: '19px'
-    fontWeight: 500
-  wb-status-heading:
-    fontSize: '25px'
-    fontWeight: 500
-  wb-section-heading:
-    fontSize: '16px'
-    fontWeight: 500
-    lineHeight: 1.7
-  wb-catalog-title:
-    fontSize: '17px'
-    fontWeight: 500
-  wb-body:
-    fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
-    fontSize: '14px'
-    lineHeight: 1.85
-  wb-content-body:
-    fontSize: '15px'
-    lineHeight: 1.7
-  wb-catalog-body:
-    fontSize: '13px'
-    lineHeight: 1.75
-  wb-label:
-    fontSize: '12px'
+ad-heading:
+fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
+fontSize: '28px'
+fontWeight: 500
+lineHeight: 1.3
+letterSpacing: '-0.02em'
+ad-heading-mobile:
+fontSize: '24px'
+fontWeight: 500
+lineHeight: 1.3
+ad-code:
+fontFamily: 'Consolas, Courier New, monospace'
+fontSize: '13px'
+lineHeight: 1.7
+wb-display:
+fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
+fontSize: '36px'
+fontWeight: 500
+lineHeight: 1.3
+letterSpacing: '-0.025em'
+wb-display-mobile:
+fontSize: '27px'
+fontWeight: 500
+lineHeight: 1.3
+letterSpacing: '-0.025em'
+wb-brand:
+fontSize: '23px'
+fontWeight: 600
+letterSpacing: '-0.03em'
+wb-brand-mobile:
+fontSize: '20px'
+fontWeight: 600
+letterSpacing: '-0.03em'
+wb-panel-heading:
+fontSize: '22px'
+fontWeight: 500
+wb-panel-heading-mobile:
+fontSize: '19px'
+fontWeight: 500
+wb-status-heading:
+fontSize: '25px'
+fontWeight: 500
+wb-section-heading:
+fontSize: '16px'
+fontWeight: 500
+lineHeight: 1.7
+wb-catalog-title:
+fontSize: '17px'
+fontWeight: 500
+wb-body:
+fontFamily: 'Manrope, Noto Sans SC Display, sans-serif'
+fontSize: '14px'
+lineHeight: 1.85
+wb-content-body:
+fontSize: '15px'
+lineHeight: 1.7
+wb-catalog-body:
+fontSize: '13px'
+lineHeight: 1.75
+wb-label:
+fontSize: '12px'
 rounded:
-  wb-flat: '0px'
-  wb-label: '3px'
-  wb-hotspot: '4px'
-  wb-field: '6px'
-  wb-control: '7px'
-  wb-toolbar: '10px'
-  wb-circle: '50%'
+wb-flat: '0px'
+wb-label: '3px'
+wb-hotspot: '4px'
+wb-field: '6px'
+wb-control: '7px'
+wb-toolbar: '10px'
+wb-circle: '50%'
 spacing:
-  wb-icon-gap: '8px'
-  wb-list-gap: '10px'
-  wb-copy-gap: '12px'
-  wb-section: '24px'
-  wb-panel-header-gap: '30px'
-  wb-header-edge: '32px'
+wb-icon-gap: '8px'
+wb-list-gap: '10px'
+wb-copy-gap: '12px'
+wb-section: '24px'
+wb-panel-header-gap: '30px'
+wb-header-edge: '32px'
 components:
-  wb-button:
-    backgroundColor: '{colors.wb-button}'
-    textColor: '{colors.wb-foreground}'
-    rounded: '{rounded.wb-control}'
-    padding: '9px 13px'
-  wb-button-hover:
-    backgroundColor: '{colors.wb-button-hover}'
-  wb-button-selected:
-    backgroundColor: '{colors.wb-accent}'
-    textColor: '{colors.wb-accent-ink}'
-    rounded: '{rounded.wb-control}'
-    padding: '9px 13px'
-  wb-button-selected-hover:
-    backgroundColor: '{colors.wb-accent-hover}'
-    textColor: '{colors.wb-accent-ink}'
-  wb-button-ghost:
-    backgroundColor: 'transparent'
-    textColor: '{colors.wb-foreground}'
-    rounded: '{rounded.wb-control}'
-    padding: '9px 17px'
-  wb-field:
-    backgroundColor: '{colors.wb-field}'
-    textColor: '{colors.wb-foreground}'
-    rounded: '{rounded.wb-field}'
-    padding: '9px 10px'
-  wb-search:
-    backgroundColor: 'transparent'
-    textColor: '{colors.wb-foreground}'
-    padding: '9px 10px 9px 0'
-  wb-toolbar:
-    backgroundColor: '{colors.wb-toolbar}'
-    rounded: '{rounded.wb-toolbar}'
-    padding: '5px'
-  wb-panel:
-    backgroundColor: '{colors.wb-panel}'
-    textColor: '{colors.wb-foreground}'
-    padding: '26px 23px'
-  wb-catalog-row:
-    backgroundColor: 'transparent'
-    textColor: '{colors.wb-foreground}'
-    rounded: '{rounded.wb-flat}'
-    padding: '21px 10px'
-  wb-sample-label:
-    backgroundColor: 'transparent'
-    textColor: '{colors.wb-label}'
-    rounded: '{rounded.wb-label}'
-    padding: '4px 8px'
-  wb-hotspot:
-    backgroundColor: '{colors.wb-hotspot}'
-    textColor: '{colors.wb-foreground}'
-    rounded: '{rounded.wb-hotspot}'
-    padding: '5px 10px'
+wb-button:
+backgroundColor: '{colors.wb-button}'
+textColor: '{colors.wb-foreground}'
+rounded: '{rounded.wb-control}'
+padding: '9px 13px'
+wb-button-hover:
+backgroundColor: '{colors.wb-button-hover}'
+wb-button-selected:
+backgroundColor: '{colors.wb-accent}'
+textColor: '{colors.wb-accent-ink}'
+rounded: '{rounded.wb-control}'
+padding: '9px 13px'
+wb-button-selected-hover:
+backgroundColor: '{colors.wb-accent-hover}'
+textColor: '{colors.wb-accent-ink}'
+wb-button-ghost:
+backgroundColor: 'transparent'
+textColor: '{colors.wb-foreground}'
+rounded: '{rounded.wb-control}'
+padding: '9px 17px'
+wb-field:
+backgroundColor: '{colors.wb-field}'
+textColor: '{colors.wb-foreground}'
+rounded: '{rounded.wb-field}'
+padding: '9px 10px'
+wb-search:
+backgroundColor: 'transparent'
+textColor: '{colors.wb-foreground}'
+padding: '9px 10px 9px 0'
+wb-toolbar:
+backgroundColor: '{colors.wb-toolbar}'
+rounded: '{rounded.wb-toolbar}'
+padding: '5px'
+wb-panel:
+backgroundColor: '{colors.wb-panel}'
+textColor: '{colors.wb-foreground}'
+padding: '26px 23px'
+wb-catalog-row:
+backgroundColor: 'transparent'
+textColor: '{colors.wb-foreground}'
+rounded: '{rounded.wb-flat}'
+padding: '21px 10px'
+wb-sample-label:
+backgroundColor: 'transparent'
+textColor: '{colors.wb-label}'
+rounded: '{rounded.wb-label}'
+padding: '4px 8px'
+wb-hotspot:
+backgroundColor: '{colors.wb-hotspot}'
+textColor: '{colors.wb-foreground}'
+rounded: '{rounded.wb-hotspot}'
+padding: '5px 10px'
 ---
 
 # Design System: Trees X 三维商品工作台
@@ -413,7 +558,7 @@ normal／原生导数调整后 roughness 为 HalfFloat，SSR quality 1、thickne
 
 六附件存储 40 字节／像素、WebGPU 对齐成本 44 字节／采样点，宿主明确请求 64 字节支持；不支持时完整卸载实验宿主并显示兼容状态。当前核心、六组对照契约、管理预览与故障恢复通过；三个桌面尺寸、小屏兼容及减弱动态批次通过，1280／320 截图无 UI 阻断，实际 20 分钟操作资源无增长。这些不是画质验收：前罩高光／刻度仍有噪点、A／S与远排字符偏浅颗粒、地台倒影偏浅模糊且有白点，分层／平铺虽可读但无明确质感提升，画质未通过，默认保持 WebGL。JS 提交计时不代表实际呈现帧预算；当前 30 次真实重载及默认 WebGL 五项操作回归已通过；真实隐藏因本机环境未暴露 hidden 仍待验收，本人走查待完成，旧 coverage 版重载不替代当前链。DDGI／FFX／BVH 不扩展，证据见 [.ai/realtime-rendering-validation.md](.ai/realtime-rendering-validation.md)。后面的静止精修状态为 hybrid 历史入口。
 
-## 当前访客规范：方案 C（2026-10-11）
+## 历史访客规范：方案 C（2026-10-11）
 
 **方向：安静的漂浮式工作台，商品始终占据主要观察区域。**
 
@@ -710,11 +855,11 @@ carFloor=cycles 使用同建筑、同灯位的离线路径追踪房间辐射；�
 此为局部材质美术校准，非原厂工艺或错误法线修复；窗框等非漆面高光仍保留。
 完整约束与代价见 [.ai/reventon-silver-seams-validation.md](.ai/reventon-silver-seams-validation.md)。
 
-## 机械结构展厅桌面界面
+## 既有默认入口：机械结构展厅桌面界面
 
 默认封面取自打字机真实 WebGPU 舞台。展示钢琴和汽车时沿用各自的实机封面，每张图在同一展位承接对应模型。目录缩略图沿用主封面裁切，当前展品同时以轮廓、背景和文字颜色提示。
 
-桌面展厅使用左侧实拍目录和中央单展位。目录为石墨灰 `#161719`，主页面为 `#101113`，文本为暖白 `#f2efe8`，主要动作和当前展品使用 `#e6c77d`。标题随桌面宽度在 26–40px 之间。舞台下沿保留操作与章节状态，共用 84px 高度，封面、加载和实时画面由同一比例的展位承接。
+桌面展厅使用左侧实机截图目录和中央单展位。目录为石墨灰 `#161719`，主页面为 `#101113`，文本为暖白 `#f2efe8`，主要动作和当前展品使用 `#e6c77d`。标题随桌面宽度在 26–40px 之间。舞台下沿保留操作与章节状态，共用 84px 高度，封面、加载和实时画面由同一比例的展位承接。
 
 舞台工具按压约 110ms。目标封面承接组件及资源准备，首帧开放操作时封面进入 180ms 淡出。整机初态突出轮廓，动作进行后优先显示本段的五个重点标注，选中部件时只突出当前标注。部件说明卡位于画面右上，章节与操作继续可读。减弱动态直接切换并显示静态加载提示。
 

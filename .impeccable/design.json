@@ -1,690 +1,221 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-08T19:32:36.393Z",
-  "title": "Design System: Trees X 三维商品工作台",
+  "generatedAt": "2026-11-27T00:00:00Z",
+  "title": "Design System: Trees X 机械探索馆候选",
   "extensions": {
     "colorMeta": {
-      "wb-accent": {
+      "museum-bg": {
+        "role": "neutral",
+        "displayName": "石墨展厅底色",
+        "canonical": "#111214",
+        "tonalRamp": [
+          "oklch(15.00% 0.0044 264.46)",
+          "oklch(26.43% 0.0044 264.46)",
+          "oklch(37.86% 0.0044 264.46)",
+          "oklch(49.29% 0.0044 264.46)",
+          "oklch(60.71% 0.0044 264.46)",
+          "oklch(72.14% 0.0044 264.46)",
+          "oklch(83.57% 0.0044 264.46)",
+          "oklch(95.00% 0.0044 264.46)"
+        ]
+      },
+      "museum-panel": {
+        "role": "neutral",
+        "displayName": "暗色工具表面",
+        "canonical": "#202124",
+        "tonalRamp": [
+          "oklch(15.00% 0.0058 271.18)",
+          "oklch(26.43% 0.0058 271.18)",
+          "oklch(37.86% 0.0058 271.18)",
+          "oklch(49.29% 0.0058 271.18)",
+          "oklch(60.71% 0.0058 271.18)",
+          "oklch(72.14% 0.0058 271.18)",
+          "oklch(83.57% 0.0058 271.18)",
+          "oklch(95.00% 0.0058 271.18)"
+        ]
+      },
+      "museum-ink": {
+        "role": "neutral",
+        "displayName": "暖白主文字",
+        "canonical": "#f1efea",
+        "tonalRamp": [
+          "oklch(15.00% 0.0070 88.64)",
+          "oklch(26.43% 0.0070 88.64)",
+          "oklch(37.86% 0.0070 88.64)",
+          "oklch(49.29% 0.0070 88.64)",
+          "oklch(60.71% 0.0070 88.64)",
+          "oklch(72.14% 0.0070 88.64)",
+          "oklch(83.57% 0.0070 88.64)",
+          "oklch(95.00% 0.0070 88.64)"
+        ]
+      },
+      "museum-muted": {
+        "role": "neutral",
+        "displayName": "温灰辅助文字",
+        "canonical": "#b5b3ad",
+        "tonalRamp": [
+          "oklch(15.00% 0.0087 91.51)",
+          "oklch(26.43% 0.0087 91.51)",
+          "oklch(37.86% 0.0087 91.51)",
+          "oklch(49.29% 0.0087 91.51)",
+          "oklch(60.71% 0.0087 91.51)",
+          "oklch(72.14% 0.0087 91.51)",
+          "oklch(83.57% 0.0087 91.51)",
+          "oklch(95.00% 0.0087 91.51)"
+        ]
+      },
+      "museum-accent": {
         "role": "primary",
-        "displayName": "冷银蓝选中态",
+        "displayName": "黄铜状态色",
+        "canonical": "#d9be83",
         "tonalRamp": [
-          "oklch(15.00% 0.0445 253.62)",
-          "oklch(26.43% 0.0445 253.62)",
-          "oklch(37.86% 0.0445 253.62)",
-          "oklch(49.29% 0.0445 253.62)",
-          "oklch(60.71% 0.0445 253.62)",
-          "oklch(72.14% 0.0445 253.62)",
-          "oklch(83.57% 0.0445 253.62)",
-          "oklch(95.00% 0.0445 253.62)"
+          "oklch(15.00% 0.0824 86.01)",
+          "oklch(26.43% 0.0824 86.01)",
+          "oklch(37.86% 0.0824 86.01)",
+          "oklch(49.29% 0.0824 86.01)",
+          "oklch(60.71% 0.0824 86.01)",
+          "oklch(72.14% 0.0824 86.01)",
+          "oklch(83.57% 0.0824 86.01)",
+          "oklch(95.00% 0.0824 86.01)"
         ]
       },
-      "wb-accent-hover": {
-        "role": "primary",
-        "displayName": "冷银蓝悬停",
-        "tonalRamp": [
-          "oklch(15.00% 0.0318 251.13)",
-          "oklch(26.43% 0.0318 251.13)",
-          "oklch(37.86% 0.0318 251.13)",
-          "oklch(49.29% 0.0318 251.13)",
-          "oklch(60.71% 0.0318 251.13)",
-          "oklch(72.14% 0.0318 251.13)",
-          "oklch(83.57% 0.0318 251.13)",
-          "oklch(95.00% 0.0318 251.13)"
-        ]
-      },
-      "wb-accent-ink": {
+      "museum-line": {
         "role": "neutral",
-        "displayName": "选中深墨文字",
+        "displayName": "半透明边界",
+        "canonical": "#ffffff24",
         "tonalRamp": [
-          "oklch(15.00% 0.0240 251.59)",
-          "oklch(26.43% 0.0240 251.59)",
-          "oklch(37.86% 0.0240 251.59)",
-          "oklch(49.29% 0.0240 251.59)",
-          "oklch(60.71% 0.0240 251.59)",
-          "oklch(72.14% 0.0240 251.59)",
-          "oklch(83.57% 0.0240 251.59)",
-          "oklch(95.00% 0.0240 251.59)"
-        ]
-      },
-      "wb-focus": {
-        "role": "primary",
-        "displayName": "冰蓝键盘焦点",
-        "tonalRamp": [
-          "oklch(15.00% 0.0416 255.01)",
-          "oklch(26.43% 0.0416 255.01)",
-          "oklch(37.86% 0.0416 255.01)",
-          "oklch(49.29% 0.0416 255.01)",
-          "oklch(60.71% 0.0416 255.01)",
-          "oklch(72.14% 0.0416 255.01)",
-          "oklch(83.57% 0.0416 255.01)",
-          "oklch(95.00% 0.0416 255.01)"
-        ]
-      },
-      "wb-bg": {
-        "role": "neutral",
-        "displayName": "深海框架底色",
-        "tonalRamp": [
-          "oklch(15.00% 0.0210 254.94)",
-          "oklch(26.43% 0.0210 254.94)",
-          "oklch(37.86% 0.0210 254.94)",
-          "oklch(49.29% 0.0210 254.94)",
-          "oklch(60.71% 0.0210 254.94)",
-          "oklch(72.14% 0.0210 254.94)",
-          "oklch(83.57% 0.0210 254.94)",
-          "oklch(95.00% 0.0210 254.94)"
-        ]
-      },
-      "wb-stage": {
-        "role": "neutral",
-        "displayName": "石板舞台背景",
-        "tonalRamp": [
-          "oklch(15.00% 0.0205 254.90)",
-          "oklch(26.43% 0.0205 254.90)",
-          "oklch(37.86% 0.0205 254.90)",
-          "oklch(49.29% 0.0205 254.90)",
-          "oklch(60.71% 0.0205 254.90)",
-          "oklch(72.14% 0.0205 254.90)",
-          "oklch(83.57% 0.0205 254.90)",
-          "oklch(95.00% 0.0205 254.90)"
-        ]
-      },
-      "wb-stage-warm": {
-        "role": "neutral",
-        "displayName": "打字机暖纸舞台",
-        "tonalRamp": [
-          "oklch(15.00% 0.0082 91.48)",
-          "oklch(26.43% 0.0082 91.48)",
-          "oklch(37.86% 0.0082 91.48)",
-          "oklch(49.29% 0.0082 91.48)",
-          "oklch(60.71% 0.0082 91.48)",
-          "oklch(72.14% 0.0082 91.48)",
-          "oklch(83.57% 0.0082 91.48)",
-          "oklch(95.00% 0.0082 91.48)"
-        ]
-      },
-      "wb-stage-warm-ink": {
-        "role": "neutral",
-        "displayName": "浅色舞台主字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0203 139.43)",
-          "oklch(26.43% 0.0203 139.43)",
-          "oklch(37.86% 0.0203 139.43)",
-          "oklch(49.29% 0.0203 139.43)",
-          "oklch(60.71% 0.0203 139.43)",
-          "oklch(72.14% 0.0203 139.43)",
-          "oklch(83.57% 0.0203 139.43)",
-          "oklch(95.00% 0.0203 139.43)"
-        ]
-      },
-      "wb-stage-warm-muted": {
-        "role": "neutral",
-        "displayName": "浅色舞台辅助字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0229 135.93)",
-          "oklch(26.43% 0.0229 135.93)",
-          "oklch(37.86% 0.0229 135.93)",
-          "oklch(49.29% 0.0229 135.93)",
-          "oklch(60.71% 0.0229 135.93)",
-          "oklch(72.14% 0.0229 135.93)",
-          "oklch(83.57% 0.0229 135.93)",
-          "oklch(95.00% 0.0229 135.93)"
-        ]
-      },
-      "wb-panel": {
-        "role": "neutral",
-        "displayName": "蓝灰面板",
-        "tonalRamp": [
-          "oklch(15.00% 0.0276 253.44)",
-          "oklch(26.43% 0.0276 253.44)",
-          "oklch(37.86% 0.0276 253.44)",
-          "oklch(49.29% 0.0276 253.44)",
-          "oklch(60.71% 0.0276 253.44)",
-          "oklch(72.14% 0.0276 253.44)",
-          "oklch(83.57% 0.0276 253.44)",
-          "oklch(95.00% 0.0276 253.44)"
-        ]
-      },
-      "wb-foreground": {
-        "role": "neutral",
-        "displayName": "霜白正文",
-        "tonalRamp": [
-          "oklch(15.00% 0.0091 258.34)",
-          "oklch(26.43% 0.0091 258.34)",
-          "oklch(37.86% 0.0091 258.34)",
-          "oklch(49.29% 0.0091 258.34)",
-          "oklch(60.71% 0.0091 258.34)",
-          "oklch(72.14% 0.0091 258.34)",
-          "oklch(83.57% 0.0091 258.34)",
-          "oklch(95.00% 0.0091 258.34)"
-        ]
-      },
-      "wb-muted": {
-        "role": "neutral",
-        "displayName": "灰蓝辅助字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0294 251.51)",
-          "oklch(26.43% 0.0294 251.51)",
-          "oklch(37.86% 0.0294 251.51)",
-          "oklch(49.29% 0.0294 251.51)",
-          "oklch(60.71% 0.0294 251.51)",
-          "oklch(72.14% 0.0294 251.51)",
-          "oklch(83.57% 0.0294 251.51)",
-          "oklch(95.00% 0.0294 251.51)"
-        ]
-      },
-      "wb-line": {
-        "role": "neutral",
-        "displayName": "蓝灰分隔线",
-        "tonalRamp": [
-          "oklch(15.00% 0.0375 251.79)",
-          "oklch(26.43% 0.0375 251.79)",
-          "oklch(37.86% 0.0375 251.79)",
-          "oklch(49.29% 0.0375 251.79)",
-          "oklch(60.71% 0.0375 251.79)",
-          "oklch(72.14% 0.0375 251.79)",
-          "oklch(83.57% 0.0375 251.79)",
-          "oklch(95.00% 0.0375 251.79)"
-        ]
-      },
-      "wb-button": {
-        "role": "neutral",
-        "displayName": "深蓝灰按钮",
-        "tonalRamp": [
-          "oklch(15.00% 0.0368 253.76)",
-          "oklch(26.43% 0.0368 253.76)",
-          "oklch(37.86% 0.0368 253.76)",
-          "oklch(49.29% 0.0368 253.76)",
-          "oklch(60.71% 0.0368 253.76)",
-          "oklch(72.14% 0.0368 253.76)",
-          "oklch(83.57% 0.0368 253.76)",
-          "oklch(95.00% 0.0368 253.76)"
-        ]
-      },
-      "wb-button-hover": {
-        "role": "neutral",
-        "displayName": "按钮悬停层",
-        "tonalRamp": [
-          "oklch(15.00% 0.0421 251.63)",
-          "oklch(26.43% 0.0421 251.63)",
-          "oklch(37.86% 0.0421 251.63)",
-          "oklch(49.29% 0.0421 251.63)",
-          "oklch(60.71% 0.0421 251.63)",
-          "oklch(72.14% 0.0421 251.63)",
-          "oklch(83.57% 0.0421 251.63)",
-          "oklch(95.00% 0.0421 251.63)"
-        ]
-      },
-      "wb-field": {
-        "role": "neutral",
-        "displayName": "字段底色",
-        "tonalRamp": [
-          "oklch(15.00% 0.0300 251.03)",
-          "oklch(26.43% 0.0300 251.03)",
-          "oklch(37.86% 0.0300 251.03)",
-          "oklch(49.29% 0.0300 251.03)",
-          "oklch(60.71% 0.0300 251.03)",
-          "oklch(72.14% 0.0300 251.03)",
-          "oklch(83.57% 0.0300 251.03)",
-          "oklch(95.00% 0.0300 251.03)"
-        ]
-      },
-      "wb-label": {
-        "role": "neutral",
-        "displayName": "资产身份文字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0330 254.02)",
-          "oklch(26.43% 0.0330 254.02)",
-          "oklch(37.86% 0.0330 254.02)",
-          "oklch(49.29% 0.0330 254.02)",
-          "oklch(60.71% 0.0330 254.02)",
-          "oklch(72.14% 0.0330 254.02)",
-          "oklch(83.57% 0.0330 254.02)",
-          "oklch(95.00% 0.0330 254.02)"
-        ]
-      },
-      "wb-tool-line": {
-        "role": "neutral",
-        "displayName": "工具与标记边线",
-        "tonalRamp": [
-          "oklch(15.00% 0.0436 252.47)",
-          "oklch(26.43% 0.0436 252.47)",
-          "oklch(37.86% 0.0436 252.47)",
-          "oklch(49.29% 0.0436 252.47)",
-          "oklch(60.71% 0.0436 252.47)",
-          "oklch(72.14% 0.0436 252.47)",
-          "oklch(83.57% 0.0436 252.47)",
-          "oklch(95.00% 0.0436 252.47)"
-        ]
-      },
-      "wb-toolbar": {
-        "role": "neutral",
-        "displayName": "轻透工具表面",
-        "tonalRamp": [
-          "oklch(15.00% 0.0323 252.96 / 0.9176)",
-          "oklch(26.43% 0.0323 252.96 / 0.9176)",
-          "oklch(37.86% 0.0323 252.96 / 0.9176)",
-          "oklch(49.29% 0.0323 252.96 / 0.9176)",
-          "oklch(60.71% 0.0323 252.96 / 0.9176)",
-          "oklch(72.14% 0.0323 252.96 / 0.9176)",
-          "oklch(83.57% 0.0323 252.96 / 0.9176)",
-          "oklch(95.00% 0.0323 252.96 / 0.9176)"
-        ]
-      },
-      "wb-search-line": {
-        "role": "neutral",
-        "displayName": "搜索下划线",
-        "tonalRamp": [
-          "oklch(15.00% 0.0602 249.82)",
-          "oklch(26.43% 0.0602 249.82)",
-          "oklch(37.86% 0.0602 249.82)",
-          "oklch(49.29% 0.0602 249.82)",
-          "oklch(60.71% 0.0602 249.82)",
-          "oklch(72.14% 0.0602 249.82)",
-          "oklch(83.57% 0.0602 249.82)",
-          "oklch(95.00% 0.0602 249.82)"
-        ]
-      },
-      "wb-placeholder": {
-        "role": "neutral",
-        "displayName": "搜索占位字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0311 251.33)",
-          "oklch(26.43% 0.0311 251.33)",
-          "oklch(37.86% 0.0311 251.33)",
-          "oklch(49.29% 0.0311 251.33)",
-          "oklch(60.71% 0.0311 251.33)",
-          "oklch(72.14% 0.0311 251.33)",
-          "oklch(83.57% 0.0311 251.33)",
-          "oklch(95.00% 0.0311 251.33)"
-        ]
-      },
-      "wb-scrollbar": {
-        "role": "neutral",
-        "displayName": "滚动条",
-        "tonalRamp": [
-          "oklch(15.00% 0.0517 251.77)",
-          "oklch(26.43% 0.0517 251.77)",
-          "oklch(37.86% 0.0517 251.77)",
-          "oklch(49.29% 0.0517 251.77)",
-          "oklch(60.71% 0.0517 251.77)",
-          "oklch(72.14% 0.0517 251.77)",
-          "oklch(83.57% 0.0517 251.77)",
-          "oklch(95.00% 0.0517 251.77)"
-        ]
-      },
-      "wb-swatch-line": {
-        "role": "neutral",
-        "displayName": "色样边线",
-        "tonalRamp": [
-          "oklch(15.00% 0.0503 252.51)",
-          "oklch(26.43% 0.0503 252.51)",
-          "oklch(37.86% 0.0503 252.51)",
-          "oklch(49.29% 0.0503 252.51)",
-          "oklch(60.71% 0.0503 252.51)",
-          "oklch(72.14% 0.0503 252.51)",
-          "oklch(83.57% 0.0503 252.51)",
-          "oklch(95.00% 0.0503 252.51)"
-        ]
-      },
-      "wb-status": {
-        "role": "neutral",
-        "displayName": "状态覆盖层",
-        "tonalRamp": [
-          "oklch(15.00% 0.0205 254.90 / 0.9608)",
-          "oklch(26.43% 0.0205 254.90 / 0.9608)",
-          "oklch(37.86% 0.0205 254.90 / 0.9608)",
-          "oklch(49.29% 0.0205 254.90 / 0.9608)",
-          "oklch(60.71% 0.0205 254.90 / 0.9608)",
-          "oklch(72.14% 0.0205 254.90 / 0.9608)",
-          "oklch(83.57% 0.0205 254.90 / 0.9608)",
-          "oklch(95.00% 0.0205 254.90 / 0.9608)"
-        ]
-      },
-      "wb-hotspot": {
-        "role": "neutral",
-        "displayName": "部件名称表面",
-        "tonalRamp": [
-          "oklch(15.00% 0.0296 255.30 / 0.8510)",
-          "oklch(26.43% 0.0296 255.30 / 0.8510)",
-          "oklch(37.86% 0.0296 255.30 / 0.8510)",
-          "oklch(49.29% 0.0296 255.30 / 0.8510)",
-          "oklch(60.71% 0.0296 255.30 / 0.8510)",
-          "oklch(72.14% 0.0296 255.30 / 0.8510)",
-          "oklch(83.57% 0.0296 255.30 / 0.8510)",
-          "oklch(95.00% 0.0296 255.30 / 0.8510)"
-        ]
-      },
-      "wb-hotspot-line": {
-        "role": "neutral",
-        "displayName": "部件名称边线",
-        "tonalRamp": [
-          "oklch(15.00% 0.0497 253.54)",
-          "oklch(26.43% 0.0497 253.54)",
-          "oklch(37.86% 0.0497 253.54)",
-          "oklch(49.29% 0.0497 253.54)",
-          "oklch(60.71% 0.0497 253.54)",
-          "oklch(72.14% 0.0497 253.54)",
-          "oklch(83.57% 0.0497 253.54)",
-          "oklch(95.00% 0.0497 253.54)"
-        ]
-      },
-      "ad-error-text": {
-        "role": "neutral",
-        "displayName": "管理错误文字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0555 33.40)",
-          "oklch(26.43% 0.0555 33.40)",
-          "oklch(37.86% 0.0555 33.40)",
-          "oklch(49.29% 0.0555 33.40)",
-          "oklch(60.71% 0.0555 33.40)",
-          "oklch(72.14% 0.0555 33.40)",
-          "oklch(83.57% 0.0555 33.40)",
-          "oklch(95.00% 0.0555 33.40)"
-        ]
-      },
-      "ad-error-bg": {
-        "role": "neutral",
-        "displayName": "管理错误底色",
-        "tonalRamp": [
-          "oklch(15.00% 0.0192 34.40)",
-          "oklch(26.43% 0.0192 34.40)",
-          "oklch(37.86% 0.0192 34.40)",
-          "oklch(49.29% 0.0192 34.40)",
-          "oklch(60.71% 0.0192 34.40)",
-          "oklch(72.14% 0.0192 34.40)",
-          "oklch(83.57% 0.0192 34.40)",
-          "oklch(95.00% 0.0192 34.40)"
-        ]
-      },
-      "ad-error-line": {
-        "role": "neutral",
-        "displayName": "管理错误边界",
-        "tonalRamp": [
-          "oklch(15.00% 0.0424 34.91)",
-          "oklch(26.43% 0.0424 34.91)",
-          "oklch(37.86% 0.0424 34.91)",
-          "oklch(49.29% 0.0424 34.91)",
-          "oklch(60.71% 0.0424 34.91)",
-          "oklch(72.14% 0.0424 34.91)",
-          "oklch(83.57% 0.0424 34.91)",
-          "oklch(95.00% 0.0424 34.91)"
-        ]
-      },
-      "ad-listed": {
-        "role": "neutral",
-        "displayName": "已上架文字",
-        "tonalRamp": [
-          "oklch(15.00% 0.0363 164.88)",
-          "oklch(26.43% 0.0363 164.88)",
-          "oklch(37.86% 0.0363 164.88)",
-          "oklch(49.29% 0.0363 164.88)",
-          "oklch(60.71% 0.0363 164.88)",
-          "oklch(72.14% 0.0363 164.88)",
-          "oklch(83.57% 0.0363 164.88)",
-          "oklch(95.00% 0.0363 164.88)"
+          "oklch(15.00% 0.0000 89.88)",
+          "oklch(26.43% 0.0000 89.88)",
+          "oklch(37.86% 0.0000 89.88)",
+          "oklch(49.29% 0.0000 89.88)",
+          "oklch(60.71% 0.0000 89.88)",
+          "oklch(72.14% 0.0000 89.88)",
+          "oklch(83.57% 0.0000 89.88)",
+          "oklch(95.00% 0.0000 89.88)"
         ]
       }
     },
     "typographyMeta": {
-      "wb-display": {
-        "displayName": "商品主标题",
-        "purpose": "桌面中文商品身份；工作台字体栈统一。"
-      },
-      "wb-display-mobile": {
-        "displayName": "手机商品标题",
-        "purpose": "760px 及以下缩小字号，面板打开时仍保留。"
-      },
-      "wb-brand": {
-        "displayName": "Trees X 品牌",
-        "purpose": "顶栏品牌文字；不替代中文商品名称。"
-      },
-      "wb-brand-mobile": {
-        "displayName": "手机品牌",
-        "purpose": "760px 及以下的紧凑品牌。"
-      },
-      "wb-panel-heading": {
-        "displayName": "工具面板标题",
-        "purpose": "与透明关闭按钮同一行。"
-      },
-      "wb-panel-heading-mobile": {
-        "displayName": "下面板标题",
-        "purpose": "手机面板转到模型下方时使用。"
-      },
-      "wb-status-heading": {
-        "displayName": "舞台状态标题",
-        "purpose": "加载与错误覆盖层。"
-      },
-      "wb-section-heading": {
-        "displayName": "面板功能标题",
-        "purpose": "外观、细节、动作、导览内容。"
-      },
-      "wb-catalog-title": {
-        "displayName": "目录商品名",
-        "purpose": "纵向目录条目中的首要内容。"
-      },
-      "wb-body": {
-        "displayName": "面板正文",
-        "purpose": "工具说明和真实状态。"
-      },
-      "wb-catalog-body": {
-        "displayName": "紧凑目录说明",
-        "purpose": "商品条目描述。"
-      },
-      "wb-label": {
-        "displayName": "辅助文字",
-        "purpose": "资产身份、输入提示、动作状态及手机工具。"
-      },
-      "ad-heading": {
-        "displayName": "管理标题",
-        "purpose": "管理页面28px标题，不改变工作台商品标题"
-      },
-      "ad-heading-mobile": {
-        "displayName": "管理移动标题",
-        "purpose": "760px以下管理页面24px标题"
-      },
-      "ad-code": {
-        "displayName": "展示配置代码",
-        "purpose": "13px等宽JSON编辑器，不用于访客说明"
+      "museum-display": {
+        "displayName": "展位标题",
+        "purpose": "当前展品身份；仅 gallery=next 候选。"
       }
     },
     "shadows": [],
     "motion": [
       {
-        "name": "wb-control",
-        "value": "150ms ease",
-        "purpose": "按钮背景和文字；减弱动态时全局缩至 0.01ms。"
+        "name": "library",
+        "value": "260ms / 180ms; y=16px; power3.out",
+        "purpose": "展品库进出"
       },
       {
-        "name": "wb-panel-enter",
-        "value": "240ms power3.out",
-        "purpose": "进入面板时 opacity 0.3 → 1；减弱动态 duration 0，无离场动画。"
+        "name": "inspector",
+        "value": "280ms / 180ms; x=24px; power3.out",
+        "purpose": "检查面板进出"
       },
       {
-        "name": "wb-camera",
-        "value": "650ms power3.out",
-        "purpose": "命名视角和部件聚焦；手动拖动/缩放立即接手，减弱动态直接到目标。"
+        "name": "cover",
+        "value": "180ms",
+        "purpose": "封面淡入淡出"
       },
       {
-        "name": "wb-pose",
-        "value": "550ms power3.out",
-        "purpose": "状态和结构切换；减弱动态直接到目标。"
-      },
-      {
-        "name": "wb-pulse",
-        "value": "180ms power1.inOut; repeat 1; yoyo true",
-        "purpose": "瞬时按键联动单程与返回；减弱动态不循环并归零。"
-      },
-      {
-        "name": "ad-state",
-        "value": "150ms",
-        "purpose": "管理按钮颜色反馈，减弱动态关闭"
-      },
-      {
-        "name": "wb-typewriter-layout",
-        "value": "4000ms linear (full range)",
-        "purpose": "打字机注册结构程序的完整行程；具名目标为整机0、分层0.6、平铺1，支持暂停、继续与复原，镜头独立，减弱动态直接到目标。"
+        "name": "reduced-motion",
+        "value": "none",
+        "purpose": "减弱动态和隐藏文档直接到达终态"
       }
     ],
     "breakpoints": [
       {
-        "name": "wb-compact-desktop",
-        "value": "1100px"
+        "name": "compact-desktop",
+        "value": "1360px"
       },
       {
-        "name": "wb-mobile",
-        "value": "760px"
-      },
-      {
-        "name": "ad-collapse",
-        "value": "760px"
-      },
-      {
-        "name": "ad-category-stack",
-        "value": "1100px"
+        "name": "four-column-library",
+        "value": "1700px"
       }
     ]
   },
   "components": [
     {
-      "name": "工作台普通按钮",
+      "name": "开始互动",
       "kind": "button",
-      "refersTo": "wb-button",
-      "description": "普通动作、重试和还原入口；未就绪时禁用。",
-      "html": "<button class=\"ds-wb-button\" type=\"button\">还原商品</button>",
-      "css": ".ds-wb-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;background:#1d2b3c;color:#f0f4fa;border:1px solid #304052;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-button:hover:not(:disabled){background:#2b3d51}.ds-wb-button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-button:disabled{opacity:.4;cursor:default}@media(prefers-reduced-motion:reduce){.ds-wb-button{transition-duration:.01ms}}"
+      "refersTo": "museum-primary",
+      "description": "封面进入真实互动的主要动作。",
+      "html": "<button class=\"ds-primary\">开始互动</button>",
+      "css": ".ds-primary{min-height:44px;padding:0 20px;border:0;border-radius:10px;background:#d9be83;color:#1c1912;font:600 15px Manrope,\"Noto Sans SC\",sans-serif;cursor:pointer;transition:background 140ms,scale 140ms}.ds-primary:hover{background:#e6cc96}.ds-primary:active{scale:.98}.ds-primary:focus-visible{outline:2px solid #d9be83;outline-offset:4px}"
     },
     {
-      "name": "选中的外观选项",
+      "name": "普通观察工具",
       "kind": "button",
-      "refersTo": "wb-button-selected",
-      "description": "冷银蓝底、深墨字与勾选同时指示选中；实际配色来自当前商品配置。",
-      "html": "<button class=\"ds-wb-selected\" type=\"button\" aria-pressed=\"true\">选择外壳颜色<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m20 6-11 11-5-5\"/></svg></button>",
-      "css": ".ds-wb-selected{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;background:#bed4ef;color:#101923;border:1px solid #bed4ef;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-selected:hover:not(:disabled){background:#d1e2f5}.ds-wb-selected:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-selected:disabled{opacity:.4;cursor:default}@media(prefers-reduced-motion:reduce){.ds-wb-selected{transition-duration:.01ms}}.ds-wb-selected{min-height:50px;justify-content:flex-start;width:100%}.ds-wb-selected svg{margin-left:auto}"
+      "refersTo": "museum-ghost",
+      "description": "按需打开部件、视角等工具。",
+      "html": "<button class=\"ds-tool\">部件</button>",
+      "css": ".ds-tool{min-height:40px;padding:0 14px;border:1px solid #ffffff24;border-radius:10px;background:#202124;color:#f1efea;font:14px Manrope,\"Noto Sans SC\",sans-serif;cursor:pointer;transition:background 140ms}.ds-tool:hover{background:#37383c}.ds-tool:active{scale:.98}.ds-tool:focus-visible{outline:2px solid #d9be83;outline-offset:4px}"
     },
     {
-      "name": "透明工具按钮",
-      "kind": "button",
-      "refersTo": "wb-button-ghost",
-      "description": "工具条内部的未选中入口；悬停和键盘焦点复用工作台状态。",
-      "html": "<button class=\"ds-wb-ghost\" type=\"button\" aria-pressed=\"false\">细节</button>",
-      "css": ".ds-wb-ghost{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:9px 13px;background:transparent;color:#f0f4fa;border:1px solid transparent;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-ghost:hover:not(:disabled){background:#2b3d51}.ds-wb-ghost:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-ghost:disabled{opacity:.4;cursor:default}@media(prefers-reduced-motion:reduce){.ds-wb-ghost{transition-duration:.01ms}}.ds-wb-ghost{padding-inline:17px}"
-    },
-    {
-      "name": "目录搜索与分类",
+      "name": "展品搜索",
       "kind": "input",
-      "refersTo": "wb-field",
-      "description": "透明搜索输入与原生分类下拉；可访问名称和焦点清晰。",
-      "html": "<div class=\"ds-wb-fields\"><label class=\"ds-wb-search\"><svg width=\"17\" height=\"17\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input aria-label=\"搜索商品\" placeholder=\"搜索商品\"></label><label class=\"ds-wb-filter\">商品分类<select aria-label=\"商品分类\"><option>全部商品</option><option>数码</option><option>机械</option><option>交通</option></select></label></div>",
-      "css": ".ds-wb-fields{padding:20px;background:#131d29;color:#f0f4fa;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-search{display:flex;align-items:center;gap:9px;border-bottom:1px solid #52708f;margin-bottom:20px}.ds-wb-search input{min-width:0;width:100%;min-height:42px;padding:9px 10px 9px 0;border:0;border-radius:6px;background:transparent;color:#f0f4fa;caret-color:#bed4ef;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-search input::placeholder{color:#aebed0}.ds-wb-filter{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#abbacb;font-size:13px}.ds-wb-filter select{width:142px;max-width:100%;min-height:42px;padding:9px 10px;border:1px solid #304052;border-radius:6px;background:#172330;color:#f0f4fa;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-fields :focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-fields ::selection{color:#101923;background:#bed4ef}"
+      "refersTo": "museum-ghost",
+      "description": "完整展品库的名称检索。",
+      "html": "<input class=\"ds-search\" aria-label=\"搜索展品名称\" placeholder=\"搜索展品名称\">",
+      "css": ".ds-search{min-height:44px;padding:0 12px;border:1px solid #ffffff30;border-radius:10px;background:#111214;color:#f1efea;font:15px Manrope,\"Noto Sans SC\",sans-serif}.ds-search::placeholder{color:#b5b3ad}.ds-search:hover{border-color:#b5b3ad}.ds-search:focus-visible{outline:2px solid #d9be83;outline-offset:4px}"
     },
     {
-      "name": "探索商品导航",
+      "name": "结构动作导航",
       "kind": "nav",
-      "refersTo": "wb-toolbar",
-      "description": "同一活动面板；只有商品支持的能力才显示对应入口。",
-      "html": "<nav class=\"ds-wb-nav\" aria-label=\"探索商品\"><button type=\"button\" aria-pressed=\"false\">外观</button><button type=\"button\" aria-pressed=\"true\">细节</button><button type=\"button\" aria-pressed=\"false\">结构与动作</button><button type=\"button\" aria-pressed=\"false\">导览</button></nav>",
-      "css": ".ds-wb-nav{display:flex;align-items:center;gap:5px;width:max-content;max-width:100%;padding:5px;border:1px solid #405369;border-radius:10px;background:#111d2bea}.ds-wb-nav button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 17px;background:transparent;color:#f0f4fa;border:1px solid transparent;border-radius:7px;font:14px Manrope,'Noto Sans SC Display',sans-serif;white-space:nowrap;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-nav button:hover:not(:disabled){background:#2b3d51}.ds-wb-nav button[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-nav button[aria-pressed=true]:hover:not(:disabled){background:#d1e2f5}.ds-wb-nav button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-nav button:disabled{opacity:.4;cursor:default}@media(max-width:760px){.ds-wb-nav{gap:0;padding:3px}.ds-wb-nav button{padding:7px 8px;font-size:12px}}@media(prefers-reduced-motion:reduce){.ds-wb-nav button{transition-duration:.01ms}}"
+      "refersTo": "museum-ghost",
+      "description": "真实会话的当前结构状态。",
+      "html": "<nav class=\"ds-dock\" aria-label=\"展品操作\"><button aria-pressed=\"true\">整机</button><button aria-pressed=\"false\">分层</button><button aria-pressed=\"false\">平铺</button></nav>",
+      "css": ".ds-dock{display:inline-flex;gap:4px;padding:6px;border:1px solid #ffffff24;border-radius:16px;background:#202124e8}.ds-dock button{min-height:40px;padding:0 15px;border:0;border-radius:10px;background:transparent;color:#f1efea;font:14px Manrope,\"Noto Sans SC\",sans-serif;cursor:pointer}.ds-dock button[aria-pressed=\"true\"]{color:#d9be83;background:#d9be831c}.ds-dock button:hover{background:#ffffff16}.ds-dock button:active{scale:.98}.ds-dock button:focus-visible{outline:2px solid #d9be83;outline-offset:4px}"
     },
     {
-      "name": "商品目录条目",
-      "kind": "custom",
-      "refersTo": "wb-catalog-row",
-      "description": "平直目录条目；名称、描述、分类与资产身份分层，有真实资源封面时展示。",
-      "html": "<button class=\"ds-wb-product\" type=\"button\" aria-pressed=\"false\"><strong>机械打字机</strong><span>从一次按键，看到内部连接。自由观察整机、分层与部件平铺。</span><small>机械 · 正式展品</small></button>",
-      "css": ".ds-wb-product{display:flex;flex-direction:column;align-items:stretch;gap:10px;width:100%;padding:21px 10px;background:transparent;color:#f0f4fa;border:0;border-bottom:1px solid #304052;border-radius:0;text-align:left;font:14px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-product strong{font-size:17px;font-weight:500}.ds-wb-product span{font-size:13px;line-height:1.75;opacity:.85}.ds-wb-product small{font-size:12px;opacity:.85}.ds-wb-product:hover:not(:disabled){background:#2b3d51}.ds-wb-product[aria-pressed=true]{background:#bed4ef;color:#101923}.ds-wb-product[aria-pressed=true]:hover{background:#d1e2f5}.ds-wb-product:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-wb-product{transition-duration:.01ms}}"
-    },
-    {
-      "name": "资产身份标记",
+      "name": "当前展位标记",
       "kind": "chip",
-      "refersTo": "wb-sample-label",
-      "description": "按配置显示正式展品或流程样板；非交互事实标记，舞台文字色随背景明暗变化。",
-      "html": "<span class=\"ds-wb-sample\">流程样板</span>",
-      "css": ".ds-wb-sample{display:inline-block;margin-top:15px;padding:4px 8px;border:1px solid #405369;border-radius:3px;color:var(--wb-stage-muted,#bccce0);background:transparent;font:12px Manrope,'Noto Sans SC Display',sans-serif}@media(max-width:760px){.ds-wb-sample{margin-top:9px;padding:2px 6px}}"
+      "refersTo": "museum-primary",
+      "description": "非交互状态标记，与卡片边框一起提示当前展品。",
+      "html": "<span class=\"ds-current\">当前展位</span>",
+      "css": ".ds-current{display:inline-block;border-radius:6px;padding:6px 9px;background:#d9be83;color:#1c1912;font:12px Manrope,\"Noto Sans SC\",sans-serif}.ds-current:focus-visible{outline:2px solid #d9be83;outline-offset:4px}"
     },
     {
-      "name": "部件热点",
-      "kind": "button",
-      "refersTo": "wb-hotspot",
-      "description": "模型上的部件名称；打字机默认隐藏，细节未选中时显示八个重点，选中后仅显示当前部件；投影边缘隐藏放不下的名称。",
-      "html": "<button class=\"ds-wb-hotspot\" type=\"button\" aria-pressed=\"false\"><span aria-hidden=\"true\"></span>A 键</button>",
-      "css": ".ds-wb-hotspot{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:32px;padding:5px 10px;border:1px solid #7990ac;border-radius:4px;background:#111b28d9;color:#f0f4fa;white-space:nowrap;font:12px Manrope,'Noto Sans SC Display',sans-serif;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-hotspot span{width:5px;height:5px;border-radius:50%;background:currentColor}.ds-wb-hotspot:hover{background:#2b3d51}.ds-wb-hotspot:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-wb-hotspot{transition-duration:.01ms}}.ds-wb-hotspot[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-hotspot[aria-pressed=true]:hover{background:#d1e2f5;color:#101923}"
-    },
-    {
-      "name": "右侧操作面板",
-      "kind": "custom",
-      "refersTo": "wb-panel",
-      "description": "实色滚动面板、清楚标题和透明关闭入口，移动端转到场景下方。",
-      "html": "<aside class=\"ds-wb-panel\"><header><h2>细节</h2><button type=\"button\" aria-label=\"收起面板\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"m18 6-12 12M6 6l12 12\"/></svg></button></header><h3>选择值得靠近的地方</h3><p>点击模型部件，或搜索并选择。聚焦会跟随部件当前的位置。</p></aside>",
-      "css": ".ds-wb-panel{padding:26px 23px;background:#131d29;color:#f0f4fa;border-left:1px solid #304052;overflow-y:auto;scrollbar-color:#526a85 #131d29;scrollbar-width:thin;overscroll-behavior:contain;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-panel header{display:flex;align-items:center;justify-content:space-between;margin-bottom:30px}.ds-wb-panel h2{font-size:22px;font-weight:500;margin:0}.ds-wb-panel h3{font-size:16px;font-weight:500;line-height:1.7;margin:0 0 12px}.ds-wb-panel p{color:#abbacb;font-size:14px;line-height:1.85;margin:0 0 22px}.ds-wb-panel button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px;background:transparent;border:0;border-radius:7px;color:inherit;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-panel button:hover{background:#2b3d51}.ds-wb-panel button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}@media(max-width:760px){.ds-wb-panel{padding:16px 20px;border-left:0;border-top:1px solid #304052}.ds-wb-panel header{margin-bottom:18px}.ds-wb-panel h2{font-size:19px}}@media(prefers-reduced-motion:reduce){.ds-wb-panel button{transition-duration:.01ms}}"
-    },
-    {
-      "name": "打字机结构目标",
-      "kind": "custom",
-      "refersTo": "wb-button",
-      "description": "三个具名结构目标沿用共同按钮；播放控制与相机预设在实际面板中分别提供。",
-      "html": "<section class=\"ds-wb-layout\"><h3>探索部件关系</h3><div class=\"ds-wb-layout-choices\"><button type=\"button\" aria-pressed=\"false\">合拢整机</button><button type=\"button\" aria-pressed=\"true\">分层展开</button><button type=\"button\" aria-pressed=\"false\">平铺部件</button></div><p>已停留，可自由观察</p></section>",
-      "css": ".ds-wb-layout{padding:22px 23px;background:#131d29;color:#f0f4fa;border-top:1px solid #304052;font:14px Manrope,'Noto Sans SC Display',sans-serif}.ds-wb-layout h3{margin:0 0 10px;font-size:16px;font-weight:500;line-height:1.7}.ds-wb-layout-choices{display:grid;gap:8px;margin-top:18px}.ds-wb-layout button{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:9px 13px;background:#1d2b3c;color:#f0f4fa;border:1px solid #304052;border-radius:7px;font:inherit;cursor:pointer;transition:background 150ms,color 150ms}.ds-wb-layout button:hover:not(:disabled){background:#2b3d51}.ds-wb-layout button[aria-pressed=true]{background:#bed4ef;color:#101923;border-color:#bed4ef}.ds-wb-layout button[aria-pressed=true]:hover:not(:disabled){background:#d1e2f5;color:#101923}.ds-wb-layout button:focus-visible{outline:2px solid #d1e5ff;outline-offset:4px}.ds-wb-layout button:disabled{opacity:.4;cursor:default}.ds-wb-layout p{margin:0 0 14px;color:#abbacb;font-size:12px;line-height:1.85}@media(prefers-reduced-motion:reduce){.ds-wb-layout button{transition-duration:.01ms}}"
+      "name": "展品目录卡",
+      "kind": "card",
+      "refersTo": "museum-ghost",
+      "description": "目录实机封面、名称与说明；示例展示缺图回退。",
+      "html": "<button class=\"ds-card\"><span class=\"ds-cover\">机械打字机</span><span class=\"ds-copy\"><strong>机械打字机</strong><span>从一次按键，看到内部连接。</span></span></button>",
+      "css": ".ds-card{width:280px;padding:0;overflow:hidden;border:1px solid #ffffff24;border-radius:12px;background:#191a1c;color:#f1efea;text-align:left;cursor:pointer;font:14px Manrope,\"Noto Sans SC\",sans-serif}.ds-cover{display:grid;aspect-ratio:4/3;place-items:center;background:#202124;color:#b5b3ad}.ds-copy{display:grid;gap:8px;padding:20px}.ds-copy strong{font-size:20px;line-height:1.5;font-weight:550}.ds-copy>span{color:#b5b3ad;line-height:1.7}.ds-card:hover{border-color:#d9be83}.ds-card:focus-visible{outline:2px solid #d9be83;outline-offset:4px}"
     }
   ],
   "narrative": {
-    "northStar": "先欣赏商品，再自然探索细节",
-    "overview": "Trees X 延续深蓝灰框架、中文身份与冷银状态重点。顶栏、工具和面板安静地承托三维对象，信息用清楚的字号、间距与细线组织；工具的亮色状态帮助访客确认自己正在观察和操作什么。机械打字机采用暖纸色舞台，承托黑色漆面与金属部件，保留同一套深色工作台工具。\n\n当前系统以一致的操作和可读性服务商品观察。模型通过真实 Three 场景呈现，资产身份按配置明确显示“正式展品”或“流程样板”。默认机械打字机已接入用户自有 Kimi 模型导出的真实 GLB，汽车仍是流程样板；音箱已从访客目录下架，历史资源与 legacy 入口保留。颜色、标题和控件不作真实商品规格、工厂机械精度或可购款式承诺。\n\n**Key Characteristics:",
+    "northStar": "以展品为中心的可扩展机械探索馆",
+    "overview": "本段记录用户选定方向已经落地的阶段 1/2 界面：全幅展位承托一个真实展品，目录以独立展品库展开，观察工具按需出现。石墨暗底、暖白文字与少量黄铜状态色使界面服务结构探索；三维材质、房间与灯光仍按各自既有规范和验收边界管理。\n\n适用入口为 `?gallery=next`，静态原型为 `?galleryPrototype=1`。无参数默认入口没有切换。本次不是全计划或三件画质验收；完整阶段状态见 [.ai/museum-validation.md](.ai/museum-validation.md)。下方历史附录保留旧入口和渲染事实，旧侧栏布局不约束本候选。",
     "keyCharacteristics": [
-      "模型主导，工具按需出现。",
-      "深蓝灰层次、冷银选中态与清晰焦点。",
-      "中文信息优先，图标始终服务操作。",
-      "正式资产与流程样板共享组件与状态语言。"
+      "展品占据全幅舞台，目录不常驻侧栏。",
+      "搜索、分类与当前展位标记支撑目录扩展。",
+      "操作、结构状态与辅助工具在同一展位可见。",
+      "动效可中断，减弱动态直接到达稳定状态。"
     ],
     "rules": [
       {
-        "name": "The 重点即状态 Rule",
-        "body": "冷银蓝服务选中状态，焦点另有清晰描边；动作开关同时显示文字状态，配色选中同时显示勾选。",
+        "name": "The 状态可读 Rule",
+        "body": "选中同时提供文字或语义状态；舞台上的输入与动作状态使用暗色承托，避免直接叠在高光上。",
         "section": "colors"
       },
       {
-        "name": "The 舞台文字分域 Rule",
-        "body": "舞台上的商品身份和输入提示跟随舞台明暗选择文字色；深色工具与面板继续使用工作台文字色，商品专属背景不扩展为全站主题。",
-        "section": "colors"
-      },
-      {
-        "name": "The 中文身份 Rule",
-        "body": "商品名称和功能名称直接说明内容；英文品牌不替代中文身份，正式展品与流程样板标记是资产事实说明。",
-        "section": "typography"
-      },
-      {
-        "name": "The 单活动面板 Rule",
-        "body": "目录与工具面板同一时间只出现一个；桌面通过网格分配空间，移动端移到场景下方。",
+        "name": "The 展位优先 Rule",
+        "body": "扩展目录数量通过展品库容纳，不重新挤入常驻侧栏；该规则只约束本候选表面。",
         "section": "layout"
-      },
-      {
-        "name": "The 模型承载深度 Rule",
-        "body": "界面保持平实，空间层次交给真实三维几何、光照与阴影；商品观察不追加装饰性光效。",
-        "section": "elevation"
-      },
-      {
-        "name": "The 主动观察 Rule",
-        "body": "默认静止呈现商品；拖动或缩放立即接手镜头并退出导览，关闭面板保留观察状态。",
-        "section": "components"
-      },
-      {
-        "name": "管理配置反馈",
-        "body": "常用配置使用表单，完整JSON显式应用；分区选中与悬停保持清楚对比，保存条桌面sticky、手机普通文档流。预览取景只改本地镜头，成功回填明确提示尚未保存。",
-        "section": "components"
       }
     ],
     "dos": [
-      "Do 让模型保持主要观察面积，沿用单活动面板与共享工具。",
-      "Do 使用已记录的深蓝灰层次、冷银选中态和独立键盘焦点。",
-      "Do 按资产事实标注正式展品或流程样板，并为操作状态、错误与空结果提供文字。",
-      "Do 让暖色舞台上的商品身份与底部提示保持深色可读文字，工具和面板沿用既有深色体系。",
-      "Do 区分复位视角、返回全景和还原商品，保留各自范围说明。",
-      "Do 用真实场景和实机截图验证当前实现，扩展正式模型时复用现有界面。"
+      "Do 让真实展品、当前结构和可用操作成为主要信息。",
+      "Do 使用实机渲染截图并明确区分目录夹具与实际上架数据。",
+      "Do 保留加载、失败、无结果与键盘焦点反馈。",
+      "Do 区分阶段工程通过、实机流程通过与用户画质认可。"
     ],
     "donts": [
-      "Don't 把 legacy 的影片、固定导演流程或常驻完整控制台规则带入当前工作台。",
-      "Don't 用图片、影片或装饰光效代替真实三维操作与样板身份。",
-      "Don't 让左目录和右面板同时占据工作台，或让手机面板盖住模型。",
-      "Don't 把样板配色、分层关系或静态截图写成真实商品、维修顺序、帧率或照片级画质结论。"
+      "Don't 把旧入口的左侧目录套用到全幅候选。",
+      "Don't 把候选入口、桌面证据或静态原型称为默认晋级、移动通过或整套完成。",
+      "Don't 将目录数量夹具、截图或首帧记录写成真实商品规模、显示帧率或画质分数。"
     ]
   }
 }

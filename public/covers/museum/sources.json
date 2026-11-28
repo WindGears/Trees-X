@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "images": [
+    {
+      "file": "typewriter-whole.webp",
+      "width": 1440,
+      "height": 1000,
+      "bytes": 213728,
+      "sha256": "91b8c5da3c0132fe1c7d2f53092715d48a6ec85aef5d0ca9ec072ebd9e4aff3d",
+      "source": "Trees X actual WebGPU showcase capture; scripts/museum-desktop-capture.mjs",
+      "product": "typewriter-study",
+      "pose": "default whole",
+      "provenance": "Screenshot of the existing authorized project model and studio, no generated product imagery. Original model attribution remains in its runtime asset manifest."
+    }
+  ]
+}

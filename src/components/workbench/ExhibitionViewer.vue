@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
+import GalleryControls from '@/components/gallery/GalleryControls.vue'
+import GalleryTools from '@/components/gallery/GalleryTools.vue'
+import GalleryInspector from '@/components/gallery/GalleryInspector.vue'
 import { useWorkbenchStore } from '@/stores/workbench'
 import type { ExhibitionPoster } from '@/lib/workbench/exhibition'
 import { provideMotionSession } from '@/lib/workbench/motionSession'
@@ -16,8 +19,17 @@ import '@/assets/styles/workbench.css'
 import '@/assets/styles/workbench-accessibility.css'
 import '@/assets/styles/workbench-exhibition.css'
 
-const props = defineProps<{ slug: string; exhibit?: ExhibitionPoster }>()
-const emit = defineEmits<{ overview: [] }>()
+const props = defineProps<{
+  slug: string
+  exhibit?: ExhibitionPoster
+  immersive?: boolean
+  suspended?: boolean
+}>()
+const emit = defineEmits<{ overview: []; poster: [] }>()
+const activePanel = ref('')
+const inspector = ref<InstanceType<typeof GalleryInspector>>()
+const dismissedPart = ref('')
+let focusReturn: HTMLElement | null = null
 const store = useWorkbenchStore()
 const session = provideMotionSession(store)
 const chapterView = ref('perspective')
@@ -69,6 +81,11 @@ const markerNames: Record<string, readonly string[]> = {
 function inspect(id: string) {
   if (!store.available || !store.presentation?.hotspots.some((item) => item.id === id)) return
   revealId.value = ''
+  dismissedPart.value = ''
+  if (props.immersive) {
+    activePanel.value = 'details'
+    void nextTick(() => inspector.value?.focusClose())
+  }
   const state = layoutMotion.value
   if (
     layout.value &&
@@ -95,11 +112,36 @@ function reveal(id: string) {
 function dismiss() {
   revealId.value = ''
   pendingId.value = ''
-  if (store.hotspot) store.view(chapterView.value)
+  if (props.immersive) {
+    dismissedPart.value = store.selectedPart
+    activePanel.value = ''
+    void nextTick(() => focusReturn?.isConnected && focusReturn.focus({ preventScroll: true }))
+  } else if (store.hotspot) store.view(chapterView.value)
 }
+function togglePanel(panel: string) {
+  focusReturn = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  pendingId.value = ''
+  revealId.value = ''
+  activePanel.value = activePanel.value === panel ? '' : panel
+  if (activePanel.value) void nextTick(() => inspector.value?.focusClose())
+}
+watch(
+  () => props.suspended,
+  (hidden) => {
+    if (hidden) store.manual()
+  },
+)
+watch(
+  () => store.selectedPart,
+  (id) => {
+    if (props.immersive && id && id !== dismissedPart.value) activePanel.value = 'details'
+  },
+)
 
 function navigateChapter(view: string) {
   chapterView.value = view
+  activePanel.value = ''
+  dismissedPart.value = ''
   pendingId.value = ''
   revealId.value = ''
 }
@@ -122,6 +164,7 @@ onScopeDispose(store.dispose)
 <template>
   <div
     class="workbench wb-exhibition exhibit-live"
+    :class="{ 'museum-live': immersive }"
     :data-status="store.status"
     :data-slug="store.slug"
   >
@@ -132,22 +175,44 @@ onScopeDispose(store.dispose)
         :marker-limit="markers"
         :marker-names="markerNames[chapterView]"
         :render-search="renderSearch"
+        :suspended="suspended"
+        :gallery="immersive"
+        :inspector="immersive && Boolean(activePanel)"
+        :immersive="immersive"
         exhibition
         @overview="emit('overview')"
       />
       <ExhibitionPartDetail
+        v-if="!immersive"
         :part="part"
         :current-view="chapterView"
         :requires-expansion="Boolean(pendingId)"
         @dismiss="dismiss"
         @reveal="reveal"
       />
+      <GalleryInspector
+        v-else
+        ref="inspector"
+        :panel="activePanel"
+        :part="activePanel === 'details' ? part : undefined"
+        :requires-expansion="Boolean(pendingId)"
+        :return-view="chapterView"
+        @close="dismiss"
+        @focus="inspect"
+        @reveal="reveal"
+        @poster="emit('poster')"
+      />
     </div>
     <ExhibitionControls
-      v-if="store.available"
+      v-if="store.available && !immersive"
       :key="store.revision"
       @focus="inspect"
       @view="navigateChapter"
     />
+    <template v-if="store.available && immersive">
+      <GalleryControls :key="store.revision" @view="navigateChapter" />
+      <GalleryTools :panel="activePanel" @panel="togglePanel" />
+      <p class="museum-hint">拖动旋转 · 滚轮缩放</p>
+    </template>
   </div>
 </template>

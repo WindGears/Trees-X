@@ -25,6 +25,7 @@ export function createViewportFraming(invalidate: () => void) {
       inspector: boolean,
       catalog: boolean,
       exhibition = false,
+      immersive = false,
     ) {
       if (!w || !h) return
       const resize = w !== width || h !== height || next !== camera
@@ -33,7 +34,8 @@ export function createViewportFraming(invalidate: () => void) {
       height = h
       const desktop = w > 760
       const left = gallery && desktop ? (exhibition ? 32 : catalog ? 476 : 148) : 0
-      const right = gallery && desktop ? (inspector ? 364 : 32) : 0
+      const right =
+        gallery && desktop ? (inspector ? (immersive ? (w <= 1360 ? 328 : 352) : 364) : 32) : 0
       const inspectorZoom =
         exhibition && gallery && desktop && inspector ? (w - left - right) / (w * 0.79) : 1
       const target = {

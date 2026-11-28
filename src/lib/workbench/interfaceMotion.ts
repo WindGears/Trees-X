@@ -4,6 +4,7 @@ export const inspectorTiming = { enter: 0.28, leave: 0.18, ease: 'power3.out' } 
 export const reducedInterfaceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const styles = {
+  library: { from: { y: 16 }, atRest: { y: 0 }, exit: { y: 16 }, enter: 0.26, leave: 0.18 },
   soft: { from: { y: 9 }, atRest: { y: 0 }, exit: { y: 6 }, enter: 0.22, leave: 0.16 },
   cover: { from: {}, atRest: {}, exit: {}, enter: 0.18, leave: 0.18 },
   inspector: {

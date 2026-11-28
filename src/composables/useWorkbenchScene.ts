@@ -40,6 +40,7 @@ export interface WorkbenchSceneProps {
   gallery?: boolean
   exhibition?: boolean
   inspector?: boolean
+  immersive?: boolean
   catalog?: boolean
   checkpoint?: CameraSnapshot
   realtimePipeline?: boolean
@@ -593,6 +594,7 @@ export function useWorkbenchScene(
       Boolean(props.inspector),
       Boolean(props.catalog),
       Boolean(props.exhibition),
+      Boolean(props.immersive),
     )
   }
   watch(
@@ -611,6 +613,7 @@ export function useWorkbenchScene(
         props.inspector,
         props.catalog,
         props.exhibition,
+        props.immersive,
       ] as const,
     updateFraming,
     { immediate: true, flush: 'post' },

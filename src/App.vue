@@ -25,6 +25,12 @@ function isExhibition() {
 const legacy = ref(isLegacy())
 const admin = ref(location.pathname === '/admin' || location.pathname.startsWith('/admin/'))
 const exhibition = ref(isExhibition())
+const prototype = new URLSearchParams(location.search).get('galleryPrototype') === '1'
+const nextGallery = new URLSearchParams(location.search).get('gallery') === 'next' && !isLegacy()
+const GalleryRoot = defineAsyncComponent(() => import('@/components/gallery/GalleryRoot.vue'))
+const GalleryPrototype = defineAsyncComponent(
+  () => import('@/components/gallery/GalleryPrototype.vue'),
+)
 const AdminRoot = defineAsyncComponent(() => import('@/components/admin/AdminRoot.vue'))
 const LegacyExperience = defineAsyncComponent(() => import('@/components/LegacyExperience.vue'))
 const WorkbenchRoot = defineAsyncComponent(() => import('@/components/workbench/WorkbenchRoot.vue'))
@@ -41,7 +47,9 @@ onScopeDispose(() => window.removeEventListener('popstate', read))
 </script>
 
 <template>
-  <AdminRoot v-if="admin" />
+  <GalleryPrototype v-if="prototype" />
+  <AdminRoot v-else-if="admin" />
+  <GalleryRoot v-else-if="nextGallery" />
   <LegacyExperience v-else-if="legacy" />
   <ExhibitionRoot v-else-if="exhibition" />
   <WorkbenchRoot v-else />

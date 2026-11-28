@@ -37,6 +37,8 @@ const props = defineProps<{
   markerLimit?: number
   markerNames?: readonly string[]
   renderSearch?: string
+  suspended?: boolean
+  immersive?: boolean
 }>()
 const emit = defineEmits<{ overview: [] }>()
 const store = useWorkbenchStore()
@@ -113,7 +115,7 @@ function reportLighting(status: RealtimeStatus) {
     lighting.value = status
 }
 const visibility = useDocumentVisibility()
-const active = computed(() => visibility.value === 'visible' && onScreen.value)
+const active = computed(() => visibility.value === 'visible' && onScreen.value && !props.suspended)
 const dpr = Math.min(window.devicePixelRatio || 1, 2)
 const initialCamera = new Vector3(3.5, 2.3, 5)
 const callouts = ref<InstanceType<typeof WorkbenchCallouts>>()
@@ -181,10 +183,7 @@ function key(event: KeyboardEvent) {
   }
   event.preventDefault()
 }
-onErrorCaptured(() => {
-  rendererFailed()
-  return false
-})
+onErrorCaptured(() => (rendererFailed(), false))
 </script>
 <template>
   <div
@@ -235,6 +234,7 @@ onErrorCaptured(() => {
         :commit="commit"
         :gallery="gallery"
         :exhibition="exhibition"
+        :immersive="immersive"
         :inspector="inspector"
         :inspect-part="inspectPart"
         :catalog="catalog"

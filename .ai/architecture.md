@@ -1,5 +1,15 @@
 # 新版目标架构与当前实现
 
+## 可扩展展厅候选
+
+`GalleryRoot` 维护封面/互动模式、URL、目录筛选和浮层，`galleryCatalog` 根据公开
+接口的正式状态组织目录，新展品不依赖三件 ID 白名单。`galleryInteraction` 由已登记
+动作程序产生章节和独立动作；`ExhibitionViewer` 继续借用单一 WorkbenchStage。
+目录/帮助遮挡时传递 suspended 门控并暂停操作，不重建 renderer。关闭详情只收起
+界面，回到本段显式请求镜头；回到封面卸载场景。`galleryRoute` 在创建宿主前补齐
+缺省 showcase 参数，保持旧舞台 URL 读取与宿主一致，显式 webgl 不覆盖。
+此为候选路径，不修改 API、数据库与展示配置版本。见[验证](museum-validation.md)。
+
 ## 机械结构展厅
 
 `ExhibitionRoot` 持有首屏目录、封面、URL 展品选择及异步组件生命周期。进入互动时装载 `ExhibitionViewer`，三件展品之间由同一场景宿主按代次替换资源，回到封面则释放场景。展位的章节、部件详情及引线排序是界面状态。现有适配器负责机构动作，打字机字杆在已核验分层和平铺姿态使用各自的取景偏移。管理预览复用舞台、保存接口与取景草稿流程。
